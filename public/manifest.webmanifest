@@ -1,0 +1,30 @@
+{
+  "name": "OdivonGYM",
+  "short_name": "OdivonGYM",
+  "description": "Modern spor salonu yönetim ve üyelik uygulaması",
+  "theme_color": "#101828",
+  "background_color": "#101828",
+  "display": "standalone",
+  "scope": "./",
+  "start_url": "./",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}

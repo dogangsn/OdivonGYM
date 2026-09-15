@@ -1,0 +1,30 @@
+<div class="page">
+  <div class="page__glow" aria-hidden="true"></div>
+
+  <div class="card">
+    <app-logo-mark [size]="64" />
+
+    <h1 class="mt-5 text-2xl font-extrabold tracking-tight">{{ heading() }}</h1>
+    <p class="mt-2 text-[var(--mat-sys-on-surface-variant)]">{{ message() }}</p>
+
+    <div class="mt-8 grid w-full gap-3 sm:grid-cols-3">
+      @for (pkg of ['Aylık', '3 Aylık', 'Yıllık']; track pkg) {
+        <div class="tier-preview">
+          <p class="tier-preview__name">{{ pkg }} Paket</p>
+          <p class="tier-preview__hint">Yakında</p>
+        </div>
+      }
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      class="!mt-6 !h-12 !w-full !rounded-xl !text-base"
+      (click)="notifyComingSoon()"
+    >
+      Paket Satın Al
+    </button>
+
+    <button mat-button class="!mt-2" (click)="logOut()">Çıkış Yap</button>
+  </div>
+</div>

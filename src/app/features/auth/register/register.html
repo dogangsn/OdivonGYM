@@ -1,0 +1,138 @@
+<div class="auth-page">
+  <section class="auth-page__form">
+    <div class="form-panel">
+      <div class="form-panel__mobile-logo">
+        <app-logo-mark [size]="40" />
+        <span>OdivonGYM</span>
+      </div>
+
+      <div class="form-panel__head">
+        <h1>Hesap Oluştur</h1>
+        <p>
+          Zaten hesabın var mı?
+          <a routerLink="/auth/login">Giriş yap</a>
+        </p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="form-panel__error">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+        <div class="field">
+          <label for="register-name">Ad Soyad *</label>
+          <div
+            class="field__box"
+            [class.field__box--invalid]="form.controls.displayName.invalid && form.controls.displayName.touched"
+          >
+            <mat-icon>person</mat-icon>
+            <input id="register-name" formControlName="displayName" autocomplete="name" placeholder="Ad Soyad" />
+          </div>
+          @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+            <p class="field__error">Adını gir.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-email">E-posta Adresi *</label>
+          <div class="field__box" [class.field__box--invalid]="form.controls.email.invalid && form.controls.email.touched">
+            <mat-icon>mail</mat-icon>
+            <input
+              id="register-email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="ornek@eposta.com"
+            />
+          </div>
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <p class="field__error">Geçerli bir e-posta adresi gir.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-password">Şifre *</label>
+          <div
+            class="field__box"
+            [class.field__box--invalid]="form.controls.password.invalid && form.controls.password.touched"
+          >
+            <mat-icon>lock</mat-icon>
+            <input
+              id="register-password"
+              [type]="hidePassword() ? 'password' : 'text'"
+              formControlName="password"
+              autocomplete="new-password"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              class="field__suffix-btn"
+              (click)="hidePassword.set(!hidePassword())"
+              [attr.aria-label]="'Şifreyi göster/gizle'"
+            >
+              <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <p class="field__error">Şifre en az 6 karakter olmalı.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-password2">Şifre (tekrar) *</label>
+          <div class="field__box">
+            <mat-icon>lock_reset</mat-icon>
+            <input
+              id="register-password2"
+              [type]="hidePassword() ? 'password' : 'text'"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              placeholder="••••••••"
+            />
+          </div>
+          @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
+            <p class="field__error">Şifreler eşleşmiyor.</p>
+          }
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="submitting()">
+          {{ submitting() ? 'Hesap oluşturuluyor…' : 'Ücretsiz Denemeyi Başlat' }}
+          @if (!submitting()) {
+            <mat-icon>arrow_forward</mat-icon>
+          }
+        </button>
+      </form>
+
+      <div class="form-panel__divider">
+        <span></span>
+        veya
+        <span></span>
+      </div>
+
+      <button
+        type="button"
+        class="google-btn"
+        [disabled]="googleSubmitting()"
+        (click)="continueWithGoogle()"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.7-1.57 2.69-3.88 2.69-6.64z" />
+          <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.85.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A8.997 8.997 0 0 0 9 18z" />
+          <path fill="#FBBC05" d="M3.97 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.29-1.71V4.96H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3.01-2.33z" />
+          <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+        </svg>
+        {{ googleSubmitting() ? 'Bağlanılıyor…' : 'Google ile kayıt ol' }}
+      </button>
+    </div>
+  </section>
+
+  <app-auth-brand-panel
+    class="auth-page__brand"
+    headlinePrefix="14 gün "
+    headlineHighlight="ücretsiz"
+    headlineSuffix=" denemeni hemen başlat."
+    subheadline="Kredi kartı gerekmez. İstediğin an paketini seç, antrenmana devam et."
+  />
+</div>

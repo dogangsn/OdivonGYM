@@ -1,0 +1,7 @@
+/* Tailwind v4 entry point. Kept as a plain .css file (not .scss) so Sass does not
+   try to resolve `tailwindcss` as a local partial import. */
+@import 'tailwindcss';
+
+/* Class-based dark mode: toggled by adding/removing `.dark` on <html>, driven by
+   ThemeService (see src/app/core/services/theme.service.ts). */
+@custom-variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Admin paneli (bkz. AdminMembersService) herhangi bir üyeyi
+      // oluşturabilir/düzenleyebilir/silebilir — manuel üye kaydı, paket
+      // atama, üyelik durumu değiştirme vb. buradan geçer.
+      //
+      // Kendi dokümanı için ise sadece şu fallback geçerli:
+      // `createUserProfile` Cloud Function (auth onCreate trigger) normalde
+      // bu dokümanı Admin SDK ile oluşturur ve Admin SDK rules'ı hiç görmez.
+      // Bu kural sadece Function henüz deploy/tetiklenmemişse (örn. yerel
+      // geliştirme) client'ın KENDİ trial profilini oluşturmasına izin
+      // verir — asla admin/aktif olarak değil, deneme süresi 15 günden
+      // uzun olamaz.
+      allow create: if isAdmin()
+        || (isOwner(uid)
+            && request.resource.data.uid == uid
+            && request.resource.data.role == 'user'
+            && request.resource.data.membershipStatus == 'trial'
+            && request.resource.data.trialEndsAt <= request.time + duration.value(15, 'd'));
+
+      // Kullanıcı yalnızca kendi görünen ad / fotoğrafını değiştirebilir.
+      // Admin ise her alanı (rol, üyelik durumu, paket vb.) değiştirebilir.
+      allow update: if isAdmin()
+        || (isOwner(uid)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['displayName', 'photoURL', 'updatedAt']));
+
+      allow delete: if isAdmin();
+    }
+  }
+}

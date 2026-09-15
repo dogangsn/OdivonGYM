@@ -1,0 +1,46 @@
+<div class="shell">
+  <app-sidebar
+    [collapsed]="collapsed()"
+    [mobileOpen]="mobileOpen()"
+    (collapseToggle)="toggleCollapse()"
+    (closeMobile)="closeMobileNav()"
+    (logOutRequested)="logOut()"
+  />
+
+  @if (mobileOpen()) {
+    <button type="button" class="backdrop" aria-label="Menüyü kapat" (click)="closeMobileNav()"></button>
+  }
+
+  <div class="shell__body">
+    <header class="topbar">
+      <button type="button" class="topbar__icon-btn topbar__menu-btn" (click)="openMobileNav()" aria-label="Menüyü aç">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <label class="topbar__search">
+        <mat-icon>search</mat-icon>
+        <input type="text" placeholder="Ara… (üye, ders, randevu)" />
+      </label>
+
+      <div class="topbar__spacer"></div>
+
+      <button type="button" class="topbar__icon-btn" matTooltip="Bildirimler">
+        <mat-icon>notifications</mat-icon>
+        <span class="topbar__dot" aria-hidden="true"></span>
+      </button>
+
+      <button
+        type="button"
+        class="topbar__icon-btn"
+        (click)="theme.toggle()"
+        [matTooltip]="theme.mode() === 'dark' ? 'Açık tema' : 'Koyu tema'"
+      >
+        <mat-icon>{{ theme.mode() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

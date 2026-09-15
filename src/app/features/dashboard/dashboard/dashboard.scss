@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+// ---- KPI istatistik kartları ----
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (min-width: 700px) {
+  .stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .stat-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.stat-card {
+  position: relative;
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--brand-500) 45%, transparent);
+    border-color: color-mix(in srgb, var(--mat-sys-primary) 35%, var(--mat-sys-outline-variant));
+  }
+}
+
+.stat-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.stat-card__label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stat-card__value {
+  margin: 4px 0 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.stat-card__hint {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stat-card--highlight {
+  border: none;
+  background: var(--brand-gradient);
+  color: white;
+
+  .stat-card__icon {
+    background: rgb(255 255 255 / 0.18);
+    color: white;
+  }
+
+  .stat-card__label,
+  .stat-card__hint {
+    color: rgb(255 255 255 / 0.85);
+  }
+}
+
+// ---- Hızlı erişim kartları ----
+.quick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--brand-500) 45%, transparent);
+    border-color: color-mix(in srgb, var(--mat-sys-primary) 35%, var(--mat-sys-outline-variant));
+  }
+}
+
+.quick-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.quick-card__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.quick-card__desc {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+}

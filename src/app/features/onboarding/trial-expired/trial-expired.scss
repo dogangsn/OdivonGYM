@@ -1,0 +1,59 @@
+:host {
+  display: block;
+  height: 100%;
+  background: var(--mat-sys-surface);
+}
+
+.page {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow: hidden;
+}
+
+.page__glow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--brand-500) 20%, transparent), transparent 55%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--mat-sys-tertiary) 16%, transparent), transparent 50%);
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 32px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--mat-sys-surface-container-low) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 60%, transparent);
+  box-shadow: 0 24px 60px -20px color-mix(in srgb, var(--brand-500) 30%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.tier-preview {
+  border-radius: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  padding: 14px;
+  text-align: center;
+}
+
+.tier-preview__name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tier-preview__hint {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+}

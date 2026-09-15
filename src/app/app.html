@@ -1,0 +1,5 @@
+@if (auth.ready()) {
+  <router-outlet />
+} @else {
+  <app-loading-spinner label="Yükleniyor…" />
+}

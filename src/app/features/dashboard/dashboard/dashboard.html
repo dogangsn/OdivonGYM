@@ -1,0 +1,46 @@
+<div class="flex flex-col gap-8 pb-4">
+  <section>
+    <p class="text-sm text-[var(--mat-sys-on-surface-variant)]">{{ greeting() }} 👋</p>
+    <h1 class="text-2xl font-extrabold tracking-tight">{{ firstName() }}</h1>
+  </section>
+
+  <section class="stat-grid">
+    @for (stat of statCards(); track stat.label) {
+      <div class="stat-card" [class.stat-card--highlight]="stat.highlight">
+        <span class="stat-card__icon">
+          <mat-icon>{{ stat.icon }}</mat-icon>
+        </span>
+        <p class="stat-card__label">{{ stat.label }}</p>
+        <p class="stat-card__value">{{ stat.value }}</p>
+        <p class="stat-card__hint">{{ stat.hint }}</p>
+      </div>
+    }
+  </section>
+
+  <section>
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--mat-sys-on-surface-variant)]">
+      Hızlı Erişim
+    </h2>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      @for (card of upcomingCards; track card.title) {
+        @if (card.link) {
+          <a [routerLink]="card.link" class="quick-card">
+            <span class="quick-card__icon">
+              <mat-icon>{{ card.icon }}</mat-icon>
+            </span>
+            <p class="quick-card__title">{{ card.title }}</p>
+            <p class="quick-card__desc">{{ card.desc }}</p>
+          </a>
+        } @else {
+          <button type="button" class="quick-card" (click)="notifyComingSoon(card.title)">
+            <span class="quick-card__icon">
+              <mat-icon>{{ card.icon }}</mat-icon>
+            </span>
+            <p class="quick-card__title">{{ card.title }}</p>
+            <p class="quick-card__desc">{{ card.desc }}</p>
+          </button>
+        }
+      }
+    </div>
+  </section>
+</div>

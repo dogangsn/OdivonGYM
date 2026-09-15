@@ -1,0 +1,74 @@
+<aside class="sidebar" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
+  <div class="sidebar__brand">
+    <a routerLink="/dashboard" class="brand-link" (click)="closeMobile.emit()">
+      <app-logo-mark [size]="28" />
+      @if (!collapsed()) {
+        <span class="brand-name">OdivonGYM</span>
+      }
+    </a>
+    <button
+      type="button"
+      class="icon-btn collapse-btn"
+      (click)="collapseToggle.emit()"
+      [matTooltip]="collapsed() ? 'Genişlet' : 'Daralt'"
+      matTooltipPosition="right"
+    >
+      <mat-icon>{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+    <button type="button" class="icon-btn mobile-close" (click)="closeMobile.emit()" aria-label="Menüyü kapat">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <nav class="sidebar__nav">
+    @for (group of groups(); track group.title) {
+      <div class="nav-group">
+        @if (!collapsed()) {
+          <p class="nav-group__title">{{ group.title }}</p>
+        }
+        @for (item of group.items; track item.link) {
+          <a
+            [routerLink]="item.link"
+            routerLinkActive="active"
+            class="nav-item"
+            [matTooltip]="collapsed() ? item.label : ''"
+            matTooltipPosition="right"
+            (click)="closeMobile.emit()"
+          >
+            <mat-icon>{{ item.icon }}</mat-icon>
+            @if (!collapsed()) {
+              <span>{{ item.label }}</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </nav>
+
+  <div class="sidebar__footer">
+    @if (!collapsed()) {
+      <app-trial-badge class="footer-badge" />
+    }
+
+    <button type="button" class="user-card" [matMenuTriggerFor]="userMenu">
+      <mat-icon>account_circle</mat-icon>
+      @if (!collapsed()) {
+        <span class="user-card__text">
+          <span class="name">{{ auth.profile()?.displayName || 'Üye' }}</span>
+          <span class="email">{{ auth.profile()?.email }}</span>
+        </span>
+        <mat-icon class="chevron">expand_more</mat-icon>
+      }
+    </button>
+    <mat-menu #userMenu="matMenu" xPosition="after">
+      <button mat-menu-item routerLink="/profile">
+        <mat-icon>person</mat-icon>
+        <span>Profil</span>
+      </button>
+      <button mat-menu-item (click)="logOutRequested.emit()">
+        <mat-icon>logout</mat-icon>
+        <span>Çıkış Yap</span>
+      </button>
+    </mat-menu>
+  </div>
+</aside>
