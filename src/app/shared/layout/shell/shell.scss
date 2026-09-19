@@ -1,12 +1,19 @@
 :host {
   display: block;
   height: 100%;
+  font-family: 'Plus Jakarta Sans', Inter, Roboto, 'Helvetica Neue', sans-serif;
 }
 
 .shell {
   display: flex;
   height: 100%;
-  background: var(--mat-sys-surface);
+  background: var(--odivon-bg-default);
+  color: var(--odivon-text-default);
+}
+
+::ng-deep .active-lang {
+  color: var(--odivon-primary) !important;
+  font-weight: 700;
 }
 
 .backdrop {
@@ -36,9 +43,9 @@
   flex-shrink: 0;
   padding: 10px 24px;
   padding-top: max(10px, env(safe-area-inset-top));
-  background: color-mix(in srgb, var(--mat-sys-surface-container) 85%, transparent);
+  background: color-mix(in srgb, var(--odivon-bg-card) 85%, transparent);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-bottom: 1px solid var(--odivon-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -56,13 +63,14 @@
   max-width: 100%;
   padding: 8px 12px;
   border-radius: 10px;
-  background: var(--mat-sys-surface-container-low);
-  border: 1px solid transparent;
-  color: var(--mat-sys-on-surface-variant);
-  transition: border-color 0.15s ease;
+  background: var(--odivon-bg-default);
+  border: 1px solid var(--odivon-border);
+  color: var(--odivon-text-secondary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus-within {
-    border-color: var(--mat-sys-primary);
+    border-color: var(--odivon-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--odivon-primary) 20%, transparent);
   }
 
   mat-icon {
@@ -78,12 +86,12 @@
     border: none;
     background: none;
     outline: none;
-    color: var(--mat-sys-on-surface);
+    color: var(--odivon-text-default);
     font: inherit;
     font-size: 0.85rem;
 
     &::placeholder {
-      color: var(--mat-sys-on-surface-variant);
+      color: var(--odivon-text-muted);
     }
   }
 }
@@ -103,12 +111,12 @@
   border: none;
   border-radius: 10px;
   background: none;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--odivon-text-secondary);
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
-    color: var(--mat-sys-on-surface);
+    background: var(--odivon-bg-hover);
+    color: var(--odivon-text-default);
   }
 }
 
@@ -119,8 +127,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--brand-500);
-  border: 2px solid var(--mat-sys-surface-container);
+  background: var(--odivon-primary);
+  border: 2px solid var(--odivon-bg-card);
 }
 
 .content {

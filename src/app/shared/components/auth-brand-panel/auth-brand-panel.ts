@@ -1,37 +1,41 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { LogoMark } from '../logo-mark/logo-mark';
 
 interface Pill {
   icon: string;
-  label: string;
+  labelKey: string;
 }
 
 interface Stat {
   value: string;
-  label: string;
+  labelKey: string;
 }
 
 const PILLS: Pill[] = [
-  { icon: 'qr_code_2', label: 'QR ile Anında Giriş' },
-  { icon: 'sports_gymnastics', label: 'Antrenman & Ders Takibi' },
-  { icon: 'card_membership', label: 'Paket & Ödeme Yönetimi' },
+  { icon: 'qr_code_2', labelKey: 'auth.brandPanel.pill1' },
+  { icon: 'sports_gymnastics', labelKey: 'auth.brandPanel.pill2' },
+  { icon: 'card_membership', labelKey: 'auth.brandPanel.pill3' },
 ];
 
 const STATS: Stat[] = [
-  { value: '500+', label: 'Aktif Üye' },
-  { value: '30+', label: 'Haftalık Ders' },
-  { value: '%98', label: 'Üye Memnuniyeti' },
+  { value: '500+', labelKey: 'auth.brandPanel.stat1Label' },
+  { value: '30+', labelKey: 'auth.brandPanel.stat2Label' },
+  { value: '%98', labelKey: 'auth.brandPanel.stat3Label' },
 ];
 
 /**
  * Login/Register sayfalarının marka paneli — masaüstünde formla yan yana,
  * dar ekranlarda tamamen gizlenir (bkz. login.scss / register.scss).
+ * Metinler `variant`'a göre `auth.brandPanel.{login|register}*` çeviri
+ * anahtarlarından gelir — böylece dil değişince (bkz. LanguageService)
+ * içerik de otomatik güncellenir.
  */
 @Component({
   selector: 'app-auth-brand-panel',
   standalone: true,
-  imports: [MatIconModule, LogoMark],
+  imports: [MatIconModule, LogoMark, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="brand-panel">
@@ -44,25 +48,26 @@ const STATS: Stat[] = [
         </div>
 
         <h1>
-          {{ headlinePrefix() }}<span class="highlight">{{ headlineHighlight() }}</span
-          >{{ headlineSuffix() }}
+          {{ 'auth.brandPanel.' + variant() + 'HeadlinePrefix' | transloco
+          }}<span class="highlight">{{ 'auth.brandPanel.' + variant() + 'HeadlineHighlight' | transloco }}</span
+          >{{ 'auth.brandPanel.' + variant() + 'HeadlineSuffix' | transloco }}
         </h1>
-        <p class="subheadline">{{ subheadline() }}</p>
+        <p class="subheadline">{{ 'auth.brandPanel.' + variant() + 'Subheadline' | transloco }}</p>
 
         <div class="brand-panel__pills">
-          @for (pill of pills; track pill.label) {
+          @for (pill of pills; track pill.labelKey) {
             <span class="pill">
               <mat-icon>{{ pill.icon }}</mat-icon>
-              {{ pill.label }}
+              {{ pill.labelKey | transloco }}
             </span>
           }
         </div>
 
         <div class="brand-panel__stats">
-          @for (stat of stats; track stat.label) {
+          @for (stat of stats; track stat.labelKey) {
             <div class="stat">
               <p class="stat__value">{{ stat.value }}</p>
-              <p class="stat__label">{{ stat.label }}</p>
+              <p class="stat__label">{{ stat.labelKey | transloco }}</p>
             </div>
           }
         </div>
@@ -71,11 +76,11 @@ const STATS: Stat[] = [
 
         <p class="brand-panel__testimonial">
           <mat-icon>check_circle</mat-icon>
-          {{ testimonial() }}
+          {{ 'auth.brandPanel.testimonial' | transloco }}
         </p>
       </div>
 
-      <p class="brand-panel__footer">© {{ year }} OdivonGYM. Tüm hakları saklıdır.</p>
+      <p class="brand-panel__footer">{{ 'auth.brandPanel.footer' | transloco: { year } }}</p>
     </div>
   `,
   styles: `
@@ -256,15 +261,8 @@ const STATS: Stat[] = [
   `,
 })
 export class AuthBrandPanel {
-  readonly headlinePrefix = input('Daha akıllı bir ');
-  readonly headlineHighlight = input('spor salonu');
-  readonly headlineSuffix = input(' deneyimi.');
-  readonly subheadline = input(
-    'OdivonGYM ile üyeliğini, antrenman programını ve randevularını tek ekrandan yönet.',
-  );
-  readonly testimonial = input(
-    'Türkiye genelinde modern spor salonları tarafından tercih ediliyor.',
-  );
+  /** Hangi çeviri anahtar kümesi kullanılsın: `auth.brandPanel.loginHeadline*` ya da `registerHeadline*`. */
+  readonly variant = input<'login' | 'register'>('login');
 
   protected readonly pills = PILLS;
   protected readonly stats = STATS;

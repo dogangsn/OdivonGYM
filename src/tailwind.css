@@ -5,3 +5,80 @@
 /* Class-based dark mode: toggled by adding/removing `.dark` on <html>, driven by
    ThemeService (see src/app/core/services/theme.service.ts). */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Odivon Design System tokens (.agents/skills/odivon-ui-design-system) — additive,
+   scoped to pages/components opted into the design system via `font-sans` /
+   `odivon-*` utility classes. Does not touch the existing --mat-sys-* theme. */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+  --color-primary-950: #1e1b4b;
+  --color-primary: #4f46e5;
+}
+
+/* `icon-size-*` — every Odivon pattern sizes `<mat-icon [svgIcon]>` this way.
+   `!important` because Angular Material's own `.mat-icon { width: 24px; ... }`
+   rule is injected after tailwind.css in the build and would otherwise win at
+   equal specificity regardless of these utilities' source order. */
+.icon-size-4 {
+  width: 1rem !important;
+  height: 1rem !important;
+  font-size: 1rem !important;
+}
+.icon-size-4\.5 {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+  font-size: 1.125rem !important;
+}
+.icon-size-5 {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  font-size: 1.25rem !important;
+}
+.icon-size-6 {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  font-size: 1.5rem !important;
+}
+.icon-size-7 {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  font-size: 1.75rem !important;
+}
+.icon-size-8 {
+  width: 2rem !important;
+  height: 2rem !important;
+  font-size: 2rem !important;
+}
+
+/* Custom Scrollbar for Drawers and Tables (Odivon Design System) */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.3);
+    border-radius: 9999px;
+
+    &:hover {
+      background-color: rgba(148, 163, 184, 0.5);
+    }
+  }
+}

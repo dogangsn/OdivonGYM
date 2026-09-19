@@ -4,27 +4,38 @@
   <div class="card">
     <app-logo-mark [size]="64" />
 
-    <h1 class="mt-5 text-2xl font-extrabold tracking-tight">{{ heading() }}</h1>
-    <p class="mt-2 text-[var(--mat-sys-on-surface-variant)]">{{ message() }}</p>
+    <h1 class="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+      {{ (cancelled() ? 'onboarding.trialExpired.headingCancelled' : 'onboarding.trialExpired.headingExpired') | transloco }}
+    </h1>
+    <p class="mt-2 text-slate-500 dark:text-slate-400">
+      {{ (cancelled() ? 'onboarding.trialExpired.messageCancelled' : 'onboarding.trialExpired.messageExpired') | transloco }}
+    </p>
 
     <div class="mt-8 grid w-full gap-3 sm:grid-cols-3">
-      @for (pkg of ['Aylık', '3 Aylık', 'Yıllık']; track pkg) {
+      @for (tierKey of ['tierMonthly', 'tierQuarterly', 'tierYearly']; track tierKey) {
         <div class="tier-preview">
-          <p class="tier-preview__name">{{ pkg }} Paket</p>
-          <p class="tier-preview__hint">Yakında</p>
+          <p class="tier-preview__name">
+            {{ 'onboarding.trialExpired.' + tierKey | transloco }} {{ 'onboarding.trialExpired.tierPackageSuffix' | transloco }}
+          </p>
+          <p class="tier-preview__hint">{{ 'onboarding.trialExpired.tierComingSoon' | transloco }}</p>
         </div>
       }
     </div>
 
     <button
-      mat-flat-button
-      color="primary"
-      class="!mt-6 !h-12 !w-full !rounded-xl !text-base"
+      type="button"
       (click)="notifyComingSoon()"
+      class="mt-6 h-12 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-base font-bold shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
     >
-      Paket Satın Al
+      {{ 'onboarding.trialExpired.buyButton' | transloco }}
     </button>
 
-    <button mat-button class="!mt-2" (click)="logOut()">Çıkış Yap</button>
+    <button
+      type="button"
+      (click)="logOut()"
+      class="mt-2 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+    >
+      {{ 'onboarding.trialExpired.logoutButton' | transloco }}
+    </button>
   </div>
 </div>

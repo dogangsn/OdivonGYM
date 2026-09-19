@@ -6,7 +6,9 @@ import {
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideHttpClient } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideHeroIcons } from './core/services/hero-icons.provider';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import {
   connectAuthEmulator,
@@ -24,6 +26,8 @@ import {
   provideStorage,
 } from '@angular/fire/storage';
 import { getAnalytics, provideAnalytics } from '@angular/fire/analytics';
+import { provideTransloco } from '@jsverse/transloco';
+import { TranslocoHttpLoader } from './core/i18n/transloco-loader';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -34,6 +38,18 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
+    provideHttpClient(),
+    provideHeroIcons(),
+    provideTransloco({
+      config: {
+        availableLangs: ['tr', 'en', 'ru', 'nl', 'fr'],
+        defaultLang: 'tr',
+        fallbackLang: 'en',
+        reRenderOnLangChange: true,
+        prodMode: environment.production,
+      },
+      loader: TranslocoHttpLoader,
+    }),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
@@ -62,7 +78,6 @@ export const appConfig: ApplicationConfig = {
       }
       return storage;
     }),
-
     // Analytics sadece production'da devreye girer — dev/emulator verisiyle
     // gerçek raporları kirletmeyelim. Otomatik ekran/kullanıcı takibi yerine
     // (zoneless + standalone bootstrap'ta NG0203 hatasına yol açıyor)

@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
@@ -25,6 +26,7 @@ const DEMO_CREDENTIALS = { email: 'demo@odivongym.app', password: 'Demo123456!' 
     MatIconModule,
     LogoMark,
     AuthBrandPanel,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login.html',
@@ -35,6 +37,7 @@ export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly isDev = !environment.production;
 
@@ -62,7 +65,7 @@ export class Login {
       await this.auth.signInWithEmail(email, password, rememberMe);
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error));
+      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
       this.submitting.set(false);
     }
@@ -76,7 +79,7 @@ export class Login {
       await this.auth.signInWithGoogle();
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error));
+      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
       this.googleSubmitting.set(false);
     }
@@ -85,7 +88,7 @@ export class Login {
   async forgotPassword(): Promise<void> {
     const email = this.form.controls.email.value.trim();
     if (!email || this.form.controls.email.invalid) {
-      this.snackBar.open('Önce e-posta adresini gir, sonra sıfırlama bağlantısı gönderelim.', 'Kapat', {
+      this.snackBar.open(this.transloco.translate('loginExtra.needEmailFirst'), this.transloco.translate('common.close'), {
         duration: 3000,
       });
       return;
@@ -94,11 +97,17 @@ export class Login {
     this.resettingPassword.set(true);
     try {
       await this.auth.sendPasswordReset(email);
-      this.snackBar.open(`${email} adresine şifre sıfırlama bağlantısı gönderildi.`, 'Kapat', {
-        duration: 4000,
-      });
+      this.snackBar.open(
+        this.transloco.translate('loginExtra.resetLinkSent', { email }),
+        this.transloco.translate('common.close'),
+        { duration: 4000 },
+      );
     } catch (error) {
-      this.snackBar.open(toAuthErrorMessage(error), 'Kapat', { duration: 4000 });
+      this.snackBar.open(
+        toAuthErrorMessage(error, (key) => this.transloco.translate(key)),
+        this.transloco.translate('common.close'),
+        { duration: 4000 },
+      );
     } finally {
       this.resettingPassword.set(false);
     }

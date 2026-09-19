@@ -3,72 +3,83 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LogoMark } from '../../components/logo-mark/logo-mark';
 import { TrialBadge } from '../../components/trial-badge/trial-badge';
 
 interface NavItem {
   icon: string;
-  label: string;
+  labelKey: string;
   link: string;
 }
 
 interface NavGroup {
-  title: string;
+  titleKey: string;
   items: NavItem[];
 }
 
 const BASE_GROUPS: NavGroup[] = [
-  { title: 'Genel', items: [{ icon: 'space_dashboard', label: 'Ana Sayfa', link: '/dashboard' }] },
+  { titleKey: 'sidebar.groupGeneral', items: [{ icon: 'space_dashboard', labelKey: 'sidebar.dashboard', link: '/dashboard' }] },
   {
-    title: 'Antrenman',
+    titleKey: 'sidebar.groupWorkout',
     items: [
-      { icon: 'sports_gymnastics', label: 'Antrenman Programı', link: '/workout' },
-      { icon: 'calendar_month', label: 'Ders Takvimi', link: '/classes' },
-      { icon: 'event_available', label: 'PT Randevu', link: '/appointments' },
+      { icon: 'sports_gymnastics', labelKey: 'sidebar.workoutPlan', link: '/workout' },
+      { icon: 'calendar_month', labelKey: 'sidebar.classSchedule', link: '/classes' },
+      { icon: 'event_available', labelKey: 'sidebar.ptAppointments', link: '/appointments' },
     ],
   },
   {
-    title: 'Sağlık',
+    titleKey: 'sidebar.groupHealth',
     items: [
-      { icon: 'water_drop', label: 'Su Takibi', link: '/water' },
-      { icon: 'monitor_weight', label: 'Vücut Ölçümleri', link: '/measurements' },
+      { icon: 'water_drop', labelKey: 'sidebar.waterTracker', link: '/water' },
+      { icon: 'monitor_weight', labelKey: 'sidebar.bodyMeasurements', link: '/measurements' },
     ],
   },
   {
-    title: 'Hesap',
+    titleKey: 'sidebar.groupAccount',
     items: [
-      { icon: 'account_balance_wallet', label: 'E-Cüzdan', link: '/wallet' },
-      { icon: 'card_membership', label: 'Paketler', link: '/packages' },
-      { icon: 'person', label: 'Profil & Ayarlar', link: '/profile' },
+      { icon: 'account_balance_wallet', labelKey: 'sidebar.wallet', link: '/wallet' },
+      { icon: 'card_membership', labelKey: 'sidebar.packages', link: '/packages' },
+      { icon: 'person', labelKey: 'sidebar.profile', link: '/profile' },
     ],
   },
 ];
 
 const ADMIN_GROUP: NavGroup = {
-  title: 'Yönetim',
+  titleKey: 'sidebar.groupManagement',
   items: [
-    { icon: 'space_dashboard', label: 'Salon Durumu', link: '/admin/overview' },
-    { icon: 'groups', label: 'Üye Kayıtları', link: '/admin/members' },
-    { icon: 'store', label: 'Şubeler', link: '/admin/branches' },
-    { icon: 'sell', label: 'Paket & Fiyatlandırma', link: '/admin/packages' },
-    { icon: 'point_of_sale', label: 'Market Satışları', link: '/admin/shop' },
-    { icon: 'account_balance', label: 'Muhasebe', link: '/admin/accounting' },
-    { icon: 'nfc', label: 'Turnike Sistemi', link: '/admin/access-control' },
-    { icon: 'business', label: 'Salon Bilgileri', link: '/admin/gym-info' },
+    { icon: 'space_dashboard', labelKey: 'sidebar.adminOverview', link: '/admin/overview' },
+    { icon: 'groups', labelKey: 'sidebar.adminMembers', link: '/admin/members' },
+    { icon: 'store', labelKey: 'sidebar.adminBranches', link: '/admin/branches' },
+    { icon: 'sell', labelKey: 'sidebar.adminPackages', link: '/admin/packages' },
+    { icon: 'point_of_sale', labelKey: 'sidebar.adminShop', link: '/admin/shop' },
+    { icon: 'account_balance', labelKey: 'sidebar.adminAccounting', link: '/admin/accounting' },
+    { icon: 'nfc', labelKey: 'sidebar.adminAccessControl', link: '/admin/access-control' },
+    { icon: 'business', labelKey: 'sidebar.adminGymInfo', link: '/admin/gym-info' },
   ],
 };
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule, MatMenuModule, LogoMark, TrialBadge],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    MatIconModule,
+    MatTooltipModule,
+    MatMenuModule,
+    LogoMark,
+    TrialBadge,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
 })
 export class Sidebar {
   protected readonly auth = inject(AuthService);
+  protected readonly transloco = inject(TranslocoService);
 
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */
   readonly collapsed = input(false);

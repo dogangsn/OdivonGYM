@@ -12,9 +12,11 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/auth/auth.service';
 import { Gender, MembershipStatus, UserProfile } from '../../core/models/user-profile.model';
 
 export interface NewMemberInput {
@@ -25,9 +27,11 @@ export interface NewMemberInput {
   gender: Gender;
   birthDate: Date | null;
   membershipStatus: MembershipStatus;
-  /** Seçilen paketin gün sayısı — 'trial' seçiliyken kullanılmaz. */
-  packageDays: number | null;
   packageLabel: string | null;
+  /** Üyeliğin başladığı tarih — hazır paket ya da "Özel Süre" fark etmez, her zaman elle seçilir. */
+  membershipStartDate: Date | null;
+  /** Üyeliğin biteceği tarih — hazır paket seçilse bile admin üzerine yazabilir. */
+  membershipEndDate: Date | null;
   notes: string;
 }
 
@@ -36,29 +40,45 @@ export type UpdateMemberInput = Omit<NewMemberInput, 'email' | 'password'>;
 
 /**
  * Admin panelinin "Üye Kayıtları" ekranı için: tüm üyeleri listeler ve
- * yeni üye oluşturur. `FirestoreUserService`'ten ayrı çünkü o sadece
- * OTURUM AÇMIŞ kullanıcının kendi dokümanıyla ilgilenir — burası admin'in
- * BAŞKA herhangi bir üye üzerinde çalışmasıyla ilgilenir (bkz.
- * firestore.rules `isAdmin()`).
+ * yeni üye oluşturur.
+ *
+ * ⚠️ SPARK PLANI: Bu proje Blaze'e geçene kadar Cloud Functions
+ * kullanamıyor (bkz. AuthService'teki not), o yüzden üye oluşturma da
+ * CLIENT'TAN yapılır: `createUserWithEmailAndPassword` çağrıldığı Auth
+ * örneğinin oturumunu otomatik olarak yeni kullanıcıya geçirir — admin
+ * kendi oturumundan düşmesin diye bunu ayrı, tek kullanımlık bir ikincil
+ * Firebase App örneği üzerinden yapıyoruz (ana app'in Auth'una hiç
+ * dokunmuyoruz). İş Kuralı 2 ("admin sadece KENDİ salonuna üye ekler")
+ * `firestore.rules`'daki `isAdmin() && request.resource.data.tenantId ==
+ * myTenantId()` kontrolüyle sunucu tarafında zorlanır — `tenantId` burada
+ * admin'in kendi profilinden okunsa da, client kötü niyetli olsa bile
+ * rules bunu değiştirmesine izin vermez.
  */
 @Injectable({ providedIn: 'root' })
 export class AdminMembersService {
   private readonly firestore = inject(Firestore);
+  private readonly auth = inject(AuthService);
 
   watchMembers(): Observable<UserProfile[]> {
-    const membersQuery = query(collection(this.firestore, 'users'), orderBy('createdAt', 'desc'));
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) {
+      return new Observable<UserProfile[]>((subscriber) => subscriber.next([]));
+    }
+    const membersQuery = query(
+      collection(this.firestore, 'users'),
+      where('tenantId', '==', tenantId),
+      orderBy('createdAt', 'desc'),
+    );
     return collectionData(membersQuery) as Observable<UserProfile[]>;
   }
 
-  /**
-   * Yeni üyeyi Firebase Auth + Firestore'a kaydeder.
-   *
-   * `createUserWithEmailAndPassword` çağrıldığı Auth örneğinin oturumunu
-   * otomatik olarak yeni kullanıcıya geçirir — admin kendi oturumundan
-   * düşmesin diye bunu ayrı, tek kullanımlık bir ikincil Firebase App
-   * örneği üzerinden yapıyoruz (ana app'in Auth'una hiç dokunmuyoruz).
-   */
+  /** Yeni üyeyi Firebase Auth + Firestore'a kaydeder (bkz. sınıf yorumu — ikincil app üzerinden). */
   async createMember(input: NewMemberInput): Promise<string> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) {
+      throw new Error('Salon bilgisi bulunamadı — lütfen tekrar giriş yap.');
+    }
+
     const secondaryApp = initializeApp(environment.firebase, `admin-create-${Date.now()}`);
     let uid: string;
     try {
@@ -72,34 +92,28 @@ export class AdminMembersService {
     }
 
     const now = Timestamp.now();
-    const trialEndsAt = Timestamp.fromMillis(
-      now.toMillis() + environment.trialDurationDays * 24 * 60 * 60 * 1000,
-    );
-    const membershipEndsAt = input.packageDays
-      ? Timestamp.fromMillis(now.toMillis() + input.packageDays * 24 * 60 * 60 * 1000)
-      : null;
+    const isActive = input.membershipStatus === 'active';
+    const trialEndsAt = Timestamp.fromMillis(now.toMillis() + environment.trialDurationDays * 24 * 60 * 60 * 1000);
 
-    const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+    await setDoc(doc(this.firestore, 'users', uid), {
       uid,
-      email: input.email,
-      displayName: input.displayName,
-      photoURL: null,
+      tenantId, // <-- admin'in KENDİ salonu; firestore.rules bunu ayrıca doğrular
       role: 'user',
+      email: input.email.trim(),
+      displayName: input.displayName.trim(),
+      photoURL: null,
       membershipStatus: input.membershipStatus,
       trialStartedAt: now,
       trialEndsAt: input.membershipStatus === 'trial' ? trialEndsAt : now,
-      phone: input.phone,
+      phone: input.phone.trim(),
       gender: input.gender,
       birthDate: input.birthDate ? Timestamp.fromDate(input.birthDate) : null,
-      membershipEndsAt,
-      packageLabel: input.packageLabel,
-      notes: input.notes,
-    };
-
-    await setDoc(doc(this.firestore, 'users', uid), {
-      ...profile,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      packageLabel: isActive ? input.packageLabel : null,
+      membershipStartsAt: isActive && input.membershipStartDate ? Timestamp.fromDate(input.membershipStartDate) : null,
+      membershipEndsAt: isActive && input.membershipEndDate ? Timestamp.fromDate(input.membershipEndDate) : null,
+      notes: input.notes.trim(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     return uid;
@@ -114,11 +128,7 @@ export class AdminMembersService {
 
   /** Mevcut bir üyenin profil bilgilerini günceller (hesap/e-posta/şifre hariç). */
   async updateMember(uid: string, input: UpdateMemberInput): Promise<void> {
-    const now = Timestamp.now();
     const isActive = input.membershipStatus === 'active';
-    const membershipEndsAt = isActive && input.packageDays
-      ? Timestamp.fromMillis(now.toMillis() + input.packageDays * 24 * 60 * 60 * 1000)
-      : null;
 
     await updateDoc(doc(this.firestore, 'users', uid), {
       displayName: input.displayName,
@@ -127,7 +137,8 @@ export class AdminMembersService {
       birthDate: input.birthDate ? Timestamp.fromDate(input.birthDate) : null,
       membershipStatus: input.membershipStatus,
       packageLabel: isActive ? input.packageLabel : null,
-      membershipEndsAt,
+      membershipStartsAt: isActive && input.membershipStartDate ? Timestamp.fromDate(input.membershipStartDate) : null,
+      membershipEndsAt: isActive && input.membershipEndDate ? Timestamp.fromDate(input.membershipEndDate) : null,
       notes: input.notes,
       updatedAt: serverTimestamp(),
     });

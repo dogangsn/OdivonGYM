@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 /**
  * Her sayfanın üstünde tutarlı bir başlık şeridi — ikon, başlık, açıklama ve
  * sağda aksiyon butonları için bir slot (`<ng-content select="[actions]">`).
+ * Odivon Design System'in sayfa başlığı deseniyle stilize edilir.
  */
 @Component({
   selector: 'app-page-header',
@@ -11,66 +12,30 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="page-header">
-      <div class="page-header__text">
+    <header class="font-sans flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div>
         <div class="flex items-center gap-3">
           @if (icon()) {
-            <span class="page-header__icon">
-              <mat-icon>{{ icon() }}</mat-icon>
+            <span
+              class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
+            >
+              <mat-icon class="icon-size-5">{{ icon() }}</mat-icon>
             </span>
           }
-          <h1>{{ title() }}</h1>
+          <h1 class="m-0 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            {{ title() }}
+          </h1>
         </div>
         @if (description()) {
-          <p>{{ description() }}</p>
+          <p class="mt-1.5 mb-0 max-w-[60ch] text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+            {{ description() }}
+          </p>
         }
       </div>
-      <div class="page-header__actions">
+      <div class="flex items-center gap-2">
         <ng-content select="[actions]" />
       </div>
     </header>
-  `,
-  styles: `
-    .page-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .page-header__icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      flex-shrink: 0;
-      border-radius: 12px;
-      background: var(--mat-sys-primary-container);
-      color: var(--mat-sys-on-primary-container);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-    }
-
-    p {
-      margin: 6px 0 0;
-      color: var(--mat-sys-on-surface-variant);
-      font-size: 0.9rem;
-      max-width: 60ch;
-    }
-
-    .page-header__actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
   `,
 })
 export class PageHeader {

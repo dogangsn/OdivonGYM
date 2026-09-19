@@ -1,21 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  Firestore,
-  Timestamp,
-  doc,
-  docData,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-} from '@angular/fire/firestore';
+import { Firestore, doc, docData, getDoc, serverTimestamp, updateDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { NewUserProfile, UserProfile } from '../models/user-profile.model';
+import { UserProfile } from '../models/user-profile.model';
 
 /**
  * `users/{uid}` koleksiyonuna erişim için tek nokta. `AuthService` bu
  * servisin üstüne kurulur; Firestore çağrılarının hepsi burada toplanır ki
  * ileride (paketler, admin panel vb.) tekrar kullanılabilsin.
+ *
+ * Doküman OLUŞTURMA burada YOK — çok kiracılı modelde bu her zaman Admin SDK
+ * üzerinden, Cloud Functions'tan yapılır (bkz. `functions/src/tenant/*` ve
+ * `firestore.rules`: `users` koleksiyonunda client `create` izni yok).
  */
 @Injectable({ providedIn: 'root' })
 export class FirestoreUserService {
@@ -35,25 +30,6 @@ export class FirestoreUserService {
     return snap.exists() ? (snap.data() as UserProfile) : undefined;
   }
 
-  /**
-   * Sadece fallback içindir: `createUserProfile` Cloud Function'ı auth
-   * tetikleyicisinden henüz çalışmadıysa client kendi trial dokümanını
-   * oluşturur. firestore.rules bu yazmayı sadece `role: 'user'`,
-   * `membershipStatus: 'trial'` şekliyle ve makul bir `trialEndsAt` ile
-   * sınırlar — bkz. firestore.rules.
-   */
-  async createTrialProfileIfMissing(profile: NewUserProfile): Promise<void> {
-    const existing = await getDoc(this.userDoc(profile.uid));
-    if (existing.exists()) {
-      return;
-    }
-    await setDoc(this.userDoc(profile.uid), {
-      ...profile,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  }
-
   /** Kullanıcının kendi güncelleyebildiği tek alanlar. */
   async updateOwnProfile(
     uid: string,
@@ -63,10 +39,5 @@ export class FirestoreUserService {
       ...changes,
       updatedAt: serverTimestamp(),
     });
-  }
-
-  /** İleride admin paneli için: 14 gün + client saatine güvenmeyen yardımcı. */
-  static trialEndsAtFromNow(days: number): Timestamp {
-    return Timestamp.fromMillis(Date.now() + days * 24 * 60 * 60 * 1000);
   }
 }

@@ -7,44 +7,181 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // ---- SPARK PLANI NOTU ----
+    // Cloud Functions (1. VEYA 2. nesil, fark etmez) Firebase'de SADECE
+    // Blaze planında deploy edilebiliyor — bu projenin planı Spark, o yüzden
+    // Admin SDK / Custom Claims kullanamıyoruz. Bunun yerine rol/tenantId
+    // burada, çağıranın KENDİ `users/{uid}` dokümanından `get()` ile
+    // okunuyor. Bu bir okuma maliyeti getirir ama güvenlik açısından
+    // Custom Claims'ten AŞAĞI değil: bu fonksiyon rules engine tarafından
+    // sunucu tarafında değerlendirilir, client'ın gönderdiği payload'a asla
+    // güvenmez (bkz. aşağıdaki `create`/`update` kuralları — `tenantId`
+    // client'tan değil hep bu `get()`'ten gelir).
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasProfile() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myTenantId() {
+      return myProfile().tenantId;
+    }
+
+    function isAdmin() {
+      return hasProfile() && myProfile().role == 'admin';
+    }
+
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    function isAdmin() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function belongsToMyTenant(tenantId) {
+      return hasProfile() && tenantId == myTenantId();
     }
 
+    // ---- tenants/{tenantId} ----
+    match /tenants/{tenantId} {
+      // İş Kuralı 1: imzalı HERHANGİ biri yeni bir salon oluşturabilir — tek
+      // başına zararsızdır, bir admin dokümanı eşlenmeden hiçbir işe
+      // yaramaz. `ownerUid`, BU tenant'ın admin dokümanını SADECE onu
+      // oluşturanın yazabilmesini garanti eder (bkz. users/{uid} create).
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'slug', 'ownerUid', 'createdAt']);
+
+      allow read: if belongsToMyTenant(tenantId);
+      allow update, delete: if false;
+    }
+
+    // ---- users/{uid} ----
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      // Kural 3 (veri izolasyonu): bir üye sadece kendi dokümanını okur;
+      // admin kendi salonundaki HERHANGİ bir dokümanı okuyabilir. Başka
+      // salonun admin'i dahi bu satırı geçemez.
+      allow read: if isOwner(uid) || (isAdmin() && belongsToMyTenant(resource.data.tenantId));
 
-      // Admin paneli (bkz. AdminMembersService) herhangi bir üyeyi
-      // oluşturabilir/düzenleyebilir/silebilir — manuel üye kaydı, paket
-      // atama, üyelik durumu değiştirme vb. buradan geçer.
-      //
-      // Kendi dokümanı için ise sadece şu fallback geçerli:
-      // `createUserProfile` Cloud Function (auth onCreate trigger) normalde
-      // bu dokümanı Admin SDK ile oluşturur ve Admin SDK rules'ı hiç görmez.
-      // Bu kural sadece Function henüz deploy/tetiklenmemişse (örn. yerel
-      // geliştirme) client'ın KENDİ trial profilini oluşturmasına izin
-      // verir — asla admin/aktif olarak değil, deneme süresi 15 günden
-      // uzun olamaz.
-      allow create: if isAdmin()
-        || (isOwner(uid)
-            && request.resource.data.uid == uid
-            && request.resource.data.role == 'user'
-            && request.resource.data.membershipStatus == 'trial'
-            && request.resource.data.trialEndsAt <= request.time + duration.value(15, 'd'));
+      allow create: if
+        // (a) İş Kuralı 1 — kendi hesabın için, KENDİ oluşturduğun bir
+        // salonun admin'i olarak ilk kayıt. `isOwner(uid)` bunun sadece
+        // kendi uid'in için yapılabildiğini garanti eder.
+        (isOwner(uid)
+          && request.resource.data.uid == uid
+          && request.resource.data.role == 'admin'
+          && exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId))
+          && get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.ownerUid == request.auth.uid)
+        ||
+        // (b) İş Kuralı 2 — bir admin, KENDİ salonuna yeni bir üye
+        // ekliyor. `tenantId` client'ın gönderdiği değerden DEĞİL,
+        // `myTenantId()` üzerinden admin'in kendi dokümanından okunur.
+        (isAdmin()
+          && request.resource.data.uid == uid
+          && request.resource.data.role == 'user'
+          && request.resource.data.tenantId == myTenantId());
 
-      // Kullanıcı yalnızca kendi görünen ad / fotoğrafını değiştirebilir.
-      // Admin ise her alanı (rol, üyelik durumu, paket vb.) değiştirebilir.
-      allow update: if isAdmin()
+      // Admin, kendi salonundaki bir üyeyi güncelleyebilir — ama `tenantId`
+      // ve `role` ALANLARINI DEĞİŞTİREMEZ (bir üyeyi başka bir salona
+      // taşımak ya da kendini/başkasını admin yapmak için update
+      // kullanılamaz). Kullanıcı kendi dokümanında sadece görünen
+      // ad/fotoğrafını değiştirir.
+      allow update: if (isAdmin()
+            && belongsToMyTenant(resource.data.tenantId)
+            && request.resource.data.tenantId == resource.data.tenantId
+            && request.resource.data.role == resource.data.role)
         || (isOwner(uid)
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['displayName', 'photoURL', 'updatedAt']));
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    // ---- User Feature Collections (water_logs, body_measurements, etc) ----
+    // Users can create/read/update/delete their own data
+    match /water_logs/{docId} {
+      allow read, create: if isOwner(resource.data.userId) && belongsToMyTenant(resource.data.tenantId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow update, delete: if isOwner(resource.data.userId) && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /body_measurements/{docId} {
+      allow read, create: if isOwner(resource.data.userId) && belongsToMyTenant(resource.data.tenantId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow update, delete: if isOwner(resource.data.userId) && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /workout_plans/{docId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && belongsToMyTenant(request.resource.data.tenantId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /wallet_transactions/{docId} {
+      allow read: if isOwner(resource.data.userId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && belongsToMyTenant(request.resource.data.tenantId);
+    }
+
+    match /user_packages/{docId} {
+      allow read: if isOwner(resource.data.userId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && belongsToMyTenant(request.resource.data.tenantId);
+    }
+
+    match /class_bookings/{docId} {
+      allow read: if isOwner(resource.data.userId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && belongsToMyTenant(request.resource.data.tenantId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /pt_appointments/{docId} {
+      allow read: if isOwner(resource.data.userId);
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && belongsToMyTenant(request.resource.data.tenantId);
+    }
+
+    // ---- Admin-only Collections ----
+    match /class_schedules/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /gym_packages/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /gym_branches/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /shop_products/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /shop_sales/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /accounting_entries/{docId} {
+      allow read: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create, update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow delete: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+    }
+
+    match /gym_info/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow update: if isAdmin() && belongsToMyTenant(resource.data.tenantId);
+      allow create, delete: if false;
     }
   }
 }

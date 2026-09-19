@@ -30,10 +30,32 @@ html {
   // Defer to the OS preference until the user picks an explicit theme
   // (ThemeService then adds `.dark` / `.light` below to override this).
   color-scheme: light dark;
+
+  // Odivon Design System tokens (.agents/skills/odivon-ui-design-system) —
+  // used by components migrated to the design system (Sidebar/Shell, and any
+  // plain-SCSS component that isn't Tailwind-utility-driven).
+  --odivon-bg-default: #f8fafc;
+  --odivon-bg-card: #ffffff;
+  --odivon-text-default: #0f172a;
+  --odivon-text-secondary: #64748b;
+  --odivon-text-muted: #94a3b8;
+  --odivon-border: #e2e8f0;
+  --odivon-bg-hover: rgba(99, 102, 241, 0.08);
+  --odivon-primary: #6366f1;
+  --odivon-primary-hover: #4f46e5;
+  --odivon-primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
 }
 
 html.dark {
   color-scheme: dark;
+
+  --odivon-bg-default: #0b1120;
+  --odivon-bg-card: #1e293b;
+  --odivon-text-default: #f8fafc;
+  --odivon-text-secondary: #94a3b8;
+  --odivon-text-muted: #64748b;
+  --odivon-border: #334155;
+  --odivon-bg-hover: rgba(99, 102, 241, 0.12);
 }
 
 html.light {

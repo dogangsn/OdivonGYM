@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
@@ -17,7 +15,7 @@ const TOP_UP_AMOUNTS = [50, 100, 250, 500];
 @Component({
   selector: 'app-wallet',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, PageHeader, ComingSoon],
+  imports: [PageHeader, ComingSoon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './wallet.html',
   styleUrl: './wallet.scss',

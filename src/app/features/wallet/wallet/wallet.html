@@ -1,26 +1,36 @@
-<app-page-header
-  title="E-Cüzdan"
-  icon="account_balance_wallet"
-  description="Otomat, market ve ek ders satın alımlarında kullanılan bakiyeni yönet."
-/>
+<div class="font-sans">
+  <app-page-header
+    title="E-Cüzdan"
+    icon="account_balance_wallet"
+    description="Otomat, market ve ek ders satın alımlarında kullanılan bakiyeni yönet."
+  />
 
-<section class="balance-card">
-  <p class="balance-card__label">E-Cüzdan Bakiyesi</p>
-  <p class="balance-card__value">₺{{ balanceLabel() }}</p>
-  <p class="balance-card__hint">Salon içi otomat ve market alışverişlerinde kullanılır.</p>
-</section>
+  <section class="p-6 rounded-2xl mb-6 bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+    <p class="m-0 text-sm text-white/85">E-Cüzdan Bakiyesi</p>
+    <p class="m-0 mt-1.5 text-4xl font-black tracking-tight">₺{{ balanceLabel() }}</p>
+    <p class="m-0 mt-1.5 text-xs text-white/70">Salon içi otomat ve market alışverişlerinde kullanılır.</p>
+  </section>
 
-<section class="top-up">
-  <h2>Bakiye Yükle</h2>
-  <div class="top-up__grid">
-    @for (amount of amounts; track amount) {
-      <button type="button" class="top-up__btn" (click)="requestTopUp(amount)">₺{{ amount }}</button>
-    }
-  </div>
-</section>
+  <section class="mb-2">
+    <h2 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      Bakiye Yükle
+    </h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      @for (amount of amounts; track amount) {
+        <button
+          type="button"
+          (click)="requestTopUp(amount)"
+          class="p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer"
+        >
+          ₺{{ amount }}
+        </button>
+      }
+    </div>
+  </section>
 
-<app-coming-soon
-  icon="receipt_long"
-  title="İşlem geçmişi yakında burada"
-  description="Bakiye yüklemelerin, otomat ve market alışverişlerinin dökümü burada listelenecek."
-/>
+  <app-coming-soon
+    icon="receipt_long"
+    title="İşlem geçmişi yakında burada"
+    description="Bakiye yüklemelerin, otomat ve market alışverişlerinin dökümü burada listelenecek."
+  />
+</div>

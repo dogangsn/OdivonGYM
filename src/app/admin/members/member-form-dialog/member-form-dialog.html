@@ -1,122 +1,257 @@
-<h2 mat-dialog-title>{{ isEditMode ? 'Üye Bilgilerini Düzenle' : 'Yeni Üye' }}</h2>
+@if (open()) {
+  <div
+    class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity"
+    (click)="cancel()"
+  ></div>
 
-<form [formGroup]="form" (ngSubmit)="submit()">
-  <mat-dialog-content class="dialog-content">
-    @if (errorMessage()) {
-      <div class="error-banner">{{ errorMessage() }}</div>
-    }
-
-    <div class="section-title">Kişisel Bilgiler</div>
-    <div class="grid-2">
-      <mat-form-field appearance="outline">
-        <mat-label>Ad Soyad</mat-label>
-        <input matInput formControlName="displayName" autocomplete="off" />
-        @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
-          <mat-error>Ad soyad gerekli (en az 2 karakter).</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Telefon</mat-label>
-        <input matInput formControlName="phone" placeholder="05xx xxx xx xx" autocomplete="off" />
-        @if (form.controls.phone.invalid && form.controls.phone.touched) {
-          <mat-error>Geçerli bir telefon numarası gir.</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Cinsiyet</mat-label>
-        <mat-select formControlName="gender">
-          <mat-option value="unspecified">Belirtilmek istemiyor</mat-option>
-          <mat-option value="female">Kadın</mat-option>
-          <mat-option value="male">Erkek</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Doğum Tarihi</mat-label>
-        <input matInput type="date" formControlName="birthDate" />
-      </mat-form-field>
-    </div>
-
-    <div class="section-title">Hesap</div>
-    <div class="grid-2">
-      <mat-form-field appearance="outline">
-        <mat-label>E-posta</mat-label>
-        <input matInput type="email" formControlName="email" autocomplete="off" />
-        @if (isEditMode) {
-          <mat-hint>E-posta admin panelinden değiştirilemez.</mat-hint>
-        }
-        @if (form.controls.email.invalid && form.controls.email.touched) {
-          <mat-error>Geçerli bir e-posta adresi gir.</mat-error>
-        }
-      </mat-form-field>
-
-      @if (!isEditMode) {
-        <mat-form-field appearance="outline">
-          <mat-label>Şifre</mat-label>
-          <input
-            matInput
-            [type]="hidePassword() ? 'password' : 'text'"
-            formControlName="password"
-            autocomplete="off"
-          />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="hidePassword.set(!hidePassword())"
-            [attr.aria-label]="'Şifreyi göster/gizle'"
-          >
-            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-          @if (form.controls.password.invalid && form.controls.password.touched) {
-            <mat-error>Şifre en az 6 karakter olmalı.</mat-error>
-          }
-        </mat-form-field>
-      }
-    </div>
-    @if (!isEditMode) {
-      <button mat-stroked-button type="button" class="generate-btn" (click)="generateAndFillPassword()">
-        <mat-icon>auto_awesome</mat-icon>
-        Otomatik Şifre Oluştur
+  <div
+    class="font-sans fixed inset-y-0 right-0 max-w-lg w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800"
+  >
+    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white m-0">
+          {{ isEditMode() ? 'Üye Bilgilerini Düzenle' : 'Yeni Üye' }}
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
+          Bilgileri eksiksiz doldurarak kaydedin.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="cancel()"
+        class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+      >
+        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
       </button>
-    }
-
-    <div class="section-title">Üyelik</div>
-    <div class="grid-2">
-      <mat-form-field appearance="outline">
-        <mat-label>Üyelik Durumu</mat-label>
-        <mat-select formControlName="membershipStatus">
-          <mat-option value="active">Aktif Üye</mat-option>
-          <mat-option value="trial">Ücretsiz Deneme</mat-option>
-          <mat-option value="expired">Süresi Bitti</mat-option>
-          <mat-option value="cancelled">İptal Edildi</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      @if (form.controls.membershipStatus.value === 'active') {
-        <mat-form-field appearance="outline">
-          <mat-label>Paket</mat-label>
-          <mat-select formControlName="packageDays">
-            @for (pkg of packages; track pkg.label) {
-              <mat-option [value]="pkg.days">{{ pkg.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
     </div>
 
-    <mat-form-field appearance="outline" class="w-full">
-      <mat-label>Notlar (dahili, sadece admin görür)</mat-label>
-      <textarea matInput formControlName="notes" rows="2"></textarea>
-    </mat-form-field>
-  </mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex-1 flex flex-col min-h-0">
+      <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scroll">
+        @if (errorMessage()) {
+          <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+            {{ errorMessage() }}
+          </div>
+        }
 
-  <mat-dialog-actions align="end">
-    <button mat-button type="button" (click)="cancel()">Vazgeç</button>
-    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
-      {{ submitting() ? 'Kaydediliyor…' : isEditMode ? 'Değişiklikleri Kaydet' : 'Üyeyi Kaydet' }}
-    </button>
-  </mat-dialog-actions>
-</form>
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 m-0">
+          Kişisel Bilgiler
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              Ad Soyad <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              formControlName="displayName"
+              autocomplete="off"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            />
+            @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+              <p class="text-xs text-rose-500 mt-1 mb-0">Ad soyad gerekli (en az 2 karakter).</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              Telefon <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="tel"
+              formControlName="phone"
+              placeholder="05xx xxx xx xx"
+              autocomplete="off"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            />
+            @if (form.controls.phone.invalid && form.controls.phone.touched) {
+              <p class="text-xs text-rose-500 mt-1 mb-0">Geçerli bir telefon numarası gir.</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              Cinsiyet
+            </label>
+            <select
+              formControlName="gender"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            >
+              <option value="unspecified">Belirtilmek istemiyor</option>
+              <option value="female">Kadın</option>
+              <option value="male">Erkek</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              Doğum Tarihi
+            </label>
+            <input
+              type="date"
+              formControlName="birthDate"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 m-0 pt-2">
+          Hesap
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              E-posta <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              formControlName="email"
+              autocomplete="off"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all disabled:opacity-50"
+            />
+            @if (isEditMode()) {
+              <p class="text-[11px] text-slate-400 mt-1 mb-0">E-posta admin panelinden değiştirilemez.</p>
+            }
+            @if (form.controls.email.invalid && form.controls.email.touched) {
+              <p class="text-xs text-rose-500 mt-1 mb-0">Geçerli bir e-posta adresi gir.</p>
+            }
+          </div>
+
+          @if (!isEditMode()) {
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Şifre <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  [type]="hidePassword() ? 'password' : 'text'"
+                  formControlName="password"
+                  autocomplete="off"
+                  class="w-full px-4 py-2.5 pr-11 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                />
+                <button
+                  type="button"
+                  (click)="hidePassword.set(!hidePassword())"
+                  [attr.aria-label]="'Şifreyi göster/gizle'"
+                  class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 flex items-center justify-center cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4.5">{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </div>
+              @if (form.controls.password.invalid && form.controls.password.touched) {
+                <p class="text-xs text-rose-500 mt-1 mb-0">Şifre en az 6 karakter olmalı.</p>
+              }
+            </div>
+          }
+        </div>
+        @if (!isEditMode()) {
+          <button
+            type="button"
+            (click)="generateAndFillPassword()"
+            class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <mat-icon class="icon-size-4">auto_awesome</mat-icon>
+            Otomatik Şifre Oluştur
+          </button>
+        }
+
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 m-0 pt-2">
+          Üyelik
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+              Üyelik Durumu
+            </label>
+            <select
+              formControlName="membershipStatus"
+              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            >
+              <option value="active">Aktif Üye</option>
+              <option value="trial">Ücretsiz Deneme</option>
+              <option value="expired">Süresi Bitti</option>
+              <option value="cancelled">İptal Edildi</option>
+            </select>
+          </div>
+
+          @if (form.controls.membershipStatus.value === 'active') {
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Paket
+              </label>
+              <select
+                formControlName="packageDays"
+                (change)="onPackageChange($any($event.target).value)"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+              >
+                @for (pkg of packages; track pkg.label) {
+                  <option [value]="pkg.days">{{ pkg.label }}</option>
+                }
+              </select>
+              @if (form.controls.packageDays.value === 'custom') {
+                <p class="text-[11px] text-slate-400 mt-1 mb-0">
+                  Paket dışı — süreyi aşağıdaki başlangıç/bitiş tarihinden belirle.
+                </p>
+              }
+            </div>
+          }
+
+          @if (form.controls.membershipStatus.value === 'active') {
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Başlangıç Tarihi <span class="text-rose-500">*</span>
+              </label>
+              <input
+                type="date"
+                formControlName="startDate"
+                (change)="onStartDateChange($any($event.target).value)"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Bitiş Tarihi <span class="text-rose-500">*</span>
+              </label>
+              <input
+                type="date"
+                formControlName="endDate"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+              />
+              <p class="text-[11px] text-slate-400 mt-1 mb-0">
+                Hazır paket seçsen bile bu tarihi elle değiştirebilirsin.
+              </p>
+            </div>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+            Notlar (dahili, sadece admin görür)
+          </label>
+          <textarea
+            formControlName="notes"
+            rows="2"
+            class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          (click)="cancel()"
+          class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+        >
+          Vazgeç
+        </button>
+        <button
+          type="submit"
+          [disabled]="submitting()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+        >
+          <span>{{ submitting() ? 'Kaydediliyor…' : isEditMode() ? 'Değişiklikleri Kaydet' : 'Üyeyi Kaydet' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+}

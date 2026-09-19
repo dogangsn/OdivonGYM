@@ -11,14 +11,16 @@ export type Gender = 'female' | 'male' | 'unspecified';
 /**
  * `users/{uid}` koleksiyonundaki doküman şekli.
  *
- * `role`, `membershipStatus`, `trialStartedAt`, `trialEndsAt` gibi alanlar
- * client tarafından (kendi dokümanı için) kısıtlı şekilde yazılabilir —
- * asıl otorite Cloud Functions veya admin panelidir (bkz. firestore.rules).
- * Admin panelinden manuel üye kaydında (bkz. AdminMembersService) diğer
- * alanlar da doldurulur.
+ * Doküman SADECE Cloud Functions (Admin SDK) tarafından oluşturulur — bkz.
+ * `functions/src/tenant/*` ve `firestore.rules` (`users` altında client
+ * `create` izni yok). Client, kendi dokümanında yalnızca `displayName` ve
+ * `photoURL`'ü güncelleyebilir; `tenantId`/`role`/üyelik alanları admin
+ * panelinden (bkz. AdminMembersService) veya Cloud Functions'tan değişir.
  */
 export interface UserProfile {
   uid: string;
+  /** Bu kullanıcının ait olduğu spor salonu — bkz. `tenants/{tenantId}`. Tüm veri izolasyonunun temeli. */
+  tenantId: string;
   email: string;
   displayName: string;
   photoURL: string | null;
@@ -34,15 +36,19 @@ export interface UserProfile {
   phone?: string;
   gender?: Gender;
   birthDate?: Timestamp | null;
-  /** `membershipStatus === 'active'` iken paketin bittiği tarih (bilgi amaçlı). */
+  /** Üyeliğin/paketin başladığı tarih — admin panelinde elle seçilir, paket dışı (özel) süreler için de geçerli. */
+  membershipStartsAt?: Timestamp | null;
+  /** `membershipStatus === 'active'` iken paketin bittiği tarih — admin panelinde elle seçilir/düzenlenir. */
   membershipEndsAt?: Timestamp | null;
   /** Seçilen paketin görünen adı (örn. "3 Aylık") — henüz ayrı bir packages koleksiyonu yok. */
   packageLabel?: string | null;
   /** Sadece admin panelinde görünen dahili not. */
   notes?: string;
+  /** ISO 3166-1 alpha-2 (örn. "TR") — kayıt formunda seçilir, bkz. core/data/countries.ts. */
+  country?: string;
+  /** Arayüz dili — kayıt formunda ülkeye göre önerilir, kullanıcı sonradan değiştirebilir. */
+  language?: string;
   /** TL cinsinden e-cüzdan bakiyesi — otomat/market alışverişi ve ders/PT ek satışlarında kullanılır. */
   walletBalance?: number;
 }
 
-/** `create` sırasında client'ın gönderdiği, henüz Firestore'a yazılmamış şekil. */
-export type NewUserProfile = Omit<UserProfile, 'createdAt' | 'updatedAt'>;

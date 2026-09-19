@@ -7,10 +7,10 @@
       </div>
 
       <div class="form-panel__head">
-        <h1>Hesap Oluştur</h1>
+        <h1>{{ 'auth.register.title' | transloco }}</h1>
         <p>
-          Zaten hesabın var mı?
-          <a routerLink="/auth/login">Giriş yap</a>
+          {{ 'auth.register.hasAccount' | transloco }}
+          <a routerLink="/auth/login">{{ 'auth.register.loginLink' | transloco }}</a>
         </p>
       </div>
 
@@ -22,21 +22,82 @@
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
         <div class="field">
-          <label for="register-name">Ad Soyad *</label>
+          <label for="register-tenant">{{ 'auth.register.tenantLabel' | transloco }}</label>
+          <div
+            class="field__box"
+            [class.field__box--invalid]="form.controls.tenantName.invalid && form.controls.tenantName.touched"
+          >
+            <mat-icon>storefront</mat-icon>
+            <input
+              id="register-tenant"
+              formControlName="tenantName"
+              autocomplete="organization"
+              [placeholder]="'auth.register.tenantPlaceholder' | transloco"
+            />
+          </div>
+          @if (form.controls.tenantName.invalid && form.controls.tenantName.touched) {
+            <p class="field__error">{{ 'auth.register.tenantError' | transloco }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-name">{{ 'auth.register.nameLabel' | transloco }}</label>
           <div
             class="field__box"
             [class.field__box--invalid]="form.controls.displayName.invalid && form.controls.displayName.touched"
           >
             <mat-icon>person</mat-icon>
-            <input id="register-name" formControlName="displayName" autocomplete="name" placeholder="Ad Soyad" />
+            <input
+              id="register-name"
+              formControlName="displayName"
+              autocomplete="name"
+              [placeholder]="'auth.register.namePlaceholder' | transloco"
+            />
           </div>
           @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
-            <p class="field__error">Adını gir.</p>
+            <p class="field__error">{{ 'auth.register.nameError' | transloco }}</p>
           }
         </div>
 
         <div class="field">
-          <label for="register-email">E-posta Adresi *</label>
+          <label for="register-country">{{ 'auth.register.countryLabel' | transloco }}</label>
+          <div class="field__box">
+            <mat-icon>public</mat-icon>
+            <select
+              id="register-country"
+              formControlName="country"
+              (change)="onCountryChange($any($event.target).value)"
+              class="field__select"
+            >
+              @for (country of countries; track country.code) {
+                <option [value]="country.code">{{ country.name }} ({{ country.dialCode }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="register-phone">{{ 'auth.register.phoneLabel' | transloco }}</label>
+          <div
+            class="field__box"
+            [class.field__box--invalid]="form.controls.phone.invalid && form.controls.phone.touched"
+          >
+            <span class="field__dial-code">{{ dialCode() }}</span>
+            <input
+              id="register-phone"
+              type="tel"
+              formControlName="phone"
+              autocomplete="tel-national"
+              [placeholder]="'auth.register.phonePlaceholder' | transloco"
+            />
+          </div>
+          @if (form.controls.phone.invalid && form.controls.phone.touched) {
+            <p class="field__error">{{ 'auth.register.phoneError' | transloco }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-email">{{ 'auth.register.emailLabel' | transloco }}</label>
           <div class="field__box" [class.field__box--invalid]="form.controls.email.invalid && form.controls.email.touched">
             <mat-icon>mail</mat-icon>
             <input
@@ -44,16 +105,16 @@
               type="email"
               formControlName="email"
               autocomplete="email"
-              placeholder="ornek@eposta.com"
+              [placeholder]="'auth.register.emailPlaceholder' | transloco"
             />
           </div>
           @if (form.controls.email.invalid && form.controls.email.touched) {
-            <p class="field__error">Geçerli bir e-posta adresi gir.</p>
+            <p class="field__error">{{ 'auth.register.emailError' | transloco }}</p>
           }
         </div>
 
         <div class="field">
-          <label for="register-password">Şifre *</label>
+          <label for="register-password">{{ 'auth.register.passwordLabel' | transloco }}</label>
           <div
             class="field__box"
             [class.field__box--invalid]="form.controls.password.invalid && form.controls.password.touched"
@@ -76,12 +137,12 @@
             </button>
           </div>
           @if (form.controls.password.invalid && form.controls.password.touched) {
-            <p class="field__error">Şifre en az 6 karakter olmalı.</p>
+            <p class="field__error">{{ 'auth.register.passwordError' | transloco }}</p>
           }
         </div>
 
         <div class="field">
-          <label for="register-password2">Şifre (tekrar) *</label>
+          <label for="register-password2">{{ 'auth.register.password2Label' | transloco }}</label>
           <div class="field__box">
             <mat-icon>lock_reset</mat-icon>
             <input
@@ -93,12 +154,12 @@
             />
           </div>
           @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
-            <p class="field__error">Şifreler eşleşmiyor.</p>
+            <p class="field__error">{{ 'auth.register.password2Error' | transloco }}</p>
           }
         </div>
 
         <button type="submit" class="submit-btn" [disabled]="submitting()">
-          {{ submitting() ? 'Hesap oluşturuluyor…' : 'Ücretsiz Denemeyi Başlat' }}
+          {{ submitting() ? ('auth.register.submitting' | transloco) : ('auth.register.submit' | transloco) }}
           @if (!submitting()) {
             <mat-icon>arrow_forward</mat-icon>
           }
@@ -107,7 +168,7 @@
 
       <div class="form-panel__divider">
         <span></span>
-        veya
+        {{ 'common.or' | transloco }}
         <span></span>
       </div>
 
@@ -123,16 +184,10 @@
           <path fill="#FBBC05" d="M3.97 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.29-1.71V4.96H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3.01-2.33z" />
           <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
         </svg>
-        {{ googleSubmitting() ? 'Bağlanılıyor…' : 'Google ile kayıt ol' }}
+        {{ googleSubmitting() ? ('auth.register.googleConnecting' | transloco) : ('auth.register.googleButton' | transloco) }}
       </button>
     </div>
   </section>
 
-  <app-auth-brand-panel
-    class="auth-page__brand"
-    headlinePrefix="14 gün "
-    headlineHighlight="ücretsiz"
-    headlineSuffix=" denemeni hemen başlat."
-    subheadline="Kredi kartı gerekmez. İstediğin an paketini seç, antrenmana devam et."
-  />
+  <app-auth-brand-panel class="auth-page__brand" [variant]="'register'" />
 </div>

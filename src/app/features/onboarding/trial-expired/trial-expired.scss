@@ -1,7 +1,9 @@
 :host {
   display: block;
   height: 100%;
-  background: var(--mat-sys-surface);
+  background: var(--odivon-bg-default);
+  color: var(--odivon-text-default);
+  font-family: 'Plus Jakarta Sans', Inter, Roboto, 'Helvetica Neue', sans-serif;
 }
 
 .page {
@@ -32,16 +34,16 @@
   text-align: center;
   padding: 40px 32px;
   border-radius: 28px;
-  background: color-mix(in srgb, var(--mat-sys-surface-container-low) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 60%, transparent);
+  background: color-mix(in srgb, var(--odivon-bg-card) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--odivon-border) 60%, transparent);
   box-shadow: 0 24px 60px -20px color-mix(in srgb, var(--brand-500) 30%, transparent);
   backdrop-filter: blur(20px);
 }
 
 .tier-preview {
   border-radius: 16px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--odivon-border);
+  background: var(--odivon-bg-card);
   padding: 14px;
   text-align: center;
 }
@@ -55,5 +57,5 @@
 .tier-preview__hint {
   margin: 4px 0 0;
   font-size: 0.72rem;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--odivon-text-secondary);
 }

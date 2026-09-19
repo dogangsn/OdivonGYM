@@ -1,74 +1,37 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 /**
  * Henüz inşa edilmemiş bir bölüm için tutarlı, "boş" hissettirmeyen durum
  * ekranı. Faz 2+'da gerçek içerikle değiştirilecek sayfalar bunu kullanır.
+ * Odivon Design System'in empty-state kart deseniyle stilize edilir.
  */
 @Component({
   selector: 'app-coming-soon',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule],
+  imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="coming-soon">
-      <span class="coming-soon__icon">
-        <mat-icon>{{ icon() }}</mat-icon>
+    <div
+      class="font-sans flex flex-col items-center text-center gap-1.5 max-w-md mx-auto my-12 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+    >
+      <span
+        class="w-14 h-14 mb-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center"
+      >
+        <mat-icon class="icon-size-7">{{ icon() }}</mat-icon>
       </span>
-      <h2>{{ title() }}</h2>
-      <p>{{ description() }}</p>
-      <button mat-stroked-button type="button" (click)="notify()">
-        <mat-icon>notifications</mat-icon>
+      <h2 class="m-0 text-lg font-bold text-slate-900 dark:text-white">{{ title() }}</h2>
+      <p class="m-0 mb-5 text-sm text-slate-500 dark:text-slate-400">{{ description() }}</p>
+      <button
+        type="button"
+        (click)="notify()"
+        class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-2"
+      >
+        <mat-icon class="icon-size-4">notifications</mat-icon>
         Hazır olunca haber ver
       </button>
     </div>
-  `,
-  styles: `
-    .coming-soon {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 6px;
-      max-width: 420px;
-      margin: 48px auto;
-      padding: 40px 32px;
-      border-radius: 24px;
-      border: 1px dashed var(--mat-sys-outline-variant);
-      background: var(--mat-sys-surface-container-low);
-    }
-
-    .coming-soon__icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      margin-bottom: 12px;
-      border-radius: 16px;
-      background: var(--mat-sys-primary-container);
-      color: var(--mat-sys-on-primary-container);
-
-      mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    p {
-      margin: 4px 0 20px;
-      color: var(--mat-sys-on-surface-variant);
-      font-size: 0.9rem;
-    }
   `,
 })
 export class ComingSoon {

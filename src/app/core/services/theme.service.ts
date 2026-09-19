@@ -7,14 +7,24 @@ const STORAGE_KEY = 'odivongym-theme';
 /**
  * `<html>` üzerine `.light` / `.dark` class'ı ekler — hem Angular Material'ın
  * `color-scheme` tabanlı M3 tokenlarını (bkz. styles.scss) hem de Tailwind'in
- * `dark:` variant'ını (bkz. tailwind.css) aynı anahtardan tetikler.
+ * `dark:` variant'ını (bkz. tailwind.css) aynı anahtardan tetikler. "system"
+ * modunda da bu class'lardan biri uygulanır (OS tercihine göre çözülüp canlı
+ * takip edilir) — aksi halde Material `prefers-color-scheme` ile otomatik
+ * koyulaşırken, class-tabanlı Tailwind `dark:` stilleri tetiklenmez.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   readonly mode = signal<ThemeMode>(this.readStoredMode());
 
+  private readonly media = window.matchMedia('(prefers-color-scheme: dark)');
+
   constructor() {
     this.applyToDocument(this.mode());
+    this.media.addEventListener('change', () => {
+      if (this.mode() === 'system') {
+        this.applyToDocument('system');
+      }
+    });
   }
 
   setMode(mode: ThemeMode): void {
@@ -41,10 +51,9 @@ export class ThemeService {
   }
 
   private applyToDocument(mode: ThemeMode): void {
+    const resolved = mode === 'system' ? (this.media.matches ? 'dark' : 'light') : mode;
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
-    if (mode !== 'system') {
-      root.classList.add(mode);
-    }
+    root.classList.add(resolved);
   }
 }

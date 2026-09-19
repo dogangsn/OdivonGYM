@@ -42,11 +42,11 @@ export class TrialBadge {
       case 'ok':
         return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'warn':
-        return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'danger':
-        return 'bg-red-500/15 text-red-600 dark:text-red-400';
+        return 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
       default:
-        return 'bg-gray-500/15 text-gray-600 dark:text-gray-400';
+        return 'bg-slate-500/15 text-slate-600 dark:text-slate-400';
     }
   });
 }

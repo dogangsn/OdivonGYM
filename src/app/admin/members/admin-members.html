@@ -1,102 +1,174 @@
-<app-page-header title="Üye Kayıtları" icon="groups" description="Tüm üyeleri ara, filtrele, üyelik durumunu değiştir veya yeni üye ekle.">
-  <button actions mat-flat-button color="primary" class="!rounded-xl" (click)="openNewMemberDialog()">
-    <mat-icon>person_add</mat-icon>
-    Yeni Üye
-  </button>
-</app-page-header>
+<div class="font-sans space-y-6">
+  <!-- 1. Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight m-0">
+        Üye Kayıtları
+      </h1>
+      <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 mb-0">
+        Tüm üyeleri ara, filtrele, üyelik durumunu değiştir veya yeni üye ekle.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="openNewMemberDrawer()"
+        class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+      >
+        <mat-icon class="icon-size-4.5" [svgIcon]="'heroicons_solid:user-plus'"></mat-icon>
+        <span>+ Yeni Üye</span>
+      </button>
+    </div>
+  </div>
 
-<div class="search-box">
-  <mat-icon>search</mat-icon>
-  <input
-    type="text"
-    placeholder="Ad, e-posta veya telefon ara…"
-    [ngModel]="searchTerm()"
-    (ngModelChange)="searchTerm.set($event)"
-  />
-</div>
+  <!-- 2. Search Toolbar -->
+  <div
+    class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs"
+  >
+    <div class="relative flex-1">
+      <mat-icon
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5"
+        [svgIcon]="'heroicons_solid:magnifying-glass'"
+      ></mat-icon>
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Ad, e-posta veya telefon ara…"
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+      />
+    </div>
+  </div>
 
-<div class="table-wrap">
-  @if (loading()) {
-    <p class="empty-state">Yükleniyor…</p>
-  } @else if (filteredMembers().length === 0) {
-    <p class="empty-state">
-      @if (searchTerm()) {
-        "{{ searchTerm() }}" ile eşleşen üye bulunamadı.
-      } @else {
-        Henüz üye yok — "Yeni Üye" ile ilk üyeyi ekle.
-      }
-    </p>
-  } @else {
-    <table>
-      <thead>
-        <tr>
-          <th>Üye</th>
-          <th>İletişim</th>
-          <th>Cinsiyet</th>
-          <th>Durum</th>
-          <th>Paket</th>
-          <th>Kayıt Tarihi</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (member of filteredMembers(); track member.uid) {
-          <tr>
-            <td>
-              <div class="member-cell">
-                <span class="avatar">{{ initials(member.displayName) }}</span>
-                <div>
-                  <p class="name">{{ member.displayName || 'Üye' }}</p>
-                  @if (member.role === 'admin') {
-                    <p class="role-tag">Admin</p>
+  <!-- 3. Responsive Data Table -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+    @if (loading()) {
+      <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400">Yükleniyor…</p>
+    } @else {
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr
+              class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
+              <th class="py-3.5 px-6">Üye</th>
+              <th class="py-3.5 px-6">İletişim</th>
+              <th class="py-3.5 px-6">Cinsiyet</th>
+              <th class="py-3.5 px-6">Durum</th>
+              <th class="py-3.5 px-6">Paket</th>
+              <th class="py-3.5 px-6">Kayıt Tarihi</th>
+              <th class="py-3.5 px-6 text-right">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+            @for (member of filteredMembers(); track member.uid) {
+              <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                <td class="py-3 px-6">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                    >
+                      {{ initials(member.displayName) }}
+                    </span>
+                    <div>
+                      <p class="font-bold text-slate-900 dark:text-white m-0">{{ member.displayName || 'Üye' }}</p>
+                      @if (member.role === 'admin') {
+                        <p class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 m-0">Admin</p>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-6 max-w-[220px]">
+                  <p class="text-slate-700 dark:text-slate-200 m-0 truncate" [title]="member.email">
+                    {{ member.email }}
+                  </p>
+                  @if (member.phone) {
+                    <p class="text-[11px] text-slate-400 m-0 whitespace-nowrap">{{ member.phone }}</p>
                   }
-                </div>
-              </div>
-            </td>
-            <td>
-              <p class="email">{{ member.email }}</p>
-              @if (member.phone) {
-                <p class="phone">{{ member.phone }}</p>
-              }
-            </td>
-            <td>{{ genderLabel[member.gender ?? 'unspecified'] }}</td>
-            <td>
-              <mat-select
-                class="status-select"
-                [class]="'status-select--' + member.membershipStatus"
-                [ngModel]="member.membershipStatus"
-                (ngModelChange)="changeStatus(member, $event)"
-              >
-                <mat-option value="trial">Deneme</mat-option>
-                <mat-option value="active">Aktif</mat-option>
-                <mat-option value="expired">Süresi Bitti</mat-option>
-                <mat-option value="cancelled">İptal</mat-option>
-              </mat-select>
-            </td>
-            <td>
-              @if (member.packageLabel) {
-                <p class="package-name">{{ member.packageLabel }}</p>
-                @if (member.membershipEndsAt) {
-                  <p class="package-end">{{ formatDate(member.membershipEndsAt) }}'e kadar</p>
-                }
-              } @else {
-                —
-              }
-            </td>
-            <td>{{ formatDate(member.createdAt) }}</td>
-            <td>
-              <button
-                mat-icon-button
-                type="button"
-                matTooltip="Üye bilgilerini düzenle"
-                (click)="openEditDialog(member)"
-              >
-                <mat-icon>edit</mat-icon>
-              </button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
+                </td>
+                <td class="py-3 px-6 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                  {{ genderLabel[member.gender ?? 'unspecified'] }}
+                </td>
+                <td class="py-3 px-6">
+                  <select
+                    [ngModel]="member.membershipStatus"
+                    (ngModelChange)="changeStatus(member, $event)"
+                    [class]="
+                      'px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ' +
+                      statusBadgeClass[member.membershipStatus]
+                    "
+                  >
+                    <option value="trial">Deneme</option>
+                    <option value="active">Aktif</option>
+                    <option value="expired">Süresi Bitti</option>
+                    <option value="cancelled">İptal</option>
+                  </select>
+                </td>
+                <td class="py-3 px-6 whitespace-nowrap">
+                  @if (member.packageLabel) {
+                    <p class="font-semibold text-slate-700 dark:text-slate-200 m-0">{{ member.packageLabel }}</p>
+                    @if (member.membershipEndsAt) {
+                      <p class="text-[11px] text-slate-400 m-0">{{ formatDate(member.membershipEndsAt) }}'e kadar</p>
+                    }
+                  } @else {
+                    <span class="text-slate-400">—</span>
+                  }
+                </td>
+                <td class="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  {{ formatDate(member.createdAt) }}
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <button
+                    type="button"
+                    (click)="openEditDrawer(member)"
+                    [matTooltip]="'Üye bilgilerini düzenle'"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="py-16 text-center">
+                  <div class="max-w-sm mx-auto flex flex-col items-center">
+                    <div
+                      class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-4"
+                    >
+                      <mat-icon class="icon-size-8">group</mat-icon>
+                    </div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white m-0">
+                      @if (searchTerm()) {
+                        Eşleşen üye bulunamadı
+                      } @else {
+                        Henüz Üye Bulunamadı
+                      }
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+                      @if (searchTerm()) {
+                        "{{ searchTerm() }}" ile eşleşen bir kayıt yok.
+                      } @else {
+                        Yeni bir üye ekleyerek hemen başlayabilirsiniz.
+                      }
+                    </p>
+                    @if (!searchTerm()) {
+                      <button
+                        type="button"
+                        (click)="openNewMemberDrawer()"
+                        class="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+                      >
+                        + İlk Üyeyi Ekle
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 </div>
+
+<app-member-form-dialog [open]="drawerOpen()" [member]="editingMember()" (closed)="onDrawerClosed($event)" />

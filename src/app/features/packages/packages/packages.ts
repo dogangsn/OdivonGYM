@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 
@@ -15,118 +14,64 @@ interface PackageTier {
 @Component({
   selector: 'app-packages',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, PageHeader],
+  imports: [MatIconModule, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-header
-      title="Paketler"
-      icon="card_membership"
-      description="Sana uygun üyelik paketini seç — ödeme entegrasyonu (Stripe/Iyzico) bir sonraki fazda aktif olacak."
-    />
+    <div class="font-sans">
+      <app-page-header
+        title="Paketler"
+        icon="card_membership"
+        description="Sana uygun üyelik paketini seç — ödeme entegrasyonu (Stripe/Iyzico) bir sonraki fazda aktif olacak."
+      />
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      @for (tier of tiers; track tier.name) {
-        <div class="tier" [class.tier--highlight]="tier.highlight">
-          @if (tier.highlight) {
-            <span class="tier__badge">En popüler</span>
-          }
-          <p class="tier__name">{{ tier.name }}</p>
-          <p class="tier__price">
-            {{ tier.price }} <span>{{ tier.period }}</span>
-          </p>
-          <ul class="tier__perks">
-            @for (perk of tier.perks; track perk) {
-              <li>
-                <mat-icon>check_circle</mat-icon>
-                {{ perk }}
-              </li>
-            }
-          </ul>
-          <button
-            mat-flat-button
-            [color]="tier.highlight ? 'primary' : undefined"
-            class="!w-full !rounded-xl"
-            type="button"
-            (click)="notify(tier.name)"
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        @for (tier of tiers; track tier.name) {
+          <div
+            class="relative flex flex-col gap-2.5 p-6 rounded-2xl bg-white dark:bg-slate-900 border shadow-sm transition-all"
+            [class]="
+              tier.highlight
+                ? 'border-indigo-500 shadow-lg shadow-indigo-500/20'
+                : 'border-slate-200/80 dark:border-slate-800'
+            "
           >
-            Seç
-          </button>
-        </div>
-      }
+            @if (tier.highlight) {
+              <span
+                class="absolute -top-3 left-6 px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[11px] font-bold"
+              >
+                En popüler
+              </span>
+            }
+            <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {{ tier.name }}
+            </p>
+            <p class="m-0 text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              {{ tier.price }}
+              <span class="text-sm font-semibold text-slate-400">{{ tier.period }}</span>
+            </p>
+            <ul class="list-none m-0 mb-2 p-0 flex flex-col gap-2 flex-1">
+              @for (perk of tier.perks; track perk) {
+                <li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <mat-icon class="icon-size-4.5 text-indigo-500 flex-shrink-0" [svgIcon]="'heroicons_solid:check-circle'"></mat-icon>
+                  {{ perk }}
+                </li>
+              }
+            </ul>
+            <button
+              type="button"
+              (click)="notify(tier.name)"
+              class="w-full py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              [class]="
+                tier.highlight
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md shadow-indigo-500/20'
+                  : 'border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+              "
+            >
+              Seç
+            </button>
+          </div>
+        }
+      </div>
     </div>
-  `,
-  styles: `
-    .tier {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 24px 20px;
-      border-radius: 20px;
-      border: 1px solid var(--mat-sys-outline-variant);
-      background: var(--mat-sys-surface-container-low);
-    }
-
-    .tier--highlight {
-      border-color: var(--mat-sys-primary);
-      box-shadow: 0 16px 40px -24px color-mix(in srgb, var(--brand-500) 60%, transparent);
-    }
-
-    .tier__badge {
-      position: absolute;
-      top: -12px;
-      left: 20px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: var(--brand-gradient);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .tier__name {
-      margin: 0;
-      font-weight: 700;
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .tier__price {
-      margin: 0;
-      font-size: 1.6rem;
-      font-weight: 800;
-
-      span {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--mat-sys-on-surface-variant);
-      }
-    }
-
-    .tier__perks {
-      list-style: none;
-      margin: 0 0 8px;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-
-      li {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        color: var(--mat-sys-on-surface-variant);
-      }
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-        color: var(--mat-sys-primary);
-        flex-shrink: 0;
-      }
-    }
   `,
 })
 export class Packages {

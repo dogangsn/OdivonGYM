@@ -13,7 +13,7 @@ let nextId = 0;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="logo-mark" [style.--logo-size.px]="size()">
+    <span class="logo-mark" [style.--logo-size]="size()">
       <span class="logo-mark__glow" aria-hidden="true"></span>
       <svg viewBox="0 0 64 64" class="logo-mark__ring" aria-hidden="true">
         <defs>

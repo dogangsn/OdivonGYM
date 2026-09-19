@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { ThemeService } from './core/services/theme.service';
+import { LanguageService } from './core/i18n/language.service';
 import { LoadingSpinner } from './shared/components/loading-spinner/loading-spinner';
 
 @Component({
@@ -24,4 +25,8 @@ export class App {
   // component'te inject ederek uygulama açılır açılmaz, her sayfada
   // kurulmasını garantiliyoruz.
   private readonly theme = inject(ThemeService);
+  // Aynı gerekçe: LanguageService de root component'te erkenden inject
+  // edilmezse, henüz hiçbir Shell/auth sayfası onu kullanmadan Transloco
+  // aktif dili hiç set etmemiş olur.
+  private readonly language = inject(LanguageService);
 }
