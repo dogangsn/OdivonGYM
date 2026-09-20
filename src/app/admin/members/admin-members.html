@@ -21,6 +21,19 @@
     </div>
   </div>
 
+  @if (missingTenant()) {
+    <div
+      class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200 text-sm"
+    >
+      <p class="m-0 font-bold">Hesabın bir salona bağlı değil.</p>
+      <p class="m-0 mt-1">
+        Bu admin hesabı çok-kiracılı yapıdan önce oluşturulmuş; profilinde <code>tenantId</code> yok. Bu yüzden üye listesi boş
+        görünüyor ve yeni üye/paket/ürün kaydedilemiyor. Tek seferlik göç script'i
+        (<code>functions/src/scripts/backfill-default-tenant.ts</code>) çalıştırılınca düzelir.
+      </p>
+    </div>
+  }
+
   <!-- 2. Search Toolbar -->
   <div
     class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs"
@@ -34,9 +47,24 @@
         type="text"
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
-        placeholder="Ad, e-posta veya telefon ara…"
+        placeholder="Ad, e-posta, telefon veya şube ara…"
         class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
       />
+    </div>
+
+    <!-- Şube Filtresi -->
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">Şube:</label>
+      <select
+        [ngModel]="selectedBranchFilter()"
+        (ngModelChange)="selectedBranchFilter.set($event)"
+        class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 font-semibold cursor-pointer transition-all"
+      >
+        <option value="">Tüm Şubeler</option>
+        @for (b of branches(); track b.id) {
+          <option [value]="b.id">{{ b.name }}</option>
+        }
+      </select>
     </div>
   </div>
 
@@ -52,6 +80,7 @@
               class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
             >
               <th class="py-3.5 px-6">Üye</th>
+              <th class="py-3.5 px-6">Şube</th>
               <th class="py-3.5 px-6">İletişim</th>
               <th class="py-3.5 px-6">Cinsiyet</th>
               <th class="py-3.5 px-6">Durum</th>
@@ -62,21 +91,33 @@
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
             @for (member of filteredMembers(); track member.uid) {
-              <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <tr
+                (click)="openDetailDrawer(member)"
+                class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+              >
                 <td class="py-3 px-6">
                   <div class="flex items-center gap-3">
                     <span
-                      class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform"
                     >
                       {{ initials(member.displayName) }}
                     </span>
                     <div>
-                      <p class="font-bold text-slate-900 dark:text-white m-0">{{ member.displayName || 'Üye' }}</p>
+                      <p class="font-bold text-slate-900 dark:text-white m-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {{ member.displayName || 'Üye' }}
+                      </p>
                       @if (member.role === 'admin') {
                         <p class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 m-0">Admin</p>
                       }
+                      <p class="text-[11px] text-slate-400 m-0">Bakiye: {{ money(member.walletBalance) }}</p>
                     </div>
                   </div>
+                </td>
+                <td class="py-3 px-6 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ member.branchName || 'Merkez Şube' }}
+                  </span>
                 </td>
                 <td class="py-3 px-6 max-w-[220px]">
                   <p class="text-slate-700 dark:text-slate-200 m-0 truncate" [title]="member.email">
@@ -89,7 +130,7 @@
                 <td class="py-3 px-6 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                   {{ genderLabel[member.gender ?? 'unspecified'] }}
                 </td>
-                <td class="py-3 px-6">
+                <td class="py-3 px-6" (click)="$event.stopPropagation()">
                   <select
                     [ngModel]="member.membershipStatus"
                     (ngModelChange)="changeStatus(member, $event)"
@@ -117,20 +158,38 @@
                 <td class="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                   {{ formatDate(member.createdAt) }}
                 </td>
-                <td class="py-3 px-6 text-right">
+                <td class="py-3 px-6 text-right" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    (click)="openWallet(member)"
+                    [matTooltip]="'Bakiye yükle / düş'"
+                    class="odv-icon-btn mr-1"
+                  >
+                    <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
+                  </button>
                   <button
                     type="button"
                     (click)="openEditDrawer(member)"
                     [matTooltip]="'Üye bilgilerini düzenle'"
-                    class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center justify-center transition-colors cursor-pointer"
+                    class="odv-icon-btn"
                   >
                     <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
                   </button>
+                  @if (member.role !== 'admin') {
+                    <button
+                      type="button"
+                      (click)="deleteMember(member)"
+                      [matTooltip]="'Üye profilini sil'"
+                      class="odv-icon-btn odv-icon-btn-danger ml-1"
+                    >
+                      <mat-icon class="icon-size-4">delete</mat-icon>
+                    </button>
+                  }
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="py-16 text-center">
+                <td colspan="8" class="py-16 text-center">
                   <div class="max-w-sm mx-auto flex flex-col items-center">
                     <div
                       class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-4"
@@ -172,3 +231,52 @@
 </div>
 
 <app-member-form-dialog [open]="drawerOpen()" [member]="editingMember()" (closed)="onDrawerClosed($event)" />
+
+<app-member-detail-drawer
+  [open]="viewingMember() !== null"
+  [member]="viewingMember()"
+  (closed)="closeDetailDrawer()"
+  (editRequested)="onDetailEditRequested($event)"
+  (walletRequested)="onDetailWalletRequested($event)"
+/>
+
+<app-slide-over
+  [open]="walletMember() !== null"
+  [title]="'Bakiye — ' + (walletMember()?.displayName ?? '')"
+  submitLabel="Kaydet"
+  [submitting]="walletSubmitting()"
+  [errorMessage]="walletError()"
+  (closed)="closeWallet()"
+  (submitted)="submitWallet()"
+>
+  <div [formGroup]="walletForm" class="space-y-4">
+    <p class="m-0 text-sm text-slate-600 dark:text-slate-300">
+      Mevcut bakiye: <strong>{{ money(walletMember()?.walletBalance) }}</strong>
+    </p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <app-field label="İşlem" [required]="true">
+        <select formControlName="type" class="odv-input">
+          <option value="deposit">Bakiye Yükle</option>
+          <option value="debit">Bakiye Düş</option>
+        </select>
+      </app-field>
+      <app-field
+        label="Tutar (₺)"
+        [required]="true"
+        [error]="walletErr('amount', { required: 'Tutar gerekli.', min: 'Sıfırdan büyük olmalı.' })"
+      >
+        <input type="number" min="0.01" step="0.01" formControlName="amount" class="odv-input" />
+      </app-field>
+      <app-field label="Ödeme Yöntemi">
+        <select formControlName="paymentMethod" class="odv-input">
+          <option value="cash">Nakit</option>
+          <option value="card">Kart</option>
+          <option value="transfer">Havale</option>
+        </select>
+      </app-field>
+    </div>
+    <app-field label="Açıklama" [required]="true" [error]="walletErr('description', { required: 'Açıklama gerekli.' })">
+      <input type="text" formControlName="description" class="odv-input" />
+    </app-field>
+  </div>
+</app-slide-over>

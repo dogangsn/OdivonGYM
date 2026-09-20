@@ -1,0 +1,696 @@
+<div class="space-y-8 font-sans pb-16">
+  <!-- Üst Hero Banner (Modern Kurumsal Görünüm) -->
+  <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 md:p-10 shadow-xl shadow-indigo-950/20 border border-slate-800">
+    <!-- Arka plan auraları -->
+    <div class="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none"></div>
+    <div class="absolute right-1/3 -bottom-20 w-72 h-72 rounded-full bg-purple-500/15 blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div class="space-y-2 max-w-2xl">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+            ODIVON SAAS LİSANSLAMA
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <mat-icon class="text-[14px] w-3.5 h-3.5 text-emerald-400">shield_check</mat-icon>
+            Bulut Güvencesi
+          </span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white m-0">
+          Paket & Lisans Yönetimi
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed m-0">
+          Kulübünüzün ölçeğine ve hedeflerine göre kurgulanmış B2B bulut lisansları. Şube, üye ve personel kotalarınızı anlık takip edin, ihtiyacınız olduğunda tek tıkla ölçekleyin.
+        </p>
+      </div>
+
+      <!-- Sağ Aktif Lisans Durumu Rozeti -->
+      <div class="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+        <div class="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-inner flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md">
+            <mat-icon class="text-[22px] w-5.5 h-5.5">workspace_premium</mat-icon>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-slate-300">Aktif Plan:</span>
+              <span class="text-sm font-black text-white">{{ activePlan().name }}</span>
+            </div>
+            <p class="text-[11px] text-indigo-200 m-0">
+              @if (subService.isTrial()) {
+                <span class="text-amber-300 font-semibold">{{ subService.trialDaysLeft() }} gün deneme süresi</span>
+              } @else {
+                <span class="text-emerald-300 font-semibold">Aktif Yıllık/Aylık Lisans</span>
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canlı Kota ve Kullanım Göstergeleri (Telemetry Dashboard) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Kart 1: Lisans Özeti -->
+    <div class="kpi-card p-5 relative overflow-hidden bg-gradient-to-br from-white to-indigo-50/50 border-indigo-100">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-black tracking-wider uppercase text-indigo-600">Lisans Seviyesi</span>
+        <span
+          class="px-2.5 py-0.5 rounded-full text-[10px] font-black"
+          [ngClass]="{
+            'bg-amber-100 text-amber-800 border border-amber-300': subService.isTrial(),
+            'bg-emerald-100 text-emerald-800 border border-emerald-300': subService.isActive(),
+            'bg-rose-100 text-rose-800 border border-rose-300': subService.isExpired()
+          }"
+        >
+          {{ subService.isTrial() ? 'DENEME' : subService.isActive() ? 'AKTİF LİSANS' : 'SÜRESİ DOLDU' }}
+        </span>
+      </div>
+
+      <div class="mt-3">
+        <h3 class="text-2xl font-black text-slate-900 m-0">{{ activePlan().name }}</h3>
+        <p class="text-xs text-slate-500 mt-0.5 mb-3">{{ activePlan().tagline }}</p>
+      </div>
+
+      <div class="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs">
+        <span class="text-slate-400">Yapay Zeka (AI)</span>
+        <span class="font-bold flex items-center gap-1" [class.text-emerald-600]="activePlan().featureKeys.aiAssistant" [class.text-slate-400]="!activePlan().featureKeys.aiAssistant">
+          <mat-icon class="text-[14px] w-3.5 h-3.5">{{ activePlan().featureKeys.aiAssistant ? 'check_circle' : 'lock' }}</mat-icon>
+          {{ activePlan().featureKeys.aiAssistant ? 'Aktif' : 'Enterprise Özel' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Kart 2: Şube Kotası -->
+    <div class="kpi-card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-500">Şube Kapasitesi</span>
+        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">store</mat-icon>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="text-2xl font-black text-slate-900 tracking-tight">
+          {{ subService.branchCount() }}
+          <span class="text-sm font-semibold text-slate-400">
+            / {{ activePlan().limits.maxBranches >= 9999 ? 'Limitsiz' : activePlan().limits.maxBranches + ' Şube' }}
+          </span>
+        </span>
+        <span class="text-xs font-bold text-indigo-600">
+          {{ activePlan().limits.maxBranches >= 9999 ? 'Limitsiz' : '%' + subService.branchUsagePct() }}
+        </span>
+      </div>
+      <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5">
+        <div
+          class="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
+          [style.width.%]="subService.branchUsagePct()"
+          [class.!from-rose-500]="subService.branchUsagePct() >= 100 && activePlan().limits.maxBranches < 9999"
+          [class.!to-rose-600]="subService.branchUsagePct() >= 100 && activePlan().limits.maxBranches < 9999"
+        ></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2.5 mb-0 flex items-center justify-between">
+        <span>Kullanılan şube sayısı</span>
+        <span class="font-bold text-slate-600">
+          {{ activePlan().limits.maxBranches >= 9999 ? 'Sınırsız Büyüme' : (activePlan().limits.maxBranches - subService.branchCount()) + ' Kalan Hak' }}
+        </span>
+      </p>
+    </div>
+
+    <!-- Kart 3: Aktif Üye Havuzu -->
+    <div class="kpi-card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-500">Aktif Sporcu & Üye</span>
+        <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">groups</mat-icon>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="text-2xl font-black text-slate-900 tracking-tight">
+          {{ subService.memberCount() }}
+          <span class="text-sm font-semibold text-slate-400">
+            / {{ activePlan().limits.maxMembers >= 999999 ? 'Limitsiz' : (activePlan().limits.maxMembers | number:'1.0-0') }}
+          </span>
+        </span>
+        <span class="text-xs font-bold text-emerald-600">
+          {{ activePlan().limits.maxMembers >= 999999 ? 'Limitsiz' : '%' + subService.memberUsagePct() }}
+        </span>
+      </div>
+      <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5">
+        <div
+          class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+          [style.width.%]="subService.memberUsagePct()"
+        ></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2.5 mb-0 flex items-center justify-between">
+        <span>Turnike & app aktif üyeleri</span>
+        <span class="font-bold text-emerald-700">Turnike İzni Aktif</span>
+      </p>
+    </div>
+
+    <!-- Kart 4: Personel / Antrenör Kotası -->
+    <div class="kpi-card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-500">Personel & Roller</span>
+        <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">badge</mat-icon>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="text-2xl font-black text-slate-900 tracking-tight">
+          {{ subService.staffCount() }}
+          <span class="text-sm font-semibold text-slate-400">
+            / {{ activePlan().limits.maxStaff >= 9999 ? 'Limitsiz' : activePlan().limits.maxStaff + ' Kişi' }}
+          </span>
+        </span>
+        <span class="text-xs font-bold text-purple-600">
+          {{ activePlan().limits.maxStaff >= 9999 ? 'Limitsiz' : '%' + subService.staffUsagePct() }}
+        </span>
+      </div>
+      <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5">
+        <div
+          class="h-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full transition-all duration-500"
+          [style.width.%]="subService.staffUsagePct()"
+        ></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2.5 mb-0 flex items-center justify-between">
+        <span>Yönetici, antrenör & resepsiyon</span>
+        <span class="font-bold text-slate-600">Tam RBAC Yetkili</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Fatura Döngüsü Seçimi (İnteraktif Segment Kontrolü) -->
+  <div class="flex flex-col items-center justify-center gap-3 pt-2">
+    <div class="p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-inner flex items-center gap-1">
+      <button
+        type="button"
+        (click)="setCycle('monthly')"
+        class="px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+        [ngClass]="selectedCycle() === 'monthly' ? 'bg-white text-slate-900 shadow-md font-black' : 'text-slate-500 hover:text-slate-800'"
+      >
+        Aylık Fatura
+      </button>
+      <button
+        type="button"
+        (click)="setCycle('yearly')"
+        class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+        [ngClass]="selectedCycle() === 'yearly' ? 'bg-white text-slate-900 shadow-md font-black' : 'text-slate-500 hover:text-slate-800'"
+      >
+        <span>Yıllık Fatura</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs animate-pulse">
+          🔥 %17 İndirim (2 Ay Hediye)
+        </span>
+      </button>
+    </div>
+    <p class="text-xs text-slate-400 text-center m-0">
+      Yıllık abonelikte 12 ay yerine 10 ay ödersiniz. İstediğiniz zaman paketinizi değiştirebilir veya iptal edebilirsiniz.
+    </p>
+  </div>
+
+  <!-- 3 SaaS Paket Kartı (Yüksek Estetik, Özel Hiyerarşi) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-2">
+    @for (plan of plans(); track plan.id) {
+      <!-- Kart Tasarımı -->
+      <div
+        class="plan-card flex flex-col justify-between p-6 sm:p-7 transition-all duration-300 relative rounded-3xl"
+        [ngClass]="{
+          'plan-card--starter': plan.id === 'starter',
+          'plan-card--pro': plan.id === 'pro',
+          'plan-card--enterprise': plan.id === 'enterprise',
+          'is-active': isCurrentPlan(plan.id)
+        }"
+      >
+        <!-- Pro Kartı Özel Popüler Şeridi -->
+        @if (plan.id === 'pro') {
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-indigo-500/30 flex items-center gap-1.5">
+            <mat-icon class="text-[14px] w-3.5 h-3.5 text-amber-300">star</mat-icon>
+            <span>EN ÇOK TERCİH EDİLEN</span>
+          </div>
+        }
+
+        <!-- Enterprise Kartı Özel Şeridi -->
+        @if (plan.id === 'enterprise') {
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md shadow-cyan-500/20 flex items-center gap-1.5">
+            <mat-icon class="text-[14px] w-3.5 h-3.5">auto_awesome</mat-icon>
+            <span>LİMİTSİZ & YAPAY ZEKA</span>
+          </div>
+        }
+
+        <div>
+          <!-- Başlık Alanı -->
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-2">
+              <h3 class="text-2xl font-black m-0 tracking-tight" [class.text-white]="plan.id === 'enterprise'" [class.text-slate-900]="plan.id !== 'enterprise'">
+                {{ plan.name }}
+              </h3>
+            </div>
+            @if (isCurrentPlan(plan.id)) {
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200" [class.!bg-indigo-500/20]="plan.id === 'enterprise'" [class.!text-indigo-300]="plan.id === 'enterprise'" [class.!border-indigo-400/30]="plan.id === 'enterprise'">
+                MEVCUT LİSANSINIZ
+              </span>
+            }
+          </div>
+
+          <p class="text-xs leading-relaxed mb-5 min-h-[36px]" [class.text-slate-300]="plan.id === 'enterprise'" [class.text-slate-500]="plan.id !== 'enterprise'">
+            {{ plan.tagline }}
+          </p>
+
+          <!-- Fiyat Kutusu -->
+          <div
+            class="p-4 rounded-2xl mb-6 transition-colors"
+            [ngClass]="{
+              'bg-slate-800/80 border border-slate-700/80': plan.id === 'enterprise',
+              'bg-gradient-to-br from-indigo-50/80 to-purple-50/80 border border-indigo-100': plan.id === 'pro',
+              'bg-slate-50 border border-slate-100': plan.id === 'starter'
+            }"
+          >
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-3xl sm:text-4xl font-black tracking-tight" [class.text-white]="plan.id === 'enterprise'" [class.text-slate-900]="plan.id !== 'enterprise'">
+                ₺{{ getPrice(plan) | number:'1.0-0' }}
+              </span>
+              <span class="text-xs font-bold" [class.text-slate-400]="plan.id === 'enterprise'" [class.text-slate-500]="plan.id !== 'enterprise'">
+                {{ getPeriodLabel() }}
+              </span>
+            </div>
+
+            @if (selectedCycle() === 'yearly') {
+              <p class="text-[11px] font-bold text-emerald-500 mt-1 mb-0 flex items-center gap-1">
+                <mat-icon class="text-[14px] w-3.5 h-3.5">savings</mat-icon>
+                <span>Aylık ortalama ₺{{ getMonthlyEquivalent(plan) | number:'1.0-0' }} (2 Ay Ücretsiz)</span>
+              </p>
+            } @else {
+              <p class="text-[11px] font-semibold text-slate-400 mt-1 mb-0">
+                Aylık düzenli faturalandırılır
+              </p>
+            }
+          </div>
+
+          <!-- Kotalar Tablosu (Micro-Specs) -->
+          <div class="space-y-2 mb-6 pb-5 border-b text-xs" [class.border-slate-800]="plan.id === 'enterprise'" [class.border-slate-100]="plan.id !== 'enterprise'">
+            <div class="flex items-center justify-between font-medium">
+              <span class="flex items-center gap-2" [class.text-slate-300]="plan.id === 'enterprise'" [class.text-slate-500]="plan.id !== 'enterprise'">
+                <mat-icon class="text-[16px] w-4 h-4 text-indigo-500">store</mat-icon>
+                Şube Limiti
+              </span>
+              <span class="font-bold" [class.text-white]="plan.id === 'enterprise'" [class.text-slate-900]="plan.id !== 'enterprise'">
+                {{ plan.limits.maxBranches >= 9999 ? 'Sınırsız Şube' : plan.limits.maxBranches + ' Şube' }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between font-medium">
+              <span class="flex items-center gap-2" [class.text-slate-300]="plan.id === 'enterprise'" [class.text-slate-500]="plan.id !== 'enterprise'">
+                <mat-icon class="text-[16px] w-4 h-4 text-emerald-500">groups</mat-icon>
+                Aktif Üye Havuzu
+              </span>
+              <span class="font-bold" [class.text-white]="plan.id === 'enterprise'" [class.text-slate-900]="plan.id !== 'enterprise'">
+                {{ plan.limits.maxMembers >= 999999 ? 'Sınırsız Üye' : (plan.limits.maxMembers | number:'1.0-0') + ' Üye' }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between font-medium">
+              <span class="flex items-center gap-2" [class.text-slate-300]="plan.id === 'enterprise'" [class.text-slate-500]="plan.id !== 'enterprise'">
+                <mat-icon class="text-[16px] w-4 h-4 text-purple-500">badge</mat-icon>
+                Personel & Antrenör
+              </span>
+              <span class="font-bold" [class.text-white]="plan.id === 'enterprise'" [class.text-slate-900]="plan.id !== 'enterprise'">
+                {{ plan.limits.maxStaff >= 9999 ? 'Sınırsız Hesap' : plan.limits.maxStaff + ' Kişi' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Özellik Maddeleri -->
+          <div class="space-y-2.5 mb-8">
+            <span class="text-[10px] font-black uppercase tracking-wider block" [class.text-slate-400]="plan.id === 'enterprise'" [class.text-slate-400]="plan.id !== 'enterprise'">
+              Paket Özellikleri
+            </span>
+
+            @for (feat of plan.features; track feat.name) {
+              <div class="flex items-start gap-2 text-xs">
+                @if (feat.included) {
+                  <mat-icon class="text-emerald-500 text-[16px] w-4 h-4 shrink-0 mt-0.5">check_circle</mat-icon>
+                  <span class="font-medium" [class.text-slate-200]="plan.id === 'enterprise'" [class.text-slate-700]="plan.id !== 'enterprise'">
+                    {{ feat.name }}
+                  </span>
+                } @else {
+                  <mat-icon class="text-slate-300 dark:text-slate-600 text-[16px] w-4 h-4 shrink-0 mt-0.5">remove_circle_outline</mat-icon>
+                  <span class="line-through" [class.text-slate-500]="plan.id === 'enterprise'" [class.text-slate-400]="plan.id !== 'enterprise'">
+                    {{ feat.name }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Aksiyon Butonu -->
+        <div>
+          @if (isCurrentPlan(plan.id)) {
+            <button
+              type="button"
+              disabled
+              class="w-full py-3.5 rounded-2xl text-xs font-bold bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 flex items-center justify-center gap-1.5"
+              [class.!bg-slate-800]="plan.id === 'enterprise'"
+              [class.!text-slate-400]="plan.id === 'enterprise'"
+              [class.!border-slate-700]="plan.id === 'enterprise'"
+            >
+              <mat-icon class="text-[16px] w-4 h-4 text-emerald-500">check</mat-icon>
+              <span>Mevcut Paketiniz</span>
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="openUpgradeModal(plan)"
+              class="w-full py-3.5 rounded-2xl text-xs font-black transition-all shadow-md cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+              [ngClass]="{
+                'bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 text-slate-950 shadow-cyan-500/25': plan.id === 'enterprise',
+                'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-600/30': plan.id === 'pro',
+                'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20': plan.id === 'starter'
+              }"
+            >
+              <mat-icon class="text-[16px] w-4 h-4">bolt</mat-icon>
+              <span>{{ plan.ctaText }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Kurumsal Güvenlik & Hizmet Standartları (Trust Badges) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+    <div class="trust-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <mat-icon class="text-[20px] w-5 h-5">lock</mat-icon>
+      </div>
+      <div>
+        <h4 class="text-xs font-black text-slate-900 m-0">256-Bit SSL & KVKK</h4>
+        <p class="text-[11px] text-slate-400 m-0">Tüm üye verileri bankacılık standartlarında şifrelenir.</p>
+      </div>
+    </div>
+
+    <div class="trust-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+        <mat-icon class="text-[20px] w-5 h-5">cloud_done</mat-icon>
+      </div>
+      <div>
+        <h4 class="text-xs font-black text-slate-900 m-0">%99.9 Bulut SLA</h4>
+        <p class="text-[11px] text-slate-400 m-0">Turnike ve üye geçişlerinde sıfır kesinti garantisi.</p>
+      </div>
+    </div>
+
+    <div class="trust-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+        <mat-icon class="text-[20px] w-5 h-5">receipt_long</mat-icon>
+      </div>
+      <div>
+        <h4 class="text-xs font-black text-slate-900 m-0">Uyumsoft E-Fatura</h4>
+        <p class="text-[11px] text-slate-400 m-0">Gelir İdaresi Başkanlığı resmi entegrasyonu.</p>
+      </div>
+    </div>
+
+    <div class="trust-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+        <mat-icon class="text-[20px] w-5 h-5">sync_saved_locally</mat-icon>
+      </div>
+      <div>
+        <h4 class="text-xs font-black text-slate-900 m-0">Anında Kota Yükseltme</h4>
+        <p class="text-[11px] text-slate-400 m-0">Hiçbir veri kaybı olmadan saniyeler içinde geçiş yapın.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detaylı Özellik Karşılaştırma Matrisi -->
+  <div class="kpi-card overflow-hidden mt-6">
+    <div class="p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-700">KARŞILAŞTIRMA</span>
+          <h3 class="text-base font-black text-slate-900 m-0">Detaylı Paket & Yetenek Matrisi</h3>
+        </div>
+        <p class="text-xs text-slate-500 mt-1 mb-0">Paketler arasındaki tüm kapasite, donanım ve modül farklarını inceleyin.</p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200/80 bg-slate-50/70 text-slate-600">
+            <th class="py-4 px-6 font-bold w-1/3">Özellik / Yetenek</th>
+            <th class="py-4 px-6 font-bold text-center">Başlangıç</th>
+            <th class="py-4 px-6 font-black text-center bg-indigo-50/40 text-indigo-900">
+              <span class="inline-flex items-center gap-1">
+                <mat-icon class="text-[14px] w-3.5 h-3.5 text-indigo-600">star</mat-icon>
+                Profesyonel
+              </span>
+            </th>
+            <th class="py-4 px-6 font-black text-center bg-slate-900 text-white">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-slate-700">
+          <!-- Kategori: Kapasite -->
+          <tr class="bg-slate-50/30">
+            <td colspan="4" class="py-2.5 px-6 font-black text-[11px] uppercase tracking-wider text-slate-400">
+              Temel Kapasite & Kotalar
+            </td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Salon Şube Sayısı</td>
+            <td class="py-3.5 px-6 text-center font-medium">1 Şube</td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 font-bold text-indigo-700">3 Şubeye Kadar</td>
+            <td class="py-3.5 px-6 text-center font-bold text-purple-700">Sınırsız Şube</td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Aktif Sporcu / Üye Kotası</td>
+            <td class="py-3.5 px-6 text-center font-medium">250 Üye</td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 font-bold text-indigo-700">1.000 Üye</td>
+            <td class="py-3.5 px-6 text-center font-bold text-purple-700">Sınırsız</td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Personel / Antrenör Hesapları</td>
+            <td class="py-3.5 px-6 text-center font-medium">2 Hesap</td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 font-bold text-indigo-700">10 Hesap</td>
+            <td class="py-3.5 px-6 text-center font-bold text-purple-700">Sınırsız</td>
+          </tr>
+
+          <!-- Kategori: Modüller & CRM -->
+          <tr class="bg-slate-50/30">
+            <td colspan="4" class="py-2.5 px-6 font-black text-[11px] uppercase tracking-wider text-slate-400">
+              İletişim, CRM & Pazarlama
+            </td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Kampanyalar & Çok Kanallı CRM (Push, SMS, WhatsApp)</td>
+            <td class="py-3.5 px-6 text-center text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Grup Ders Takvimi & PT Randevu Otomasyonu</td>
+            <td class="py-3.5 px-6 text-center text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+
+          <!-- Kategori: Muhasebe & E-Fatura -->
+          <tr class="bg-slate-50/30">
+            <td colspan="4" class="py-2.5 px-6 font-black text-[11px] uppercase tracking-wider text-slate-400">
+              Finans, Kasa & E-Fatura
+            </td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Kasa, Market & Ön Muhasebe</td>
+            <td class="py-3.5 px-6 text-center font-medium">Manuel</td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Uyumsoft E-Fatura & E-Arşiv Otomasyonu</td>
+            <td class="py-3.5 px-6 text-center text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+
+          <!-- Kategori: Donanım & Yapay Zeka -->
+          <tr class="bg-slate-50/30">
+            <td colspan="4" class="py-2.5 px-6 font-black text-[11px] uppercase tracking-wider text-slate-400">
+              Donanım, İleri Teknoloji & Destek
+            </td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Turnike QR & Barkod Geçişi</td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Odivon Yapay Zeka (AI) Salon Asistanı</td>
+            <td class="py-3.5 px-6 text-center text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Özel Donanım & Yüz Tanıma API Erişimi</td>
+            <td class="py-3.5 px-6 text-center text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 text-slate-300"><mat-icon class="text-[18px] w-4.5 h-4.5">remove</mat-icon></td>
+            <td class="py-3.5 px-6 text-center text-emerald-600 font-bold"><mat-icon class="text-[18px] w-4.5 h-4.5">check_circle</mat-icon></td>
+          </tr>
+          <tr class="hover:bg-slate-50/50">
+            <td class="py-3.5 px-6 font-semibold">Teknik Destek Standardı</td>
+            <td class="py-3.5 px-6 text-center">Standart E-posta</td>
+            <td class="py-3.5 px-6 text-center bg-indigo-50/20 font-bold text-indigo-700">Öncelikli Canlı Destek</td>
+            <td class="py-3.5 px-6 text-center font-bold text-purple-700">7/24 Özel Müşteri Temsilcisi</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sıkça Sorulan Sorular (Accordion) -->
+  <div class="kpi-card p-6 sm:p-8 mt-6">
+    <div class="text-center max-w-2xl mx-auto mb-8">
+      <span class="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+        MERAK EDİLENLER
+      </span>
+      <h3 class="text-xl sm:text-2xl font-black text-slate-900 mt-2 mb-1">
+        Sıkça Sorulan Sorular
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 m-0">
+        OdivonGYM lisanslama, ödeme döngüleri ve donanım entegrasyonlarıyla ilgili merak edilenler.
+      </p>
+    </div>
+
+    <div class="space-y-3 max-w-3xl mx-auto">
+      @for (faq of faqs; track faq.question; let idx = $index) {
+        <div
+          class="rounded-2xl border transition-all duration-200 overflow-hidden"
+          [ngClass]="openFaqIndex() === idx ? 'border-indigo-200 bg-indigo-50/30' : 'border-slate-200/80 bg-white hover:border-slate-300'"
+        >
+          <button
+            type="button"
+            (click)="toggleFaq(idx)"
+            class="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer gap-4"
+          >
+            <span class="text-xs sm:text-sm font-bold text-slate-900">{{ faq.question }}</span>
+            <div
+              class="w-7 h-7 rounded-full flex items-center justify-center transition-transform shrink-0"
+              [ngClass]="openFaqIndex() === idx ? 'bg-indigo-600 text-white rotate-180' : 'bg-slate-100 text-slate-500'"
+            >
+              <mat-icon class="text-[18px] w-4.5 h-4.5">expand_more</mat-icon>
+            </div>
+          </button>
+
+          @if (openFaqIndex() === idx) {
+            <div class="px-5 pb-5 pt-0 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-indigo-100/60 mt-1">
+              {{ faq.answer }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Yükseltme Onay ve Simülasyon Modalı -->
+  @if (upgradeModalOpen() && selectedTargetPlan()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-100 relative overflow-hidden">
+        <!-- Arka plan süsü -->
+        <div class="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center justify-between mb-5 relative z-10">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+              <mat-icon class="text-[24px] w-6 h-6">verified</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-900 m-0">Paket Seçimini Onayla</h3>
+              <p class="text-xs text-slate-400 m-0">OdivonGYM Bulut Lisans Aktivasyonu</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="closeUpgradeModal()"
+            class="text-slate-400 hover:text-slate-700 cursor-pointer p-1 rounded-full hover:bg-slate-100 transition-colors"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Fatura Özeti Kartı -->
+        @if (selectedTargetPlan(); as targetPlan) {
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 mb-6 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-medium">Hedef Paket:</span>
+              <span class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                {{ targetPlan.name }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-medium">Fatura Periyodu:</span>
+              <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                {{ selectedCycle() === 'yearly' ? 'Yıllık (2 Ay Hediye)' : 'Aylık Düzenli' }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-500 font-medium">Kapasite:</span>
+              <span class="font-bold text-slate-700">
+                {{ targetPlan.limits.maxBranches >= 9999 ? 'Sınırsız Şube' : targetPlan.limits.maxBranches + ' Şube' }} ·
+                {{ targetPlan.limits.maxMembers >= 999999 ? 'Sınırsız Üye' : (targetPlan.limits.maxMembers | number:'1.0-0') + ' Üye' }}
+              </span>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex items-baseline justify-between">
+              <span class="text-xs font-bold text-slate-700">Ödenecek Tutar:</span>
+              <span class="text-2xl font-black text-slate-900">
+                ₺{{ getPrice(targetPlan) | number:'1.0-0' }}
+                <span class="text-xs font-semibold text-slate-400">{{ getPeriodLabel() }}</span>
+              </span>
+            </div>
+          </div>
+        }
+
+        <!-- Avantaj Hatırlatmaları -->
+        <div class="space-y-2 mb-6 text-xs text-slate-600">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-emerald-500 text-[18px] w-4.5 h-4.5">check_circle</mat-icon>
+            <span>Şube, üye ve personel kotalarınız derhal güncellenir.</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-emerald-500 text-[18px] w-4.5 h-4.5">check_circle</mat-icon>
+            <span>Mevcut salon verilerinizde hiçbir kesinti olmadan devam edersiniz.</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-emerald-500 text-[18px] w-4.5 h-4.5">check_circle</mat-icon>
+            <span>Faturanız şirket unvanınıza e-Arşiv olarak otomatik düzenlenir.</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            (click)="closeUpgradeModal()"
+            class="flex-1 py-3 rounded-2xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="button"
+            (click)="confirmUpgrade()"
+            [disabled]="upgrading()"
+            class="flex-1 py-3 rounded-2xl text-xs font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+          >
+            @if (upgrading()) {
+              <span>Lisans Aktif Ediliyor…</span>
+            } @else {
+              <mat-icon class="text-[16px] w-4 h-4">bolt</mat-icon>
+              <span>Onayla & Lisansı Başlat</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

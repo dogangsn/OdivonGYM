@@ -11,9 +11,10 @@ import {
   deleteDoc,
   serverTimestamp,
 } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { GymPackage, CreateGymPackageInput } from '../../core/models/gym-package.model';
+import { GymPackage, CreateGymPackageInput, UpdateGymPackageInput } from '../../core/models/gym-package.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdminPackagesService {
@@ -21,18 +22,19 @@ export class AdminPackagesService {
   private readonly auth = inject(AuthService);
 
   watchPackages(): Observable<GymPackage[]> {
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!tenantId) {
-      return new Observable<GymPackage[]>((subscriber) => subscriber.next([]));
-    }
-
-    const q = query(
-      collection(this.firestore, 'gym_packages'),
-      where('tenantId', '==', tenantId),
+    return toObservable(this.auth.profile).pipe(
+      switchMap((profile) => {
+        const tenantId = profile?.tenantId;
+        if (!tenantId) {
+          return of([] as GymPackage[]);
+        }
+        const q = query(
+          collection(this.firestore, 'gym_packages'),
+          where('tenantId', '==', tenantId),
+        );
+        return collectionData(q, { idField: 'id' }) as Observable<GymPackage[]>;
+      }),
     );
-
-    return collectionData(q, { idField: 'id' }) as Observable<GymPackage[]>;
   }
 
   async createPackage(input: CreateGymPackageInput): Promise<string> {
@@ -59,9 +61,10 @@ export class AdminPackagesService {
     return docRef.id;
   }
 
-  async updatePackage(id: string, input: Partial<CreateGymPackageInput>): Promise<void> {
+  async updatePackage(id: string, input: UpdateGymPackageInput): Promise<void> {
     const updateData: any = { updatedAt: serverTimestamp() };
 
+    if (input.status !== undefined) updateData.status = input.status;
     if (input.name !== undefined) updateData.name = input.name;
     if (input.durationDays !== undefined) updateData.durationDays = input.durationDays;
     if (input.price !== undefined) updateData.price = input.price;

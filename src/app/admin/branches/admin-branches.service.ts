@@ -11,9 +11,10 @@ import {
   deleteDoc,
   serverTimestamp,
 } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { GymBranch, CreateGymBranchInput } from '../../core/models/gym-branch.model';
+import { GymBranch, CreateGymBranchInput, UpdateGymBranchInput } from '../../core/models/gym-branch.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdminBranchesService {
@@ -21,18 +22,19 @@ export class AdminBranchesService {
   private readonly auth = inject(AuthService);
 
   watchBranches(): Observable<GymBranch[]> {
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!tenantId) {
-      return new Observable<GymBranch[]>((subscriber) => subscriber.next([]));
-    }
-
-    const q = query(
-      collection(this.firestore, 'gym_branches'),
-      where('tenantId', '==', tenantId),
+    return toObservable(this.auth.profile).pipe(
+      switchMap((profile) => {
+        const tenantId = profile?.tenantId;
+        if (!tenantId) {
+          return of([] as GymBranch[]);
+        }
+        const q = query(
+          collection(this.firestore, 'gym_branches'),
+          where('tenantId', '==', tenantId),
+        );
+        return collectionData(q, { idField: 'id' }) as Observable<GymBranch[]>;
+      }),
     );
-
-    return collectionData(q, { idField: 'id' }) as Observable<GymBranch[]>;
   }
 
   async createBranch(input: CreateGymBranchInput): Promise<string> {
@@ -64,7 +66,7 @@ export class AdminBranchesService {
     return docRef.id;
   }
 
-  async updateBranch(id: string, input: Partial<CreateGymBranchInput>): Promise<void> {
+  async updateBranch(id: string, input: UpdateGymBranchInput): Promise<void> {
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!tenantId) {
@@ -73,6 +75,8 @@ export class AdminBranchesService {
 
     const updateData: any = { updatedAt: serverTimestamp() };
 
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.phone !== undefined) updateData.phone = input.phone;
     if (input.name !== undefined) updateData.name = input.name;
     if (input.address !== undefined) updateData.address = input.address;
     if (input.city !== undefined) updateData.city = input.city;

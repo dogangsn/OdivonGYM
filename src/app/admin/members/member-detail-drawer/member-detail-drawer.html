@@ -1,0 +1,1836 @@
+@if (open() && member()) {
+  <!-- Modal Backdrop -->
+  <div
+    class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs z-50 transition-opacity"
+    (click)="close()"
+  ></div>
+
+  <!-- Modal Dialog Wrapper -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 pointer-events-none">
+    <div
+      class="w-full max-w-5xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden pointer-events-auto animate-in zoom-in-95 duration-150 font-sans"
+    >
+      <!-- 1. Header Hero Card -->
+      <div class="relative p-5 sm:p-6 bg-white border-b border-slate-200/80 shrink-0">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <!-- Avatar & Basic Info -->
+          <div class="flex items-center gap-4">
+            <div class="relative shrink-0">
+              <div
+                class="w-15 h-15 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-indigo-500/20"
+              >
+                {{ member()?.displayName?.slice(0, 2)?.toUpperCase() || 'ÜY' }}
+              </div>
+              <span
+                class="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full border-2 border-white"
+                [class]="member()?.membershipStatus === 'active' ? 'bg-emerald-500' : 'bg-amber-500'"
+              ></span>
+            </div>
+
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight m-0">
+                  {{ member()?.displayName }}
+                </h2>
+                <span
+                  class="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase border"
+                  [class]="statusBadgeClass[member()!.membershipStatus]"
+                >
+                  {{ statusLabel[member()!.membershipStatus] }}
+                </span>
+              </div>
+
+              <p class="text-xs font-semibold text-slate-500 mt-1 mb-0 flex flex-wrap items-center gap-2">
+                <span>{{ member()?.email }}</span>
+                <span>•</span>
+                <span>{{ member()?.phone || 'Telefon yok' }}</span>
+                @if (member()?.gender) {
+                  <span>•</span>
+                  <span>{{ member()?.gender === 'female' ? 'Kadın' : member()?.gender === 'male' ? 'Erkek' : 'Belirtilmemiş' }}</span>
+                }
+                <span>•</span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  {{ member()?.branchName || 'Merkez Şube' }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            @if (member()?.phone) {
+              <a
+                [href]="getWhatsAppUrl(member()?.phone)"
+                target="_blank"
+                matTooltip="WhatsApp ile İletişime Geç"
+                class="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all flex items-center gap-1.5 no-underline cursor-pointer"
+              >
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:chat-bubble-left-ellipsis'"></mat-icon>
+                <span class="hidden md:inline">WhatsApp</span>
+              </a>
+              <a
+                [href]="'tel:' + getCleanPhone(member()?.phone)"
+                matTooltip="Üyeyi Ara"
+                class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 no-underline cursor-pointer"
+              >
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:phone'"></mat-icon>
+                <span class="hidden md:inline">Ara</span>
+              </a>
+            }
+
+            <button
+              type="button"
+              (click)="onWallet()"
+              matTooltip="Cüzdan Bakiyesi Yükle / Düş"
+              class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
+              <span>Bakiye</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="onEdit()"
+              matTooltip="Profili Düzenle"
+              class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+              <span>Düzenle</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="close()"
+              matTooltip="Kapat"
+              class="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Vitals & Health Metrics Bar (6-Card Strip) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 p-4 bg-slate-50/75 border-b border-slate-200/80 shrink-0">
+        <!-- Metric 1: Kilo -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kilo</span>
+            <mat-icon class="icon-size-3.5 text-indigo-500">monitor_weight</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-slate-900 mt-1">
+            {{ latestMeasurement()?.weight ? latestMeasurement()?.weight + ' kg' : '—' }}
+          </div>
+          <div class="text-[10px] font-semibold mt-0.5 truncate">
+            @if (weightDelta() !== null) {
+              @if (weightDelta()! > 0) {
+                <span class="text-rose-600 font-bold">+{{ weightDelta() }} kg</span> vs önceki
+              } @else if (weightDelta()! < 0) {
+                <span class="text-emerald-600 font-bold">{{ weightDelta() }} kg</span> vs önceki
+              } @else {
+                <span class="text-slate-500">Değişim yok</span>
+              }
+            } @else {
+              <span class="text-slate-400">İlk Kayıt</span>
+            }
+          </div>
+        </div>
+
+        <!-- Metric 2: Boy -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Boy</span>
+            <mat-icon class="icon-size-3.5 text-indigo-500">height</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-slate-900 mt-1">
+            {{ currentHeight() ? currentHeight() + ' cm' : '—' }}
+          </div>
+          <div class="text-[10px] font-semibold text-slate-400 mt-0.5">
+            {{ currentHeight() ? 'Fiziksel Boy' : 'Kayıt Bekleniyor' }}
+          </div>
+        </div>
+
+        <!-- Metric 3: BMI (Vücut Kitle Endeksi) -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">VKE / BMI</span>
+            <mat-icon class="icon-size-3.5 text-indigo-500">speed</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-slate-900 mt-1">
+            {{ bmiInfo() ? bmiInfo()?.val : '—' }}
+          </div>
+          <div class="text-[10px] font-semibold mt-0.5">
+            @if (bmiInfo()) {
+              <span class="px-1.5 py-0.2 rounded font-bold border text-[9px]" [class]="bmiInfo()!.badgeClass">
+                {{ bmiInfo()?.label }}
+              </span>
+            } @else {
+              <span class="text-slate-400">Kilo & Boy girin</span>
+            }
+          </div>
+        </div>
+
+        <!-- Metric 4: Günlük Su -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bugünkü Su</span>
+            <mat-icon class="icon-size-3.5 text-cyan-500">water_drop</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-cyan-700 mt-1">
+            {{ todayWaterTotal() }} <span class="text-xs text-slate-400 font-bold">/ {{ waterTarget }} ml</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+            <div
+              class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full rounded-full transition-all duration-300"
+              [style.width.%]="waterProgressPercent()"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Metric 5: Cüzdan Bakiyesi -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cüzdan</span>
+            <mat-icon class="icon-size-3.5 text-emerald-500">account_balance_wallet</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-slate-900 mt-1">
+            {{ money(member()?.walletBalance) }}
+          </div>
+          <div class="text-[10px] font-semibold text-emerald-600 mt-0.5 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Kullanıma Hazır
+          </div>
+        </div>
+
+        <!-- Metric 6: Üyelik / Kalan Gün -->
+        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kalan Süre</span>
+            <mat-icon class="icon-size-3.5 text-indigo-500">calendar_month</mat-icon>
+          </div>
+          <div class="text-base sm:text-lg font-black text-slate-900 mt-1 truncate">
+            @if (daysLeft() !== null) {
+              {{ daysLeft() }} Gün
+            } @else {
+              Süresiz
+            }
+          </div>
+          <div class="text-[10px] font-semibold text-slate-500 mt-0.5 truncate">
+            {{ member()?.packageLabel || 'Paket Tanımsız' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Navigation Tabs -->
+      <div class="px-6 pt-3 bg-white border-b border-slate-200/80 flex gap-6 shrink-0 overflow-x-auto custom-scroll">
+        <button
+          type="button"
+          (click)="setTab('measurements')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'measurements' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">monitor_weight</mat-icon>
+          <span>Kilo & Ölçüm</span>
+          @if (measurements().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600">
+              {{ measurements().length }}
+            </span>
+          }
+          @if (activeTab() === 'measurements') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('workout')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'workout' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">fitness_center</mat-icon>
+          <span>Antrenman Programı</span>
+          @if (workoutPlans().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600">
+              {{ workoutPlans().length }}
+            </span>
+          }
+          @if (activeTab() === 'workout') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('documents')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'documents' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">badge</mat-icon>
+          <span>Evrak & Lisanslar</span>
+          @if (memberDocuments().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-50 text-purple-600">
+              {{ memberDocuments().length }}
+            </span>
+          }
+          @if (activeTab() === 'documents') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('schedules')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'schedules' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">event_available</mat-icon>
+          <span>Kayıtlı Seanslar</span>
+          @if (enrolledSchedules().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600">
+              {{ enrolledSchedules().length }}
+            </span>
+          }
+          @if (activeTab() === 'schedules') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('water')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'water' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">water_drop</mat-icon>
+          <span>Su Takibi</span>
+          @if (todayWaterTotal() > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-cyan-50 text-cyan-600">
+              {{ todayWaterTotal() }} ml
+            </span>
+          }
+          @if (activeTab() === 'water') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('wallet')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'wallet' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
+          <span>Cüzdan</span>
+          @if (walletTransactions().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600">
+              {{ walletTransactions().length }}
+            </span>
+          }
+          @if (activeTab() === 'wallet') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('access')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'access' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">door_sliding</mat-icon>
+          <span>Turnike</span>
+          @if (accessLogs().length > 0) {
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">
+              {{ accessLogs().length }}
+            </span>
+          }
+          @if (activeTab() === 'access') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('overview')"
+          class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+          [class]="activeTab() === 'overview' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <mat-icon class="icon-size-4">info</mat-icon>
+          <span>Genel Bilgiler</span>
+          @if (activeTab() === 'overview') {
+            <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+          }
+        </button>
+      </div>
+
+      <!-- 4. Scrollable Tab Content Body -->
+      <div class="flex-1 overflow-y-auto p-5 sm:p-6 custom-scroll">
+        <!-- ============================================== -->
+        <!-- TAB 1: KİLO & VÜCUT ÖLÇÜMLERİ                  -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'measurements') {
+          <div class="space-y-5">
+            <!-- Header bar with Action Button -->
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 m-0">Vücut Ölçüm & Kilo Geçmişi</h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                  Sporcunun kilo, boy, yağ oranı ve göğüs/bel/kalça/kol çevre ölçümleri
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="toggleAddMeasurement()"
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+              >
+                <mat-icon class="icon-size-4">{{ showAddMeasurementForm() ? 'close' : 'add' }}</mat-icon>
+                <span>{{ showAddMeasurementForm() ? 'Formu Kapat' : '+ Yeni Ölçüm Kaydet' }}</span>
+              </button>
+            </div>
+
+            <!-- Inline Add Measurement Form -->
+            @if (showAddMeasurementForm()) {
+              <div class="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-200/80 shadow-xs space-y-4 animate-in slide-in-from-top duration-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-indigo-600">straighten</mat-icon>
+                    Yeni Ölçüm & Kilo Kaydı Ekle
+                  </span>
+                  <span class="text-[11px] text-slate-500">* Zorunlu değil, bildiğiniz değerleri girin</span>
+                </div>
+
+                <form [formGroup]="measurementForm" (ngSubmit)="saveMeasurement()" class="space-y-4">
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Tarih -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Ölçüm Tarihi *</label>
+                      <input
+                        type="date"
+                        formControlName="date"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Kilo (kg) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Kilo (kg)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Örn: 78.5"
+                        formControlName="weight"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Boy (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Boy (cm)</label>
+                      <input
+                        type="number"
+                        placeholder="Örn: 182"
+                        formControlName="height"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Yağ Oranı (%) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Yağ Oranı (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Örn: 15.4"
+                        formControlName="bodyFatPercentage"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Göğüs (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Göğüs (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 102"
+                        formControlName="chest"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Bel (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Bel (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 82"
+                        formControlName="waist"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Kalça (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Kalça (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 98"
+                        formControlName="hips"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Kol / Pazı (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Kol / Pazı (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 38"
+                        formControlName="bicep"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Bacak / Uyluk (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Bacak / Uyluk (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 56"
+                        formControlName="thigh"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Baldır (cm) -->
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Baldır (cm)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Örn: 37"
+                        formControlName="calf"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <!-- Notlar (2 Sütun) -->
+                    <div class="col-span-2">
+                      <label class="block text-[11px] font-bold text-slate-700 mb-1">Antrenör / Ölçüm Notu</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: Sabah aç karnına, kardiyo öncesi alındı"
+                        formControlName="notes"
+                        class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      (click)="toggleAddMeasurement()"
+                      class="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-all cursor-pointer"
+                    >
+                      Vazgeç
+                    </button>
+                    <button
+                      type="submit"
+                      [disabled]="savingMeasurement()"
+                      class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      @if (savingMeasurement()) {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Kaydediliyor...</span>
+                      } @else {
+                        <mat-icon class="icon-size-4">save</mat-icon>
+                        <span>Ölçümü Kaydet</span>
+                      }
+                    </button>
+                  </div>
+                </form>
+              </div>
+            }
+
+            <!-- Measurement Records List -->
+            @if (measurements().length === 0) {
+              <div class="p-10 text-center bg-slate-50/60 rounded-3xl border border-dashed border-slate-300">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                  <mat-icon class="icon-size-6">straighten</mat-icon>
+                </div>
+                <h4 class="text-sm font-black text-slate-800 m-0">Henüz vücut ölçüm kaydı bulunmuyor</h4>
+                <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  Üyenin kilo, boy, yağ oranı ve çevre ölçümlerini takip etmek için yukarıdaki "+ Yeni Ölçüm Kaydet" butonuna tıklayın.
+                </p>
+                <button
+                  type="button"
+                  (click)="toggleAddMeasurement()"
+                  class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">add</mat-icon>
+                  <span>İlk Ölçümü Ekle</span>
+                </button>
+              </div>
+            } @else {
+              <div class="space-y-3">
+                @for (m of measurements(); track m.id) {
+                  <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-indigo-300 transition-all space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <!-- Tarih & Temel Değerler -->
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                          {{ formatDate(m.date) }}
+                        </span>
+
+                        @if (m.weight) {
+                          <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-black">
+                            {{ m.weight }} kg
+                          </span>
+                        }
+
+                        @if (m.height) {
+                          <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">
+                            {{ m.height }} cm
+                          </span>
+                        }
+
+                        @if (m.bodyFatPercentage) {
+                          <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200/60">
+                            %{{ m.bodyFatPercentage }} Yağ
+                          </span>
+                        }
+                      </div>
+
+                      <!-- Silme Butonu -->
+                      <button
+                        type="button"
+                        (click)="deleteMeasurement(m.id)"
+                        matTooltip="Ölçüm Kaydını Sil"
+                        class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <mat-icon class="icon-size-4">delete</mat-icon>
+                      </button>
+                    </div>
+
+                    <!-- Çevre Ölçümleri Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Göğüs</span>
+                        <strong class="font-bold text-slate-800">{{ m.chest ? m.chest + ' cm' : '—' }}</strong>
+                      </div>
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Bel</span>
+                        <strong class="font-bold text-slate-800">{{ m.waist ? m.waist + ' cm' : '—' }}</strong>
+                      </div>
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Kalça</span>
+                        <strong class="font-bold text-slate-800">{{ m.hips ? m.hips + ' cm' : '—' }}</strong>
+                      </div>
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Kol / Pazı</span>
+                        <strong class="font-bold text-slate-800">{{ m.bicep ? m.bicep + ' cm' : '—' }}</strong>
+                      </div>
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Bacak / Uyluk</span>
+                        <strong class="font-bold text-slate-800">{{ m.thigh ? m.thigh + ' cm' : '—' }}</strong>
+                      </div>
+                      <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] font-semibold text-slate-400 block">Baldır</span>
+                        <strong class="font-bold text-slate-800">{{ m.calf ? m.calf + ' cm' : '—' }}</strong>
+                      </div>
+                    </div>
+
+                    @if (m.notes) {
+                      <div class="p-2.5 rounded-xl bg-amber-50/40 border border-amber-100/60 text-xs text-amber-900 font-medium">
+                        <span class="font-bold text-amber-800">Not:</span> {{ m.notes }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 2: GÜNLÜK SU TAKİBİ                       -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'water') {
+          <div class="space-y-5">
+            <!-- Today's Intake Hero Widget -->
+            <div class="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-blue-500/10 border border-cyan-200/80 shadow-xs space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-cyan-800 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-cyan-600">water_drop</mat-icon>
+                    Günün Su Hidrasyon Durumu
+                  </span>
+                  <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+                    {{ todayWaterTotal() }} ml <span class="text-base text-slate-400 font-bold">/ {{ waterTarget }} ml</span>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-500 mt-0.5 mb-0">
+                    Günlük hedefin <strong class="text-cyan-700 font-bold">%{{ waterProgressPercent() }}</strong> kadarı tamamlandı
+                  </p>
+                </div>
+
+                <!-- Quick Click Actions -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    (click)="addQuickWater(200, 'Bardak su')"
+                    [disabled]="savingWater()"
+                    class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <mat-icon class="icon-size-3.5 text-cyan-500">local_drink</mat-icon>
+                    <span>+200 ml</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="addQuickWater(250, 'Büyük bardak su')"
+                    [disabled]="savingWater()"
+                    class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <mat-icon class="icon-size-3.5 text-cyan-500">local_drink</mat-icon>
+                    <span>+250 ml</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="addQuickWater(500, 'Pet şişe su')"
+                    [disabled]="savingWater()"
+                    class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <mat-icon class="icon-size-3.5 text-cyan-500">water_drop</mat-icon>
+                    <span>+500 ml</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="addQuickWater(1000, 'Termos / Büyük şişe')"
+                    [disabled]="savingWater()"
+                    class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <mat-icon class="icon-size-3.5">add</mat-icon>
+                    <span>+1.000 ml</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="w-full bg-white/80 rounded-full h-3 p-0.5 border border-cyan-200/60 overflow-hidden">
+                <div
+                  class="bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 h-full rounded-full transition-all duration-500"
+                  [style.width.%]="waterProgressPercent()"
+                ></div>
+              </div>
+
+              <!-- Custom Water Entry Row -->
+              <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-cyan-200/50">
+                <span class="text-xs font-bold text-slate-700">Özel Miktar:</span>
+                <input
+                  type="number"
+                  step="50"
+                  [value]="customWaterAmount()"
+                  (input)="customWaterAmount.set($any($event.target).value)"
+                  class="w-24 h-8 px-2.5 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                  placeholder="ml"
+                />
+                <input
+                  type="text"
+                  [value]="customWaterNote()"
+                  (input)="customWaterNote.set($any($event.target).value)"
+                  placeholder="Not (örn: Antrenman sırası)"
+                  class="flex-1 min-w-[150px] h-8 px-2.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-800 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  (click)="addCustomWater()"
+                  [disabled]="savingWater()"
+                  class="px-4 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <mat-icon class="icon-size-3.5">add</mat-icon>
+                  <span>Ekle</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Water Logs History -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Su Tüketim Geçmişi</h4>
+                <span class="text-xs font-semibold text-slate-500">Toplam {{ waterLogs().length }} kayıt</span>
+              </div>
+
+              @if (waterLogs().length === 0) {
+                <div class="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-300">
+                  <mat-icon class="icon-size-10 text-cyan-300 mx-auto mb-2">water_drop</mat-icon>
+                  <p class="text-sm font-bold text-slate-700 m-0">Henüz su tüketim kaydı yok</p>
+                  <p class="text-xs text-slate-400 mt-1 mb-0">Yukarıdaki hızlı butonlarla anında su kaydı ekleyebilirsiniz.</p>
+                </div>
+              } @else {
+                <div class="space-y-2">
+                  @for (log of waterLogs(); track log.id) {
+                    <div class="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                          <mat-icon class="icon-size-4">water_drop</mat-icon>
+                        </div>
+                        <div>
+                          <p class="text-xs font-bold text-slate-800 m-0">
+                            +{{ log.amount }} {{ log.unit || 'ml' }}
+                            @if (log.notes) {
+                              <span class="font-normal text-slate-500">({{ log.notes }})</span>
+                            }
+                          </p>
+                          <span class="text-[11px] text-slate-400 font-medium">
+                            {{ formatDate(log.date) }} • {{ formatTime(log.createdAt) }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        (click)="deleteWaterLog(log.id)"
+                        matTooltip="Sil"
+                        class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <mat-icon class="icon-size-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB: BÖLGESEL ANTRENMAN PROGRAMI              -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'workout') {
+          <div class="space-y-6">
+            <!-- Header bar with Action Button -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 m-0 flex items-center gap-2">
+                  <mat-icon class="icon-size-5 text-indigo-600">fitness_center</mat-icon>
+                  Bölgesel Antrenman Programı & Egzersiz Planı
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                  Göğüs, sırt, omuz, bacak, kol ve karın kas gruplarına özel split programlar ve antrenör direktifleri
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="toggleAddWorkoutPlan()"
+                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <mat-icon class="icon-size-4">
+                  {{ showAddWorkoutPlanForm() ? 'close' : 'add' }}
+                </mat-icon>
+                <span>{{ showAddWorkoutPlanForm() ? 'Formu Kapat' : '+ Yeni Program Ata' }}</span>
+              </button>
+            </div>
+
+            <!-- Program Hazırlama Formu -->
+            @if (showAddWorkoutPlanForm()) {
+              <div class="p-5 sm:p-6 rounded-3xl bg-indigo-50/30 border-2 border-dashed border-indigo-200 shadow-xs space-y-5 animate-in fade-in zoom-in-98 duration-150">
+                <div class="flex items-center justify-between border-b border-indigo-100 pb-3">
+                  <h4 class="text-xs sm:text-sm font-black text-indigo-950 m-0 flex items-center gap-2">
+                    <mat-icon class="icon-size-4 text-indigo-600">tune</mat-icon>
+                    Antrenör Egzersiz & Program Masası
+                  </h4>
+                  <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-100/70 px-2 py-0.5 rounded-full">
+                    {{ currentPlanExercises().length }} Hareket Eklendi
+                  </span>
+                </div>
+
+                <!-- Temel Program Bilgileri -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Program Başlığı</label>
+                    <input
+                      type="text"
+                      [value]="workoutPlanTitle()"
+                      (input)="workoutPlanTitle.set($any($event.target).value)"
+                      placeholder="Örn: 4 Günlük Bölgesel Split"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-indigo-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">İlgili Branş</label>
+                    <select
+                      [value]="workoutPlanDisciplineId()"
+                      (change)="workoutPlanDisciplineId.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-indigo-500 focus:outline-hidden font-medium"
+                    >
+                      <option value="">Genel Fitness & Vücut Geliştirme</option>
+                      @for (d of disciplines(); track d.id) {
+                        <option [value]="d.id">{{ d.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Başlangıç Tarihi</label>
+                    <input
+                      type="date"
+                      [value]="workoutPlanStartDate()"
+                      (input)="workoutPlanStartDate.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-indigo-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[11px] font-bold text-slate-700 block mb-1">Antrenör Direktifi / Not</label>
+                  <input
+                    type="text"
+                    [value]="workoutPlanNotes()"
+                    (input)="workoutPlanNotes.set($any($event.target).value)"
+                    placeholder="Örn: Set aralarında 60 sn dinlen, her hareketin son setinde tükenişe git."
+                    class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-indigo-500 focus:outline-hidden font-medium"
+                  />
+                </div>
+
+                <!-- 1. Hızlı Bölgesel Kütüphaneden Ekle -->
+                <div class="p-4 rounded-2xl bg-white border border-indigo-100 space-y-3">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <mat-icon class="icon-size-4 text-purple-600">bolt</mat-icon>
+                      Bölgesel Egzersiz Kütüphanesinden Hızlı Ekle
+                    </span>
+
+                    <!-- Kas Grubu Filtre Hapları -->
+                    <div class="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        (click)="filterExerciseMuscle.set('all')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer"
+                        [class]="filterExerciseMuscle() === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                      >
+                        Tümü
+                      </button>
+                      @for (mg of muscleGroupsList; track mg.key) {
+                        <button
+                          type="button"
+                          (click)="filterExerciseMuscle.set(mg.key)"
+                          class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer"
+                          [class]="filterExerciseMuscle() === mg.key ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                        >
+                          {{ mg.label.split(' ')[0] }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Quick Chips -->
+                  <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scroll p-1">
+                    @for (libEx of getAvailableLibraryExercises(); track libEx.name) {
+                      <button
+                        type="button"
+                        (click)="addExerciseFromLibrary(libEx)"
+                        class="px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <mat-icon class="icon-size-3.5 text-indigo-500">add</mat-icon>
+                        <span>{{ libEx.name }}</span>
+                        <span class="text-[10px] px-1 py-0.2 rounded-md bg-white border border-slate-200 text-slate-500">
+                          {{ getMuscleGroupLabel(libEx.muscleGroup) }}
+                        </span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- 2. Özel Hareket / Cihaz Ekleme Satırı -->
+                <div class="p-4 rounded-2xl bg-white border border-indigo-100 space-y-3">
+                  <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-emerald-600">edit_note</mat-icon>
+                    Özel Hareket / Cihaz Tanımla
+                  </span>
+
+                  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                    <div class="col-span-2">
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Hareket Adı *</label>
+                      <input
+                        type="text"
+                        [value]="newExName()"
+                        (input)="newExName.set($any($event.target).value)"
+                        placeholder="Örn: Lat Pulldown"
+                        class="w-full h-8 px-2.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Kas Grubu</label>
+                      <select
+                        [value]="newExMuscle()"
+                        (change)="newExMuscle.set($any($event.target).value)"
+                        class="w-full h-8 px-1.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden font-medium"
+                      >
+                        @for (mg of muscleGroupsList; track mg.key) {
+                          <option [value]="mg.key">{{ mg.label.split(' ')[0] }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Cihaz / Ekipman</label>
+                      <input
+                        type="text"
+                        [value]="newExEquipment()"
+                        (input)="newExEquipment.set($any($event.target).value)"
+                        placeholder="Örn: Kablo Makinesi"
+                        class="w-full h-8 px-2.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Set</label>
+                      <input
+                        type="number"
+                        [value]="newExSets()"
+                        (input)="newExSets.set(+$any($event.target).value)"
+                        min="1"
+                        max="20"
+                        class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Tekrar</label>
+                      <input
+                        type="text"
+                        [value]="newExReps()"
+                        (input)="newExReps.set($any($event.target).value)"
+                        placeholder="10-12"
+                        class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Kilo (kg)</label>
+                      <input
+                        type="number"
+                        [value]="newExWeight() || ''"
+                        (input)="newExWeight.set(+$any($event.target).value || null)"
+                        placeholder="Opsiyonel"
+                        class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div class="flex items-end">
+                      <button
+                        type="button"
+                        (click)="addCustomExercise()"
+                        class="w-full h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      >
+                        <mat-icon class="icon-size-3.5">add</mat-icon>
+                        <span>Ekle</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Eklenen Hareketler Listesi -->
+                <div>
+                  <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Program Akışı (Toplam {{ currentPlanExercises().length }} Hareket)
+                  </h5>
+
+                  @if (currentPlanExercises().length === 0) {
+                    <div class="p-6 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                      <mat-icon class="icon-size-8 text-slate-300 mx-auto mb-1">fitness_center</mat-icon>
+                      <p class="text-xs font-bold text-slate-600 m-0">Henüz programa hareket eklenmedi</p>
+                      <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Yukarıdaki kütüphaneden seçebilir veya özel hareket ekleyebilirsiniz.</p>
+                    </div>
+                  } @else {
+                    <div class="space-y-2">
+                      @for (ex of currentPlanExercises(); track $index) {
+                        <div class="p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+                          <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
+                              {{ $index + 1 }}
+                            </span>
+                            <div>
+                              <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-900">{{ ex.name }}</span>
+                                <span class="px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold">
+                                  {{ getMuscleGroupLabel(ex.muscleGroup) }}
+                                </span>
+                                @if (ex.equipmentName) {
+                                  <span class="text-[10px] text-slate-500 font-medium">({{ ex.equipmentName }})</span>
+                                }
+                              </div>
+                              <p class="text-[11px] text-slate-500 font-semibold m-0 mt-0.5">
+                                {{ ex.sets }} Set × {{ ex.reps }} Tekrar
+                                @if (ex.weight) {
+                                  • <strong class="text-slate-800">{{ ex.weight }} kg</strong>
+                                }
+                                @if (ex.restSeconds) {
+                                  • <span class="text-slate-400">{{ ex.restSeconds }} sn dinlenme</span>
+                                }
+                                @if (ex.notes) {
+                                  • <span class="text-indigo-600 italic">"{{ ex.notes }}"</span>
+                                }
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            (click)="removeExerciseFromPlan($index)"
+                            matTooltip="Bu Hareketi Çıkar"
+                            class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <mat-icon class="icon-size-4">delete</mat-icon>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Form Submit Actions -->
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-indigo-100">
+                  <button
+                    type="button"
+                    (click)="toggleAddWorkoutPlan()"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition-all cursor-pointer"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="button"
+                    (click)="saveWorkoutPlan()"
+                    [disabled]="savingWorkoutPlan() || currentPlanExercises().length === 0"
+                    class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    @if (savingWorkoutPlan()) {
+                      <mat-icon class="animate-spin icon-size-4">progress_activity</mat-icon>
+                    }
+                    <span>Programı Kaydet ve Üyeye Ata</span>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Mevcut Programlar Listesi -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Üyenin Antrenman Programları</h4>
+                <span class="text-xs font-semibold text-slate-500">Toplam {{ workoutPlans().length }} program</span>
+              </div>
+
+              @if (workoutPlans().length === 0) {
+                <div class="p-10 text-center bg-slate-50/60 rounded-3xl border border-dashed border-slate-300">
+                  <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                    <mat-icon class="icon-size-8">fitness_center</mat-icon>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Henüz atanmış antrenman programı yok</h4>
+                  <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm mx-auto">
+                    Üyenin hedeflerine uygun bölgesel göğüs, sırt, bacak, kol veya kickboks kondisyon programı tanımlayabilirsiniz.
+                  </p>
+                  <button
+                    type="button"
+                    (click)="toggleAddWorkoutPlan()"
+                    class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs hover:bg-indigo-700 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <mat-icon class="icon-size-4">add</mat-icon>
+                    <span>İlk Programı Ata</span>
+                  </button>
+                </div>
+              } @else {
+                <div class="space-y-4">
+                  @for (plan of workoutPlans(); track plan.id) {
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+                      <!-- Program Başlık Çubuğu -->
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <h4 class="text-sm sm:text-base font-black text-slate-900 m-0">{{ plan.title }}</h4>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                              {{ plan.status === 'active' ? 'Aktif Program' : plan.status }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              {{ getDisciplineName(plan.disciplineId) }}
+                            </span>
+                          </div>
+                          <p class="text-xs text-slate-500 mt-0.5 mb-0 flex items-center gap-2">
+                            <span>Antrenör: <strong>{{ plan.trainerName || 'Baş Antrenör' }}</strong></span>
+                            <span>•</span>
+                            <span>Başlangıç: {{ formatDate(plan.startDate) }}</span>
+                          </p>
+                        </div>
+
+                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            (click)="deleteWorkoutPlan(plan.id)"
+                            matTooltip="Programı Sil"
+                            class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            <mat-icon class="icon-size-4">delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (plan.notes) {
+                        <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-200/60 text-xs text-amber-900 flex items-start gap-2">
+                          <mat-icon class="icon-size-4 text-amber-600 shrink-0 mt-0.5">tips_and_updates</mat-icon>
+                          <div>
+                            <strong class="font-bold text-amber-950">Antrenör Notu:</strong> {{ plan.notes }}
+                          </div>
+                        </div>
+                      }
+
+                      <!-- Egzersiz Tablosu -->
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        @for (ex of plan.exercises; track $index) {
+                          <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-2.5">
+                              <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                                {{ $index + 1 }}
+                              </div>
+                              <div>
+                                <h5 class="text-xs font-bold text-slate-900 m-0">{{ ex.name }}</h5>
+                                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200">
+                                    {{ getMuscleGroupLabel(ex.muscleGroup) }}
+                                  </span>
+                                  @if (ex.equipmentName) {
+                                    <span class="text-[10px] text-slate-500 font-medium">({{ ex.equipmentName }})</span>
+                                  }
+                                </div>
+                                <p class="text-[11px] text-slate-600 font-semibold m-0 mt-1">
+                                  <strong>{{ ex.sets }} Set</strong> × <strong>{{ ex.reps }} Tekrar</strong>
+                                  @if (ex.weight) {
+                                    • <span class="text-emerald-700 font-bold">{{ ex.weight }} kg</span>
+                                  }
+                                  @if (ex.restSeconds) {
+                                    • <span class="text-slate-400">{{ ex.restSeconds }} sn dinlenme</span>
+                                  }
+                                </p>
+                                @if (ex.notes) {
+                                  <p class="text-[10px] text-indigo-600 italic m-0 mt-0.5">
+                                    "{{ ex.notes }}"
+                                  </p>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB: ZORUNLU EVRAKLAR & FEDERASYON LİSANSLARI -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'documents') {
+          <div class="space-y-6">
+            <!-- Header bar with Action Button -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 m-0 flex items-center gap-2">
+                  <mat-icon class="icon-size-5 text-purple-600">badge</mat-icon>
+                  Zorunlu Evraklar, Sağlık Raporları & Lisanslar
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                  Kickboks, Boks, Yüzme branşları için sağlık raporu, veli izin belgesi ve federasyon lisans takibi
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="toggleAddDoc()"
+                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <mat-icon class="icon-size-4">
+                  {{ showAddDocForm() ? 'close' : 'add' }}
+                </mat-icon>
+                <span>{{ showAddDocForm() ? 'Formu Kapat' : '+ Yeni Evrak / Lisans Ekle' }}</span>
+              </button>
+            </div>
+
+            <!-- Evrak Ekleme Formu -->
+            @if (showAddDocForm()) {
+              <div class="p-5 sm:p-6 rounded-3xl bg-purple-50/30 border-2 border-dashed border-purple-200 shadow-xs space-y-4 animate-in fade-in zoom-in-98 duration-150">
+                <div class="flex items-center justify-between border-b border-purple-100 pb-2">
+                  <h4 class="text-xs sm:text-sm font-black text-purple-950 m-0 flex items-center gap-2">
+                    <mat-icon class="icon-size-4 text-purple-600">assignment</mat-icon>
+                    Yeni Belge & Lisans Kaydı
+                  </h4>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Evrak Türü *</label>
+                    <select
+                      [value]="docType()"
+                      (change)="docType.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    >
+                      <option value="health_report">Sağlık Raporu (Spor Yapabilir)</option>
+                      <option value="parent_consent">18 Yaş Altı Veli Muvafakatnamesi</option>
+                      <option value="federation_license">Federasyon Sporcu Lisansı</option>
+                      <option value="waiver_form">Feragatname / Risk Formu</option>
+                      <option value="other">Diğer Belge</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Belge / Dosya Adı *</label>
+                    <input
+                      type="text"
+                      [value]="docName()"
+                      (input)="docName.set($any($event.target).value)"
+                      placeholder="Örn: 2026 Kickboks Lisans Belgesi"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">İlgili Branş</label>
+                    <select
+                      [value]="docDisciplineId()"
+                      (change)="docDisciplineId.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    >
+                      <option value="">Tüm Branşlar / Genel</option>
+                      @for (d of disciplines(); track d.id) {
+                        <option [value]="d.id">{{ d.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Düzenlenme / Veriliş Tarihi</label>
+                    <input
+                      type="date"
+                      [value]="docIssueDate()"
+                      (input)="docIssueDate.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Son Geçerlilik / Bitiş Tarihi</label>
+                    <input
+                      type="date"
+                      [value]="docExpiryDate()"
+                      (input)="docExpiryDate.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-bold text-slate-700 block mb-1">Onay Durumu</label>
+                    <select
+                      [value]="docStatus()"
+                      (change)="docStatus.set($any($event.target).value)"
+                      class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                    >
+                      <option value="approved">Onaylandı (Geçerli)</option>
+                      <option value="pending_review">İnceleniyor (Beklemede)</option>
+                      <option value="expired">Süresi Doldu</option>
+                      <option value="rejected">Reddedildi</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[11px] font-bold text-slate-700 block mb-1">Açıklama / Not</label>
+                  <input
+                    type="text"
+                    [value]="docNotes()"
+                    (input)="docNotes.set($any($event.target).value)"
+                    placeholder="Örn: Muayene Dr. Ali Veli tarafından yapıldı, 1 yıl geçerli."
+                    class="w-full h-9 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:border-purple-500 focus:outline-hidden font-medium"
+                  />
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
+                  <button
+                    type="button"
+                    (click)="toggleAddDoc()"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition-all cursor-pointer"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="button"
+                    (click)="saveMemberDoc()"
+                    [disabled]="savingDoc()"
+                    class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    @if (savingDoc()) {
+                      <mat-icon class="animate-spin icon-size-4">progress_activity</mat-icon>
+                    }
+                    <span>Evrakı Kaydet</span>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Evraklar Listesi -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Kayıtlı Evrak & Belgeler</h4>
+                <span class="text-xs font-semibold text-slate-500">Toplam {{ memberDocuments().length }} evrak</span>
+              </div>
+
+              @if (memberDocuments().length === 0) {
+                <div class="p-10 text-center bg-slate-50/60 rounded-3xl border border-dashed border-slate-300">
+                  <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+                    <mat-icon class="icon-size-8">badge</mat-icon>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Kayıtlı evrak veya sporcu lisansı bulunmuyor</h4>
+                  <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm mx-auto">
+                    Dövüş sporları (Kickboks/Boks) ve havuz kullanımı için zorunlu olan sağlık raporu ve federasyon lisanslarını buradan ekleyebilirsiniz.
+                  </p>
+                  <button
+                    type="button"
+                    (click)="toggleAddDoc()"
+                    class="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold shadow-xs hover:bg-purple-700 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <mat-icon class="icon-size-4">add</mat-icon>
+                    <span>İlk Evrakı Ekle</span>
+                  </button>
+                </div>
+              } @else {
+                <div class="space-y-3">
+                  @for (doc of memberDocuments(); track doc.id) {
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                          <mat-icon class="icon-size-5">badge</mat-icon>
+                        </div>
+                        <div>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <h5 class="text-xs sm:text-sm font-bold text-slate-900 m-0">{{ doc.documentName }}</h5>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                              [class]="doc.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : doc.status === 'pending_review' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'"
+                            >
+                              {{ docStatusLabels[doc.status] }}
+                            </span>
+                            @if (doc.disciplineId) {
+                              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {{ getDisciplineName(doc.disciplineId) }}
+                              </span>
+                            }
+                          </div>
+                          <p class="text-xs text-slate-500 mt-1 mb-0 flex flex-wrap items-center gap-2">
+                            <span>Tür: <strong>{{ docTypeLabels[doc.documentType] }}</strong></span>
+                            <span>•</span>
+                            <span>Tarih: {{ formatDate(doc.issueDate) }}</span>
+                            @if (doc.expiryDate) {
+                              <span>•</span>
+                              <span class="font-semibold" [class]="doc.status === 'expired' ? 'text-rose-600' : 'text-slate-600'">
+                                Bitiş: {{ formatDate(doc.expiryDate) }}
+                              </span>
+                            }
+                            @if (doc.verifiedBy) {
+                              <span>•</span>
+                              <span class="text-slate-400 font-medium">Onaylayan: {{ doc.verifiedBy }}</span>
+                            }
+                          </p>
+                          @if (doc.notes) {
+                            <p class="text-xs text-amber-800 font-medium mt-1 mb-0 italic">
+                              "{{ doc.notes }}"
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                        @if (doc.status !== 'approved') {
+                          <button
+                            type="button"
+                            (click)="updateDocStatus(doc.id, 'approved')"
+                            class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Onayla
+                          </button>
+                        }
+                        @if (doc.status !== 'rejected') {
+                          <button
+                            type="button"
+                            (click)="updateDocStatus(doc.id, 'rejected')"
+                            class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Reddet
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          (click)="deleteMemberDoc(doc.id)"
+                          matTooltip="Evrakı Sil"
+                          class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <mat-icon class="icon-size-4">delete</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB: KAYITLI SEANSLAR & SALON ROSTERI         -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'schedules') {
+          <div class="space-y-6">
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-slate-900 m-0 flex items-center gap-2">
+                <mat-icon class="icon-size-5 text-emerald-600">event_available</mat-icon>
+                Kayıtlı Seanslar & Salon Katılım Rosterı
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                Üyenin sabit katıldığı Kickboks, Boks, Reformer Pilates veya Grup Fitness seansları
+              </p>
+            </div>
+
+            <!-- Üyenin Kayıtlı Olduğu Seanslar -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Kayıtlı Olduğu Seanslar</h4>
+                <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  {{ enrolledSchedules().length }} Seans Aktif
+                </span>
+              </div>
+
+              @if (enrolledSchedules().length === 0) {
+                <div class="p-6 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-300 mb-6">
+                  <mat-icon class="icon-size-8 text-slate-300 mx-auto mb-1">event_busy</mat-icon>
+                  <p class="text-xs font-bold text-slate-700 m-0">Üye henüz hiçbir grup seansına kayıtlı değil</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Aşağıdaki listeden üyenin katılacağı seansları tek tıkla kaydedebilirsiniz.</p>
+                </div>
+              } @else {
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  @for (sch of enrolledSchedules(); track sch.id) {
+                    <div class="p-4 rounded-2xl bg-white border border-emerald-200/80 shadow-xs space-y-2">
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {{ getDayName(sch.dayOfWeek) }} • {{ sch.startTime }} - {{ sch.endTime }}
+                          </span>
+                          <h4 class="text-sm font-black text-slate-900 m-0 mt-1.5">{{ sch.name }}</h4>
+                        </div>
+
+                        <button
+                          type="button"
+                          (click)="toggleScheduleEnrollment(sch, false)"
+                          class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                        >
+                          <mat-icon class="icon-size-3.5">person_remove</mat-icon>
+                          <span>Çıkar</span>
+                        </button>
+                      </div>
+
+                      <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
+                        <span>Antrenör: <strong>{{ sch.instructorName }}</strong></span>
+                        <span>•</span>
+                        <span>Kontenjan: {{ sch.currentBookings }} / {{ sch.capacity }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Salondaki Tüm Seanslar (Hızlı Ekleme / Çıkarma) -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Salondaki Tüm Seanslar (Hızlı Kayıt Masası)</h4>
+                <span class="text-xs font-semibold text-slate-500">Toplam {{ allTenantSchedules().length }} seans</span>
+              </div>
+
+              @if (allTenantSchedules().length === 0) {
+                <div class="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-300">
+                  <mat-icon class="icon-size-8 text-slate-300 mx-auto mb-1">schedule</mat-icon>
+                  <p class="text-xs font-bold text-slate-700 m-0">Salonda henüz tanımlı seans bulunmuyor</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Ders Programı ekranından yeni seanslar ekleyebilirsiniz.</p>
+                </div>
+              } @else {
+                <div class="space-y-2">
+                  @for (sch of allTenantSchedules(); track sch.id) {
+                    <div class="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-bold text-xs">
+                          {{ getDayName(sch.dayOfWeek).slice(0, 3) }}
+                        </div>
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-bold text-slate-900">{{ sch.name }}</span>
+                            <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                              {{ sch.startTime }} - {{ sch.endTime }}
+                            </span>
+                            @if (isEnrolledInSchedule(sch.id)) {
+                              <span class="px-2 py-0.2 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                ✓ Bu Seansa Kayıtlı
+                              </span>
+                            }
+                          </div>
+                          <p class="text-[11px] text-slate-500 font-medium m-0 mt-0.5">
+                            Antrenör: <strong>{{ sch.instructorName }}</strong> • Kapasite: {{ sch.currentBookings }} / {{ sch.capacity }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        @if (isEnrolledInSchedule(sch.id)) {
+                          <button
+                            type="button"
+                            (click)="toggleScheduleEnrollment(sch, false)"
+                            class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <mat-icon class="icon-size-3.5">remove_circle_outline</mat-icon>
+                            <span>Kaydı Sil</span>
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            (click)="toggleScheduleEnrollment(sch, true)"
+                            class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <mat-icon class="icon-size-3.5">add_circle_outline</mat-icon>
+                            <span>Seansa Kaydet</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 3: CÜZDAN HAREKETLERİ                      -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'wallet') {
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-black text-slate-900 m-0">E-Cüzdan & Harcama Geçmişi</h4>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">Bakiye yükleme ve Vitamin Bar harcamaları</p>
+              </div>
+
+              <button
+                type="button"
+                (click)="onWallet()"
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+              >
+                <mat-icon class="icon-size-4">add</mat-icon>
+                <span>+ Bakiye Yükle / Düş</span>
+              </button>
+            </div>
+
+            @if (walletTransactions().length === 0) {
+              <div class="p-8 text-center bg-white rounded-2xl border border-slate-200/80">
+                <mat-icon class="icon-size-10 text-slate-300 mx-auto mb-2">account_balance_wallet</mat-icon>
+                <p class="text-sm font-bold text-slate-700 m-0">Henüz cüzdan hareketi yok</p>
+                <p class="text-xs text-slate-400 mt-1 mb-0">Üyenin hesabına bakiye yükleyebilir veya markette harcama yapabilirsiniz.</p>
+              </div>
+            } @else {
+              <div class="space-y-2">
+                @for (tx of walletTransactions(); track tx.id) {
+                  <div class="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        [class]="tx.type === 'deposit' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+                      >
+                        <mat-icon class="icon-size-4.5">
+                          {{ tx.type === 'deposit' ? 'arrow_downward' : 'arrow_upward' }}
+                        </mat-icon>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-slate-800 m-0">
+                          {{ tx.description || (tx.type === 'deposit' ? 'Bakiye Yükleme' : 'Harcama / Çıkış') }}
+                        </p>
+                        <span class="text-[11px] text-slate-400 font-medium">
+                          {{ formatTime(tx.createdAt) }} • {{ tx.paymentMethod === 'card' ? 'Kredi Kartı' : tx.paymentMethod === 'cash' ? 'Nakit' : 'Diğer' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="text-right">
+                      <span
+                        class="text-sm font-black tracking-tight"
+                        [class]="tx.type === 'deposit' ? 'text-emerald-600 font-bold' : 'text-slate-900'"
+                      >
+                        {{ tx.type === 'deposit' ? '+' : '-' }}{{ money(tx.amount) }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 4: TURNİKE & DEVAM                         -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'access') {
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-black text-slate-900 m-0">Turnike & Kapı Geçiş Kayıtları</h4>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">Salona giriş-çıkış logları ve devam durumu</p>
+              </div>
+              <span class="text-xs font-semibold text-slate-500">Toplam {{ accessLogs().length }} geçiş</span>
+            </div>
+
+            @if (accessLogs().length === 0) {
+              <div class="p-8 text-center bg-white rounded-2xl border border-slate-200/80">
+                <mat-icon class="icon-size-10 text-slate-300 mx-auto mb-2">nfc</mat-icon>
+                <p class="text-sm font-bold text-slate-700 m-0">Turnike geçiş kaydı bulunamadı</p>
+                <p class="text-xs text-slate-400 mt-1 mb-0">Üye salona giriş yaptıkça hareketler burada canlı listelenecektir.</p>
+              </div>
+            } @else {
+              <div class="space-y-2">
+                @for (log of accessLogs(); track log.id) {
+                  <div class="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                        [class]="log.status === 'granted' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+                      >
+                        <mat-icon class="icon-size-4">
+                          {{ log.status === 'granted' ? 'check' : 'close' }}
+                        </mat-icon>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-slate-800 m-0">
+                          {{ log.gateName }} ({{ log.direction === 'in' ? 'Giriş' : 'Çıkış' }})
+                        </p>
+                        <span class="text-[11px] text-slate-400">
+                          Yöntem: {{ log.method.toUpperCase() }} • {{ log.status === 'granted' ? 'İzin Verildi' : 'Reddedildi' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span class="text-xs font-semibold text-slate-400 whitespace-nowrap">
+                      {{ formatTime(log.timestamp) }}
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 5: ÜYELİK & GENEL BİLGİLER                -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'overview') {
+          <div class="space-y-5">
+            <!-- Üyelik ve Paket Bilgisi Kartı -->
+            <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-4">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Üyelik Süreci & Paket</h4>
+                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                  {{ member()?.packageLabel || 'Paket Tanımsız' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs">
+                <div>
+                  <span class="text-slate-400 block mb-0.5 font-medium">Kayıtlı Şube:</span>
+                  <strong class="text-slate-800 font-bold flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ member()?.branchName || 'Merkez Şube' }}
+                  </strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block mb-0.5 font-medium">Başlangıç Tarihi:</span>
+                  <strong class="text-slate-800 font-bold">
+                    {{ formatDate(member()?.membershipStartsAt || member()?.trialStartedAt) }}
+                  </strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block mb-0.5 font-medium">Bitiş / Yenileme:</span>
+                  <strong class="text-slate-800 font-bold">
+                    {{ formatDate(member()?.membershipEndsAt || member()?.trialEndsAt) }}
+                  </strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block mb-0.5 font-medium">Kayıt Tarihi:</span>
+                  <strong class="text-slate-800 font-bold">
+                    {{ formatDate(member()?.createdAt) }}
+                  </strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block mb-0.5 font-medium">Cinsiyet:</span>
+                  <strong class="text-slate-800 font-bold">
+                    {{ member()?.gender === 'female' ? 'Kadın' : member()?.gender === 'male' ? 'Erkek' : 'Belirtilmemiş' }}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Notları -->
+            <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Admin & Resepsiyon Notları</h4>
+              <p class="text-xs text-slate-600 m-0 whitespace-pre-wrap leading-relaxed">
+                {{ member()?.notes || 'Bu üye için henüz özel bir not eklenmemiş.' }}
+              </p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- 5. Sticky Footer Action Bar -->
+      <div class="p-4 sm:p-5 border-t border-slate-200/80 bg-white flex items-center justify-between gap-3 shrink-0">
+        <button
+          type="button"
+          (click)="close()"
+          class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+        >
+          Kapat
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="onWallet()"
+            class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
+            <span>Bakiye Yükle / Düş</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="onEdit()"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+            <span>Düzenle</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+

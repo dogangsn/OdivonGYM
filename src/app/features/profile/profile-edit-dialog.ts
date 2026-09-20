@@ -1,95 +1,142 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/auth/auth.service';
+import { COUNTRIES, SupportedLanguage } from '../../core/data/countries';
+import { LanguageService } from '../../core/i18n/language.service';
+import { Gender } from '../../core/models/user-profile.model';
+import { Field } from '../../shared/ui/field';
+import { SlideOver } from '../../shared/ui/slide-over';
+import { firstError, fromDateInput, toDateInput } from '../../shared/ui/ui-utils';
 import { ProfileService } from './profile.service';
-import { toAuthErrorMessage } from '../../core/auth/auth-error.util';
-import { TranslocoService } from '@jsverse/transloco';
-import { UserProfile, Gender } from '../../core/models/user-profile.model';
 
 @Component({
   selector: 'app-profile-edit-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, SlideOver, Field],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './profile-edit-dialog.html',
-  styleUrl: './profile-edit-dialog.scss',
+  template: `
+    <app-slide-over
+      [open]="open()"
+      title="Profili Düzenle"
+      submitLabel="Değişiklikleri Kaydet"
+      [submitting]="submitting()"
+      [errorMessage]="errorMessage()"
+      (closed)="closed.emit(false)"
+      (submitted)="submit()"
+    >
+      <div [formGroup]="form" class="space-y-4">
+        <app-field
+          label="Ad Soyad"
+          [required]="true"
+          [error]="err('displayName', { required: 'Ad soyad gerekli.', minlength: 'En az 2 karakter.' })"
+        >
+          <input type="text" formControlName="displayName" autocomplete="off" class="odv-input" />
+        </app-field>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <app-field label="Telefon" [error]="err('phone', { pattern: 'Geçerli bir telefon numarası gir.' })">
+            <input type="tel" formControlName="phone" autocomplete="off" class="odv-input" />
+          </app-field>
+          <app-field label="Doğum Tarihi">
+            <input type="date" formControlName="birthDate" class="odv-input" />
+          </app-field>
+          <app-field label="Cinsiyet">
+            <select formControlName="gender" class="odv-input">
+              <option value="unspecified">Belirtmek istemiyorum</option>
+              <option value="female">Kadın</option>
+              <option value="male">Erkek</option>
+            </select>
+          </app-field>
+          <app-field label="Ülke">
+            <select formControlName="country" class="odv-input">
+              <option value="">Seçilmedi</option>
+              @for (c of countries; track c.code) {
+                <option [value]="c.code">{{ c.name }}</option>
+              }
+            </select>
+          </app-field>
+          <app-field label="Arayüz Dili">
+            <select formControlName="language" class="odv-input">
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+              <option value="nl">Nederlands</option>
+              <option value="fr">Français</option>
+            </select>
+          </app-field>
+        </div>
+      </div>
+    </app-slide-over>
+  `,
 })
 export class ProfileEditDialog {
   private readonly fb = inject(FormBuilder);
-  private readonly profileService = inject(ProfileService);
+  private readonly service = inject(ProfileService);
   private readonly auth = inject(AuthService);
-  private readonly transloco = inject(TranslocoService);
+  private readonly languageService = inject(LanguageService);
 
   readonly open = input(false);
   readonly closed = output<boolean>();
 
+  protected readonly countries = COUNTRIES;
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
 
-  readonly form = this.fb.nonNullable.group({
+  protected readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2)]],
     phone: ['', [Validators.pattern(/^[0-9+()\s-]{7,20}$/)]],
-    gender: ['unspecified' as Gender],
     birthDate: [''],
+    gender: ['unspecified' as Gender],
     country: [''],
-    language: [''],
-    notes: [''],
+    language: ['tr' as SupportedLanguage],
   });
 
   constructor() {
+    // Panel her açıldığında formu mevcut profille doldur.
     effect(() => {
-      const profile = this.auth.profile();
-      if (profile && this.open()) {
-        this.errorMessage.set('');
-        this.form.reset({
-          displayName: profile.displayName ?? '',
-          phone: profile.phone ?? '',
-          gender: profile.gender ?? 'unspecified',
-          birthDate: profile.birthDate ? this.toDateInputValue(profile.birthDate) : '',
-          country: profile.country ?? '',
-          language: profile.language ?? '',
-          notes: profile.notes ?? '',
-        });
-      }
+      if (this.open()) untracked(() => this.fill());
     });
   }
 
-  private toDateInputValue(ts: any): string {
-    if (!ts) return '';
-    const d = ts.toDate?.() || new Date(ts);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  private fill(): void {
+    const p = this.auth.profile();
+    this.errorMessage.set('');
+    this.form.reset({
+      displayName: p?.displayName ?? '',
+      phone: p?.phone ?? '',
+      birthDate: toDateInput(p?.birthDate),
+      gender: p?.gender ?? 'unspecified',
+      country: p?.country ?? '',
+      language: (p?.language as SupportedLanguage) ?? this.languageService.current(),
+    });
   }
 
-  async submit(): Promise<void> {
+  protected err(name: keyof typeof this.form.controls, messages: Record<string, string>): string {
+    return firstError(this.form.controls[name], messages);
+  }
+
+  protected async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
       return;
     }
-    this.errorMessage.set('');
     this.submitting.set(true);
-
+    this.errorMessage.set('');
     try {
-      const value = this.form.getRawValue();
-      await this.profileService.updateProfile({
-        displayName: value.displayName.trim(),
-        phone: value.phone.trim(),
-        gender: value.gender,
-        birthDate: value.birthDate ? new Date(value.birthDate) : undefined,
-        country: value.country,
-        language: value.language,
-        notes: value.notes.trim(),
+      const v = this.form.getRawValue();
+      await this.service.updateProfile({
+        displayName: v.displayName.trim(),
+        phone: v.phone.trim(),
+        gender: v.gender,
+        birthDate: v.birthDate ? fromDateInput(v.birthDate) : null,
+        country: v.country,
+        language: v.language,
       });
-
+      this.languageService.setLanguage(v.language);
       this.closed.emit(true);
-    } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
+    } catch {
+      this.errorMessage.set('Kaydedilemedi, tekrar dene.');
     } finally {
       this.submitting.set(false);
     }
-  }
-
-  cancel(): void {
-    this.closed.emit(false);
   }
 }

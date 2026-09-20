@@ -1,0 +1,800 @@
+<div class="staff-container p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+  <!-- Üst Başlık & Eylemler -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+          Rol & Yetki Altyapısı
+        </span>
+        @if (permissions.previewRole()) {
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 animate-pulse flex items-center gap-1">
+            <mat-icon class="text-[14px] w-3.5 h-3.5">visibility</mat-icon>
+            Simülasyon: {{ permissions.roleDefinition().name }}
+          </span>
+        }
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight mt-1 mb-0 flex items-center gap-2">
+        <mat-icon class="text-purple-600">badge</mat-icon>
+        Personel & Kullanıcı Rolleri
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Salon sahibi (patron), genel müdür, antrenör ve resepsiyon görev tanımları, yetkilendirme ve çalışma şartları.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      @if (permissions.previewRole()) {
+        <button
+          type="button"
+          (click)="resetSimulation()"
+          class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <mat-icon class="text-[16px] w-4 h-4">restart_alt</mat-icon>
+          <span>Simülasyonu Bitir</span>
+        </button>
+      }
+
+      <button
+        type="button"
+        (click)="openNewStaffDrawer()"
+        class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+      >
+        <mat-icon class="text-[18px] w-4.5 h-4.5">person_add</mat-icon>
+        <span>Yeni Personel Tanımla</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Kartları -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- 1. Toplam Ekip -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Toplam Ekip</span>
+        <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">groups</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-slate-900 mt-2 mb-0">{{ totalStaff() }}</p>
+      <span class="text-[11px] text-slate-400">Tüm şubeler kayıtlı</span>
+    </div>
+
+    <!-- 2. Aktif Antrenörler -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Antrenör & PT</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">fitness_center</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-emerald-600 mt-2 mb-0">{{ activeTrainers() }}</p>
+      <span class="text-[11px] text-slate-400">Eğitim ve seans veren</span>
+    </div>
+
+    <!-- 3. Resepsiyon & Destek -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Müşteri Hizmetleri</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">support_agent</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-amber-600 mt-2 mb-0">{{ receptionists() }}</p>
+      <span class="text-[11px] text-slate-400">Ön büro, turnike & kasa</span>
+    </div>
+
+    <!-- 4. Salon Sahibi & Yönetim -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Yönetim & Patron</span>
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">admin_panel_settings</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-indigo-600 mt-2 mb-0">{{ management() }}</p>
+      <span class="text-[11px] text-slate-400">Kulüp müdürü & ortaklar</span>
+    </div>
+  </div>
+
+  <!-- Sekme Seçimi (Tabs) -->
+  <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+    <button
+      type="button"
+      (click)="activeTab.set('staffList')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'staffList' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">badge</mat-icon>
+      <span>Personel Kadrosu ({{ filteredStaff().length }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('permissionMatrix')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'permissionMatrix' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">grid_view</mat-icon>
+      <span>Yetki & Rol Matrisi</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('roleSimulator')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'roleSimulator' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">psychology</mat-icon>
+      <span>Canlı Rol Simülatörü</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    </button>
+  </div>
+
+  <!-- SEKME 1: PERSONEL LİSTESİ -->
+  @if (activeTab() === 'staffList') {
+    <!-- Arama & Filtre Araç Çubuğu -->
+    <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+        <mat-icon class="text-slate-400">search</mat-icon>
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          placeholder="Personel adı, unvan, e-posta veya telefon ile ara..."
+          class="w-full text-xs border-none outline-none bg-transparent placeholder:text-slate-400 text-slate-800"
+        />
+        @if (searchTerm()) {
+          <button (click)="searchTerm.set('')" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+            <mat-icon class="text-[16px] w-4 h-4">close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <!-- Rol Filtresi Butonları -->
+      <div class="flex items-center gap-1 flex-wrap">
+        <button
+          type="button"
+          (click)="selectedRole.set('all')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedRole() === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+        >
+          Tümü
+        </button>
+        <button
+          type="button"
+          (click)="selectedRole.set('owner')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedRole() === 'owner' ? 'bg-purple-700 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'"
+        >
+          Patron
+        </button>
+        <button
+          type="button"
+          (click)="selectedRole.set('admin')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedRole() === 'admin' ? 'bg-indigo-700 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'"
+        >
+          Yönetici
+        </button>
+        <button
+          type="button"
+          (click)="selectedRole.set('trainer')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedRole() === 'trainer' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+        >
+          Antrenör
+        </button>
+        <button
+          type="button"
+          (click)="selectedRole.set('receptionist')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedRole() === 'receptionist' ? 'bg-amber-700 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'"
+        >
+          Resepsiyon
+        </button>
+      </div>
+
+      <!-- Durum Filtresi -->
+      <select
+        [ngModel]="selectedStatus()"
+        (ngModelChange)="selectedStatus.set($event)"
+        class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 font-semibold text-slate-700 outline-none cursor-pointer"
+      >
+        <option value="all">Tüm Durumlar</option>
+        <option value="active">Sadece Aktifler</option>
+        <option value="inactive">Pasif / Ayrılanlar</option>
+        <option value="leave">İzinliler</option>
+      </select>
+    </div>
+
+    <!-- Personel Tablosu -->
+    <div class="rounded-2xl bg-white border border-slate-200/80 shadow-2xs overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-700">
+          <thead class="bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <tr>
+              <th class="py-3 px-4">Personel & Unvan</th>
+              <th class="py-3 px-4">Rol & Yetki</th>
+              <th class="py-3 px-4">İletişim & Şube</th>
+              <th class="py-3 px-4">Uzmanlık Alanları</th>
+              <th class="py-3 px-4">Şartlar (Maaş / PT)</th>
+              <th class="py-3 px-4">Durum</th>
+              <th class="py-3 px-4 text-right">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (staff of filteredStaff(); track staff.id) {
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <!-- Personel & Unvan -->
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shadow-xs"
+                      [ngClass]="{
+                        'bg-purple-600': staff.role === 'owner',
+                        'bg-indigo-600': staff.role === 'admin',
+                        'bg-emerald-600': staff.role === 'trainer',
+                        'bg-amber-600': staff.role === 'receptionist'
+                      }"
+                    >
+                      {{ getRoleInitials(staff.displayName) }}
+                    </div>
+                    <div>
+                      <p class="font-bold text-slate-900 m-0 text-sm leading-snug">
+                        {{ staff.displayName }}
+                      </p>
+                      <p class="text-slate-500 text-[11px] m-0 font-medium">{{ staff.title }}</p>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Rol & Yetki Rozeti -->
+                <td class="py-3.5 px-4">
+                  <span
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs"
+                    [ngClass]="roleDefinitions[staff.role]?.badgeClass"
+                  >
+                    <mat-icon class="text-[14px] w-3.5 h-3.5">{{ roleDefinitions[staff.role]?.icon }}</mat-icon>
+                    <span>{{ roleDefinitions[staff.role]?.badge }}</span>
+                  </span>
+                </td>
+
+                <!-- İletişim & Şube -->
+                <td class="py-3.5 px-4">
+                  <div class="space-y-0.5">
+                    <div class="flex items-center gap-1 text-slate-700 font-medium">
+                      <mat-icon class="text-slate-400 text-[14px] w-3.5 h-3.5">email</mat-icon>
+                      <span>{{ staff.email }}</span>
+                    </div>
+                    @if (staff.phone) {
+                      <div class="flex items-center gap-1 text-slate-500 text-[11px]">
+                        <mat-icon class="text-slate-400 text-[14px] w-3.5 h-3.5">phone</mat-icon>
+                        <span>{{ staff.phone }}</span>
+                      </div>
+                    }
+                    <div class="text-[10px] font-semibold text-indigo-600">
+                      {{ staff.branchName || 'Kadıköy Merkez Şube' }}
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Uzmanlık Alanları -->
+                <td class="py-3.5 px-4">
+                  <div class="flex flex-wrap gap-1 max-w-[200px]">
+                    @for (spec of staff.specialties || []; track spec) {
+                      <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700">
+                        {{ spec }}
+                      </span>
+                    }
+                    @if (!staff.specialties?.length) {
+                      <span class="text-slate-400 text-[11px]">-</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Şartlar -->
+                <td class="py-3.5 px-4">
+                  <div class="text-xs">
+                    @if (staff.monthlySalary) {
+                      <span class="font-bold text-slate-900 block">₺{{ staff.monthlySalary | number }} / ay</span>
+                    } @else {
+                      <span class="text-slate-400 block font-medium">Sabit maaş yok</span>
+                    }
+                    @if (staff.commissionRate) {
+                      <span class="text-emerald-600 text-[11px] font-bold block">+%{{ staff.commissionRate }} PT Komisyonu</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Durum -->
+                <td class="py-3.5 px-4">
+                  @if (staff.status === 'active') {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Aktif
+                    </span>
+                  } @else if (staff.status === 'leave') {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                      İzinli
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                      Pasif
+                    </span>
+                  }
+                </td>
+
+                <!-- İşlemler -->
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      (click)="editStaff(staff)"
+                      class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                      title="Personeli Düzenle"
+                    >
+                      <mat-icon class="text-[18px] w-4.5 h-4.5">edit</mat-icon>
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="toggleStatus(staff)"
+                      class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                      [title]="staff.status === 'active' ? 'Pasife Al' : 'Aktif Et'"
+                    >
+                      <mat-icon class="text-[18px] w-4.5 h-4.5">
+                        {{ staff.status === 'active' ? 'toggle_on' : 'toggle_off' }}
+                      </mat-icon>
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="deleteStaff(staff)"
+                      class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Sil"
+                    >
+                      <mat-icon class="text-[18px] w-4.5 h-4.5">delete_outline</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="py-12 text-center text-slate-400 text-xs">
+                  Arama kriterlerinize uygun personel bulunamadı.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- SEKME 2: YETKİ & ROL MATRİSİ -->
+  @if (activeTab() === 'permissionMatrix') {
+    <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-6">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 m-0">Kurumsal Yetki & Modül Erişim Matrisi</h3>
+        <p class="text-xs text-slate-500 mt-1 mb-0">
+          Spor salonundaki her bir personel rolünün erişebildiği ve işlem yapabildiği ekranların detaylı dağılımı.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-200 text-slate-600 text-xs font-bold">
+              <th class="py-3 px-4 bg-slate-50 w-2/5">Modül & İşlem Tanımı</th>
+              <th class="py-3 px-3 text-center bg-purple-50 text-purple-900">
+                <div class="flex items-center justify-center gap-1">
+                  <mat-icon class="text-[16px] w-4 h-4">workspace_premium</mat-icon>
+                  <span>Patron</span>
+                </div>
+              </th>
+              <th class="py-3 px-3 text-center bg-indigo-50 text-indigo-900">
+                <div class="flex items-center justify-center gap-1">
+                  <mat-icon class="text-[16px] w-4 h-4">manage_accounts</mat-icon>
+                  <span>Genel Müdür</span>
+                </div>
+              </th>
+              <th class="py-3 px-3 text-center bg-emerald-50 text-emerald-900">
+                <div class="flex items-center justify-center gap-1">
+                  <mat-icon class="text-[16px] w-4 h-4">fitness_center</mat-icon>
+                  <span>Antrenör</span>
+                </div>
+              </th>
+              <th class="py-3 px-3 text-center bg-amber-50 text-amber-900">
+                <div class="flex items-center justify-center gap-1">
+                  <mat-icon class="text-[16px] w-4 h-4">support_agent</mat-icon>
+                  <span>Resepsiyon</span>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (mod of matrixModules; track mod.module) {
+              <!-- Modül Başlık Satırı -->
+              <tr class="bg-slate-100/60 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                <td colspan="5" class="py-2.5 px-4 text-indigo-950 font-black">
+                  {{ mod.module }}
+                </td>
+              </tr>
+              @for (item of mod.items; track item.name) {
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-2.5 px-4 font-medium text-slate-700">
+                    {{ item.name }}
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    @if (item.owner) {
+                      <mat-icon class="text-purple-600 text-[18px] w-4.5 h-4.5 inline-block">check_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="text-slate-300 text-[18px] w-4.5 h-4.5 inline-block">remove_circle_outline</mat-icon>
+                    }
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    @if (item.admin) {
+                      <mat-icon class="text-indigo-600 text-[18px] w-4.5 h-4.5 inline-block">check_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="text-slate-300 text-[18px] w-4.5 h-4.5 inline-block">remove_circle_outline</mat-icon>
+                    }
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    @if (item.trainer) {
+                      <mat-icon class="text-emerald-600 text-[18px] w-4.5 h-4.5 inline-block">check_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="text-slate-300 text-[18px] w-4.5 h-4.5 inline-block">remove_circle_outline</mat-icon>
+                    }
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    @if (item.receptionist) {
+                      <mat-icon class="text-amber-600 text-[18px] w-4.5 h-4.5 inline-block">check_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="text-slate-300 text-[18px] w-4.5 h-4.5 inline-block">remove_circle_outline</mat-icon>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- SEKME 3: CANLI ROL SİMÜLATÖRÜ -->
+  @if (activeTab() === 'roleSimulator') {
+    <div class="space-y-6">
+      <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-900 to-purple-900 text-white shadow-md">
+        <div class="max-w-2xl">
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/20 text-white">
+            Canlı Arayüz & Yetki Denetleyicisi
+          </span>
+          <h2 class="text-xl font-black mt-2 mb-1">
+            Sistemi Farklı Rollerin Gözünden Canlı Test Edin
+          </h2>
+          <p class="text-xs text-indigo-200 m-0 leading-relaxed">
+            Aşağıdaki rollerden birine tıkladığınızda OdivonGYM sol menüsü, üst bar rozetleri ve erişim yetkileri
+            anında o role göre filtrelenir. Böylece Antrenör veya Resepsiyonistinizin ne görüp ne göremediğini
+            gerçek zamanlı olarak teyit edebilirsiniz.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Patron / Kurucu Ortak -->
+        <div
+          class="p-5 rounded-2xl bg-white border-2 transition-all shadow-2xs flex flex-col justify-between"
+          [ngClass]="permissions.currentRole() === 'owner' ? 'border-purple-600 ring-2 ring-purple-500/20' : 'border-slate-200'"
+        >
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-3">
+              <mat-icon>workspace_premium</mat-icon>
+            </div>
+            <h3 class="font-bold text-slate-900 text-sm m-0">Patron (Salon Sahibi)</h3>
+            <span class="text-[10px] font-bold text-purple-700 uppercase">Seviye 5 · Sınırsız Erişim</span>
+            <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed">
+              Kasa, tedarikçi cari borçları, Uyumsoft e-fatura API anahtarları, tüm personel maaşları ve şube ayarları.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="simulateRole('owner')"
+            class="w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="permissions.currentRole() === 'owner' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'"
+          >
+            {{ permissions.currentRole() === 'owner' ? 'Aktif Rolünüz' : 'Patron Olarak Gör' }}
+          </button>
+        </div>
+
+        <!-- 2. Genel Yönetici / Kulüp Müdürü -->
+        <div
+          class="p-5 rounded-2xl bg-white border-2 transition-all shadow-2xs flex flex-col justify-between"
+          [ngClass]="permissions.currentRole() === 'admin' ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200'"
+        >
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+              <mat-icon>manage_accounts</mat-icon>
+            </div>
+            <h3 class="font-bold text-slate-900 text-sm m-0">Genel Müdür (Admin)</h3>
+            <span class="text-[10px] font-bold text-indigo-700 uppercase">Seviye 4 · Operasyonel Yönetici</span>
+            <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed">
+              Üye kayıtları, paket & fiyatlar, turnike geçişleri, antrenman onayları ve günlük kasa akışı.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="simulateRole('admin')"
+            class="w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="permissions.currentRole() === 'admin' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'"
+          >
+            {{ permissions.currentRole() === 'admin' ? 'Aktif Rolünüz' : 'Müdür Olarak Gör' }}
+          </button>
+        </div>
+
+        <!-- 3. Antrenör / PT -->
+        <div
+          class="p-5 rounded-2xl bg-white border-2 transition-all shadow-2xs flex flex-col justify-between"
+          [ngClass]="permissions.currentRole() === 'trainer' ? 'border-emerald-600 ring-2 ring-emerald-500/20' : 'border-slate-200'"
+        >
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+              <mat-icon>fitness_center</mat-icon>
+            </div>
+            <h3 class="font-bold text-slate-900 text-sm m-0">Antrenör (PT)</h3>
+            <span class="text-[10px] font-bold text-emerald-700 uppercase">Seviye 3 · Spor & Eğitim</span>
+            <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed">
+              Eğitim sihirbazı, sporcu antrenman programları, ölçüm & analizler. Kasa, cari ve e-fatura gizlenir.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="simulateRole('trainer')"
+            class="w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="permissions.currentRole() === 'trainer' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'"
+          >
+            {{ permissions.currentRole() === 'trainer' ? 'Aktif Rolünüz' : 'Antrenör Olarak Gör' }}
+          </button>
+        </div>
+
+        <!-- 4. Müşteri Hizmetleri / Resepsiyon -->
+        <div
+          class="p-5 rounded-2xl bg-white border-2 transition-all shadow-2xs flex flex-col justify-between"
+          [ngClass]="permissions.currentRole() === 'receptionist' ? 'border-amber-600 ring-2 ring-amber-500/20' : 'border-slate-200'"
+        >
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+              <mat-icon>support_agent</mat-icon>
+            </div>
+            <h3 class="font-bold text-slate-900 text-sm m-0">Müşteri Hizmetleri</h3>
+            <span class="text-[10px] font-bold text-amber-700 uppercase">Seviye 2 · Ön Büro & Kasa</span>
+            <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed">
+              Yeni üye girişi, turnike açma, market/su satışı, randevu oluşturma. Hassas mali veriler gizlenir.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="simulateRole('receptionist')"
+            class="w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="permissions.currentRole() === 'receptionist' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'"
+          >
+            {{ permissions.currentRole() === 'receptionist' ? 'Aktif Rolünüz' : 'Resepsiyon Olarak Gör' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- YENİ PERSONEL EKLE / DÜZENLE SLIDE-OVER DRAWER -->
+  @if (isDrawerOpen()) {
+    <div class="fixed inset-0 z-50 flex justify-end">
+      <!-- Backdrop -->
+      <div
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+        (click)="closeDrawer()"
+      ></div>
+
+      <!-- Çekmece İçeriği -->
+      <div class="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-hidden z-10 animate-slide-in">
+        <!-- Başlık -->
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-slate-900 text-base m-0">
+              {{ editingStaff() ? 'Personel Bilgilerini Düzenle' : 'Yeni Personel Tanımla' }}
+            </h3>
+            <p class="text-xs text-slate-500 m-0">Kulüp çalışanı görev, rol ve yetki tanımları</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDrawer()"
+            class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+          >
+            <mat-icon class="text-[18px] w-4.5 h-4.5">close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Form Alanları -->
+        <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
+          <!-- Rol Seçici Kartları -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5">Sistem Rolü & Yetki Düzeyi *</label>
+            <div class="grid grid-cols-2 gap-2">
+              @for (rk of roleKeys; track rk) {
+                <button
+                  type="button"
+                  (click)="onRoleChange(rk)"
+                  class="p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2"
+                  [ngClass]="formData.role === rk ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+                >
+                  <mat-icon class="text-[18px] w-4.5 h-4.5 text-indigo-600">{{ roleDefinitions[rk]?.icon }}</mat-icon>
+                  <div>
+                    <p class="m-0 leading-tight">{{ roleDefinitions[rk]?.badge }}</p>
+                    <span class="text-[9px] text-slate-400 font-normal">Seviye {{ roleDefinitions[rk]?.level }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Ad Soyad & Unvan -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Ad Soyad *</label>
+              <input
+                type="text"
+                [(ngModel)]="formData.displayName"
+                placeholder="Örn: Mert Demir"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Görev / Kartvizit Unvanı *</label>
+              <input
+                type="text"
+                [(ngModel)]="formData.title"
+                placeholder="Örn: Baş Antrenör (PT)"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
+          <!-- E-posta & Telefon -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">E-Posta Adresi *</label>
+              <input
+                type="email"
+                [(ngModel)]="formData.email"
+                placeholder="mert.demir@odivongym.com"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Telefon Numarası</label>
+              <input
+                type="tel"
+                [(ngModel)]="formData.phone"
+                placeholder="+90 532 000 00 00"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
+          <!-- Şube & Durum -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Bağlı Olduğu Şube</label>
+              <select
+                [(ngModel)]="formData.branchId"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
+              >
+                <option value="">{{ branchContext.activeBranchName() }}</option>
+                @for (br of branchContext.branches(); track br.id) {
+                  <option [value]="br.id">{{ br.name }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Çalışma Durumu</label>
+              <select
+                [(ngModel)]="formData.status"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
+              >
+                <option value="active">Aktif Çalışıyor</option>
+                <option value="leave">İzinli</option>
+                <option value="inactive">Ayrıldı / Pasif</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Uzmanlık Alanları -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Uzmanlık Alanları & Branşlar (Virgülle ayırın)</label>
+            <input
+              type="text"
+              [(ngModel)]="formData.specialtiesText"
+              placeholder="Fitness, Kickbox, Reformer Pilates, Fonksiyonel"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+            />
+          </div>
+
+          <!-- Maaş & PT Komisyonu -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Aylık Sabit Maaş (₺)</label>
+              <input
+                type="number"
+                [(ngModel)]="formData.monthlySalary"
+                placeholder="40000"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">PT / Seans Komisyonu (%)</label>
+              <input
+                type="number"
+                [(ngModel)]="formData.commissionRate"
+                placeholder="20"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
+          <!-- İşe Giriş Tarihi & Acil Durum -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">İşe Başlama Tarihi</label>
+              <input
+                type="date"
+                [(ngModel)]="formData.hireDate"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Acil Durum İletişim</label>
+              <input
+                type="text"
+                [(ngModel)]="formData.emergencyContact"
+                placeholder="+90 532... (Yakını)"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
+          <!-- Dahili Notlar -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Dahili Notlar</label>
+            <textarea
+              rows="2"
+              [(ngModel)]="formData.notes"
+              placeholder="Vardiya tercihleri, sertifikalar, BESYO mezuniyeti vb."
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Kaydet / Kapat Butonları -->
+        <div class="p-4 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50">
+          <button
+            type="button"
+            (click)="closeDrawer()"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+          >
+            İptal
+          </button>
+          <button
+            type="button"
+            (click)="saveStaff()"
+            [disabled]="isSaving() || !formData.displayName.trim() || !formData.email.trim()"
+            class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+          >
+            @if (isSaving()) {
+              <mat-icon class="animate-spin text-[16px] w-4 h-4">refresh</mat-icon>
+            }
+            <span>{{ editingStaff() ? 'Değişiklikleri Güncelle' : 'Personeli Kaydet' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

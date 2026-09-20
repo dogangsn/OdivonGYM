@@ -15,11 +15,12 @@ import {
   signOut,
   updateProfile,
 } from '@angular/fire/auth';
-import { Firestore, Timestamp, collection, doc, getDoc, setDoc } from '@angular/fire/firestore';
+import { Firestore, Timestamp, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from '@angular/fire/firestore';
 import { catchError, of, switchMap, tap, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MembershipStatus, UserProfile } from '../models/user-profile.model';
 import { FirestoreUserService } from '../services/firestore-user.service';
+import { TenantOnboardingService } from '../services/tenant-onboarding.service';
 import { slugify } from '../data/slugify';
 
 /**
@@ -39,6 +40,7 @@ export class AuthService {
   private readonly auth = inject(Auth);
   private readonly firestore = inject(Firestore);
   private readonly firestoreUsers = inject(FirestoreUserService);
+  private readonly onboardingService = inject(TenantOnboardingService);
 
   private readonly firebaseUser = signal<User | null>(null);
   private readonly userProfile = signal<UserProfile | null>(null);
@@ -110,6 +112,9 @@ export class AuthService {
         next: (profile) => {
           this.userProfile.set(profile ?? null);
           this.ready.set(true);
+          if (profile && profile.role === 'admin' && !profile.tenantId) {
+            void this.ensureAdminTenant(profile);
+          }
         },
         // authState() kendisi hata verirse de aynı şekilde kilitlenmeyelim.
         error: (err) => {
@@ -117,6 +122,37 @@ export class AuthService {
           this.ready.set(true);
         },
       });
+  }
+
+  /**
+   * Çok-kiracılı mimariden önce açılmış eski admin hesaplarını otomatik olarak
+   * bir salona bağlar. Firestore kuralları (self-healing) buna izin verir.
+   */
+  private async ensureAdminTenant(profile: UserProfile): Promise<void> {
+    try {
+      const q = query(collection(this.firestore, 'tenants'), where('ownerUid', '==', profile.uid));
+      const tenantSnaps = await getDocs(q);
+      let tenantId: string;
+      if (!tenantSnaps.empty) {
+        tenantId = tenantSnaps.docs[0].id;
+      } else {
+        const tenantRef = doc(collection(this.firestore, 'tenants'));
+        tenantId = tenantRef.id;
+        await setDoc(tenantRef, {
+          name: profile.displayName ? `${profile.displayName} Salonu` : 'Odivon GYM',
+          slug: `${slugify(profile.displayName || 'gym')}-${tenantId.slice(0, 6)}`,
+          ownerUid: profile.uid,
+          createdAt: Timestamp.now(),
+        });
+      }
+      await updateDoc(doc(this.firestore, 'users', profile.uid), {
+        tenantId,
+        updatedAt: Timestamp.now(),
+      });
+      void this.onboardingService.ensureTenantDefaults(tenantId, profile.displayName || 'Odivon GYM');
+    } catch (err) {
+      console.warn('OdivonGYM: Admin için otomatik tenant eşleme yapılamadı:', err);
+    }
   }
 
   /**
@@ -215,6 +251,9 @@ export class AuthService {
       createdAt: now,
       updatedAt: now,
     });
+
+    // İlk kayıtta salon için varsayılan şube, branş, tesis ve paketleri otomatik oluştur
+    void this.onboardingService.ensureTenantDefaults(tenantRef.id, tenantName);
 
     return tenantRef.id;
   }

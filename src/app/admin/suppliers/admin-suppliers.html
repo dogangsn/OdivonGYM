@@ -1,0 +1,242 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Header -->
+  <app-page-header
+    title="Tedarikçi & Cari Hesap Yönetimi"
+    icon="storefront"
+    description="Ekipman üreticileri, supplement toptancıları, temizlik ve içecek tedarikçilerinin cari hesaplarını takip edin."
+  >
+    <div actions class="flex items-center gap-2">
+      @if (suppliers().length === 0) {
+        <button
+          type="button"
+          (click)="seedDefaults()"
+          class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+        >
+          <mat-icon class="icon-size-4 text-indigo-600">auto_fix_high</mat-icon>
+          <span>Örnek Tedarikçileri Yükle</span>
+        </button>
+      }
+
+      <button
+        type="button"
+        (click)="openNewDrawer()"
+        class="odv-btn-primary text-xs flex items-center gap-1.5"
+      >
+        <mat-icon class="icon-size-4">add</mat-icon>
+        <span>+ Yeni Tedarikçi Ekle</span>
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- 2. KPI Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Kayıtlı Tedarikçi</span>
+      <div class="text-2xl font-black text-slate-900">{{ suppliers().length }} Firma</div>
+      <span class="text-[11px] font-semibold text-slate-500">Aktif Toptancı & Sağlayıcı</span>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Toplam Cari Borç</span>
+      <div class="text-2xl font-black text-rose-600">₺{{ money(totalBalance()) }}</div>
+      <span class="text-[11px] font-semibold text-rose-600/80">Ödenmesi Gereken Faturalar</span>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">E-Dönüşüm / Uyumsoft</span>
+      <div class="text-base font-black text-slate-900 flex items-center gap-1.5 mt-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        GİB / E-Fatura Entegre
+      </div>
+      <span class="text-[11px] font-semibold text-emerald-600">Alış & İade Faturaları Aktif</span>
+    </div>
+  </div>
+
+  <!-- 3. Filter Toolbar -->
+  <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+    <div class="relative flex-1">
+      <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4">search</mat-icon>
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Firma adı, yetkili, telefon veya vergi no ara..."
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold"
+      />
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-bold text-slate-500 hidden sm:inline">Kategori:</label>
+      <select
+        [ngModel]="selectedCategory()"
+        (ngModelChange)="selectedCategory.set($event)"
+        class="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="all">Tüm Kategoriler</option>
+        <option value="equipment">Ekipman & Cihaz</option>
+        <option value="supplements">Supplement & Gıda</option>
+        <option value="beverage">İçecek & Otomat</option>
+        <option value="cleaning">Temizlik & Hijyen</option>
+        <option value="tech_security">Bilişim & Güvenlik</option>
+        <option value="other">Diğer</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 4. Suppliers Data Table -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <th class="py-3.5 px-6">Tedarikçi Firma</th>
+            <th class="py-3.5 px-6">Kategori</th>
+            <th class="py-3.5 px-6">İletişim</th>
+            <th class="py-3.5 px-6">Vergi Dairesi / VKN</th>
+            <th class="py-3.5 px-6 text-right">Cari Bakiye</th>
+            <th class="py-3.5 px-6 text-right">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
+          @for (s of filteredSuppliers(); track s.id) {
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="py-3.5 px-6">
+                <div>
+                  <strong class="font-bold text-slate-900 block">{{ s.name }}</strong>
+                  @if (s.contactPerson) {
+                    <span class="text-[11px] text-slate-500">Yetkili: {{ s.contactPerson }}</span>
+                  }
+                </div>
+              </td>
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border" [class]="categoryBadges[s.category]">
+                  {{ categoryLabels[s.category] }}
+                </span>
+              </td>
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                <p class="m-0 font-semibold text-slate-800">{{ s.phone }}</p>
+                @if (s.email) {
+                  <p class="m-0 text-[11px] text-slate-400">{{ s.email }}</p>
+                }
+              </td>
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                @if (s.taxNumber) {
+                  <span class="font-semibold text-slate-700 block">{{ s.taxOffice || 'VD' }}</span>
+                  <span class="text-[11px] text-slate-400 font-mono">{{ s.taxNumber }}</span>
+                } @else {
+                  <span class="text-slate-400">—</span>
+                }
+              </td>
+              <td class="py-3.5 px-6 text-right whitespace-nowrap">
+                <span
+                  class="font-black text-sm tracking-tight"
+                  [class.text-rose-600]="s.balance > 0"
+                  [class.text-slate-900]="s.balance === 0"
+                  [class.text-emerald-600]="s.balance < 0"
+                >
+                  ₺{{ money(s.balance) }}
+                </span>
+              </td>
+              <td class="py-3.5 px-6 text-right whitespace-nowrap">
+                <button
+                  type="button"
+                  (click)="openEditDrawer(s)"
+                  matTooltip="Düzenle"
+                  class="odv-icon-btn mr-1"
+                >
+                  <mat-icon class="icon-size-4">edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="deleteSupplier(s)"
+                  matTooltip="Sil"
+                  class="odv-icon-btn odv-icon-btn-danger"
+                >
+                  <mat-icon class="icon-size-4">delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
+                Kayıtlı tedarikçi bulunamadı.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Slide-Over Drawer -->
+<app-slide-over
+  [open]="drawerOpen()"
+  [title]="editingSupplier() ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi Tanımla'"
+  submitLabel="Kaydet"
+  [submitting]="submitting()"
+  [errorMessage]="errorMessage()"
+  (closed)="closeDrawer()"
+  (submitted)="submit()"
+>
+  <form [formGroup]="form" class="space-y-4">
+    <app-field label="Firma / Tedarikçi Adı" [required]="true">
+      <input type="text" formControlName="name" placeholder="Örn: Technogym Fitness A.Ş." class="odv-input" />
+    </app-field>
+
+    <div class="grid grid-cols-2 gap-3">
+      <app-field label="Kategori" [required]="true">
+        <select formControlName="category" class="odv-input">
+          <option value="equipment">Ekipman & Cihaz</option>
+          <option value="supplements">Supplement & Gıda</option>
+          <option value="beverage">İçecek & Otomat</option>
+          <option value="cleaning">Temizlik & Hijyen</option>
+          <option value="tech_security">Bilişim & Güvenlik</option>
+          <option value="other">Diğer</option>
+        </select>
+      </app-field>
+
+      <app-field label="Yetkili Kişi">
+        <input type="text" formControlName="contactPerson" placeholder="Ad Soyad" class="odv-input" />
+      </app-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <app-field label="Telefon" [required]="true">
+        <input type="tel" formControlName="phone" placeholder="0212..." class="odv-input" />
+      </app-field>
+
+      <app-field label="E-posta">
+        <input type="email" formControlName="email" placeholder="siparis@firma.com" class="odv-input" />
+      </app-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <app-field label="Vergi Dairesi">
+        <input type="text" formControlName="taxOffice" placeholder="Kadıköy" class="odv-input" />
+      </app-field>
+
+      <app-field label="VKN / TCKN">
+        <input type="text" formControlName="taxNumber" placeholder="10 Haneli Vergi No" class="odv-input font-mono" />
+      </app-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <app-field label="Mevcut Cari Bakiye (₺)">
+        <input type="number" formControlName="balance" class="odv-input font-bold" />
+      </app-field>
+
+      <app-field label="Banka IBAN">
+        <input type="text" formControlName="iban" placeholder="TR..." class="odv-input font-mono text-xs" />
+      </app-field>
+    </div>
+
+    <app-field label="Adres">
+      <textarea rows="2" formControlName="address" class="odv-input text-xs"></textarea>
+    </app-field>
+
+    <app-field label="Özel Notlar">
+      <textarea rows="2" formControlName="notes" placeholder="Ödeme vadesi, indirim şartları vb." class="odv-input text-xs"></textarea>
+    </app-field>
+  </form>
+</app-slide-over>

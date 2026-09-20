@@ -7,6 +7,7 @@ import { WaterService } from '../water.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { WaterLogDialog } from './water-log-dialog';
 import { WaterLog } from '../../../core/models/water-log.model';
+import { formatDate, sortDesc } from '../../../shared/ui/ui-utils';
 
 @Component({
   selector: 'app-water-tracker',
@@ -46,7 +47,7 @@ import { WaterLog } from '../../../core/models/water-log.model';
         (click)="openAddDialog()"
         class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
       >
-        <mat-icon class="icon-size-4.5" [svgIcon]="'heroicons_solid:plus'"></mat-icon>
+        <mat-icon class="icon-size-4.5">add</mat-icon>
         <span>Su Ekle</span>
       </button>
 
@@ -58,7 +59,7 @@ import { WaterLog } from '../../../core/models/water-log.model';
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    <th class="py-3.5 px-6">Saat</th>
+                    <th class="py-3.5 px-6">Tarih</th>
                     <th class="py-3.5 px-6">Miktar</th>
                     <th class="py-3.5 px-6">Not</th>
                     <th class="py-3.5 px-6 text-right">İşlem</th>
@@ -68,7 +69,7 @@ import { WaterLog } from '../../../core/models/water-log.model';
                   @for (log of logsList; track log.id) {
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                       <td class="py-3 px-6 text-slate-700 dark:text-slate-200">
-                        {{ formatTime(log.date) }}
+                        {{ formatDate(log.date) }}
                       </td>
                       <td class="py-3 px-6">
                         <span class="font-semibold text-slate-900 dark:text-white">{{ log.amount }} {{ log.unit }}</span>
@@ -87,7 +88,7 @@ import { WaterLog } from '../../../core/models/water-log.model';
                           (click)="deleteLog(log.id)"
                           class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 inline-flex items-center justify-center transition-colors cursor-pointer ml-1"
                         >
-                          <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                          <mat-icon class="icon-size-4">delete</mat-icon>
                         </button>
                       </td>
                     </tr>
@@ -117,7 +118,8 @@ export class WaterTracker {
   private readonly waterService = inject(WaterService);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly logs = toSignal(this.waterService.watchLogs(), { initialValue: [] });
+  private readonly rawLogs = toSignal(this.waterService.watchLogs(), { initialValue: [] as WaterLog[] });
+  protected readonly logs = computed(() => sortDesc(this.rawLogs(), (l) => l.date));
   protected readonly dialogOpen = signal(false);
   protected readonly selectedLog = signal<any>(null);
 
@@ -167,8 +169,5 @@ export class WaterTracker {
     this.selectedLog.set(null);
   }
 
-  formatTime(timestamp: any): string {
-    const date = timestamp.toDate();
-    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  }
+  formatDate = formatDate;
 }

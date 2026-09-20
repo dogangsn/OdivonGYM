@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   Timestamp,
 } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { AccountingEntry, CreateAccountingEntryInput } from '../../core/models/accounting-entry.model';
 
@@ -22,18 +23,19 @@ export class AdminAccountingService {
   private readonly auth = inject(AuthService);
 
   watchEntries(): Observable<AccountingEntry[]> {
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!tenantId) {
-      return new Observable<AccountingEntry[]>((subscriber) => subscriber.next([]));
-    }
-
-    const q = query(
-      collection(this.firestore, 'accounting_entries'),
-      where('tenantId', '==', tenantId),
+    return toObservable(this.auth.profile).pipe(
+      switchMap((profile) => {
+        const tenantId = profile?.tenantId;
+        if (!tenantId) {
+          return of([] as AccountingEntry[]);
+        }
+        const q = query(
+          collection(this.firestore, 'accounting_entries'),
+          where('tenantId', '==', tenantId),
+        );
+        return collectionData(q, { idField: 'id' }) as Observable<AccountingEntry[]>;
+      }),
     );
-
-    return collectionData(q, { idField: 'id' }) as Observable<AccountingEntry[]>;
   }
 
   async addEntry(input: CreateAccountingEntryInput): Promise<string> {
@@ -69,7 +71,7 @@ export class AdminAccountingService {
     if (input.category !== undefined) updateData.category = input.category;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.referenceType !== undefined) updateData.referenceType = input.referenceType;
-    if (input.paymentMethod !== undefined) updateData.paymentMethod = input.paymentMethod;
+    if ('paymentMethod' in input) updateData.paymentMethod = input.paymentMethod ?? null;
     if (input.notes !== undefined) updateData.notes = input.notes;
 
     if (input.entryDate) {

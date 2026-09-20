@@ -32,6 +32,9 @@ const CODE_TO_KEY: Record<string, string> = {
  * kalmasın diye saf bir fonksiyon olarak tutuluyor.
  */
 export function toAuthErrorMessage(error: unknown, translate: (key: string) => string): string {
+  if (error instanceof Error && !(error as { code?: string }).code) {
+    return error.message;
+  }
   // Firebase Auth hataları her zaman bir `code` alanı taşır (örn. "auth/wrong-password"),
   // ama `FirebaseError` sınıfı public SDK'dan export edilmediği için duck-typing yapıyoruz.
   const code = (error as { code?: string } | null)?.code;

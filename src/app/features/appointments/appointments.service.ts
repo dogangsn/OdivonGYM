@@ -6,7 +6,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -23,7 +22,7 @@ export class AppointmentsService {
   private readonly auth = inject(AuthService);
 
   watchAppointments(): Observable<PtAppointment[]> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {
@@ -34,14 +33,13 @@ export class AppointmentsService {
       collection(this.firestore, 'pt_appointments'),
       where('userId', '==', userId),
       where('tenantId', '==', tenantId),
-      orderBy('appointmentTime', 'desc'),
     );
 
     return collectionData(q, { idField: 'id' }) as Observable<PtAppointment[]>;
   }
 
   async bookAppointment(input: CreatePtAppointmentInput): Promise<string> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {
@@ -64,6 +62,15 @@ export class AppointmentsService {
     });
 
     return docRef.id;
+  }
+
+  async updateAppointment(id: string, input: Partial<CreatePtAppointmentInput>): Promise<void> {
+    const data: Record<string, unknown> = { updatedAt: serverTimestamp() };
+    if (input.trainerName !== undefined) data['trainerName'] = input.trainerName;
+    if (input.duration !== undefined) data['duration'] = input.duration;
+    if (input.notes !== undefined) data['notes'] = input.notes;
+    if (input.appointmentTime) data['appointmentTime'] = Timestamp.fromDate(input.appointmentTime);
+    await updateDoc(doc(this.firestore, 'pt_appointments', id), data);
   }
 
   async cancelAppointment(id: string, reason?: string): Promise<void> {

@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+// KPI & Genel Kartlar
+.kpi-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 1px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  }
+}
+
+// Fiyatlandırma Kartları Hiyerarşisi
+.plan-card {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+
+  // Başlangıç (Starter) Kartı: Sade, modern minimalizm
+  &--starter {
+    background: #ffffff;
+    border-color: rgba(226, 232, 240, 0.9);
+
+    &:hover {
+      border-color: rgba(148, 163, 184, 0.8);
+      transform: translateY(-4px);
+    }
+  }
+
+  // Profesyonel (Pro) Kartı: Öne Çıkan, Canlı Aura ve Gradient Ring
+  &--pro {
+    background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+    border: 2px solid #6366f1;
+    box-shadow: 0 16px 36px -10px rgba(99, 102, 241, 0.22), 0 4px 12px -2px rgba(99, 102, 241, 0.12);
+    transform: translateY(-2px);
+
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 22px 45px -10px rgba(99, 102, 241, 0.28), 0 8px 16px -2px rgba(99, 102, 241, 0.15);
+    }
+  }
+
+  // Enterprise Kartı: Lüks Koyu Titanyum / Obsidiyen Gece Görünümü
+  &--enterprise {
+    background: linear-gradient(180deg, #0f172a 0%, #090d16 100%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.5);
+
+    &:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.8);
+      box-shadow: 0 20px 45px -10px rgba(56, 189, 248, 0.2);
+    }
+  }
+}
+
+// Güvenlik Rozetleri (Trust Badges)
+.trust-card {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+}

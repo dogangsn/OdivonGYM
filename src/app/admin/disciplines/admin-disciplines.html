@@ -1,0 +1,785 @@
+<div class="font-sans space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight m-0">
+        Spor Branşları & Donanım Envanteri
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-0">
+        Fitness, Kickboks, Boks, Reformer gibi spor dalları, zorunlu evrak tanımları ve salon cihaz/alan kataloğu
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        (click)="seedAllDefaults()"
+        [disabled]="isSeeding()"
+        class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+      >
+        <mat-icon class="icon-size-4 text-amber-600">bolt</mat-icon>
+        <span>{{ isSeeding() ? 'Yükleniyor...' : '⚡ Hazır Branş & Ekipmanları Yükle' }}</span>
+      </button>
+
+      @if (activeTab() === 'disciplines') {
+        <button
+          type="button"
+          (click)="openNewDiscipline()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <mat-icon class="icon-size-4.5">add</mat-icon>
+          <span>+ Yeni Branş Tanımla</span>
+        </button>
+      } @else if (activeTab() === 'equipment') {
+        <button
+          type="button"
+          (click)="openNewEquipment()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <mat-icon class="icon-size-4.5">add</mat-icon>
+          <span>+ Yeni Cihaz / Ekipman Ekle</span>
+        </button>
+      } @else {
+        <button
+          type="button"
+          (click)="openNewFacility()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <mat-icon class="icon-size-4.5">add</mat-icon>
+          <span>+ Yeni Alan / Stüdyo Ekle</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 3 Instant KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <!-- KPI 1 -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Aktif Spor Branşları</span>
+        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <mat-icon class="icon-size-4">sports_martial_arts</mat-icon>
+        </div>
+      </div>
+      <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+        {{ totalDisciplines() }} <span class="text-sm text-slate-400 font-bold">Branş</span>
+      </div>
+      <p class="text-xs text-slate-500 font-semibold mt-1 mb-0">Dövüş, Kondisyon & Esneklik Dalları</p>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Cihaz & Ekipman Envanteri</span>
+        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <mat-icon class="icon-size-4">fitness_center</mat-icon>
+        </div>
+      </div>
+      <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+        {{ totalEquipment() }} <span class="text-sm text-slate-400 font-bold">Adet Donanım</span>
+      </div>
+      <p class="text-xs text-slate-500 font-semibold mt-1 mb-0">İzole Makineler, Torbalar & Ağırlıklar</p>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Stüdyo & Çalışma Alanları</span>
+        <div class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+          <mat-icon class="icon-size-4">door_sliding</mat-icon>
+        </div>
+      </div>
+      <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+        {{ totalFacilities() }} <span class="text-sm text-slate-400 font-bold">Salon / Bölüm</span>
+      </div>
+      <p class="text-xs text-slate-500 font-semibold mt-1 mb-0">Tatami, Reformer & Ağırlık Katları</p>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 px-6 pt-3 flex gap-6 overflow-x-auto custom-scroll shadow-2xs">
+    <button
+      type="button"
+      (click)="setTab('disciplines')"
+      class="pb-3 text-xs sm:text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer shrink-0"
+      [class]="activeTab() === 'disciplines' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+    >
+      <mat-icon class="icon-size-4">sports_martial_arts</mat-icon>
+      <span>Spor Branşları & Dalları</span>
+      @if (disciplines().length > 0) {
+        <span class="px-2 py-0.2 rounded-full text-xs font-black bg-indigo-50 text-indigo-700">
+          {{ disciplines().length }}
+        </span>
+      }
+      @if (activeTab() === 'disciplines') {
+        <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+      }
+    </button>
+
+    <button
+      type="button"
+      (click)="setTab('equipment')"
+      class="pb-3 text-xs sm:text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer shrink-0"
+      [class]="activeTab() === 'equipment' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+    >
+      <mat-icon class="icon-size-4">fitness_center</mat-icon>
+      <span>Cihaz & Ekipman Kataloğu</span>
+      @if (equipment().length > 0) {
+        <span class="px-2 py-0.2 rounded-full text-xs font-black bg-emerald-50 text-emerald-700">
+          {{ equipment().length }}
+        </span>
+      }
+      @if (activeTab() === 'equipment') {
+        <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+      }
+    </button>
+
+    <button
+      type="button"
+      (click)="setTab('facilities')"
+      class="pb-3 text-xs sm:text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer shrink-0"
+      [class]="activeTab() === 'facilities' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'"
+    >
+      <mat-icon class="icon-size-4">door_sliding</mat-icon>
+      <span>Alanlar & Stüdyolar</span>
+      @if (facilities().length > 0) {
+        <span class="px-2 py-0.2 rounded-full text-xs font-black bg-cyan-50 text-cyan-700">
+          {{ facilities().length }}
+        </span>
+      }
+      @if (activeTab() === 'facilities') {
+        <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+      }
+    </button>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- TAB 1: SPOR BRANŞLARI                          -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'disciplines') {
+    @if (disciplines().length === 0) {
+      <div class="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+          <mat-icon class="icon-size-8">sports_martial_arts</mat-icon>
+        </div>
+        <h3 class="text-base font-black text-slate-900 m-0">Henüz spor branşı tanımlanmamış</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
+          Salonunuzda verilen Fitness, Kickboks, Boks, Reformer Pilates veya Yüzme gibi branşları tanımlayarak zorunlu evrak ve seanslarını belirleyin.
+        </p>
+        <div class="flex items-center justify-center gap-3 mt-4">
+          <button
+            type="button"
+            (click)="seedAllDefaults()"
+            class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <mat-icon class="icon-size-4">bolt</mat-icon>
+            <span>Örnek Branşları Otomatik Yükle</span>
+          </button>
+          <button
+            type="button"
+            (click)="openNewDiscipline()"
+            class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <mat-icon class="icon-size-4">add</mat-icon>
+            <span>Yeni Branş Ekle</span>
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (d of disciplines(); track d.id) {
+          <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+                    [class]="d.colorTag === 'rose' ? 'bg-gradient-to-tr from-rose-500 to-pink-500' : d.colorTag === 'amber' ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : d.colorTag === 'emerald' ? 'bg-gradient-to-tr from-emerald-500 to-teal-500' : d.colorTag === 'cyan' ? 'bg-gradient-to-tr from-cyan-500 to-blue-500' : 'bg-gradient-to-tr from-indigo-500 to-purple-600'"
+                  >
+                    <mat-icon class="icon-size-5.5">{{ d.icon || 'sports_martial_arts' }}</mat-icon>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-black text-slate-900 m-0 tracking-tight">{{ d.name }}</h3>
+                    <span class="text-[11px] font-semibold text-slate-400 capitalize">
+                      {{ d.category === 'combat' ? 'Dövüş Sporu' : d.category === 'strength' ? 'Kuvvet & Ağırlık' : d.category === 'flexibility' ? 'Esneklik & Duruş' : d.category === 'aquatic' ? 'Su Sporları' : 'Kardiyo & Kondisyon' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    (click)="openEditDiscipline(d)"
+                    matTooltip="Düzenle"
+                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteDiscipline(d.id)"
+                    matTooltip="Sil"
+                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <mat-icon class="icon-size-4">delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              @if (d.description) {
+                <p class="text-xs text-slate-600 mt-3 mb-0 line-clamp-2 leading-relaxed font-medium">
+                  {{ d.description }}
+                </p>
+              }
+
+              <!-- Zorunlu Evrak Gereksinimleri -->
+              <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Zorunlu Evraklar:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  @if (d.requiredDocuments && d.requiredDocuments.length > 0) {
+                    @for (docType of d.requiredDocuments; track docType) {
+                      <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200/60">
+                        {{ documentTypeLabels[docType] || docType }}
+                      </span>
+                    }
+                  } @else {
+                    <span class="text-[11px] text-slate-400 italic">Özel evrak zorunluluğu yok</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Desteklenen Seans Türleri -->
+              <div class="mt-3 space-y-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Seans Formatları:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  @for (st of d.supportedSessionTypes; track st) {
+                    <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold">
+                      {{ st === 'group' ? 'Grup Seansı' : st === 'pt' ? 'Özel PT' : 'Serbest Çalışma' }}
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Badge -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-emerald-600 font-bold flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Aktif Branş
+              </span>
+              <span class="text-slate-400 font-medium">Odivon GYM</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 2: CİHAZ & EKİPMAN KATALOĞU               -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'equipment') {
+    @if (equipment().length === 0) {
+      <div class="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+          <mat-icon class="icon-size-8">fitness_center</mat-icon>
+        </div>
+        <h3 class="text-base font-black text-slate-900 m-0">Henüz cihaz veya ekipman kaydı yok</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
+          Salondaki Chest Press, Smith Machine, Reformer masaları, kum torbaları ve dambılları kaydederek hangi kas grubunu çalıştırdığını belirleyin.
+        </p>
+        <button
+          type="button"
+          (click)="openNewEquipment()"
+          class="mt-4 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+        >
+          <mat-icon class="icon-size-4">add</mat-icon>
+          <span>İlk Cihazı Ekle</span>
+        </button>
+      </div>
+    } @else {
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200/80 bg-slate-50/60 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3 px-5">Cihaz / Ekipman Adı</th>
+                <th class="py-3 px-5">Hedef Kas Grupları</th>
+                <th class="py-3 px-5">Adet</th>
+                <th class="py-3 px-5">Kondisyon / Durum</th>
+                <th class="py-3 px-5">Notlar</th>
+                <th class="py-3 px-5 text-right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs">
+              @for (eq of equipment(); track eq.id) {
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-3.5 px-5 font-bold text-slate-900">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <mat-icon class="icon-size-4">fitness_center</mat-icon>
+                      </div>
+                      <div>
+                        <div>{{ eq.name }}</div>
+                        @if (eq.brandModel) {
+                          <span class="text-[10px] text-slate-400 font-normal">{{ eq.brandModel }}</span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <td class="py-3.5 px-5">
+                    <div class="flex flex-wrap gap-1">
+                      @for (mg of eq.targetMuscleGroups; track mg) {
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                          {{ muscleGroupLabels[mg] || mg }}
+                        </span>
+                      }
+                    </div>
+                  </td>
+
+                  <td class="py-3.5 px-5 font-bold text-slate-800">
+                    {{ eq.quantity }} Adet
+                  </td>
+
+                  <td class="py-3.5 px-5">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
+                      [class]="eq.condition === 'perfect' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : eq.condition === 'good' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-rose-50 text-rose-700 border-rose-200'"
+                    >
+                      {{ eq.condition === 'perfect' ? 'Mükemmel' : eq.condition === 'good' ? 'İyi' : 'Bakım Gerekli' }}
+                    </span>
+                  </td>
+
+                  <td class="py-3.5 px-5 text-slate-500 max-w-xs truncate">
+                    {{ eq.notes || '—' }}
+                  </td>
+
+                  <td class="py-3.5 px-5 text-right space-x-1 whitespace-nowrap">
+                    <button
+                      type="button"
+                      (click)="openEditEquipment(eq)"
+                      matTooltip="Düzenle"
+                      class="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 inline-flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                    </button>
+                    <button
+                      type="button"
+                      (click)="deleteEquipment(eq.id)"
+                      matTooltip="Sil"
+                      class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 inline-flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <mat-icon class="icon-size-4">delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 3: ALANLAR & STÜDYOLAR                    -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'facilities') {
+    @if (facilities().length === 0) {
+      <div class="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+        <div class="w-14 h-14 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mx-auto mb-3">
+          <mat-icon class="icon-size-8">door_sliding</mat-icon>
+        </div>
+        <h3 class="text-base font-black text-slate-900 m-0">Henüz alan veya stüdyo tanımlanmamış</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
+          Salonunuzdaki Tatami Ringi, Ağırlık Katı, Reformer Stüdyosu veya Yüzme Havuzu gibi bölümleri tanımlayın.
+        </p>
+        <button
+          type="button"
+          (click)="openNewFacility()"
+          class="mt-4 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+        >
+          <mat-icon class="icon-size-4">add</mat-icon>
+          <span>İlk Alanı Ekle</span>
+        </button>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (f of facilities(); track f.id) {
+          <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-5">door_sliding</mat-icon>
+                </div>
+                <div>
+                  <h4 class="text-base font-black text-slate-900 m-0">{{ f.name }}</h4>
+                  <span class="text-xs font-semibold text-slate-400">Kapasite: {{ f.capacity }} Kişi</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  (click)="openEditFacility(f)"
+                  matTooltip="Düzenle"
+                  class="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="deleteFacility(f.id)"
+                  matTooltip="Sil"
+                  class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">delete</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            @if (f.description) {
+              <p class="text-xs text-slate-600 m-0">{{ f.description }}</p>
+            }
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {{ f.status === 'active' ? 'Aktif Kullanımda' : 'Bakımda' }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL: SPOR BRANŞI EKLE / DÜZENLE             -->
+<!-- ============================================== -->
+@if (disciplineModalOpen()) {
+  <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs z-50 transition-opacity" (click)="disciplineModalOpen.set(false)"></div>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+    <div class="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-6 pointer-events-auto space-y-4 font-sans animate-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-black text-slate-900 m-0">
+          {{ editingDisciplineId() ? 'Spor Branşını Düzenle' : 'Yeni Spor Branşı Tanımla' }}
+        </h3>
+        <button type="button" (click)="disciplineModalOpen.set(false)" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer">
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="disciplineForm" (ngSubmit)="saveDiscipline()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Branş Adı *</label>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Örn: Kickboks veya Reformer Pilates"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kategori *</label>
+            <select
+              formControlName="category"
+              class="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+              <option value="combat">Dövüş Sporu (Combat)</option>
+              <option value="strength">Kuvvet & Ağırlık (Strength)</option>
+              <option value="flexibility">Esneklik & Duruş (Flexibility)</option>
+              <option value="cardio">Kardiyo & Kondisyon</option>
+              <option value="aquatic">Su Sporları (Aquatic)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tema Rengi</label>
+            <select
+              formControlName="colorTag"
+              class="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+              <option value="indigo">Mor / Indigo</option>
+              <option value="rose">Kırmızı / Gül (Dövüş)</option>
+              <option value="amber">Turuncu / Amber (Boks)</option>
+              <option value="emerald">Yeşil (Pilates)</option>
+              <option value="cyan">Mavi / Cyan (Yüzme)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Bu Branş İçin Zorunlu Evraklar:</label>
+          <div class="grid grid-cols-2 gap-2">
+            @for (docType of allDocumentTypes; track docType) {
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs"
+                [class]="disciplineForm.value.requiredDocuments?.includes(docType) ? 'border-indigo-600 bg-indigo-50/50 font-bold text-indigo-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'"
+                (click)="toggleDocumentRequirement(docType)"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="disciplineForm.value.requiredDocuments?.includes(docType)"
+                  class="rounded text-indigo-600 focus:ring-0"
+                />
+                <span>{{ documentTypeLabels[docType] }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Seans Formatları:</label>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="toggleSessionType('group')"
+              class="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+              [class]="disciplineForm.value.supportedSessionTypes?.includes('group') ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+            >
+              Grup Seansı
+            </button>
+            <button
+              type="button"
+              (click)="toggleSessionType('pt')"
+              class="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+              [class]="disciplineForm.value.supportedSessionTypes?.includes('pt') ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+            >
+              Özel PT Dersi
+            </button>
+            <button
+              type="button"
+              (click)="toggleSessionType('free')"
+              class="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+              [class]="disciplineForm.value.supportedSessionTypes?.includes('free') ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+            >
+              Serbest Çalışma
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Açıklama</label>
+          <textarea
+            formControlName="description"
+            rows="2"
+            placeholder="Branş hakkında üyelerin göreceği kısa bilgi"
+            class="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            (click)="disciplineModalOpen.set(false)"
+            class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+            class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {{ isSaving() ? 'Kaydediliyor...' : 'Kaydet' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ============================================== -->
+<!-- MODAL: CİHAZ / EKİPMAN EKLE / DÜZENLE         -->
+<!-- ============================================== -->
+@if (equipmentModalOpen()) {
+  <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs z-50 transition-opacity" (click)="equipmentModalOpen.set(false)"></div>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+    <div class="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-6 pointer-events-auto space-y-4 font-sans animate-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-black text-slate-900 m-0">
+          {{ editingEquipmentId() ? 'Cihaz / Ekipmanı Düzenle' : 'Yeni Cihaz / Ekipman Ekle' }}
+        </h3>
+        <button type="button" (click)="equipmentModalOpen.set(false)" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer">
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="equipmentForm" (ngSubmit)="saveEquipment()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Cihaz / Alet Adı *</label>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Örn: Incline Chest Press veya Boks Torbası"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Marka / Model</label>
+            <input
+              type="text"
+              formControlName="brandModel"
+              placeholder="Örn: Life Fitness Signature"
+              class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Adet *</label>
+            <input
+              type="number"
+              formControlName="quantity"
+              class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Çalıştırdığı Hedef Kas Grupları:</label>
+          <div class="flex flex-wrap gap-1.5">
+            @for (mg of allMuscleGroups; track mg) {
+              <button
+                type="button"
+                (click)="toggleTargetMuscle(mg)"
+                class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                [class]="equipmentForm.value.targetMuscleGroups?.includes(mg) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+              >
+                {{ muscleGroupLabels[mg] }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kondisyon / Durum</label>
+          <select
+            formControlName="condition"
+            class="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option value="perfect">Mükemmel (Yeni / Sorunsuz)</option>
+            <option value="good">İyi (Aktif Kullanımda)</option>
+            <option value="needs_maintenance">Bakım Gerekiyor</option>
+            <option value="out_of_order">Kullanım Dışı / Arızalı</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Notlar</label>
+          <input
+            type="text"
+            formControlName="notes"
+            placeholder="Örn: 2 numaralı pimi yenilendi"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            (click)="equipmentModalOpen.set(false)"
+            class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {{ isSaving() ? 'Kaydediliyor...' : 'Kaydet' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ============================================== -->
+<!-- MODAL: ALAN / STÜDYO EKLE / DÜZENLE           -->
+<!-- ============================================== -->
+@if (facilityModalOpen()) {
+  <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs z-50 transition-opacity" (click)="facilityModalOpen.set(false)"></div>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+    <div class="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-6 pointer-events-auto space-y-4 font-sans animate-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-black text-slate-900 m-0">
+          {{ editingFacilityId() ? 'Alanı Düzenle' : 'Yeni Alan / Stüdyo Ekle' }}
+        </h3>
+        <button type="button" (click)="facilityModalOpen.set(false)" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer">
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="facilityForm" (ngSubmit)="saveFacility()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Alan / Stüdyo Adı *</label>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Örn: Tatami & Boks Ringi, Reformer Stüdyosu, Havuz Katı"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Maksimum Kişi Kapasitesi *</label>
+            <input
+              type="number"
+              formControlName="capacity"
+              class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Durum *</label>
+            <select
+              formControlName="status"
+              class="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+              <option value="active">Aktif Kullanımda</option>
+              <option value="maintenance">Bakımda</option>
+              <option value="closed">Geçici Olarak Kapalı</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Açıklama</label>
+          <input
+            type="text"
+            formControlName="description"
+            placeholder="Örn: 200 m² darbe emici tatami zemin ve 1 adet antrenman ringi"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            (click)="facilityModalOpen.set(false)"
+            class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+            class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {{ isSaving() ? 'Kaydediliyor...' : 'Kaydet' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

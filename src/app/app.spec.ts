@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { AuthService } from './core/auth/auth.service';
+import { ThemeService } from './core/services/theme.service';
+import { LanguageService } from './core/i18n/language.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -11,8 +13,10 @@ describe('App', () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        // Gerçek Firebase Auth'a bağlanmadan App kabuğunu test edelim.
+        // Gerçek Firebase Auth, tema ve dil servislerine bağlanmadan App kabuğunu test edelim.
         { provide: AuthService, useValue: { ready: signal(true) } },
+        { provide: ThemeService, useValue: { mode: signal('light') } },
+        { provide: LanguageService, useValue: { current: signal('tr') } },
       ],
     }).compileComponents();
   });

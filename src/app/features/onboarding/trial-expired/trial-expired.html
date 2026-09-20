@@ -1,41 +1,118 @@
 <div class="page">
   <div class="page__glow" aria-hidden="true"></div>
 
-  <div class="card">
-    <app-logo-mark [size]="64" />
+  <div class="card max-w-4xl w-full">
+    <app-logo-mark [size]="56" />
 
-    <h1 class="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-      {{ (cancelled() ? 'onboarding.trialExpired.headingCancelled' : 'onboarding.trialExpired.headingExpired') | transloco }}
+    <h1 class="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+      {{ (cancelled() ? 'Aboneliğiniz İptal Edildi' : '14 Günlük Ücretsiz Deneme Süreniz Sona Erdi') }}
     </h1>
-    <p class="mt-2 text-slate-500 dark:text-slate-400">
-      {{ (cancelled() ? 'onboarding.trialExpired.messageCancelled' : 'onboarding.trialExpired.messageExpired') | transloco }}
+    <p class="mt-1 text-sm text-slate-500 max-w-xl">
+      {{ (cancelled() ? 'Kulübünüzün OdivonGYM erişimini tekrar başlatmak için aşağıdan bir paket seçin.' : 'OdivonGYM ile salon operasyonlarınızı, turnike geçişlerini ve üyelerinizi yönetmeye devam etmek için lisans paketinizi başlatın.') }}
     </p>
 
-    <div class="mt-8 grid w-full gap-3 sm:grid-cols-3">
-      @for (tierKey of ['tierMonthly', 'tierQuarterly', 'tierYearly']; track tierKey) {
-        <div class="tier-preview">
-          <p class="tier-preview__name">
-            {{ 'onboarding.trialExpired.' + tierKey | transloco }} {{ 'onboarding.trialExpired.tierPackageSuffix' | transloco }}
-          </p>
-          <p class="tier-preview__hint">{{ 'onboarding.trialExpired.tierComingSoon' | transloco }}</p>
+    <!-- Fatura Döngüsü (Aylık / Yıllık) -->
+    <div class="mt-6 flex items-center justify-center">
+      <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+        <button
+          type="button"
+          (click)="setCycle('monthly')"
+          class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [ngClass]="selectedCycle() === 'monthly' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+        >
+          Aylık Ödeme
+        </button>
+        <button
+          type="button"
+          (click)="setCycle('yearly')"
+          class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [ngClass]="selectedCycle() === 'yearly' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+        >
+          <span>Yıllık Ödeme</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white">2 AY HEDİYE</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3 Paket Kartı -->
+    <div class="mt-6 grid w-full gap-4 sm:grid-cols-3 text-left">
+      @for (plan of plans(); track plan.id) {
+        <div
+          class="p-5 rounded-2xl bg-white border flex flex-col justify-between transition-all"
+          [ngClass]="plan.highlighted ? 'ring-2 ring-indigo-600 border-transparent shadow-lg shadow-indigo-100' : 'border-slate-200 shadow-xs'"
+        >
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-black text-slate-900">{{ plan.name }}</span>
+              @if (plan.highlighted) {
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-600 text-white">POPÜLER</span>
+              }
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 min-h-[32px]">{{ plan.tagline }}</p>
+
+            <div class="mb-4 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span class="text-2xl font-black text-slate-900">₺{{ getPrice(plan) | number:'1.0-0' }}</span>
+              <span class="text-xs text-slate-500">{{ getPeriodLabel() }}</span>
+            </div>
+
+            <!-- Kota Özeti -->
+            <div class="space-y-1 text-[11px] text-slate-600 mb-4 pb-3 border-b border-slate-100">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Şube:</span>
+                <span class="font-bold">{{ plan.limits.maxBranches >= 9999 ? 'Sınırsız' : plan.limits.maxBranches + ' Şube' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Üye Kotası:</span>
+                <span class="font-bold">{{ plan.limits.maxMembers >= 999999 ? 'Sınırsız' : plan.limits.maxMembers + ' Üye' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Personel:</span>
+                <span class="font-bold">{{ plan.limits.maxStaff >= 9999 ? 'Sınırsız' : plan.limits.maxStaff + ' Kişi' }}</span>
+              </div>
+            </div>
+
+            <!-- Kısa Özellikler -->
+            <div class="space-y-1.5 text-[11px] mb-6">
+              @for (feat of plan.features.slice(0, 5); track feat.name) {
+                <div class="flex items-center gap-1.5">
+                  <mat-icon class="text-emerald-500 text-[14px] w-3.5 h-3.5 shrink-0">check</mat-icon>
+                  <span class="text-slate-700 truncate">{{ feat.name }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <button
+            type="button"
+            (click)="activatePlan(plan.id)"
+            [disabled]="activating() !== null"
+            class="w-full py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-98"
+            [ngClass]="plan.highlighted ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30' : 'bg-slate-900 hover:bg-slate-800 text-white'"
+          >
+            @if (activating() === plan.id) {
+              <span>Aktif Ediliyor…</span>
+            } @else {
+              <span>{{ plan.ctaText }}</span>
+            }
+          </button>
         </div>
       }
     </div>
 
-    <button
-      type="button"
-      (click)="notifyComingSoon()"
-      class="mt-6 h-12 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-base font-bold shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
-    >
-      {{ 'onboarding.trialExpired.buyButton' | transloco }}
-    </button>
-
-    <button
-      type="button"
-      (click)="logOut()"
-      class="mt-2 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-    >
-      {{ 'onboarding.trialExpired.logoutButton' | transloco }}
-    </button>
+    <!-- Güvenlik & Çıkış -->
+    <div class="mt-6 flex items-center justify-between w-full pt-4 border-t border-slate-100 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-[14px] w-3.5 h-3.5 text-emerald-500">lock</mat-icon>
+        <span>256-Bit SSL & 3D Secure Korumalı Güvenli Ödeme</span>
+      </div>
+      <button
+        type="button"
+        (click)="logOut()"
+        class="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+      >
+        Oturumu Kapat
+      </button>
+    </div>
   </div>
 </div>
+

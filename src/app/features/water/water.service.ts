@@ -6,7 +6,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -23,7 +22,7 @@ export class WaterService {
   private readonly auth = inject(AuthService);
 
   watchLogs(): Observable<WaterLog[]> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {
@@ -34,14 +33,13 @@ export class WaterService {
       collection(this.firestore, 'water_logs'),
       where('userId', '==', userId),
       where('tenantId', '==', tenantId),
-      orderBy('date', 'desc'),
     );
 
     return collectionData(q, { idField: 'id' }) as Observable<WaterLog[]>;
   }
 
   async addLog(input: CreateWaterLogInput): Promise<string> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {

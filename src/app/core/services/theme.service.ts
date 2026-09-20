@@ -14,46 +14,33 @@ const STORAGE_KEY = 'odivongym-theme';
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  readonly mode = signal<ThemeMode>(this.readStoredMode());
-
-  private readonly media = window.matchMedia('(prefers-color-scheme: dark)');
+  readonly mode = signal<ThemeMode>('light');
 
   constructor() {
-    this.applyToDocument(this.mode());
-    this.media.addEventListener('change', () => {
-      if (this.mode() === 'system') {
-        this.applyToDocument('system');
-      }
-    });
+    this.applyToDocument('light');
   }
 
   setMode(mode: ThemeMode): void {
-    this.mode.set(mode);
+    this.mode.set('light');
     try {
-      localStorage.setItem(STORAGE_KEY, mode);
+      localStorage.setItem(STORAGE_KEY, 'light');
     } catch {
-      // Gizli sekme / depolama engelli — tema hâlâ bu oturum için uygulanır.
+      // Ignored
     }
-    this.applyToDocument(mode);
+    this.applyToDocument('light');
   }
 
   toggle(): void {
-    this.setMode(this.mode() === 'dark' ? 'light' : 'dark');
+    this.setMode('light');
   }
 
   private readStoredMode(): ThemeMode {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
-    } catch {
-      return 'system';
-    }
+    return 'light';
   }
 
   private applyToDocument(mode: ThemeMode): void {
-    const resolved = mode === 'system' ? (this.media.matches ? 'dark' : 'light') : mode;
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(resolved);
+    root.classList.remove('dark');
+    root.classList.add('light');
   }
 }

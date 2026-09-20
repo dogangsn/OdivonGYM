@@ -11,7 +11,6 @@ export interface UpdateProfileInput {
   country?: string;
   language?: string;
   photoURL?: string;
-  notes?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -20,7 +19,7 @@ export class ProfileService {
   private readonly auth = inject(AuthService);
 
   async updateProfile(input: UpdateProfileInput): Promise<void> {
-    const uid = this.auth.currentUser()?.uid;
+    const uid = this.auth.profile()?.uid;
     if (!uid) throw new Error('Kullanıcı oturumu bulunamadı');
 
     const updateData: Partial<UserProfile> = {
@@ -33,7 +32,6 @@ export class ProfileService {
     if (input.photoURL !== undefined) updateData.photoURL = input.photoURL;
     if (input.country !== undefined) updateData.country = input.country;
     if (input.language !== undefined) updateData.language = input.language;
-    if (input.notes !== undefined) updateData.notes = input.notes;
 
     if (input.birthDate) {
       updateData.birthDate = Timestamp.fromDate(input.birthDate);

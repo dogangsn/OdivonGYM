@@ -47,7 +47,7 @@ export interface CreateShopProductInput {
   cost?: number;
 }
 
-export type UpdateShopProductInput = Partial<Omit<CreateShopProductInput, 'sku'>>;
+export type UpdateShopProductInput = Partial<Omit<CreateShopProductInput, 'sku'>> & { status?: ShopProduct['status'] };
 
 export interface CreateShopSaleInput {
   productId: string;

@@ -1,0 +1,1017 @@
+<div class="campaigns-container p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+  <!-- SaaS Starter Paketi CRM Kısıtlama Uyarısı -->
+  @if (!saasSub.hasFeature('campaignsCrm')) {
+    <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border border-amber-300/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+          <mat-icon>lock</mat-icon>
+        </div>
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-wider text-amber-900 m-0">Kampanyalar & CRM Modülü Profesyonel Pakete Özeldir</h4>
+          <p class="text-xs text-slate-600 m-0">Mevcut Başlangıç paketinizde SMS/WhatsApp toplu gönderim kısıtlıdır. Sınırsız CRM için paketinizi yükseltin.</p>
+        </div>
+      </div>
+      <a routerLink="/admin/subscription" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 transition-colors shadow-xs">
+        Paketi Yükselt
+      </a>
+    </div>
+  }
+
+  <!-- Üst Başlık & Eylemler -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+          Pazarlama & Mini CRM
+        </span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+          <mat-icon class="text-[14px] w-3.5 h-3.5">campaign</mat-icon>
+          Çok Kanallı Bildirim
+        </span>
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight mt-1 mb-0 flex items-center gap-2">
+        <mat-icon class="text-rose-600">campaign</mat-icon>
+        Kampanyalar & Üye İletişim CRM
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Özel indirimler, kupon kodları, push bildirimler ve SMS/WhatsApp/E-posta ile üye geri kazanım merkezi.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <button
+        type="button"
+        (click)="activeTab.set('quickBroadcast')"
+        class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all cursor-pointer flex items-center gap-1.5"
+      >
+        <mat-icon class="text-[16px] w-4 h-4 text-indigo-600">send</mat-icon>
+        <span>Hızlı Toplu Mesaj</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="openNewCampaignDrawer()"
+        class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs shadow-rose-600/30 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+      >
+        <mat-icon class="text-[18px] w-4.5 h-4.5">add_circle</mat-icon>
+        <span>Yeni Kampanya Tanımla</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Kartları -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- 1. Aktif Kampanyalar -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Aktif Kampanyalar</span>
+        <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">loyalty</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-slate-900 mt-2 mb-0">{{ activeCampaigns() }}</p>
+      <span class="text-[11px] text-slate-400">Toplam {{ totalCampaigns() }} kayıtlı</span>
+    </div>
+
+    <!-- 2. Toplam Ulaşılan Üye -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">İletilen Mesajlar</span>
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">mark_email_read</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-indigo-600 mt-2 mb-0">{{ totalReached() }}</p>
+      <span class="text-[11px] text-slate-400">SMS, WhatsApp & Push</span>
+    </div>
+
+    <!-- 3. Kampanya Dönüşüm Oranı -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Ort. Dönüşüm (ROI)</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">trending_up</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-emerald-600 mt-2 mb-0">%{{ overallConversionRate() }}</p>
+      <span class="text-[11px] text-slate-400">Yenileme & Paket Satışı</span>
+    </div>
+
+    <!-- 4. Kampanyadan Üretilen Ciro -->
+    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Oluşan Ek Ciro</span>
+        <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+          <mat-icon class="text-[18px] w-4.5 h-4.5">payments</mat-icon>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-purple-600 mt-2 mb-0">₺{{ totalRevenueGenerated() | number }}</p>
+      <span class="text-[11px] text-slate-400">Kupon & Promosyon geliri</span>
+    </div>
+  </div>
+
+  <!-- Sekme Seçimi (Tabs) -->
+  <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+    <button
+      type="button"
+      (click)="activeTab.set('campaigns')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'campaigns' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">loyalty</mat-icon>
+      <span>Kampanyalar Listesi ({{ filteredCampaigns().length }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('quickBroadcast')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'quickBroadcast' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">send</mat-icon>
+      <span>Hızlı Toplu Mesaj & Önizleme</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('retentionRadar')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'retentionRadar' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">radar</mat-icon>
+      <span>Geri Kazanım Radarı</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 text-[10px] font-black">
+        {{ expiringMembers().length + trialMembers().length }}
+      </span>
+    </button>
+  </div>
+
+  <!-- SEKME 1: KAMPANYALAR LİSTESİ -->
+  @if (activeTab() === 'campaigns') {
+    <!-- Arama & Filtre Araç Çubuğu -->
+    <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+        <mat-icon class="text-slate-400">search</mat-icon>
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          placeholder="Kampanya başlığı, kupon kodu veya açıklama ile ara..."
+          class="w-full text-xs border-none outline-none bg-transparent placeholder:text-slate-400 text-slate-800"
+        />
+        @if (searchTerm()) {
+          <button (click)="searchTerm.set('')" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+            <mat-icon class="text-[16px] w-4 h-4">close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <!-- Tür Filtresi Butonları -->
+      <div class="flex items-center gap-1 flex-wrap">
+        <button
+          type="button"
+          (click)="selectedType.set('all')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedType() === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+        >
+          Tümü
+        </button>
+        <button
+          type="button"
+          (click)="selectedType.set('discount')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedType() === 'discount' ? 'bg-rose-700 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'"
+        >
+          İndirimler
+        </button>
+        <button
+          type="button"
+          (click)="selectedType.set('referral')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedType() === 'referral' ? 'bg-purple-700 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'"
+        >
+          Arkadaşını Getir
+        </button>
+        <button
+          type="button"
+          (click)="selectedType.set('retention')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedType() === 'retention' ? 'bg-amber-700 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'"
+        >
+          Geri Kazanım
+        </button>
+        <button
+          type="button"
+          (click)="selectedType.set('gift')"
+          class="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+          [ngClass]="selectedType() === 'gift' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+        >
+          Hediye PT / Bar
+        </button>
+      </div>
+
+      <!-- Durum Filtresi -->
+      <select
+        [ngModel]="selectedStatus()"
+        (ngModelChange)="selectedStatus.set($event)"
+        class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 font-semibold text-slate-700 outline-none cursor-pointer"
+      >
+        <option value="all">Tüm Durumlar</option>
+        <option value="active">Sadece Aktifler</option>
+        <option value="draft">Taslaklar</option>
+        <option value="ended">Süresi Bitenler</option>
+      </select>
+    </div>
+
+    <!-- Kampanya Kartları Listesi -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      @for (camp of filteredCampaigns(); track camp.id) {
+        <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
+          <!-- Kart Üstü: Başlık, Tür Rozeti, İndirim Rozeti -->
+          <div>
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span
+                  class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                  [ngClass]="{
+                    'bg-rose-50 text-rose-700 border-rose-200': camp.type === 'discount',
+                    'bg-purple-50 text-purple-700 border-purple-200': camp.type === 'referral',
+                    'bg-amber-50 text-amber-700 border-amber-200': camp.type === 'retention',
+                    'bg-emerald-50 text-emerald-700 border-emerald-200': camp.type === 'gift'
+                  }"
+                >
+                  {{ getTypeLabel(camp.type) }}
+                </span>
+
+                @if (camp.discountValue) {
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-slate-900 text-white">
+                    @if (camp.discountType === 'percentage') {
+                      %{{ camp.discountValue }} İNDİRİM
+                    } @else {
+                      ₺{{ camp.discountValue }} İNDİRİM
+                    }
+                  </span>
+                } @else if (camp.giftDescription) {
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-700 text-white">
+                    {{ camp.giftDescription }}
+                  </span>
+                }
+
+                @if (camp.status === 'active') {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Aktif
+                  </span>
+                } @else {
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                    Pasif / Bitti
+                  </span>
+                }
+              </div>
+
+              <!-- Kupon Kodu (Kopyalanabilir) -->
+              @if (camp.promoCode) {
+                <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono font-black text-xs">
+                  <span>{{ camp.promoCode }}</span>
+                </div>
+              }
+            </div>
+
+            <h3 class="text-base font-bold text-slate-900 mt-2.5 mb-1">{{ camp.title }}</h3>
+            <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed">{{ camp.description }}</p>
+
+            <!-- Hedef Kitle & Kanallar -->
+            <div class="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px]">
+              <div class="flex items-center gap-1.5 text-slate-600">
+                <mat-icon class="text-slate-400 text-[16px] w-4 h-4">group</mat-icon>
+                <span class="font-bold text-slate-800">{{ getAudienceLabel(camp.targetAudience) }}</span>
+                <span class="text-slate-400">({{ camp.stats.targetCount }} Üye)</span>
+              </div>
+
+              <!-- Kanallar -->
+              <div class="flex items-center gap-1">
+                @for (ch of camp.channels; track ch) {
+                  <span
+                    class="w-6 h-6 rounded-md flex items-center justify-center text-xs"
+                    [ngClass]="{
+                      'bg-sky-100 text-sky-700': ch === 'in_app',
+                      'bg-indigo-100 text-indigo-700': ch === 'sms',
+                      'bg-emerald-100 text-emerald-700': ch === 'whatsapp',
+                      'bg-purple-100 text-purple-700': ch === 'email'
+                    }"
+                    [title]="ch"
+                  >
+                    @if (ch === 'in_app') {
+                      <mat-icon class="text-[14px] w-3.5 h-3.5">notifications</mat-icon>
+                    } @else if (ch === 'sms') {
+                      <mat-icon class="text-[14px] w-3.5 h-3.5">sms</mat-icon>
+                    } @else if (ch === 'whatsapp') {
+                      <mat-icon class="text-[14px] w-3.5 h-3.5">chat</mat-icon>
+                    } @else {
+                      <mat-icon class="text-[14px] w-3.5 h-3.5">email</mat-icon>
+                    }
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- İstatistik Barı & Alt Aksiyonlar -->
+          <div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 mb-3 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-500 font-medium">Gönderim Performansı</span>
+                <span class="font-bold text-slate-800">
+                  {{ camp.stats.sentCount }} Gönderildi / {{ camp.stats.convertedCount }} Satış
+                  <span class="text-purple-700 ml-1 font-black">(₺{{ camp.stats.revenueGenerated | number }})</span>
+                </span>
+              </div>
+              <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                <div
+                  class="bg-emerald-500 h-full"
+                  [style.width.%]="camp.stats.sentCount ? (camp.stats.convertedCount / camp.stats.sentCount) * 100 : 0"
+                  title="Dönüşüm"
+                ></div>
+                <div
+                  class="bg-sky-400 h-full"
+                  [style.width.%]="camp.stats.sentCount ? ((camp.stats.openedCount - camp.stats.convertedCount) / camp.stats.sentCount) * 100 : 0"
+                  title="Görüntüleme"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Kart Alt Aksiyonları -->
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                (click)="openDispatchModal(camp)"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <mat-icon class="text-[16px] w-4 h-4">send</mat-icon>
+                <span>Üyelere İlet / Gönder</span>
+              </button>
+
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  (click)="editCampaign(camp)"
+                  class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                  title="Düzenle"
+                >
+                  <mat-icon class="text-[18px] w-4.5 h-4.5">edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="toggleStatus(camp)"
+                  class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                  [title]="camp.status === 'active' ? 'Durdur' : 'Aktifleştir'"
+                >
+                  <mat-icon class="text-[18px] w-4.5 h-4.5">
+                    {{ camp.status === 'active' ? 'pause_circle' : 'play_circle' }}
+                  </mat-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="deleteCampaign(camp)"
+                  class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  title="Sil"
+                >
+                  <mat-icon class="text-[18px] w-4.5 h-4.5">delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-2 py-12 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
+          Kayıtlı kampanya bulunamadı.
+        </div>
+      }
+    </div>
+  }
+
+  <!-- SEKME 2: HIZLI TOPLU MESAJ & CANLI ÖNİZLEME (MINI CRM BROADCAST) -->
+  @if (activeTab() === 'quickBroadcast') {
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Sol: Mesaj Hazırlama Formu (7 Kolon) -->
+      <div class="lg:col-span-7 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-5">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 m-0">Hızlı Toplu Mesaj & Bildirim Oluştur</h2>
+          <p class="text-xs text-slate-500 mt-1 mb-0">
+            Seçilen üye segmentine tek tıkla Push Bildirim, SMS veya WhatsApp mesajı gönderin.
+          </p>
+        </div>
+
+        @if (broadcastSuccessMessage()) {
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+            <mat-icon class="text-emerald-600 text-[18px] w-4.5 h-4.5">check_circle</mat-icon>
+            <span>{{ broadcastSuccessMessage() }}</span>
+          </div>
+        }
+
+        <!-- 1. Hedef Kitle Segmenti -->
+        <div>
+          <label class="block font-bold text-slate-700 text-xs mb-1.5">1. Hedef Üye Segmenti *</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              (click)="quickBroadcastData.segment = 'expiring_soon'"
+              class="p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between"
+              [ngClass]="quickBroadcastData.segment === 'expiring_soon' ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+            >
+              <div>
+                <p class="m-0">⚠️ Üyeliği Bitenler</p>
+                <span class="text-[10px] text-slate-400 font-normal">Son 7 gün içinde</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-black">18 Kişi</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="quickBroadcastData.segment = 'trial_members'"
+              class="p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between"
+              [ngClass]="quickBroadcastData.segment === 'trial_members' ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+            >
+              <div>
+                <p class="m-0">⏳ Denemedekiler</p>
+                <span class="text-[10px] text-slate-400 font-normal">Pakete geçiş teklifi</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-black">24 Kişi</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="quickBroadcastData.segment = 'inactive_members'"
+              class="p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between"
+              [ngClass]="quickBroadcastData.segment === 'inactive_members' ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+            >
+              <div>
+                <p class="m-0">💤 30 Gündür Gelmeyenler</p>
+                <span class="text-[10px] text-slate-400 font-normal">Geri kazanım teklifi</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-black">32 Kişi</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="quickBroadcastData.segment = 'all_members'"
+              class="p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between"
+              [ngClass]="quickBroadcastData.segment === 'all_members' ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+            >
+              <div>
+                <p class="m-0">📢 Tüm Kayıtlı Üyeler</p>
+                <span class="text-[10px] text-slate-400 font-normal">Genel salon duyurusu</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-black">145 Kişi</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. İletişim Kanalları -->
+        <div>
+          <label class="block font-bold text-slate-700 text-xs mb-1.5">2. Gönderim Kanalları *</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              (click)="toggleBroadcastChannel('in_app')"
+              class="px-3.5 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5"
+              [ngClass]="quickBroadcastData.channels.includes('in_app') ? 'bg-sky-600 text-white border-sky-600 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700'"
+            >
+              <mat-icon class="text-[16px] w-4 h-4">notifications</mat-icon>
+              <span>Uygulama İçi Push</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="toggleBroadcastChannel('whatsapp')"
+              class="px-3.5 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5"
+              [ngClass]="quickBroadcastData.channels.includes('whatsapp') ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700'"
+            >
+              <mat-icon class="text-[16px] w-4 h-4">chat</mat-icon>
+              <span>WhatsApp Mesajı</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="toggleBroadcastChannel('sms')"
+              class="px-3.5 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5"
+              [ngClass]="quickBroadcastData.channels.includes('sms') ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700'"
+            >
+              <mat-icon class="text-[16px] w-4 h-4">sms</mat-icon>
+              <span>SMS Gönderimi</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Mesaj Başlığı & Metni -->
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Mesaj Başlığı</label>
+            <input
+              type="text"
+              [(ngModel)]="quickBroadcastData.title"
+              placeholder="Örn: Spora Dönüş Kampanyası"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-800 outline-none focus:border-indigo-600"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-bold text-slate-700">Mesaj İçeriği</label>
+              <span class="text-[11px] text-slate-400">{{ quickBroadcastData.message.length }} / 160 Karakter</span>
+            </div>
+            <textarea
+              rows="3"
+              [(ngModel)]="quickBroadcastData.message"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium text-slate-800 outline-none focus:border-indigo-600 resize-none leading-relaxed"
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Kupon / Promosyon Kodu (Opsiyonel)</label>
+            <input
+              type="text"
+              [(ngModel)]="quickBroadcastData.promoCode"
+              placeholder="Örn: GERIDON"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold text-indigo-700 uppercase outline-none focus:border-indigo-600"
+            />
+          </div>
+        </div>
+
+        <!-- Gönder Butonu -->
+        <div class="pt-2">
+          <button
+            type="button"
+            (click)="sendBroadcast()"
+            [disabled]="isBroadcasting() || !quickBroadcastData.message.trim() || quickBroadcastData.channels.length === 0"
+            class="w-full py-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            @if (isBroadcasting()) {
+              <mat-icon class="animate-spin text-[18px] w-4.5 h-4.5">refresh</mat-icon>
+            } @else {
+              <mat-icon class="text-[18px] w-4.5 h-4.5">send</mat-icon>
+            }
+            <span>Toplu Mesajı Şimdi Gönder</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sağ: Canlı Telefon Ekranı Mockup Önizlemesi (5 Kolon) -->
+      <div class="lg:col-span-5 flex flex-col items-center justify-center">
+        <div class="w-[280px] sm:w-[320px] bg-slate-950 rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 relative">
+          <!-- Kamera / Ahize çentiği -->
+          <div class="w-32 h-4 bg-slate-900 rounded-full mx-auto mb-3 flex items-center justify-center">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-950"></span>
+          </div>
+
+          <div class="bg-slate-100 rounded-[30px] p-3.5 min-h-[460px] flex flex-col justify-between text-xs overflow-hidden relative">
+            <!-- Ekran Üstü: Saat & Bildirim -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-[11px] font-bold text-slate-800 px-1">
+                <span>09:41</span>
+                <div class="flex items-center gap-1">
+                  <mat-icon class="text-[14px] w-3.5 h-3.5">signal_cellular_alt</mat-icon>
+                  <mat-icon class="text-[14px] w-3.5 h-3.5">wifi</mat-icon>
+                  <mat-icon class="text-[14px] w-3.5 h-3.5">battery_full</mat-icon>
+                </div>
+              </div>
+
+              <!-- Önizleme 1: Push Bildirim Kartı (Eğer seçiliyse) -->
+              @if (quickBroadcastData.channels.includes('in_app')) {
+                <div class="p-3 rounded-2xl bg-white/95 backdrop-blur shadow-md border border-slate-200/80 animate-fade-in">
+                  <div class="flex items-center justify-between gap-1 mb-1">
+                    <div class="flex items-center gap-1.5">
+                      <div class="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[8px] font-black">
+                        O
+                      </div>
+                      <span class="text-[10px] font-bold text-slate-800">ODIVONGYM</span>
+                    </div>
+                    <span class="text-[9px] text-slate-400">Şimdi</span>
+                  </div>
+                  <p class="font-bold text-slate-900 text-[11px] m-0 leading-tight">
+                    {{ quickBroadcastData.title || 'Kampanya Başlığı' }}
+                  </p>
+                  <p class="text-[10px] text-slate-600 m-0 mt-0.5 line-clamp-2 leading-relaxed">
+                    {{ quickBroadcastData.message || 'Mesaj içeriğiniz burada görüntülenecektir.' }}
+                  </p>
+                </div>
+              }
+
+              <!-- Önizleme 2: WhatsApp Mesaj Balonu (Eğer seçiliyse) -->
+              @if (quickBroadcastData.channels.includes('whatsapp')) {
+                <div class="p-3 rounded-2xl bg-[#E7FFDB] shadow-xs border border-emerald-200/80 ml-auto max-w-[90%] text-left animate-fade-in">
+                  <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-800 mb-0.5">
+                    <mat-icon class="text-[12px] w-3 h-3 text-emerald-600">chat</mat-icon>
+                    <span>OdivonGYM Resmi</span>
+                  </div>
+                  <p class="text-[11px] text-slate-800 m-0 leading-relaxed">
+                    {{ quickBroadcastData.message }}
+                  </p>
+                  @if (quickBroadcastData.promoCode) {
+                    <div class="mt-1.5 p-1 rounded bg-white/80 font-mono font-bold text-emerald-900 text-[10px] text-center border border-emerald-300">
+                      Kupon Kodu: {{ quickBroadcastData.promoCode }}
+                    </div>
+                  }
+                  <span class="text-[8px] text-slate-400 block text-right mt-1">09:41 · İletildi ✓✓</span>
+                </div>
+              }
+
+              <!-- Önizleme 3: SMS Balonu (Eğer seçiliyse) -->
+              @if (quickBroadcastData.channels.includes('sms')) {
+                <div class="p-3 rounded-2xl bg-white shadow-xs border border-slate-200 text-left animate-fade-in">
+                  <span class="text-[9px] font-bold text-indigo-600 uppercase block mb-0.5">SMS · ODIVONGYM</span>
+                  <p class="text-[10px] text-slate-800 m-0 leading-relaxed font-sans">
+                    {{ quickBroadcastData.message }}
+                  </p>
+                  <span class="text-[8px] text-slate-400 block text-right mt-0.5">B001 Mersis</span>
+                </div>
+              }
+            </div>
+
+            <!-- Ekran Altı Home Bar -->
+            <div class="w-24 h-1 bg-slate-400 rounded-full mx-auto mt-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SEKME 3: GERİ KAZANIM RADARI (RETENTION RADAR) -->
+  @if (activeTab() === 'retentionRadar') {
+    <div class="space-y-6">
+      <div class="p-6 rounded-2xl bg-gradient-to-br from-rose-950 to-indigo-950 text-white shadow-md">
+        <div class="max-w-2xl">
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-500/30 text-rose-200">
+            Otomatik Risk & Geri Kazanım Radarı
+          </span>
+          <h2 class="text-xl font-black mt-2 mb-1">
+            Üyeliği Dolan & Ayrılma Riski Bulunan Sporcular
+          </h2>
+          <p class="text-xs text-rose-200 m-0 leading-relaxed">
+            Sistemin yapay zeka ve turnike verileriyle analiz ettiği üyelik riskleri. Aşağıdaki üyelere tek tıkla WhatsApp hatırlatması yapabilir veya yenileme kuponu gönderebilirsiniz.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Sol: Üyeliği Son 7 Günde Bitecek Olanlar -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+              <h3 class="font-bold text-slate-900 text-sm m-0">Süresi Yakında Dolanlar (Son 7 Gün)</h3>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-xs">
+              {{ expiringMembers().length }} Üye
+            </span>
+          </div>
+
+          <div class="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+            @for (m of expiringMembers(); track m.uid) {
+              <div class="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-bold text-slate-900 text-xs m-0">{{ m.displayName }}</p>
+                  <p class="text-[11px] text-slate-500 m-0">{{ m.packageLabel || 'Standart Üyelik' }} · {{ m.phone || 'Telefon yok' }}</p>
+                </div>
+                <button
+                  type="button"
+                  (click)="sendWhatsAppDirect(m.phone, m.displayName)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <mat-icon class="text-[16px] w-4 h-4 text-emerald-600">chat</mat-icon>
+                  <span>WhatsApp ile Yaz</span>
+                </button>
+              </div>
+            } @empty {
+              <div class="py-6 text-center text-slate-400 text-xs">
+                Önümüzdeki 7 günde süresi bitecek üye bulunmuyor.
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Sağ: Ücretsiz Denemesi Dolanlar -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              <h3 class="font-bold text-slate-900 text-sm m-0">Ücretsiz Deneme (Trial) Süresindekiler</h3>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-xs">
+              {{ trialMembers().length }} Üye
+            </span>
+          </div>
+
+          <div class="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+            @for (m of trialMembers(); track m.uid) {
+              <div class="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-bold text-slate-900 text-xs m-0">{{ m.displayName }}</p>
+                  <p class="text-[11px] text-slate-500 m-0">{{ m.email }} · {{ m.phone || 'Telefon yok' }}</p>
+                </div>
+                <button
+                  type="button"
+                  (click)="sendWhatsAppDirect(m.phone, m.displayName)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <mat-icon class="text-[16px] w-4 h-4 text-indigo-600">local_offer</mat-icon>
+                  <span>Paket Teklifi Yap</span>
+                </button>
+              </div>
+            } @empty {
+              <div class="py-6 text-center text-slate-400 text-xs">
+                Şu anda deneme süresinde üye bulunmuyor.
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- KAMPANYA İLET / GÖNDER MODALI (DISPATCH MODAL) -->
+  @if (dispatchingCampaign(); as camp) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs" (click)="closeDispatchModal()"></div>
+
+      <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl z-10 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-base m-0">Kampanyayı Üyelere İlet</h3>
+            <p class="text-xs text-slate-500 m-0">{{ camp.title }}</p>
+          </div>
+          <button (click)="closeDispatchModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center cursor-pointer">
+            <mat-icon class="text-[18px] w-4.5 h-4.5">close</mat-icon>
+          </button>
+        </div>
+
+        @if (dispatchSuccessMessage()) {
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+            <mat-icon class="text-emerald-600">check_circle</mat-icon>
+            <span>{{ dispatchSuccessMessage() }}</span>
+          </div>
+        }
+
+        <p class="text-xs text-slate-600 leading-relaxed m-0">
+          Bu kampanya <strong>{{ getAudienceLabel(camp.targetAudience) }}</strong> segmentindeki
+          <strong>{{ camp.stats.targetCount }}</strong> kayıtlı üyeye iletilecektir. Gönderim yapmak istediğiniz kanalı seçin:
+        </p>
+
+        <div class="space-y-2 text-xs font-bold">
+          <button
+            type="button"
+            (click)="dispatchCampaignChannel('in_app')"
+            [disabled]="isDispatching()"
+            class="w-full p-3 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 flex items-center justify-between cursor-pointer transition-colors"
+          >
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-sky-600">notifications</mat-icon>
+              <span>Uygulama İçi Anlık Push Gönder</span>
+            </div>
+            <mat-icon class="text-[18px] w-4.5 h-4.5">chevron_right</mat-icon>
+          </button>
+
+          <button
+            type="button"
+            (click)="dispatchCampaignChannel('whatsapp')"
+            [disabled]="isDispatching()"
+            class="w-full p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-between cursor-pointer transition-colors"
+          >
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-emerald-600">chat</mat-icon>
+              <span>WhatsApp CRM Şablonunu Başlat</span>
+            </div>
+            <mat-icon class="text-[18px] w-4.5 h-4.5">chevron_right</mat-icon>
+          </button>
+
+          <button
+            type="button"
+            (click)="dispatchCampaignChannel('sms')"
+            [disabled]="isDispatching()"
+            class="w-full p-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 flex items-center justify-between cursor-pointer transition-colors"
+          >
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-indigo-600">sms</mat-icon>
+              <span>Toplu SMS Olarak İlet (Netgsm)</span>
+            </div>
+            <mat-icon class="text-[18px] w-4.5 h-4.5">chevron_right</mat-icon>
+          </button>
+        </div>
+
+        <div class="pt-2 text-right">
+          <button
+            type="button"
+            (click)="closeDispatchModal()"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+          >
+            Kapat
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- YENİ / DÜZENLE KAMPANYA SLIDE-OVER DRAWER -->
+  @if (isDrawerOpen()) {
+    <div class="fixed inset-0 z-50 flex justify-end">
+      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeDrawer()"></div>
+
+      <div class="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-hidden z-10 animate-slide-in">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-slate-900 text-base m-0">
+              {{ editingCampaign() ? 'Kampanyayı Düzenle' : 'Yeni Kampanya Tanımla' }}
+            </h3>
+            <p class="text-xs text-slate-500 m-0">Pazarlama, indirim ve üye iletişim parametreleri</p>
+          </div>
+          <button (click)="closeDrawer()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer">
+            <mat-icon class="text-[18px] w-4.5 h-4.5">close</mat-icon>
+          </button>
+        </div>
+
+        <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
+          <!-- Başlık & Açıklama -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Kampanya Başlığı *</label>
+            <input
+              type="text"
+              [(ngModel)]="formData.title"
+              placeholder="Örn: Yaza Formda Gir: %25 İndirim"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600"
+            />
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Açıklama</label>
+            <textarea
+              rows="2"
+              [(ngModel)]="formData.description"
+              placeholder="Kampanya detayları ve şartları..."
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-rose-600 resize-none"
+            ></textarea>
+          </div>
+
+          <!-- Tür & İndirim Değeri -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Kampanya Türü</label>
+              <select
+                [(ngModel)]="formData.type"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600 bg-white"
+              >
+                <option value="discount">Özel İndirim</option>
+                <option value="referral">Arkadaşını Getir</option>
+                <option value="retention">Geri Kazanım</option>
+                <option value="gift">Hediye Hizmet</option>
+                <option value="event">Etkinlik</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">İndirim Oranı / Tutar</label>
+              <div class="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  [(ngModel)]="formData.discountValue"
+                  placeholder="20"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600"
+                />
+                <select
+                  [(ngModel)]="formData.discountType"
+                  class="px-2 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none bg-white"
+                >
+                  <option value="percentage">%</option>
+                  <option value="fixed_amount">TL</option>
+                  <option value="gift_service">Hediye</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kupon Kodu & Hedef Kitle -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Promosyon Kodu</label>
+              <input
+                type="text"
+                [(ngModel)]="formData.promoCode"
+                placeholder="Örn: YAZ2026"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold text-rose-700 uppercase outline-none focus:border-rose-600"
+              />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Hedef Kitle Segmenti</label>
+              <select
+                [(ngModel)]="formData.targetAudience"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600 bg-white"
+              >
+                <option value="all_members">Tüm Üyeler</option>
+                <option value="expiring_soon">Süresi Yakında Bitenler</option>
+                <option value="trial_members">Deneme Süresindekiler</option>
+                <option value="inactive_members">30 Gündür Gelmeyenler</option>
+                <option value="active_members">Aktif Üyeler</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tarihler -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Başlangıç Tarihi</label>
+              <input
+                type="date"
+                [(ngModel)]="formData.validFrom"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Bitiş Tarihi</label>
+              <input
+                type="date"
+                [(ngModel)]="formData.validUntil"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-rose-600"
+              />
+            </div>
+          </div>
+
+          <!-- İletişim Kanalları -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5">Aktif Dağıtım Kanalları</label>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                (click)="toggleChannel('in_app')"
+                class="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-colors"
+                [ngClass]="formData.channels.includes('in_app') ? 'bg-sky-600 text-white border-sky-600' : 'bg-slate-50 border-slate-200 text-slate-600'"
+              >
+                Push Bildirim
+              </button>
+              <button
+                type="button"
+                (click)="toggleChannel('whatsapp')"
+                class="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-colors"
+                [ngClass]="formData.channels.includes('whatsapp') ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 border-slate-200 text-slate-600'"
+              >
+                WhatsApp
+              </button>
+              <button
+                type="button"
+                (click)="toggleChannel('sms')"
+                class="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-colors"
+                [ngClass]="formData.channels.includes('sms') ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-600'"
+              >
+                SMS
+              </button>
+            </div>
+          </div>
+
+          <!-- Mesaj Şablonları -->
+          <div class="space-y-3 pt-2 border-t border-slate-100">
+            <h4 class="font-bold text-slate-800 m-0">Kanal Mesaj Şablonları</h4>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">WhatsApp Mesajı</label>
+              <textarea
+                rows="2"
+                [(ngModel)]="formData.whatsappBody"
+                placeholder="WhatsApp mesaj metni..."
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-rose-600 resize-none"
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">SMS Metni</label>
+              <textarea
+                rows="2"
+                [(ngModel)]="formData.smsBody"
+                placeholder="SMS metni (maks 160 karakter)..."
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-rose-600 resize-none"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50">
+          <button
+            type="button"
+            (click)="closeDrawer()"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            İptal
+          </button>
+          <button
+            type="button"
+            (click)="saveCampaign()"
+            [disabled]="isSaving() || !formData.title.trim()"
+            class="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs shadow-rose-600/30 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+          >
+            @if (isSaving()) {
+              <mat-icon class="animate-spin text-[16px] w-4 h-4">refresh</mat-icon>
+            }
+            <span>{{ editingCampaign() ? 'Değişiklikleri Kaydet' : 'Kampanyayı Başlat' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

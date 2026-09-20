@@ -6,6 +6,7 @@ export interface BodyMeasurement {
   tenantId: string;
   date: Timestamp;
   weight?: number; // kg
+  height?: number; // cm
   chest?: number; // cm
   waist?: number; // cm
   hips?: number; // cm
@@ -21,6 +22,7 @@ export interface BodyMeasurement {
 export interface CreateBodyMeasurementInput {
   date: Date;
   weight?: number;
+  height?: number;
   chest?: number;
   waist?: number;
   hips?: number;

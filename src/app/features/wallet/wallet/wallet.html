@@ -5,32 +5,54 @@
     description="Otomat, market ve ek ders satın alımlarında kullanılan bakiyeni yönet."
   />
 
-  <section class="p-6 rounded-2xl mb-6 bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+  <section class="p-6 rounded-2xl mb-4 bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
     <p class="m-0 text-sm text-white/85">E-Cüzdan Bakiyesi</p>
     <p class="m-0 mt-1.5 text-4xl font-black tracking-tight">₺{{ balanceLabel() }}</p>
     <p class="m-0 mt-1.5 text-xs text-white/70">Salon içi otomat ve market alışverişlerinde kullanılır.</p>
   </section>
 
-  <section class="mb-2">
-    <h2 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-      Bakiye Yükle
-    </h2>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      @for (amount of amounts; track amount) {
-        <button
-          type="button"
-          (click)="requestTopUp(amount)"
-          class="p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer"
-        >
-          ₺{{ amount }}
-        </button>
-      }
-    </div>
-  </section>
+  <div class="odv-card flex items-start gap-3 p-4 mb-6 text-sm text-slate-600 dark:text-slate-300">
+    <mat-icon class="icon-size-5 text-indigo-500 flex-shrink-0" [svgIcon]="'heroicons_solid:information-circle'"></mat-icon>
+    <p class="m-0">Bakiye yüklemek için salon görevlisine başvur; yükleme yapıldığında bakiyen ve aşağıdaki geçmiş anında güncellenir.</p>
+  </div>
 
-  <app-coming-soon
-    icon="receipt_long"
-    title="İşlem geçmişi yakında burada"
-    description="Bakiye yüklemelerin, otomat ve market alışverişlerinin dökümü burada listelenecek."
-  />
+  <h2 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">İşlem Geçmişi</h2>
+  <div class="odv-card overflow-hidden">
+    @if (transactions() === null) {
+      <p class="py-12 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+    } @else if (transactions()!.length === 0) {
+      <p class="py-12 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Henüz işlem yok.</p>
+    } @else {
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+              <th class="odv-th">Tarih</th>
+              <th class="odv-th">İşlem</th>
+              <th class="odv-th">Durum</th>
+              <th class="odv-th text-right">Tutar</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+            @for (t of transactions(); track t.id) {
+              <tr>
+                <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ dateTime(t.createdAt) }}</td>
+                <td class="odv-td">
+                  <p class="font-semibold text-slate-900 dark:text-white m-0">{{ t.description }}</p>
+                  <p class="text-[11px] text-slate-400 m-0">{{ typeLabel[t.type] }}</p>
+                </td>
+                <td class="odv-td text-slate-600 dark:text-slate-300">{{ statusLabel[t.status] }}</td>
+                <td
+                  class="odv-td text-right font-bold whitespace-nowrap"
+                  [class]="isCredit(t) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                >
+                  {{ isCredit(t) ? '+' : '−' }}{{ money(t.amount) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 </div>

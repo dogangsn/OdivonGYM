@@ -1,0 +1,924 @@
+@if (wizard.isOpen()) {
+  <!-- Modal Backdrop -->
+  <div
+    class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-50 transition-opacity"
+    (click)="close()"
+  ></div>
+
+  <!-- Modal Dialog Container -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 pointer-events-none">
+    <div
+      class="w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden pointer-events-auto animate-in zoom-in-95 duration-150 font-sans"
+    >
+      <!-- 1. Header Hero Card -->
+      <div class="relative p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shrink-0">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-inner">
+              <mat-icon class="icon-size-6">auto_awesome</mat-icon>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg sm:text-xl font-black tracking-tight text-white m-0">
+                  Eğitim & Tanımlama Sihirbazı
+                </h2>
+                <span class="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
+                  PRO SİHİRBAZ
+                </span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5 mb-0 font-medium">
+                Sporcu antrenman programları hazırlayın veya tüm branş ve cihazları birbirine bağlı olarak tanımlayın.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            (click)="close()"
+            matTooltip="Kapat (Esc)"
+            class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <mat-icon class="icon-size-5">close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Mode Toggle Tabs (İki Ana Çalışma Modu) -->
+        <div class="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80">
+          <button
+            type="button"
+            (click)="setMode('workout')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+            [class]="activeMode() === 'workout' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-white/5 text-slate-300 hover:bg-white/10'"
+          >
+            <mat-icon class="icon-size-4">fitness_center</mat-icon>
+            <span>🏃 Sporcu Eğitim & Antrenman Programı</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="setMode('setup')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+            [class]="activeMode() === 'setup' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-white/5 text-slate-300 hover:bg-white/10'"
+          >
+            <mat-icon class="icon-size-4">account_tree</mat-icon>
+            <span>🏢 Zincirleme Sistem & Donanım Tanımla</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- MOD 1: SPORCU EĞİTİM & ANTRENMAN PROGRAMI HAZIRLAMA             -->
+      <!-- ============================================================== -->
+      @if (activeMode() === 'workout') {
+        <!-- Step Progress Header -->
+        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between shrink-0 overflow-x-auto custom-scroll">
+          <div class="flex items-center gap-2 sm:gap-4 text-xs font-bold">
+            <!-- Adım 1 -->
+            <button
+              type="button"
+              (click)="workoutStep.set(1)"
+              class="flex items-center gap-1.5 cursor-pointer transition-colors"
+              [class]="workoutStep() === 1 ? 'text-indigo-600' : (workoutStep() > 1 ? 'text-emerald-600' : 'text-slate-400')"
+            >
+              <span
+                class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border"
+                [class]="workoutStep() === 1 ? 'bg-indigo-600 text-white border-indigo-600' : (workoutStep() > 1 ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : 'bg-white text-slate-400 border-slate-300')"
+              >
+                {{ workoutStep() > 1 ? '✓' : '1' }}
+              </span>
+              <span class="whitespace-nowrap">Üye Seçimi</span>
+            </button>
+
+            <span class="text-slate-300">➔</span>
+
+            <!-- Adım 2 -->
+            <button
+              type="button"
+              (click)="selectedMember() ? workoutStep.set(2) : null"
+              [disabled]="!selectedMember()"
+              class="flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              [class]="workoutStep() === 2 ? 'text-indigo-600' : (workoutStep() > 2 ? 'text-emerald-600' : 'text-slate-400')"
+            >
+              <span
+                class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border"
+                [class]="workoutStep() === 2 ? 'bg-indigo-600 text-white border-indigo-600' : (workoutStep() > 2 ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : 'bg-white text-slate-400 border-slate-300')"
+              >
+                {{ workoutStep() > 2 ? '✓' : '2' }}
+              </span>
+              <span class="whitespace-nowrap">Spor Branşı</span>
+            </button>
+
+            <span class="text-slate-300">➔</span>
+
+            <!-- Adım 3 -->
+            <button
+              type="button"
+              (click)="selectedDiscipline() ? workoutStep.set(3) : null"
+              [disabled]="!selectedDiscipline()"
+              class="flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              [class]="workoutStep() === 3 ? 'text-indigo-600' : (workoutStep() > 3 ? 'text-emerald-600' : 'text-slate-400')"
+            >
+              <span
+                class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border"
+                [class]="workoutStep() === 3 ? 'bg-indigo-600 text-white border-indigo-600' : (workoutStep() > 3 ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : 'bg-white text-slate-400 border-slate-300')"
+              >
+                {{ workoutStep() > 3 ? '✓' : '3' }}
+              </span>
+              <span class="whitespace-nowrap">Bölgeler</span>
+            </button>
+
+            <span class="text-slate-300">➔</span>
+
+            <!-- Adım 4 -->
+            <button
+              type="button"
+              (click)="selectedMuscles().length > 0 ? workoutStep.set(4) : null"
+              [disabled]="selectedMuscles().length === 0"
+              class="flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              [class]="workoutStep() === 4 ? 'text-indigo-600' : (workoutStep() > 4 ? 'text-emerald-600' : 'text-slate-400')"
+            >
+              <span
+                class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border"
+                [class]="workoutStep() === 4 ? 'bg-indigo-600 text-white border-indigo-600' : (workoutStep() > 4 ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : 'bg-white text-slate-400 border-slate-300')"
+              >
+                {{ workoutStep() > 4 ? '✓' : '4' }}
+              </span>
+              <span class="whitespace-nowrap">Egzersizler</span>
+            </button>
+
+            <span class="text-slate-300">➔</span>
+
+            <!-- Adım 5 -->
+            <button
+              type="button"
+              (click)="currentPlanExercises().length > 0 ? workoutStep.set(5) : null"
+              [disabled]="currentPlanExercises().length === 0"
+              class="flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              [class]="workoutStep() === 5 ? 'text-indigo-600' : 'text-slate-400'"
+            >
+              <span
+                class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border"
+                [class]="workoutStep() === 5 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-300'"
+              >
+                5
+              </span>
+              <span class="whitespace-nowrap">Özet & Onay</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Body Content -->
+        <div class="flex-1 overflow-y-auto p-5 sm:p-6 custom-scroll">
+          <!-- ADIM 1: ÜYE SEÇİMİ -->
+          @if (workoutStep() === 1) {
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-base font-black text-slate-900 m-0">1. Antrenman Programı Tanımlanacak Üyeyi Seçin</h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">Program hazırlamak istediğiniz sporcu üyeyi arayın veya listeden seçin.</p>
+              </div>
+
+              <!-- Search Box -->
+              <div class="relative">
+                <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4">search</mat-icon>
+                <input
+                  type="text"
+                  [ngModel]="memberSearchTerm()"
+                  (ngModelChange)="memberSearchTerm.set($event)"
+                  placeholder="Üye adı, e-posta veya telefon ara..."
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold"
+                />
+              </div>
+
+              <!-- Member Cards Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto custom-scroll pr-1">
+                @for (m of filteredMembers(); track m.uid) {
+                  <div
+                    (click)="selectMember(m)"
+                    class="p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                    [class]="selectedMember()?.uid === m.uid ? 'bg-indigo-50/80 border-indigo-300 ring-2 ring-indigo-500/30' : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        {{ m.displayName ? m.displayName.slice(0, 2).toUpperCase() : 'ÜY' }}
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-slate-900 m-0 group-hover:text-indigo-600 transition-colors">
+                          {{ m.displayName || 'İsimsiz Üye' }}
+                        </p>
+                        <p class="text-[11px] text-slate-400 m-0">{{ m.email }}</p>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                          <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600">
+                            <span class="w-1 h-1 rounded-full bg-emerald-500"></span>
+                            {{ m.branchName || 'Merkez Şube' }}
+                          </span>
+                          @if (m.packageLabel) {
+                            <span class="text-[9px] font-bold text-indigo-600">{{ m.packageLabel }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <mat-icon class="text-slate-300 group-hover:text-indigo-600 icon-size-4">chevron_right</mat-icon>
+                  </div>
+                } @empty {
+                  <div class="col-span-2 py-8 text-center text-slate-400 text-xs">
+                    Eşleşen üye bulunamadı.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- ADIM 2: SPOR BRANŞI SEÇİMİ -->
+          @if (workoutStep() === 2) {
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-black text-slate-900 m-0">2. Spor Dalı & Branş Belirleyin</h3>
+                  <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                    Seçili Üye: <strong class="text-indigo-600">{{ selectedMember()?.displayName }}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="workoutStep.set(1)"
+                  class="text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  ← Üye Değiştir
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                @for (d of disciplines(); track d.id) {
+                  <div
+                    (click)="selectDiscipline(d)"
+                    class="p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group"
+                    [class]="selectedDiscipline()?.id === d.id ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-500/30' : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xs'"
+                  >
+                    <div>
+                      <div class="flex items-center justify-between mb-2">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                          <mat-icon class="icon-size-5">{{ d.icon || 'fitness_center' }}</mat-icon>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {{ d.category }}
+                        </span>
+                      </div>
+                      <h4 class="text-sm font-black text-slate-900 m-0 group-hover:text-indigo-600 transition-colors">
+                        {{ d.name }}
+                      </h4>
+                      <p class="text-xs text-slate-500 mt-1 mb-0 line-clamp-2 leading-relaxed">
+                        {{ d.description || 'Bu spor dalına özel antrenman ve cihaz protokolü.' }}
+                      </p>
+                    </div>
+
+                    @if (d.requiredDocuments && d.requiredDocuments.length > 0) {
+                      <div class="mt-3 pt-2 border-t border-slate-100 flex items-center gap-1 text-[10px] font-bold text-amber-700">
+                        <mat-icon class="icon-size-3.5 text-amber-500">warning</mat-icon>
+                        <span>Gerekli: {{ d.requiredDocuments.join(', ') }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- ADIM 3: HEDEF KAS GRUPLARI & BÖLGELER -->
+          @if (workoutStep() === 3) {
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-black text-slate-900 m-0">3. Çalışılacak Hedef Kas Gruplarını İşaretleyin</h3>
+                  <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                    Branş: <strong class="text-indigo-600">{{ selectedDiscipline()?.name }}</strong> • Birden fazla bölge seçebilirsiniz.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="workoutStep.set(2)"
+                  class="text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  ← Branş Değiştir
+                </button>
+              </div>
+
+              <!-- Muscle Group Tiles -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @for (mg of muscleGroups; track mg.key) {
+                  <button
+                    type="button"
+                    (click)="toggleMuscle(mg.key)"
+                    class="p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer"
+                    [class]="isMuscleSelected(mg.key) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-800'"
+                  >
+                    <div class="flex items-center gap-3">
+                      <mat-icon class="icon-size-5" [class.text-indigo-200]="isMuscleSelected(mg.key)" [class.text-indigo-600]="!isMuscleSelected(mg.key)">
+                        {{ mg.icon }}
+                      </mat-icon>
+                      <span class="text-xs sm:text-sm font-bold">{{ mg.label }}</span>
+                    </div>
+
+                    @if (isMuscleSelected(mg.key)) {
+                      <mat-icon class="icon-size-4 text-white">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+
+              <div class="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-900">
+                  {{ selectedMuscles().length }} bölge seçildi (Seçilen bölgelerin egzersizleri otomatik yüklenecek).
+                </span>
+                <button
+                  type="button"
+                  (click)="goToExercisesStep()"
+                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>Egzersizleri Belirle</span>
+                  <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ADIM 4: EGZERSİZ & CİHAZ BELİRLEME -->
+          @if (workoutStep() === 4) {
+            <div class="space-y-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-black text-slate-900 m-0">4. Egzersizleri, Set ve Cihazları Yapılandırın</h3>
+                  <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                    Seçilen kas gruplarına göre salondaki ekipmanlar ve hareketler listelendi. Parametreleri özelleştirin.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="workoutStep.set(3)"
+                  class="text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  ← Bölgeleri Değiştir
+                </button>
+              </div>
+
+              <!-- Eklenen Egzersizler Tablosu / Listesi -->
+              <div class="space-y-2.5">
+                <span class="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Programdaki Egzersizler ({{ currentPlanExercises().length }})
+                </span>
+
+                @for (ex of currentPlanExercises(); track $index) {
+                  <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
+                          {{ $index + 1 }}
+                        </span>
+                        <div>
+                          <strong class="text-xs sm:text-sm font-bold text-slate-900 block">{{ ex.name }}</strong>
+                          <span class="text-[11px] text-slate-400">
+                            Cihaz / Ekipman: <span class="font-semibold text-slate-700">{{ ex.equipmentName || 'Serbest Ağırlık' }}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        (click)="removeExercise($index)"
+                        matTooltip="Listeden Çıkar"
+                        class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <mat-icon class="icon-size-4">delete</mat-icon>
+                      </button>
+                    </div>
+
+                    <!-- Parametre Girdileri (Set, Tekrar, Ağırlık, Dinlenme, Not) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Set</label>
+                        <input
+                          type="number"
+                          [value]="ex.sets || 4"
+                          (input)="updateExercise($index, { sets: +$any($event.target).value })"
+                          class="w-full h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Tekrar</label>
+                        <input
+                          type="text"
+                          [value]="ex.reps || '10-12'"
+                          (input)="updateExercise($index, { reps: $any($event.target).value })"
+                          class="w-full h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Hedef Kilo (kg)</label>
+                        <input
+                          type="number"
+                          [value]="ex.weight || ''"
+                          placeholder="İsteğe bağlı"
+                          (input)="updateExercise($index, { weight: +$any($event.target).value })"
+                          class="w-full h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Dinlenme (sn)</label>
+                        <input
+                          type="number"
+                          [value]="ex.restSeconds || 60"
+                          (input)="updateExercise($index, { restSeconds: +$any($event.target).value })"
+                          class="w-full h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Antrenör Direktifi</label>
+                        <input
+                          type="text"
+                          [value]="ex.notes || ''"
+                          placeholder="Örn: Yavaş indir"
+                          (input)="updateExercise($index, { notes: $any($event.target).value })"
+                          class="w-full h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Hızlı Egzersiz Ekleme (Önerilenler Çipi) -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <span class="text-xs font-bold text-slate-700 block">Kütüphaneden Hızlıca İlave Egzersiz Ekle:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  @for (sug of suggestedExercises(); track sug.name) {
+                    <button
+                      type="button"
+                      (click)="addSuggestedExercise(sug)"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <mat-icon class="icon-size-3.5 text-indigo-500">add</mat-icon>
+                      <span>{{ sug.name }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Devam Butonu -->
+              <div class="flex justify-end pt-2">
+                <button
+                  type="button"
+                  (click)="goToReviewStep()"
+                  class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Özet ve Onay Ekranına Geç</span>
+                  <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ADIM 5: ÖZET VE ONAY -->
+          @if (workoutStep() === 5) {
+            <div class="space-y-5">
+              <div>
+                <h3 class="text-base font-black text-slate-900 m-0">5. Program Özeti & Onay</h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                  Hazırladığınız eğitim programı Firestore'a kaydedilecek ve sporcunun profili ile mobil ekranına canlı yansıtılacaktır.
+                </p>
+              </div>
+
+              <!-- Kart: Genel Bilgiler -->
+              <div class="p-4 sm:p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span class="text-slate-400 block font-bold">Sporcu Üye:</span>
+                    <strong class="text-slate-900 text-sm font-black">{{ selectedMember()?.displayName }}</strong>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block font-bold">Branş:</span>
+                    <strong class="text-indigo-600 text-sm font-black">{{ selectedDiscipline()?.name }}</strong>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block font-bold">Toplam Hareket:</span>
+                    <strong class="text-emerald-600 text-sm font-black">{{ currentPlanExercises().length }} Egzersiz</strong>
+                  </div>
+                </div>
+
+                <!-- Başlık & Tarihler -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-indigo-100">
+                  <div class="sm:col-span-3">
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Program Başlığı</label>
+                    <input
+                      type="text"
+                      [ngModel]="currentPlanTitle()"
+                      (ngModelChange)="currentPlanTitle.set($event)"
+                      class="w-full h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Başlangıç Tarihi</label>
+                    <input
+                      type="date"
+                      [ngModel]="planStartDate()"
+                      (ngModelChange)="planStartDate.set($event)"
+                      class="w-full h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Bitiş / Yenileme Tarihi</label>
+                    <input
+                      type="date"
+                      [ngModel]="planEndDate()"
+                      (ngModelChange)="planEndDate.set($event)"
+                      class="w-full h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div class="sm:col-span-3">
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Antrenör Özel Notu / Beslenme Direktifi</label>
+                    <textarea
+                      rows="2"
+                      [ngModel]="planNotes()"
+                      (ngModelChange)="planNotes.set($event)"
+                      placeholder="Örn: Isınmayı ihmal etme. Set aralarında bol su tüket. Ağırlıkları kontrollü artıracağız."
+                      class="w-full p-2.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Egzersizlerin Kompakt Özeti -->
+              <div class="space-y-1.5">
+                <span class="text-xs font-bold text-slate-700">Hazırlanan Hareket Akışı:</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  @for (ex of currentPlanExercises(); track $index) {
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                      <span class="font-bold text-slate-800">{{ $index + 1 }}. {{ ex.name }}</span>
+                      <span class="text-[11px] font-semibold text-indigo-600">
+                        {{ ex.sets }} set × {{ ex.reps }} {{ ex.weight ? '• ' + ex.weight + 'kg' : '' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Onay & Kayıt Butonları -->
+              <div class="flex items-center justify-between pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  (click)="workoutStep.set(4)"
+                  class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  ← Geri Dön
+                </button>
+
+                <button
+                  type="button"
+                  (click)="saveWorkoutPlan()"
+                  [disabled]="savingWorkout()"
+                  class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  @if (savingWorkout()) {
+                    <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Kaydediliyor...</span>
+                  } @else {
+                    <mat-icon class="icon-size-4">check_circle</mat-icon>
+                    <span>Programı Kaydet & Üyeye Canlı Ata</span>
+                  }
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================================== -->
+      <!-- MOD 2: ZİNCİRLEME SİSTEM & DONANIM TANIMLAMA SİHİRBAZI           -->
+      <!-- ============================================================== -->
+      @if (activeMode() === 'setup') {
+        <!-- Step Progress Header -->
+        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between shrink-0 overflow-x-auto custom-scroll">
+          <div class="flex items-center gap-2 sm:gap-4 text-xs font-bold">
+            <span [class]="setupStep() >= 1 ? 'text-indigo-600' : 'text-slate-400'">1. Branş</span>
+            <span class="text-slate-300">➔</span>
+            <span [class]="setupStep() >= 2 ? 'text-indigo-600' : 'text-slate-400'">2. Tesis / Alan</span>
+            <span class="text-slate-300">➔</span>
+            <span [class]="setupStep() >= 3 ? 'text-indigo-600' : 'text-slate-400'">3. Donanım & Cihaz</span>
+            <span class="text-slate-300">➔</span>
+            <span [class]="setupStep() >= 4 ? 'text-indigo-600' : 'text-slate-400'">4. Bölgesel Egzersiz</span>
+            <span class="text-slate-300">➔</span>
+            <span [class]="setupStep() >= 5 ? 'text-emerald-600' : 'text-slate-400'">5. Tamamlandı</span>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 sm:p-6 custom-scroll">
+          <!-- ZİNCİR ADIM 1: BRANŞ TANIMI -->
+          @if (setupStep() === 1) {
+            <div class="space-y-4 max-w-xl mx-auto">
+              <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
+                  <mat-icon class="icon-size-6">sports_martial_arts</mat-icon>
+                </div>
+                <h3 class="text-base font-black text-slate-900 m-0">Adım 1: Yeni Spor Dalı / Branş Tanımlayın</h3>
+                <p class="text-xs text-slate-500 mt-1">Salonda vereceğiniz yeni bir spor branşını sisteme ekleyin.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Spor Branşının Adı *</label>
+                <input
+                  type="text"
+                  [ngModel]="newDisciplineName()"
+                  (ngModelChange)="newDisciplineName.set($event)"
+                  placeholder="Örn: Crossfit & Fonksiyonel Güç"
+                  class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+                  <select
+                    [ngModel]="newDisciplineCategory()"
+                    (ngModelChange)="newDisciplineCategory.set($event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="fitness_bodybuilding">Fitness & Vücut Geliştirme</option>
+                    <option value="martial_arts">Dövüş & Savunma (Boks/Kickboks)</option>
+                    <option value="studio_pilates">Stüdyo & Pilates / Yoga</option>
+                    <option value="cardio_functional">Fonksiyonel & Kardiyo</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Gerekli Evraklar (Virgülle)</label>
+                  <input
+                    type="text"
+                    [ngModel]="newDisciplineDocs()"
+                    (ngModelChange)="newDisciplineDocs.set($event)"
+                    placeholder="Sağlık Raporu, Lisans"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div class="pt-4 flex justify-end">
+                <button
+                  type="button"
+                  (click)="submitStep1Discipline()"
+                  [disabled]="savingSetup()"
+                  class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span>Branşı Kaydet ve Tesis Alanına Geç</span>
+                  <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ZİNCİR ADIM 2: TESİS / ALAN TANIMI -->
+          @if (setupStep() === 2) {
+            <div class="space-y-4 max-w-xl mx-auto">
+              <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
+                  <mat-icon class="icon-size-6">meeting_room</mat-icon>
+                </div>
+                <h3 class="text-base font-black text-slate-900 m-0">Adım 2: Bu Branşın Yapılacağı Salon Alanını Belirleyin</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Yeni branş oluşturuldu. Şimdi antrenmanların yapılacağı stüdyo veya alanı bağlayın.
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Salon Alanı / Stüdyo Adı *</label>
+                <input
+                  type="text"
+                  [ngModel]="newFacilityName()"
+                  (ngModelChange)="newFacilityName.set($event)"
+                  placeholder="Örn: Fonksiyonel Ağırlık Stüdyosu"
+                  class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Bağlı Şube</label>
+                  <input
+                    type="text"
+                    disabled
+                    [value]="branchContext.activeBranchName()"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Eşzamanlı Kapasite (Kişi)</label>
+                  <input
+                    type="number"
+                    [ngModel]="newFacilityCapacity()"
+                    (ngModelChange)="newFacilityCapacity.set(+$event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div class="pt-4 flex justify-between">
+                <button
+                  type="button"
+                  (click)="setupStep.set(1)"
+                  class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  ← Geri
+                </button>
+                <button
+                  type="button"
+                  (click)="submitStep2Facility()"
+                  [disabled]="savingSetup()"
+                  class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span>Alanı Kaydet ve Cihaz Eklemeye Geç</span>
+                  <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ZİNCİR ADIM 3: CİHAZ & EKİPMAN TANIMI -->
+          @if (setupStep() === 3) {
+            <div class="space-y-4 max-w-xl mx-auto">
+              <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
+                  <mat-icon class="icon-size-6">fitness_center</mat-icon>
+                </div>
+                <h3 class="text-base font-black text-slate-900 m-0">Adım 3: Bu Alanda Bulunan Cihazı Tanımlayın</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Oluşturulan alanda kullanılacak makineler veya ekipmanları envantere ekleyin.
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Cihaz / Ekipman Adı *</label>
+                <input
+                  type="text"
+                  [ngModel]="newEquipmentName()"
+                  (ngModelChange)="newEquipmentName.set($event)"
+                  placeholder="Örn: Fonksiyonel Halat & Kettlebell Seti"
+                  class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Birincil Hedef Kas Grubu</label>
+                  <select
+                    [ngModel]="newEquipmentMuscle()"
+                    (ngModelChange)="newEquipmentMuscle.set($event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    @for (mg of muscleGroups; track mg.key) {
+                      <option [value]="mg.key">{{ mg.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Salondaki Adet</label>
+                  <input
+                    type="number"
+                    [ngModel]="newEquipmentQty()"
+                    (ngModelChange)="newEquipmentQty.set(+$event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div class="pt-4 flex justify-between">
+                <button
+                  type="button"
+                  (click)="setupStep.set(2)"
+                  class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  ← Geri
+                </button>
+                <button
+                  type="button"
+                  (click)="submitStep3Equipment()"
+                  [disabled]="savingSetup()"
+                  class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span>Cihazı Kaydet ve Bölgesel Harekete Bağla</span>
+                  <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ZİNCİR ADIM 4: BÖLGESEL EGZERSİZ TANIMI -->
+          @if (setupStep() === 4) {
+            <div class="space-y-4 max-w-xl mx-auto">
+              <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
+                  <mat-icon class="icon-size-6">accessibility_new</mat-icon>
+                </div>
+                <h3 class="text-base font-black text-slate-900 m-0">Adım 4: Bu Cihazla Yapılacak Hareketi Tanımlayın</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Antrenörlerin program hazırlarken tek tıkla seçeceği egzersiz protokolünü kaydedin.
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Egzersiz / Hareket Adı</label>
+                <input
+                  type="text"
+                  [ngModel]="newExerciseName()"
+                  (ngModelChange)="newExerciseName.set($event)"
+                  placeholder="Örn: Kettlebell Swing"
+                  class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Standart Set</label>
+                  <input
+                    type="number"
+                    [ngModel]="newExerciseSets()"
+                    (ngModelChange)="newExerciseSets.set(+$event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Standart Tekrar</label>
+                  <input
+                    type="text"
+                    [ngModel]="newExerciseReps()"
+                    (ngModelChange)="newExerciseReps.set($event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Dinlenme (sn)</label>
+                  <input
+                    type="number"
+                    [ngModel]="newExerciseRest()"
+                    (ngModelChange)="newExerciseRest.set(+$event)"
+                    class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div class="pt-4 flex justify-between">
+                <button
+                  type="button"
+                  (click)="setupStep.set(3)"
+                  class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  ← Geri
+                </button>
+                <button
+                  type="button"
+                  (click)="finishSetupChain()"
+                  class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">check</mat-icon>
+                  <span>Tanımlama Zincirini Tamamla</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ZİNCİR ADIM 5: TAMAMLANDI -->
+          @if (setupStep() === 5) {
+            <div class="p-8 text-center max-w-lg mx-auto space-y-4">
+              <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-lg shadow-emerald-600/20">
+                <mat-icon class="icon-size-8">verified</mat-icon>
+              </div>
+              <h3 class="text-xl font-black text-slate-900 m-0">Tüm Tanımlamalar Zincirleme Kaydedildi!</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Spor branşı, antrenman alanı, donanım kataloğu ve bölgesel egzersiz kütüphanesi başarıyla birbirine bağlandı. Artık antrenörler bu verilerle tek tıkla üyelere eğitim programı atayabilir.
+              </p>
+
+              <div class="pt-4 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  (click)="setMode('workout')"
+                  class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">fitness_center</mat-icon>
+                  <span>Şimdi Bir Üyeye Program Hazırla</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="close()"
+                  class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  Sihirbazı Kapat
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}

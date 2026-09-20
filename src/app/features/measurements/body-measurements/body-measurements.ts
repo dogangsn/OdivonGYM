@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { sortDesc } from '../../../shared/ui/ui-utils';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
@@ -24,7 +25,7 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
         (click)="openAddDialog()"
         class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition-all cursor-pointer"
       >
-        <mat-icon class="icon-size-4.5" [svgIcon]="'heroicons_solid:plus'"></mat-icon>
+        <mat-icon class="icon-size-4.5">add</mat-icon>
         <span>Ölçüm Ekle</span>
       </button>
 
@@ -54,7 +55,7 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
                           <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
                         </button>
                         <button (click)="deleteMeasurement(m.id)" class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-rose-600 inline-flex items-center justify-center cursor-pointer">
-                          <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                          <mat-icon class="icon-size-4">delete</mat-icon>
                         </button>
                       </td>
                     </tr>
@@ -81,7 +82,8 @@ export class BodyMeasurements {
   private readonly service = inject(MeasurementsService);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly measurements = toSignal(this.service.watchMeasurements(), { initialValue: [] });
+  private readonly rawMeasurements = toSignal(this.service.watchMeasurements(), { initialValue: [] as BodyMeasurement[] });
+  protected readonly measurements = computed(() => sortDesc(this.rawMeasurements(), (m) => m.date));
   protected readonly dialogOpen = signal(false);
   protected readonly selectedMeasurement = signal<any>(null);
 

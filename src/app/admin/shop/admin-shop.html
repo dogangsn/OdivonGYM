@@ -1,0 +1,613 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Header & Top Bar -->
+  <app-page-header
+    title="Market & Vitamin Bar"
+    icon="point_of_sale"
+    description="Sporcu takviyeleri, soğuk içecekler, protein barları ve salon içi hızlı satış (POS) kasası."
+  >
+    <div actions class="flex items-center gap-2">
+      @if (tab() === 'products') {
+        <button type="button" class="odv-btn-primary" (click)="openProductForm()">
+          <mat-icon class="icon-size-4.5">add</mat-icon>
+          <span>Yeni Ürün Ekle</span>
+        </button>
+      }
+      @if ((products() ?? []).length === 0) {
+        <button
+          type="button"
+          (click)="seedProducts()"
+          [disabled]="seeding()"
+          class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+        >
+          <mat-icon class="icon-size-4">auto_awesome</mat-icon>
+          <span>{{ seeding() ? 'Yükleniyor…' : 'Örnek Ürünleri Yükle' }}</span>
+        </button>
+      }
+    </div>
+  </app-page-header>
+
+  <!-- 2. KPI Summary Cards (Bar Performansı) -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <!-- Bugünkü Bar Cirosu -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Bugünkü Satış</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          {{ money(todaySalesTotal()) }}
+        </div>
+        <div class="text-xs font-semibold text-emerald-500 mt-0.5 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          {{ todaySalesCount() }} Satış İşlemi
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">payments</mat-icon>
+      </div>
+    </div>
+
+    <!-- Aktif Ürün Çeşidi -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Stoktaki Ürünler</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          {{ (products() ?? []).length }} Çeşit
+        </div>
+        <div class="text-xs font-semibold text-indigo-500 mt-0.5">
+          {{ sellableProducts().length }} Çeşit Satışa Hazır
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">inventory_2</mat-icon>
+      </div>
+    </div>
+
+    <!-- Kritik Stok Uyarısı -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Kritik Stok Uyarısı</span>
+        <div class="text-2xl font-black" [class]="lowStockCount() > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'">
+          {{ lowStockCount() }} Ürün
+        </div>
+        <div class="text-xs font-semibold text-slate-400 mt-0.5">
+          {{ lowStockCount() > 0 ? 'Stok 5 veya daha az' : 'Tüm stoklar yeterli' }}
+        </div>
+      </div>
+      <div
+        class="w-12 h-12 rounded-2xl flex items-center justify-center"
+        [class]="lowStockCount() > 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+      >
+        <mat-icon class="icon-size-6">warning_amber</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Navigation Tabs -->
+  <div class="flex gap-2 p-1.5 bg-slate-200/50 dark:bg-slate-800/60 rounded-2xl w-fit">
+    @for (t of tabs; track t.id) {
+      <button
+        type="button"
+        (click)="tab.set(t.id)"
+        class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2"
+        [class]="
+          tab() === t.id
+            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+        "
+      >
+        <mat-icon class="icon-size-4">{{ t.icon }}</mat-icon>
+        <span>{{ t.label }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- 4. TAB 1: KASA / POS TERMİNALİ -->
+  @if (tab() === 'pos') {
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- SOL: ÜRÜN KATALOĞU (8 Kolon) -->
+      <div class="lg:col-span-8 space-y-4">
+        <!-- Kategori ve Arama Filtreleri -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+          <!-- Arama Barı -->
+          <div class="relative">
+            <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="posSearch()"
+              (ngModelChange)="posSearch.set($event)"
+              placeholder="Ürün adı, marka veya barkod ara…"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            />
+          </div>
+
+          <!-- Kategori Hapları -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scroll">
+            @for (cat of categories; track cat.id) {
+              <button
+                type="button"
+                (click)="selectedCategory.set(cat.id)"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+                [class]="
+                  selectedCategory() === cat.id
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                "
+              >
+                <span>{{ cat.icon }}</span>
+                <span>{{ cat.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Ürün Kartları Izgarası -->
+        @if (filteredProducts().length === 0) {
+          <div class="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <mat-icon class="icon-size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3">storefront</mat-icon>
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 m-0">Ürün Bulunamadı</h3>
+            <p class="text-xs text-slate-400 mt-1 mb-4">Arama kriterinize uygun ürün yok veya henüz ürün tanımlanmadı.</p>
+            @if ((products() ?? []).length === 0) {
+              <button
+                type="button"
+                (click)="seedProducts()"
+                [disabled]="seeding()"
+                class="odv-btn-primary mx-auto"
+              >
+                <mat-icon class="icon-size-4">auto_awesome</mat-icon>
+                <span>Örnek Popüler Ürünleri Yükle</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+            @for (product of filteredProducts(); track product.id) {
+              <div
+                (click)="addToCart(product)"
+                class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+                [class.opacity-60]="product.stock <= 0"
+              >
+                <div>
+                  <div class="flex items-center justify-between gap-1 mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                      {{ product.category }}
+                    </span>
+                    @if (product.stock <= 0) {
+                      <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/10 text-rose-500">
+                        Tükendi
+                      </span>
+                    } @else if (product.stock <= 5) {
+                      <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/15 text-amber-500 animate-pulse">
+                        Son {{ product.stock }}
+                      </span>
+                    } @else {
+                      <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                        Stok: {{ product.stock }}
+                      </span>
+                    }
+                  </div>
+
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 m-0">
+                    {{ product.name }}
+                  </h4>
+                  @if (product.description) {
+                    <p class="text-[11px] text-slate-400 mt-1 mb-0 line-clamp-1">
+                      {{ product.description }}
+                    </p>
+                  }
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                  <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    {{ money(product.price) }}
+                  </span>
+                  <button
+                    type="button"
+                    [disabled]="product.stock <= 0"
+                    class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-all disabled:opacity-40 cursor-pointer"
+                  >
+                    <mat-icon class="icon-size-4">add</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- SAĞ: CANLI KASA SEPETİ (4 Kolon, Sticky) -->
+      <div class="lg:col-span-4 sticky top-6 space-y-4">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <!-- Sepet Başlığı -->
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-indigo-600 dark:text-indigo-400 icon-size-5">shopping_cart</mat-icon>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">
+                Kasa Sepeti ({{ cartItemCount() }})
+              </h3>
+            </div>
+            @if (cart().length > 0) {
+              <button
+                type="button"
+                (click)="clearCart()"
+                class="text-xs font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
+              >
+                Temizle
+              </button>
+            }
+          </div>
+
+          <!-- Üye Seçimi (Smart Member Selector & E-Cüzdan Eşleme) -->
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Müşteri / Üye
+              </label>
+              @if (selectedMember()) {
+                <button
+                  type="button"
+                  (click)="selectedMemberId.set('')"
+                  class="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  Ayaktan Satış Yap
+                </button>
+              }
+            </div>
+
+            <select
+              id="pos-member-select"
+              [ngModel]="selectedMemberId()"
+              (ngModelChange)="onMemberSelect($event)"
+              class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer"
+            >
+              <option value="">👤 Ayaktan / Misafir Müşteri</option>
+              @for (m of members(); track m.uid) {
+                <option [value]="m.uid">
+                  {{ m.displayName }} — (Cüzdan: {{ money(m.walletBalance) }})
+                </option>
+              }
+            </select>
+
+            <!-- Hızlı Üye Seçim Butonları -->
+            @if (members().length > 0) {
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                @for (m of members().slice(0, 4); track m.uid) {
+                  <button
+                    type="button"
+                    [id]="'quick-member-' + m.uid"
+                    (click)="onMemberSelect(m.uid)"
+                    [class.ring-2]="selectedMemberId() === m.uid"
+                    [class.ring-indigo-500]="selectedMemberId() === m.uid"
+                    [class.bg-indigo-50]="selectedMemberId() === m.uid"
+                    [class.dark:bg-indigo-950/60]="selectedMemberId() === m.uid"
+                    [class.text-indigo-600]="selectedMemberId() === m.uid"
+                    [class.dark:text-indigo-400]="selectedMemberId() === m.uid"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <span>{{ m.displayName }}</span>
+                    <span class="text-[10px] font-bold text-slate-400">({{ money(m.walletBalance) }})</span>
+                  </button>
+                }
+              </div>
+            }
+
+            <!-- Seçili Üye E-Cüzdan Rozeti -->
+            @if (selectedMember(); as mem) {
+              <div class="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/40 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-slate-900 dark:text-white m-0">{{ mem.displayName }}</p>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0">E-Cüzdan Bakiyesi:</p>
+                </div>
+                <div class="text-right">
+                  <span class="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                    {{ money(mem.walletBalance) }}
+                  </span>
+                  @if ((mem.walletBalance ?? 0) >= cartTotal()) {
+                    <span class="block text-[10px] font-bold text-emerald-500">✓ Bakiye Yeterli</span>
+                  } @else {
+                    <span class="block text-[10px] font-bold text-rose-500">⚠ Yetersiz Bakiye</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Sepetteki Ürünler Listesi -->
+          @if (cart().length === 0) {
+            <div class="py-10 text-center">
+              <mat-icon class="icon-size-8 text-slate-300 dark:text-slate-600 mx-auto mb-2">production_quantity_limits</mat-icon>
+              <p class="text-xs font-semibold text-slate-400 m-0">Sepetiniz boş.</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Ürünlere tıklayarak sepete ekleyin.</p>
+            </div>
+          } @else {
+            <div class="space-y-2.5 max-h-64 overflow-y-auto custom-scroll pr-1">
+              @for (item of cart(); track item.product.id) {
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3">
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate m-0">
+                      {{ item.product.name }}
+                    </p>
+                    <p class="text-[11px] text-slate-400 m-0">
+                      {{ money(item.product.price) }} / adet
+                    </p>
+                  </div>
+
+                  <!-- Adet Kontrolleri -->
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      (click)="decreaseQty(item.product.id)"
+                      class="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs shadow-2xs hover:bg-slate-200 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span class="w-6 text-center text-xs font-black text-slate-900 dark:text-white">
+                      {{ item.quantity }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="increaseQty(item.product.id)"
+                      [disabled]="item.quantity >= item.product.stock"
+                      class="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs shadow-2xs hover:bg-slate-200 disabled:opacity-40 cursor-pointer"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      (click)="removeFromCart(item.product.id)"
+                      class="w-6 h-6 rounded-lg text-rose-400 hover:text-rose-600 flex items-center justify-center ml-1 cursor-pointer"
+                    >
+                      <mat-icon class="icon-size-3.5">delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Fiyat Özeti -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+              <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                <span>Ara Toplam</span>
+                <span>{{ money(cartSubtotal()) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-900 dark:text-white text-base font-black pt-1">
+                <span>Genel Toplam</span>
+                <span class="text-indigo-600 dark:text-indigo-400">{{ money(cartTotal()) }}</span>
+              </div>
+            </div>
+
+            <!-- Ödeme Butonları -->
+            <div class="space-y-2 pt-2">
+              <!-- E-CÜZDAN İLE ÖDE -->
+              <button
+                id="pay-wallet-btn"
+                type="button"
+                (click)="pay('wallet')"
+                [disabled]="isPaying() || !canPayWithWallet()"
+                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 text-white text-xs font-black shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
+                <span>
+                  {{
+                    !selectedMember()
+                      ? 'E-Cüzdan İçin Üye Seçin'
+                      : !hasSufficientBalance()
+                        ? 'Yetersiz Cüzdan Bakiyesi'
+                        : 'E-Cüzdan ile Öde (Tek Tık)'
+                  }}
+                </span>
+              </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <!-- NAKİT İLE ÖDE -->
+                <button
+                  id="pay-cash-btn"
+                  type="button"
+                  (click)="pay('cash')"
+                  [disabled]="isPaying()"
+                  class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">payments</mat-icon>
+                  <span>Nakit Ödeme</span>
+                </button>
+
+                <!-- KREDİ KARTI İLE ÖDE -->
+                <button
+                  id="pay-card-btn"
+                  type="button"
+                  (click)="pay('card')"
+                  [disabled]="isPaying()"
+                  class="py-2.5 px-3 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <mat-icon class="icon-size-4">credit_card</mat-icon>
+                  <span>Kredi Kartı</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 5. TAB 2: ÜRÜN & STOK YÖNETİMİ -->
+  @if (tab() === 'products') {
+    <div class="odv-card overflow-hidden">
+      @if (products() === null) {
+        <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+      } @else if (products()!.length === 0) {
+        <div class="py-16 text-center">
+          <p class="text-sm text-slate-500 dark:text-slate-400 m-0">Henüz ürün eklenmedi.</p>
+          <button type="button" class="odv-btn-soft mt-4" (click)="openProductForm()">+ İlk Ürünü Ekle</button>
+        </div>
+      } @else {
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                <th class="odv-th">Ürün Adı</th>
+                <th class="odv-th">Kategori</th>
+                <th class="odv-th">Satış Fiyatı</th>
+                <th class="odv-th">Alış Fiyatı</th>
+                <th class="odv-th">Stok</th>
+                <th class="odv-th">Durum</th>
+                <th class="odv-th text-right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+              @for (p of products(); track p.id) {
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                  <td class="odv-td">
+                    <p class="font-bold text-slate-900 dark:text-white m-0">{{ p.name }}</p>
+                    <p class="text-[11px] text-slate-400 m-0">SKU: {{ p.sku }}</p>
+                  </td>
+                  <td class="odv-td text-slate-600 dark:text-slate-300">{{ p.category }}</td>
+                  <td class="odv-td font-semibold text-slate-900 dark:text-white whitespace-nowrap">{{ money(p.price) }}</td>
+                  <td class="odv-td text-slate-400 whitespace-nowrap">{{ p.cost ? money(p.cost) : '—' }}</td>
+                  <td class="odv-td">
+                    <span [class]="p.stock <= 5 ? 'font-bold text-rose-500' : 'text-slate-700 dark:text-slate-200'">
+                      {{ p.stock }} adet
+                    </span>
+                  </td>
+                  <td class="odv-td">
+                    <span class="odv-badge" [class]="productStatusClass[p.status]">{{ productStatusLabel[p.status] }}</span>
+                  </td>
+                  <td class="odv-td text-right whitespace-nowrap">
+                    <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openProductForm(p)">
+                      <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                    </button>
+                    <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" title="Sil" (click)="removeProduct(p)">
+                      <mat-icon class="icon-size-4">delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- 6. TAB 3: SATIŞ RAPORLARI & KASA DÖKÜMÜ -->
+  @if (tab() === 'sales') {
+    <div class="odv-card overflow-hidden">
+      @if (sales() === null) {
+        <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+      } @else if (sales()!.length === 0) {
+        <div class="py-16 text-center">
+          <p class="text-sm text-slate-500 dark:text-slate-400 m-0">Henüz satış kaydı yok.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                <th class="odv-th">Tarih</th>
+                <th class="odv-th">Ürün</th>
+                <th class="odv-th">Adet</th>
+                <th class="odv-th">Tutar</th>
+                <th class="odv-th">Ödeme Yöntemi</th>
+                <th class="odv-th">Durum</th>
+                <th class="odv-th text-right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+              @for (s of sales(); track s.id) {
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                  <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ dateTime(s.saleDate) }}</td>
+                  <td class="odv-td font-semibold text-slate-900 dark:text-white">{{ s.productName }}</td>
+                  <td class="odv-td text-slate-700 dark:text-slate-200">{{ s.quantity }}</td>
+                  <td class="odv-td font-semibold text-slate-900 dark:text-white whitespace-nowrap">{{ money(s.totalAmount) }}</td>
+                  <td class="odv-td">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase border"
+                      [class]="
+                        s.paymentMethod === 'wallet'
+                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+                          : s.paymentMethod === 'cash'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                            : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                      "
+                    >
+                      {{ paymentLabel[s.paymentMethod] }}
+                    </span>
+                  </td>
+                  <td class="odv-td">
+                    <span class="odv-badge" [class]="saleStatusClass[s.status]">{{ saleStatusLabel[s.status] }}</span>
+                  </td>
+                  <td class="odv-td text-right whitespace-nowrap">
+                    @if (s.status === 'completed') {
+                      <button type="button" class="odv-icon-btn" title="İade et" (click)="refund(s)">
+                        <mat-icon class="icon-size-4">undo</mat-icon>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Ürün Ekle / Düzenle Slide-Over Çekmecesi -->
+<app-slide-over
+  [open]="productDrawer()"
+  [title]="editingProduct() ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'"
+  [submitLabel]="editingProduct() ? 'Değişiklikleri Kaydet' : 'Ürünü Kaydet'"
+  [submitting]="submitting()"
+  [errorMessage]="errorMessage()"
+  (closed)="closeProduct()"
+  (submitted)="submitProduct()"
+>
+  <div [formGroup]="productForm" class="space-y-4">
+    <app-field label="Ürün Adı" [required]="true" [error]="productErr('name', { required: 'Ürün adı gerekli.' })">
+      <input type="text" formControlName="name" class="odv-input" />
+    </app-field>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <app-field
+        label="SKU / Barkod"
+        [required]="true"
+        [error]="productErr('sku', { required: 'SKU gerekli.' })"
+        [hint]="editingProduct() ? 'SKU sonradan değiştirilemez.' : ''"
+      >
+        <input type="text" formControlName="sku" class="odv-input" />
+      </app-field>
+      <app-field label="Kategori" [required]="true" [error]="productErr('category', { required: 'Kategori gerekli.' })">
+        <input type="text" formControlName="category" class="odv-input" list="shop-categories" />
+        <datalist id="shop-categories">
+          <option value="protein">Protein & Tozlar</option>
+          <option value="bcaa">BCAA & Pre-Workout</option>
+          <option value="drink">İçecek & Su</option>
+          <option value="bar">Bar & Atıştırmalık</option>
+          <option value="accessory">Aksesuar & Shaker</option>
+        </datalist>
+      </app-field>
+      <app-field label="Satış Fiyatı (₺)" [required]="true" [error]="productErr('price', { required: 'Fiyat gerekli.', min: 'Negatif olamaz.' })">
+        <input type="number" min="0" step="0.01" formControlName="price" class="odv-input" />
+      </app-field>
+      <app-field label="Stok Adedi" [required]="true" [error]="productErr('stock', { required: 'Stok gerekli.', min: 'Negatif olamaz.' })">
+        <input type="number" min="0" formControlName="stock" class="odv-input" />
+      </app-field>
+      <app-field label="Alış Maliyeti (₺)">
+        <input type="number" min="0" step="0.01" formControlName="cost" class="odv-input" />
+      </app-field>
+      <app-field label="Tedarikçi">
+        <input type="text" formControlName="supplier" class="odv-input" />
+      </app-field>
+    </div>
+    <app-field label="Açıklama">
+      <textarea formControlName="description" rows="2" class="odv-input resize-none"></textarea>
+    </app-field>
+    @if (editingProduct()) {
+      <app-field label="Durum">
+        <select formControlName="status" class="odv-input">
+          <option value="active">Satışta</option>
+          <option value="inactive">Pasif</option>
+          <option value="discontinued">Üretimden Kalktı</option>
+        </select>
+      </app-field>
+    }
+  </div>
+</app-slide-over>

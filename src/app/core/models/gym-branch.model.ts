@@ -41,4 +41,4 @@ export interface CreateGymBranchInput {
   managerName?: string;
 }
 
-export type UpdateGymBranchInput = Partial<Omit<CreateGymBranchInput, 'phone'>>;
+export type UpdateGymBranchInput = Partial<CreateGymBranchInput> & { status?: GymBranch['status'] };

@@ -66,13 +66,12 @@ body {
   height: 100%;
   margin: 0;
 
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables.
-  // https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--odivon-bg-default);
+  color: var(--odivon-text-default);
   font: var(--mat-sys-body-medium);
-  font-family: Inter, Roboto, 'Helvetica Neue', sans-serif;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 // Thin, theme-aware scrollbar — feels less "default browser" on desktop.

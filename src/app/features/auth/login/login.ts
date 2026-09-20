@@ -1,15 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
+import { ThemeService } from '../../../core/services/theme.service';
+import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
+import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
-import { AuthBrandPanel } from '../../../shared/components/auth-brand-panel/auth-brand-panel';
 import { environment } from '../../../../environments/environment';
 
 /** Sadece dev ortamında: "Demo Bilgilerini Otomatik Doldur" butonuyla doldurulur. */
@@ -21,11 +24,11 @@ const DEMO_CREDENTIALS = { email: 'demo@odivongym.app', password: 'Demo123456!' 
   imports: [
     ReactiveFormsModule,
     RouterLink,
-    MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
     LogoMark,
-    AuthBrandPanel,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,6 +41,11 @@ export class Login {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
+  protected readonly theme = inject(ThemeService);
+  protected readonly language = inject(LanguageService);
+
+  protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
+  protected readonly languageNames = LANGUAGE_NAMES;
 
   protected readonly isDev = !environment.production;
 

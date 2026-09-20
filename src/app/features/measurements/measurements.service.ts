@@ -6,7 +6,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -23,7 +22,7 @@ export class MeasurementsService {
   private readonly auth = inject(AuthService);
 
   watchMeasurements(): Observable<BodyMeasurement[]> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {
@@ -34,14 +33,13 @@ export class MeasurementsService {
       collection(this.firestore, 'body_measurements'),
       where('userId', '==', userId),
       where('tenantId', '==', tenantId),
-      orderBy('date', 'desc'),
     );
 
     return collectionData(q, { idField: 'id' }) as Observable<BodyMeasurement[]>;
   }
 
   async addMeasurement(input: CreateBodyMeasurementInput): Promise<string> {
-    const userId = this.auth.currentUser()?.uid;
+    const userId = this.auth.profile()?.uid;
     const tenantId = this.auth.profile()?.tenantId;
 
     if (!userId || !tenantId) {
@@ -74,14 +72,14 @@ export class MeasurementsService {
   async updateMeasurement(id: string, input: Partial<CreateBodyMeasurementInput>): Promise<void> {
     const updateData: any = { updatedAt: serverTimestamp() };
 
-    if (input.weight !== undefined) updateData.weight = input.weight;
-    if (input.chest !== undefined) updateData.chest = input.chest;
-    if (input.waist !== undefined) updateData.waist = input.waist;
-    if (input.hips !== undefined) updateData.hips = input.hips;
-    if (input.bicep !== undefined) updateData.bicep = input.bicep;
-    if (input.thigh !== undefined) updateData.thigh = input.thigh;
-    if (input.calf !== undefined) updateData.calf = input.calf;
-    if (input.bodyFatPercentage !== undefined) updateData.bodyFatPercentage = input.bodyFatPercentage;
+    if ('weight' in input) updateData.weight = input.weight ?? null;
+    if ('chest' in input) updateData.chest = input.chest ?? null;
+    if ('waist' in input) updateData.waist = input.waist ?? null;
+    if ('hips' in input) updateData.hips = input.hips ?? null;
+    if ('bicep' in input) updateData.bicep = input.bicep ?? null;
+    if ('thigh' in input) updateData.thigh = input.thigh ?? null;
+    if ('calf' in input) updateData.calf = input.calf ?? null;
+    if ('bodyFatPercentage' in input) updateData.bodyFatPercentage = input.bodyFatPercentage ?? null;
     if (input.notes !== undefined) updateData.notes = input.notes;
 
     if (input.date) {

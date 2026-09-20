@@ -3,10 +3,18 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { SlideOver } from '../../shared/ui/slide-over';
+import { Field } from '../../shared/ui/field';
+import { firstError, formatMoney } from '../../shared/ui/ui-utils';
+import { AuthService } from '../../core/auth/auth.service';
+import { BranchContextService } from '../../core/services/branch-context.service';
 import { AdminMembersService } from './admin-members.service';
 import { MembershipStatus, UserProfile } from '../../core/models/user-profile.model';
+import { Router } from '@angular/router';
 import { MemberFormDialog } from './member-form-dialog/member-form-dialog';
+import { MemberDetailDrawer } from './member-detail-drawer/member-detail-drawer';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 
 const STATUS_LABEL: Record<MembershipStatus, string> = {
   trial: 'Deneme',
@@ -32,7 +40,7 @@ const GENDER_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-admin-members',
   standalone: true,
-  imports: [FormsModule, MatIconModule, MatTooltipModule, MemberFormDialog],
+  imports: [FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, MemberFormDialog, MemberDetailDrawer, SlideOver, Field],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-members.html',
   styleUrl: './admin-members.scss',
@@ -40,32 +48,70 @@ const GENDER_LABEL: Record<string, string> = {
 export class AdminMembers {
   private readonly membersService = inject(AdminMembersService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
+  private readonly saasSub = inject(SaasSubscriptionService);
+  protected readonly branchContext = inject(BranchContextService);
 
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly statusBadgeClass = STATUS_BADGE_CLASS;
   protected readonly genderLabel = GENDER_LABEL;
   protected readonly searchTerm = signal('');
+  protected readonly selectedBranchFilter = signal('');
 
+  protected readonly branches = this.branchContext.branches;
   protected readonly drawerOpen = signal(false);
   protected readonly editingMember = signal<UserProfile | null>(null);
+  protected readonly viewingMember = signal<UserProfile | null>(null);
+
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  protected readonly money = formatMoney;
+  /** Çok-kiracılı modelden önce oluşmuş eski hesaplarda `tenantId` yok — hiçbir salon verisi görünmez/yazılamaz. */
+  protected readonly missingTenant = computed(() => !this.auth.profile()?.tenantId);
+
+  protected readonly walletMember = signal<UserProfile | null>(null);
+  protected readonly walletSubmitting = signal(false);
+  protected readonly walletError = signal('');
+  protected readonly walletForm = this.fb.nonNullable.group({
+    type: ['deposit' as 'deposit' | 'debit'],
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    paymentMethod: ['cash' as 'cash' | 'card' | 'transfer'],
+    description: ['', [Validators.required]],
+  });
 
   private readonly members = toSignal(this.membersService.watchMembers(), { initialValue: null });
 
   protected readonly loading = computed(() => this.members() === null);
 
   protected readonly filteredMembers = computed<UserProfile[]>(() => {
-    const list = this.members() ?? [];
+    let list = this.members() ?? [];
+    const branchFilter = this.selectedBranchFilter();
+    if (branchFilter) {
+      list = list.filter((m) => m.branchId === branchFilter);
+    }
     const term = this.searchTerm().trim().toLowerCase();
     if (!term) return list;
     return list.filter(
       (m) =>
         m.displayName?.toLowerCase().includes(term) ||
         m.email?.toLowerCase().includes(term) ||
-        m.phone?.toLowerCase().includes(term),
+        m.phone?.toLowerCase().includes(term) ||
+        m.branchName?.toLowerCase().includes(term),
     );
   });
 
   openNewMemberDrawer(): void {
+    const check = this.saasSub.canAddMember();
+    if (!check.allowed) {
+      this.snackBar
+        .open(check.reason || 'Üye kotası limitine ulaşıldı.', 'Paketi Yükselt', { duration: 6000 })
+        .onAction()
+        .subscribe(() => {
+          void this.router.navigateByUrl('/admin/subscription');
+        });
+      return;
+    }
+    this.viewingMember.set(null);
     this.editingMember.set(null);
     this.drawerOpen.set(true);
   }
@@ -73,6 +119,23 @@ export class AdminMembers {
   openEditDrawer(member: UserProfile): void {
     this.editingMember.set(member);
     this.drawerOpen.set(true);
+  }
+
+  openDetailDrawer(member: UserProfile): void {
+    this.viewingMember.set(member);
+  }
+
+  closeDetailDrawer(): void {
+    this.viewingMember.set(null);
+  }
+
+  onDetailEditRequested(member: UserProfile): void {
+    this.closeDetailDrawer();
+    this.openEditDrawer(member);
+  }
+
+  onDetailWalletRequested(member: UserProfile): void {
+    this.openWallet(member);
   }
 
   onDrawerClosed(saved: boolean): void {
@@ -85,6 +148,60 @@ export class AdminMembers {
       );
     }
     this.editingMember.set(null);
+  }
+
+  walletErr(name: keyof typeof this.walletForm.controls, messages: Record<string, string>): string {
+    return firstError(this.walletForm.controls[name], messages);
+  }
+
+  openWallet(member: UserProfile): void {
+    this.walletError.set('');
+    this.walletForm.reset({ type: 'deposit', amount: 0, paymentMethod: 'cash', description: 'Bakiye yükleme' });
+    this.walletMember.set(member);
+  }
+
+  closeWallet(): void {
+    this.walletMember.set(null);
+  }
+
+  async submitWallet(): Promise<void> {
+    const member = this.walletMember();
+    if (!member || this.walletSubmitting()) return;
+    if (this.walletForm.invalid) {
+      this.walletForm.markAllAsTouched();
+      return;
+    }
+    this.walletSubmitting.set(true);
+    this.walletError.set('');
+    try {
+      const v = this.walletForm.getRawValue();
+      await this.membersService.adjustWallet(member, {
+        type: v.type,
+        amount: v.amount,
+        description: v.description.trim(),
+        paymentMethod: v.paymentMethod,
+      });
+      this.snackBar.open(`${member.displayName}: bakiye güncellendi.`, 'Kapat', { duration: 3000 });
+      this.closeWallet();
+    } catch (error) {
+      this.walletError.set(error instanceof Error && error.message ? error.message : 'Kaydedilemedi, tekrar dene.');
+    } finally {
+      this.walletSubmitting.set(false);
+    }
+  }
+
+  async deleteMember(member: UserProfile): Promise<void> {
+    const ok = confirm(
+      `"${member.displayName}" üyesinin profilini silmek istediğine emin misin?\n\n` +
+        'Üyenin giriş hesabı (Firebase Auth) silinmez; profili silinen üye artık salon verilerine erişemez.',
+    );
+    if (!ok) return;
+    try {
+      await this.membersService.deleteMember(member.uid);
+      this.snackBar.open('Üye profili silindi.', 'Kapat', { duration: 2500 });
+    } catch {
+      this.snackBar.open('Üye silinemedi, tekrar dene.', 'Kapat', { duration: 3000 });
+    }
   }
 
   async changeStatus(member: UserProfile, status: MembershipStatus): Promise<void> {

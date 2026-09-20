@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoService } from '@jsverse/transloco';
 import { AdminMembersService } from '../admin-members.service';
+import { BranchContextService } from '../../../core/services/branch-context.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { Gender, MembershipStatus, UserProfile } from '../../../core/models/user-profile.model';
 
@@ -44,20 +45,6 @@ function addDays(dateStr: string, days: number): string {
   return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
 }
 
-/**
- * Admin panelinden manuel üye kaydı VE mevcut üye düzenleme — aynı formu
- * kullanır. Odivon Design System'in slide-over drawer deseniyle `AdminMembers`
- * içine gömülü render edilir (bkz. `.agents/skills/odivon-ui-design-system`);
- * MatDialog yerine `open`/`member` input'ları ve `closed` output'uyla kontrol
- * edilir. `member` verilmişse düzenleme modu (e-posta/şifre alanları gizlenir,
- * kayıt `updateMember` ile), verilmemişse `createMember` ile yapılır.
- *
- * Üyelik süresi artık SADECE paket gün sayısından değil, doğrudan
- * başlangıç/bitiş TARİHLERİNDEN kurulur — "Özel Süre" seçilirse (paket dışı
- * kayıt), admin bitiş tarihini elle belirler; hazır bir paket seçilirse
- * bitiş tarihi otomatik hesaplanır ama admin yine de üzerine yazıp
- * düzenleyebilir (bkz. `onPackageChange`/`onStartDateChange`).
- */
 @Component({
   selector: 'app-member-form-dialog',
   standalone: true,
@@ -69,6 +56,7 @@ function addDays(dateStr: string, days: number): string {
 export class MemberFormDialog {
   private readonly fb = inject(FormBuilder);
   private readonly membersService = inject(AdminMembersService);
+  protected readonly branchContext = inject(BranchContextService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -77,6 +65,7 @@ export class MemberFormDialog {
   readonly closed = output<boolean>();
 
   protected readonly packages = PACKAGES;
+  protected readonly branches = this.branchContext.branches;
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly hidePassword = signal(true);
@@ -87,6 +76,7 @@ export class MemberFormDialog {
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9+()\s-]{7,20}$/)]],
     password: [''],
+    branchId: [''],
     gender: ['unspecified' as Gender],
     birthDate: [''],
     membershipStatus: ['active' as MembershipStatus],
@@ -100,11 +90,14 @@ export class MemberFormDialog {
     // `member()` her açılışta değişir (yeni üye → null, düzenleme → kayıt) —
     // formu o anki değerlere göre sıfırdan doldur.
     effect(() => {
+      if (!this.open()) {
+        return;
+      }
       const m = this.member();
       const editMode = !!m;
       this.isEditMode.set(editMode);
       this.errorMessage.set('');
-      this.hidePassword.set(true);
+      this.hidePassword.set(editMode);
 
       const startDate = m?.membershipStartsAt ? toDateInputValue(m.membershipStartsAt) : todayInputValue();
       const packageDays = this.packageDaysFor(m?.packageLabel) ?? 30;
@@ -112,11 +105,14 @@ export class MemberFormDialog {
         ? toDateInputValue(m.membershipEndsAt)
         : addDays(startDate, packageDays === 'custom' ? 30 : packageDays);
 
+      const initialPassword = editMode ? '' : generatePassword();
+
       this.form.reset({
         displayName: m?.displayName ?? '',
         email: m?.email ?? '',
         phone: m?.phone ?? '',
-        password: '',
+        password: initialPassword,
+        branchId: m?.branchId ?? this.branchContext.activeBranch()?.id ?? '',
         gender: m?.gender ?? 'unspecified',
         birthDate: toDateInputValue(m?.birthDate),
         membershipStatus: m?.membershipStatus ?? 'active',
@@ -188,6 +184,18 @@ export class MemberFormDialog {
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
+      const invalidFields: string[] = [];
+      if (this.form.controls.displayName.invalid) invalidFields.push('Ad Soyad');
+      if (this.form.controls.email.invalid) invalidFields.push('E-posta');
+      if (this.form.controls.phone.invalid) invalidFields.push('Telefon');
+      if (this.form.controls.password.invalid) invalidFields.push('Şifre (en az 6 karakter)');
+      if (this.form.controls.startDate.invalid) invalidFields.push('Başlangıç Tarihi');
+      if (this.form.controls.endDate.invalid) invalidFields.push('Bitiş Tarihi');
+      this.errorMessage.set(
+        invalidFields.length > 0
+          ? `Lütfen zorunlu alanları doldurun: ${invalidFields.join(', ')}`
+          : 'Lütfen form alanlarını kontrol edin.',
+      );
       return;
     }
     this.errorMessage.set('');
@@ -198,12 +206,18 @@ export class MemberFormDialog {
       const selectedPackage = this.packages.find((p) => p.days === value.packageDays);
       const currentMember = this.member();
 
+      const branchId = value.branchId || this.branchContext.activeBranch()?.id || null;
+      const branchObj = this.branches().find((b) => b.id === branchId);
+      const branchName = branchObj ? branchObj.name : null;
+
       const membershipInput = {
         displayName: value.displayName.trim(),
         phone: value.phone.trim(),
         gender: value.gender,
         birthDate: value.birthDate ? new Date(value.birthDate) : null,
         membershipStatus: value.membershipStatus,
+        branchId,
+        branchName,
         packageLabel: isActive ? selectedPackage?.label ?? null : null,
         membershipStartDate: isActive ? new Date(value.startDate) : null,
         membershipEndDate: isActive ? new Date(value.endDate) : null,

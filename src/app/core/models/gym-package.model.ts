@@ -44,7 +44,7 @@ export interface CreateGymPackageInput {
   trialEligible: boolean;
 }
 
-export type UpdateGymPackageInput = Partial<CreateGymPackageInput>;
+export type UpdateGymPackageInput = Partial<CreateGymPackageInput> & { status?: GymPackage['status'] };
 
 export interface CreateUserPackagePurchaseInput {
   packageId: string;

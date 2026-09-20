@@ -1,10 +1,9 @@
 import { Timestamp } from '@angular/fire/firestore';
+import { UserRole } from './user-role.model';
+export type { UserRole };
 
 /** Kullanıcının üyelik durumu. Otoriter kaynak: Cloud Functions / Admin SDK / admin paneli. */
 export type MembershipStatus = 'trial' | 'active' | 'expired' | 'cancelled';
-
-/** Uygulama içi rol — route guard'larında kullanılır. */
-export type UserRole = 'user' | 'admin';
 
 export type Gender = 'female' | 'male' | 'unspecified';
 
@@ -50,5 +49,9 @@ export interface UserProfile {
   language?: string;
   /** TL cinsinden e-cüzdan bakiyesi — otomat/market alışverişi ve ders/PT ek satışlarında kullanılır. */
   walletBalance?: number;
+  /** Üyenin bağlı olduğu salon şubesi ID'si — bkz. `gym_branches/{branchId}` */
+  branchId?: string | null;
+  /** Şube adı (hızlı gösterim için denormalize) */
+  branchName?: string | null;
 }
 
