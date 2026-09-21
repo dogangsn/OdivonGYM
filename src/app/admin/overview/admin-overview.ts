@@ -215,7 +215,7 @@ interface QuickAction {
             </div>
             <div class="mt-4">
               <div class="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate" [title]="'₺' + monthlyIncomeFormatted()">
-                ₺{{ monthlyIncomeFormatted() }}
+                {{ monthlyIncomeFormatted() }}
               </div>
               <div class="text-xs font-semibold text-sky-600 dark:text-sky-400 mt-1.5">
                 Cari Ay Tahsilatı
