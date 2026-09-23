@@ -83,10 +83,18 @@
             class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group">
             <td class="py-3 px-6">
               <div class="flex items-center gap-3">
-                <span
-                  class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
-                  {{ initials(member.displayName) }}
-                </span>
+                @if (member.photoURL) {
+                  <img
+                    [src]="member.photoURL"
+                    [alt]="member.displayName || 'Üye'"
+                    class="w-8 h-8 rounded-full object-cover flex-shrink-0 group-hover:scale-105 transition-transform border border-slate-200 dark:border-slate-700"
+                  />
+                } @else {
+                  <span
+                    class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+                    {{ initials(member.displayName) }}
+                  </span>
+                }
                 <div>
                   <p
                     class="font-bold text-slate-900 dark:text-white m-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">

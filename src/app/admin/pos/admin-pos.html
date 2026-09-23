@@ -1,0 +1,279 @@
+<div class="font-sans space-y-6">
+  <!-- 1. POS Header -->
+  <app-page-header
+    title="Hızlı Kasa & POS"
+    icon="point_of_sale"
+    description="Barkodlu satış, hızlı nakit/kart tahsilat ve anlık kasa fişi kesme terminali."
+  >
+    <div actions class="flex items-center gap-2">
+      <div class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+          Bugün Kasa: ₺{{ money(todaySalesTotal()) }} ({{ todaySalesCount() }} Fiş)
+        </span>
+      </div>
+      <a routerLink="/admin/sales" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">shopping_bag</mat-icon>
+        <span>Paket & Market Satışı →</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  <!-- 2. POS Split Layout (12 Kolon) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- SOL: HIZLI ÜRÜN SEÇİMİ (7 Kolon) -->
+    <div class="lg:col-span-7 space-y-4">
+      
+      <!-- Arama & Barkod Girişi -->
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+        <div class="relative">
+          <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-5">qr_code_scanner</mat-icon>
+          <input
+            type="text"
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+            placeholder="Barkod okutun veya ürün adı yazın…"
+            autofocus
+            class="w-full pl-11 pr-4 py-3 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+          />
+        </div>
+
+        <!-- Hızlı Kategori Seçimi -->
+        <div class="flex items-center gap-2 overflow-x-auto custom-scroll pb-1">
+          <button
+            type="button"
+            (click)="selectedCategory.set('all')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="selectedCategory() === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            Tümü
+          </button>
+          <button
+            type="button"
+            (click)="selectedCategory.set('drink')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="selectedCategory() === 'drink' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            💧 Su & İçecek
+          </button>
+          <button
+            type="button"
+            (click)="selectedCategory.set('protein')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="selectedCategory() === 'protein' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            🥛 Protein
+          </button>
+          <button
+            type="button"
+            (click)="selectedCategory.set('bar')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="selectedCategory() === 'bar' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            🍫 Barlar
+          </button>
+          <button
+            type="button"
+            (click)="selectedCategory.set('accessory')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="selectedCategory() === 'accessory' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            🎒 Aksesuar
+          </button>
+        </div>
+      </div>
+
+      <!-- Dokunmatik Hızlı Butonlar (Touch POS Grid) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        @for (prod of filteredProducts(); track prod.id) {
+          <button
+            type="button"
+            (click)="addToCart(prod)"
+            class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all cursor-pointer flex flex-col justify-between text-left active:scale-[0.98] group"
+          >
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                {{ prod.category }}
+              </span>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-2 m-0">
+                {{ prod.name }}
+              </h3>
+            </div>
+
+            <div class="flex items-baseline justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 w-full">
+              <span class="text-sm font-black text-slate-900 dark:text-white">₺{{ money(prod.price) }}</span>
+              <span class="text-[10px] font-semibold text-slate-400">Stok: {{ prod.stock }}</span>
+            </div>
+          </button>
+        } @empty {
+          <div class="col-span-full py-16 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            Ürün bulunamadı.
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- SAĞ: POS KASA TERMİNALİ & ÖDEME (5 Kolon) -->
+    <div class="lg:col-span-5">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 sticky top-4">
+        
+        <!-- Üye Seçimi (Opsiyonel E-Cüzdan) -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Müşteri / Üye (Opsiyonel)
+          </label>
+          <select
+            [ngModel]="selectedMemberId()"
+            (ngModelChange)="selectedMemberId.set($event)"
+            class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none"
+          >
+            <option value="">👤 Misafir / Ayaktan Müşteri</option>
+            @for (mem of members(); track mem.uid) {
+              <option [value]="mem.uid">
+                {{ mem.displayName }} (Bakiye: ₺{{ money(mem.walletBalance || 0) }})
+              </option>
+            }
+          </select>
+        </div>
+
+        <!-- Fiş Sepeti -->
+        <div class="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-500 pb-2 border-b border-slate-200/60 dark:border-slate-700">
+            <span>Kalemler ({{ cart().length }})</span>
+            @if (cart().length > 0) {
+              <button
+                type="button"
+                (click)="clearCart()"
+                class="text-[10px] text-rose-500 font-bold border-none bg-transparent cursor-pointer"
+              >
+                Temizle
+              </button>
+            }
+          </div>
+
+          <div class="space-y-2 max-h-48 overflow-y-auto custom-scroll pr-1">
+            @for (item of cart(); track item.product.id) {
+              <div class="flex items-center justify-between text-xs py-1">
+                <div class="min-w-0 pr-2">
+                  <p class="font-bold text-slate-800 dark:text-slate-200 truncate m-0">{{ item.product.name }}</p>
+                  <p class="text-[10px] text-slate-400 m-0">₺{{ money(item.product.price) }} × {{ item.quantity }}</p>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md">
+                    <button
+                      type="button"
+                      (click)="decreaseQty(item.product.id)"
+                      class="px-1.5 py-0.5 text-slate-500 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span class="px-1 font-bold text-[11px]">{{ item.quantity }}</span>
+                    <button
+                      type="button"
+                      (click)="increaseQty(item.product.id)"
+                      class="px-1.5 py-0.5 text-slate-500 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span class="font-black text-slate-900 dark:text-white whitespace-nowrap min-w-[50px] text-right">
+                    ₺{{ money(item.product.price * item.quantity) }}
+                  </span>
+                </div>
+              </div>
+            } @empty {
+              <div class="py-8 text-center text-xs text-slate-400">
+                Fiş boş. Ürün seçin.
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Toplam & Para Üstü Hesaplayıcı -->
+        @if (cart().length > 0) {
+          <div class="space-y-3 pt-2">
+            <div class="flex items-baseline justify-between p-3 rounded-xl bg-slate-900 text-white dark:bg-slate-800">
+              <span class="text-xs font-bold uppercase tracking-wider text-white/70">Toplam Tutar:</span>
+              <span class="text-3xl font-black tracking-tight">₺{{ money(cartTotal()) }}</span>
+            </div>
+
+            <!-- Hızlı Nakit Butonları -->
+            <div>
+              <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Verilen Nakit:
+              </span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  (click)="setExactCash()"
+                  class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                >
+                  Tam Tutar
+                </button>
+                @for (amt of quickCashAmounts; track amt) {
+                  <button
+                    type="button"
+                    (click)="setCashAmount(amt)"
+                    class="px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer border"
+                    [class]="cashGiven() === amt ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                  >
+                    ₺{{ amt }}
+                  </button>
+                }
+              </div>
+
+              @if (cashGiven() !== null && cashGiven()! >= cartTotal()) {
+                <div class="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
+                  <span class="font-bold text-emerald-800 dark:text-emerald-300">Para Üstü:</span>
+                  <span class="text-base font-black text-emerald-700 dark:text-emerald-300">
+                    ₺{{ money(changeDue()) }}
+                  </span>
+                </div>
+              }
+            </div>
+
+            <!-- Tahsilat Butonları -->
+            <div class="space-y-2 pt-2">
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="pay('cash')"
+                class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <mat-icon class="icon-size-5">payments</mat-icon>
+                <span>Nakit Tahsil Et (F1)</span>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="pay('card')"
+                class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <mat-icon class="icon-size-5">credit_card</mat-icon>
+                <span>Kredi Kartı POS (F2)</span>
+              </button>
+
+              @if (selectedMember()) {
+                <button
+                  type="button"
+                  [disabled]="isPaying() || !canPayWithWallet()"
+                  (click)="pay('wallet')"
+                  class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-40"
+                >
+                  <mat-icon class="icon-size-4">wallet</mat-icon>
+                  <span>E-Cüzdandan Düş (Bakiye: ₺{{ money(selectedMember()?.walletBalance || 0) }})</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../core/services/alert.service';
 import { Router } from '@angular/router';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { AdminBranchesService } from './admin-branches.service';
@@ -127,6 +128,7 @@ const STATUS_CLASS: Record<GymBranch['status'], string> = {
 export class AdminBranches {
   private readonly service = inject(AdminBranchesService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
   private readonly router = inject(Router);
   private readonly saasSub = inject(SaasSubscriptionService);
 
@@ -171,12 +173,12 @@ export class AdminBranches {
   }
 
   async remove(b: GymBranch): Promise<void> {
-    if (!confirm(`"${b.name}" şubesini silmek istediğine emin misin?`)) return;
+    if (!(await this.alertService.deleteConfirm(b.name))) return;
     try {
       await this.service.deleteBranch(b.id);
-      this.snackBar.open('Şube silindi.', 'Kapat', { duration: 2500 });
+      this.alertService.toastSuccess('Şube silindi.');
     } catch {
-      this.snackBar.open('Şube silinemedi, tekrar dene.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Şube silinemedi, tekrar dene.');
     }
   }
 

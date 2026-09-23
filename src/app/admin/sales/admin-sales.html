@@ -1,0 +1,415 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Header -->
+  <app-page-header
+    title="Paket & Market Satışı"
+    icon="shopping_bag"
+    description="Üyelik paketleri ve salon marketi satışı. Üye paketine dahil ücretsiz ürün ve hak kontrolü."
+  >
+    <div actions class="flex items-center gap-2">
+      <a routerLink="/admin/pos" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">point_of_sale</mat-icon>
+        <span>Hızlı Kasa (POS) →</span>
+      </a>
+      <a routerLink="/admin/products" class="odv-btn-primary text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">inventory_2</mat-icon>
+        <span>Ürün & Stok Yönetimi</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  <!-- 2. Üye Seçim & Paket Durumu Kartı (Smart Member & Package Bar) -->
+  <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      
+      <!-- Sol: Üye Seçim Dropdown / Arama -->
+      <div class="flex-1 max-w-md">
+        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+          Satış Yapılacak Üye / Müşteri:
+        </label>
+        <div class="relative">
+          <select
+            [ngModel]="selectedMemberId()"
+            (ngModelChange)="onMemberSelect($event)"
+            class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500/20 focus:outline-none cursor-pointer"
+          >
+            <option value="">👤 Misafir Müşteri (Paketsiz Satış)</option>
+            @for (mem of members(); track mem.uid) {
+              <option [value]="mem.uid">
+                {{ mem.displayName }} (#{{ mem.memberNumber || mem.uid.slice(0, 5) }}) — {{ mem.packageLabel || 'Paketsiz' }}
+              </option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Sağ: Seçili Üyenin Paket & Cüzdan Kartı -->
+      @if (memberPackageInfo(); as pkg) {
+        <div class="flex flex-wrap items-center gap-4 p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
+              #{{ pkg.memberNumber }}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-900 dark:text-white">{{ selectedMember()?.displayName }}</span>
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  [class]="pkg.hasActiveStatus ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'"
+                >
+                  {{ pkg.hasActiveStatus ? 'Aktif Üye' : 'Pasif / Deneme' }}
+                </span>
+              </div>
+              <div class="text-[11px] text-indigo-700 dark:text-indigo-300 font-bold mt-0.5 flex items-center gap-1.5">
+                <mat-icon class="text-[14px] w-3.5 h-3.5">card_membership</mat-icon>
+                <span>Paket: {{ pkg.name }}</span>
+                @if (pkg.isVip) {
+                  <span class="px-1.5 py-0.2 rounded bg-amber-400 text-amber-950 text-[9px] font-black uppercase">VIP</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="h-8 w-px bg-indigo-200 dark:bg-indigo-800 hidden sm:block"></div>
+
+          <!-- Bakiye -->
+          <div class="text-left sm:text-right">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">E-Cüzdan</div>
+            <div class="text-sm font-black text-emerald-600 dark:text-emerald-400 leading-tight">
+              ₺{{ money(pkg.walletBalance) }}
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="text-xs text-slate-400 flex items-center gap-1.5">
+          <mat-icon class="icon-size-4 text-slate-400">info</mat-icon>
+          <span>Misafir satışlarında tüm ürünler normal fiyattan tahsil edilir.</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- 3. Satış Katalog & Sepet Alanı (12 Kolon Grid) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- SOL: KATALOG (8 Kolon) -->
+    <div class="lg:col-span-8 space-y-4">
+      
+      <!-- Katalog Modu Seçici: Market Ürünleri vs Üyelik Paketleri -->
+      <div class="flex items-center justify-between gap-3 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <div class="flex gap-1.5">
+          <button
+            type="button"
+            (click)="saleCatalogMode.set('products')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            [class]="saleCatalogMode() === 'products' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'"
+          >
+            <mat-icon class="icon-size-4">point_of_sale</mat-icon>
+            <span>Market & Vitamin Bar</span>
+          </button>
+          <button
+            type="button"
+            (click)="saleCatalogMode.set('packages')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            [class]="saleCatalogMode() === 'packages' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'"
+          >
+            <mat-icon class="icon-size-4">sell</mat-icon>
+            <span>Üyelik Paketi Sat</span>
+          </button>
+        </div>
+
+        <span class="text-xs text-slate-400 hidden sm:inline">
+          {{ saleCatalogMode() === 'products' ? (filteredProducts().length + ' Ürün') : (availablePackages().length + ' Paket') }}
+        </span>
+      </div>
+
+      <!-- MOD 1: MARKET ÜRÜNLERİ -->
+      @if (saleCatalogMode() === 'products') {
+        <!-- Arama & Kategori Hapları -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+          <div class="relative">
+            <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              placeholder="Ürün adı veya barkod ara…"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+
+          <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
+            @for (cat of productCategories(); track cat.id) {
+              <button
+                type="button"
+                (click)="selectedCategory.set(cat.id)"
+                class="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+                [class]="selectedCategory() === cat.id ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'"
+              >
+                <span>{{ cat.icon }}</span>
+                <span>{{ cat.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Ürün Kartları Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          @for (prod of filteredProducts(); track prod.id) {
+            <div
+              (click)="addProductToCart(prod)"
+              class="group p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden"
+            >
+              <!-- Pakete Dahil Rozeti (Glow) -->
+              @if (isProductEligibleForPackage(prod)) {
+                <div class="absolute -top-1 -right-1 px-2.5 py-0.5 rounded-bl-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-[9px] uppercase tracking-wider shadow-xs">
+                  Pakete Dahil
+                </div>
+              }
+
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                  <span class="text-[10px] font-bold uppercase">{{ prod.category }}</span>
+                  <span class="text-[10px] font-semibold" [class]="prod.stock <= 5 ? 'text-rose-500' : 'text-slate-400'">
+                    Stok: {{ prod.stock }}
+                  </span>
+                </div>
+
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 m-0 mb-3">
+                  {{ prod.name }}
+                </h3>
+              </div>
+
+              <div class="flex items-baseline justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                @if (isProductEligibleForPackage(prod)) {
+                  <div>
+                    <span class="text-xs text-slate-400 line-through">₺{{ money(prod.price) }}</span>
+                    <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 ml-1.5">0.00 ₺</span>
+                  </div>
+                } @else {
+                  <span class="text-sm font-black text-slate-900 dark:text-white">₺{{ money(prod.price) }}</span>
+                }
+                
+                <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex items-center justify-center">
+                  <mat-icon class="icon-size-4">add</mat-icon>
+                </span>
+              </div>
+            </div>
+          } @empty {
+            <div class="col-span-full py-16 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              Bu aramaya veya kategoriye uygun ürün bulunamadı.
+            </div>
+          }
+        </div>
+      }
+
+      <!-- MOD 2: ÜYELİK PAKETLERİ SATIŞI -->
+      @if (saleCatalogMode() === 'packages') {
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          @for (pkg of availablePackages(); track pkg.id) {
+            <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-purple-300 dark:hover:border-purple-700 transition-all flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md">
+                    {{ pkg.category || 'Fitness Paketi' }}
+                  </span>
+                  <span class="text-xs font-semibold text-slate-400">{{ pkg.durationDays }} Gün</span>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-900 dark:text-white m-0 mb-1">
+                  {{ pkg.name }}
+                </h3>
+
+                @if (pkg.features.length) {
+                  <ul class="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 my-3 pl-4 list-disc">
+                    @for (f of pkg.features.slice(0, 3); track f) {
+                      <li>{{ f }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+
+              <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-xl font-black text-slate-900 dark:text-white">₺{{ money(pkg.price) }}</span>
+                <button
+                  type="button"
+                  (click)="addPackageToCart(pkg)"
+                  class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs cursor-pointer transition-all flex items-center gap-1 shadow-xs"
+                >
+                  <mat-icon class="icon-size-4">add_shopping_cart</mat-icon>
+                  <span>Paketi Ekle</span>
+                </button>
+              </div>
+            </div>
+          } @empty {
+            <div class="col-span-full py-16 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              Henüz aktif bir üyelik paketi tanımlanmadı.
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+
+    <!-- SAĞ: AKILLI SEPET & PAKETE DAHİL KONTROLÜ (4 Kolon) -->
+    <div class="lg:col-span-4">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-5 sticky top-4">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-indigo-600 icon-size-5">shopping_cart</mat-icon>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white m-0">Satış Sepeti</h2>
+          </div>
+          @if (cart().length > 0) {
+            <button
+              type="button"
+              (click)="clearCart()"
+              class="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer border-none bg-transparent"
+            >
+              Sepeti Temizle
+            </button>
+          }
+        </div>
+
+        <!-- Sepet Kalemleri -->
+        <div class="space-y-3 max-h-[380px] overflow-y-auto custom-scroll pr-1">
+          @for (item of cart(); track $index) {
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-slate-900 dark:text-white truncate m-0">
+                    {{ item.type === 'product' ? item.product?.name : item.gymPackage?.name }}
+                  </p>
+                  <p class="text-[10px] text-slate-400 m-0">
+                    {{ item.type === 'product' ? item.product?.category : 'Üyelik Paketi' }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="removeItem($index)"
+                  class="text-slate-400 hover:text-rose-500 border-none bg-transparent cursor-pointer p-0.5"
+                >
+                  <mat-icon class="icon-size-4">close</mat-icon>
+                </button>
+              </div>
+
+              <!-- Pakete Dahil Mi? Kontrolü & Toggle -->
+              @if (item.type === 'product') {
+                <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 dark:border-slate-700/40">
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      [checked]="item.isPackageIncluded"
+                      (change)="togglePackageIncluded($index)"
+                      class="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
+                    />
+                    <span>Pakete Dahil (0 ₺)</span>
+                  </label>
+                  
+                  @if (item.isPackageIncluded) {
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                      Ücretsiz Hak
+                    </span>
+                  }
+                </div>
+              }
+
+              <!-- Adet & Tutar -->
+              <div class="flex items-center justify-between pt-1">
+                <div class="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5">
+                  <button
+                    type="button"
+                    (click)="decreaseQty($index)"
+                    class="w-5 h-5 rounded flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-none"
+                  >
+                    -
+                  </button>
+                  <span class="w-6 text-center text-xs font-bold text-slate-800 dark:text-slate-200">{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    (click)="increaseQty($index)"
+                    class="w-5 h-5 rounded flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-none"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div class="text-right">
+                  @if (item.isPackageIncluded) {
+                    <span class="text-[11px] text-slate-400 line-through">₺{{ money(item.unitPrice * item.quantity) }}</span>
+                    <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 ml-1">0.00 ₺</span>
+                  } @else {
+                    <span class="text-xs font-black text-slate-900 dark:text-white">
+                      ₺{{ money(item.unitPrice * item.quantity) }}
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="py-12 text-center text-xs text-slate-400">
+              Sepet boş. Katalogdan ürün veya paket ekleyin.
+            </div>
+          }
+        </div>
+
+        <!-- Toplam Tutar Özeti -->
+        @if (cart().length > 0) {
+          <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
+            <div class="flex items-baseline justify-between">
+              <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Ödenecek Tutar:</span>
+              <span class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                ₺{{ money(cartTotal()) }}
+              </span>
+            </div>
+
+            <!-- Ödeme Butonları Grid -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                [disabled]="isPaying() || !canPayWithWallet()"
+                (click)="checkout('wallet')"
+                class="p-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Üyenin E-Cüzdanından Tahsil Et"
+              >
+                <mat-icon class="icon-size-4">wallet</mat-icon>
+                <span>E-Cüzdan</span>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="checkout('cash')"
+                class="p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+              >
+                <mat-icon class="icon-size-4">payments</mat-icon>
+                <span>Nakit</span>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="checkout('card')"
+                class="p-2.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+              >
+                <mat-icon class="icon-size-4">credit_card</mat-icon>
+                <span>Kredi Kartı</span>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="checkout('transfer')"
+                class="p-2.5 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+              >
+                <mat-icon class="icon-size-4">account_balance</mat-icon>
+                <span>Havale/EFT</span>
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+
+  </div>
+</div>

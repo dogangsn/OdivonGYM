@@ -19,94 +19,6 @@ import { StaffMember, StaffStatus } from '../../core/models/staff.model';
 import { UserRole } from '../../core/models/user-role.model';
 import { BranchContextService } from '../../core/services/branch-context.service';
 
-const INITIAL_STAFF_SEEDS = [
-  {
-    id: 'staff-1',
-    displayName: 'Ahmet Hakan Özdemir',
-    email: 'ahmet.ozdemir@odivongym.com',
-    phone: '+90 532 100 20 30',
-    role: 'owner' as UserRole,
-    title: 'Salon Sahibi / Kurucu Ortak',
-    status: 'active' as StaffStatus,
-    specialties: ['İşletme & Finans', 'Salon Yönetimi'],
-    hireDate: '2024-01-01',
-    emergencyContact: '+90 532 999 88 77 (Eşi)',
-    monthlySalary: 0,
-    commissionRate: 0,
-    notes: 'OdivonGYM tüm şubeler ve lisans yetkilisi.',
-    branchName: 'Kadıköy Merkez Şube',
-    createdAt: '2024-01-01T08:00:00.000Z',
-  },
-  {
-    id: 'staff-2',
-    displayName: 'Burak Can Yılmaz',
-    email: 'burak.yilmaz@odivongym.com',
-    phone: '+90 533 210 30 40',
-    role: 'admin' as UserRole,
-    title: 'Genel Yönetici / Kulüp Müdürü',
-    status: 'active' as StaffStatus,
-    specialties: ['Operasyon', 'Personel & Turnike Yönetimi'],
-    hireDate: '2024-03-15',
-    emergencyContact: '+90 533 111 22 33',
-    monthlySalary: 65000,
-    commissionRate: 5,
-    notes: 'Günlük salon akışı ve vardiya sorumlusu.',
-    branchName: 'Kadıköy Merkez Şube',
-    createdAt: '2024-03-15T09:00:00.000Z',
-  },
-  {
-    id: 'staff-3',
-    displayName: 'Mert Demir',
-    email: 'mert.demir@odivongym.com',
-    phone: '+90 535 320 40 50',
-    role: 'trainer' as UserRole,
-    title: 'Baş Antrenör (PT & Dövüş Sanatları)',
-    status: 'active' as StaffStatus,
-    specialties: ['Fitness & Bodybuilding', 'Kickbox', 'Kuvvet Antrenmanı'],
-    hireDate: '2024-06-01',
-    emergencyContact: '+90 535 444 55 66',
-    monthlySalary: 45000,
-    commissionRate: 20,
-    notes: 'Kadıköy Merkez Şube baş antrenörü, milli sporcu.',
-    branchName: 'Kadıköy Merkez Şube',
-    createdAt: '2024-06-01T10:00:00.000Z',
-  },
-  {
-    id: 'staff-4',
-    displayName: 'Elif Yıldız Kaya',
-    email: 'elif.yildiz@odivongym.com',
-    phone: '+90 536 430 50 60',
-    role: 'trainer' as UserRole,
-    title: 'Kıdemli PT & Pilates Eğitmeni',
-    status: 'active' as StaffStatus,
-    specialties: ['Reformer Pilates', 'Fonksiyonel Antrenman', 'Postür & Esneklik'],
-    hireDate: '2024-07-15',
-    emergencyContact: '+90 536 777 88 99',
-    monthlySalary: 42000,
-    commissionRate: 20,
-    notes: 'Kadınlara özel grup dersleri ve birebir reformer sorumlusu.',
-    branchName: 'Kadıköy Merkez Şube',
-    createdAt: '2024-07-15T10:30:00.000Z',
-  },
-  {
-    id: 'staff-5',
-    displayName: 'Gizem Aksoy',
-    email: 'gizem.aksoy@odivongym.com',
-    phone: '+90 537 540 60 70',
-    role: 'receptionist' as UserRole,
-    title: 'Müşteri Hizmetleri & Resepsiyon Sorumlusu',
-    status: 'active' as StaffStatus,
-    specialties: ['Üye Karşılama', 'Kasa & POS', 'Vitamin Bar'],
-    hireDate: '2024-09-01',
-    emergencyContact: '+90 537 333 44 55',
-    monthlySalary: 32000,
-    commissionRate: 3,
-    notes: 'Giriş turnike kontrolü, market satışları ve üye kayıtları.',
-    branchName: 'Kadıköy Merkez Şube',
-    createdAt: '2024-09-01T08:30:00.000Z',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class AdminStaffService {
   private readonly firestore = inject(Firestore);
@@ -114,14 +26,8 @@ export class AdminStaffService {
   private readonly branchContext = inject(BranchContextService);
   private readonly profile$ = toObservable(this.auth.profile);
 
-  // Local reactive cache for instant offline/demo resilience
-  readonly localStaff = signal<StaffMember[]>(
-    INITIAL_STAFF_SEEDS.map((s) => ({
-      ...s,
-      tenantId: 'default-tenant',
-      customPermissions: [],
-    })),
-  );
+  // Local reactive cache for staff
+  readonly localStaff = signal<StaffMember[]>([]);
 
   private seedingTriggered = false;
 
@@ -151,6 +57,7 @@ export class AdminStaffService {
 
             // Sync to local signal
             this.localStaff.set(list);
+
 
             return [...list].sort((a, b) => {
               const roleOrder: Record<UserRole, number> = {
@@ -256,28 +163,45 @@ export class AdminStaffService {
 
   private async seedInitialStaff(tenantId: string): Promise<void> {
     try {
+      const user = this.auth.profile();
+      if (!user) return;
       const activeBranch = this.branchContext.activeBranch();
-      const batch = writeBatch(this.firestore);
       const colRef = collection(this.firestore, 'gym_staff');
+      const newDoc = doc(colRef);
+      const now = new Date().toISOString();
 
-      for (const item of INITIAL_STAFF_SEEDS) {
-        const newDoc = doc(colRef);
-        batch.set(newDoc, {
-          ...item,
-          id: newDoc.id,
-          tenantId,
-          branchId: activeBranch?.id || null,
-          branchName: activeBranch?.name || 'Kadıköy Merkez Şube',
-          customPermissions: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdAtTimestamp: serverTimestamp(),
-        });
-      }
+      const initialAdmin: StaffMember = {
+        id: newDoc.id,
+        tenantId,
+        displayName: user.displayName || 'SüperAdmin / Kurucu',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: 'owner',
+        title: 'Salon Sahibi / Kurucu (SüperAdmin)',
+        status: 'active',
+        specialties: ['Genel Yönetim', 'İşletme'],
+        hireDate: now.slice(0, 10),
+        emergencyContact: '',
+        monthlySalary: 0,
+        commissionRate: 0,
+        notes: 'Sisteme ilk kaydolan kurucu SüperAdmin.',
+        branchId: activeBranch?.id || null,
+        branchName: activeBranch?.name || 'Merkez Şube',
+        customPermissions: [],
+        createdAt: now,
+        updatedAt: now,
+      };
 
-      await batch.commit();
+      await addDoc(colRef, {
+        ...initialAdmin,
+        createdAtTimestamp: serverTimestamp(),
+        updatedAtTimestamp: serverTimestamp(),
+      });
+
+      this.localStaff.set([initialAdmin]);
     } catch (err) {
-      console.warn('Otomatik personel tohumlama atlandı veya başarısız:', err);
+      console.warn('Otomatik SüperAdmin kaydı atlandı veya başarısız:', err);
     }
   }
+
 }

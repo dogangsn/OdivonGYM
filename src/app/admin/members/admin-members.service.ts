@@ -7,6 +7,7 @@ import {
   Timestamp,
   arrayRemove,
   arrayUnion,
+  addDoc,
   collection,
   collectionData,
   deleteDoc,
@@ -41,17 +42,34 @@ export interface NewMemberInput {
   birthDate: Date | null;
   membershipStatus: MembershipStatus;
   packageLabel: string | null;
+  packagePrice?: number;
   branchId?: string | null;
   branchName?: string | null;
-  /** Üyeliğin başladığı tarih — hazır paket ya da "Özel Süre" fark etmez, her zaman elle seçilir. */
+  /** Üyeliğin başladığı tarih */
   membershipStartDate: Date | null;
-  /** Üyeliğin biteceği tarih — hazır paket seçilse bile admin üzerine yazabilir. */
+  /** Üyeliğin biteceği tarih */
   membershipEndDate: Date | null;
   notes: string;
+  // Yeni eklenen alanlar
+  memberNumber?: string;
+  trainerId?: string | null;
+  trainerName?: string | null;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  bloodGroup?: string | null;
+  allergies?: string;
+  chronicDiseases?: string;
+  specialInfo?: string;
+  photoURL?: string | null;
+  rfidCardNumber?: string;
+  cardDepositFee?: number;
+  cardDepositPaid?: boolean;
 }
 
 /** `createMember`'dan farkı: hesap (e-posta/şifre) alanları yok — sadece profil güncellenir. */
 export type UpdateMemberInput = Omit<NewMemberInput, 'email' | 'password'>;
+
 
 /**
  * Admin panelinin "Üye Kayıtları" ekranı için: tüm üyeleri listeler ve
@@ -88,11 +106,14 @@ export class AdminMembersService {
         );
         return (collectionData(membersQuery, { idField: 'uid' }) as Observable<UserProfile[]>).pipe(
           map((list) =>
-            [...list].sort(
-              (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
-            ),
+            list
+              .filter((u) => !u.role || u.role === 'user')
+              .sort(
+                (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
+              ),
           ),
         );
+
       }),
     );
   }
@@ -119,14 +140,16 @@ export class AdminMembersService {
     const now = Timestamp.now();
     const isActive = input.membershipStatus === 'active';
     const trialEndsAt = Timestamp.fromMillis(now.toMillis() + environment.trialDurationDays * 24 * 60 * 60 * 1000);
+    const memberNumber = input.memberNumber?.trim() || Math.floor(10000 + Math.random() * 90000).toString();
 
     await setDoc(doc(this.firestore, 'users', uid), {
       uid,
       tenantId, // <-- admin'in KENDİ salonu; firestore.rules bunu ayrıca doğrular
       role: 'user',
+      memberNumber,
       email: input.email.trim(),
       displayName: input.displayName.trim(),
-      photoURL: null,
+      photoURL: input.photoURL || null,
       membershipStatus: input.membershipStatus,
       trialStartedAt: now,
       trialEndsAt: input.membershipStatus === 'trial' ? trialEndsAt : now,
@@ -138,10 +161,58 @@ export class AdminMembersService {
       packageLabel: isActive ? input.packageLabel : null,
       membershipStartsAt: isActive && input.membershipStartDate ? Timestamp.fromDate(input.membershipStartDate) : null,
       membershipEndsAt: isActive && input.membershipEndDate ? Timestamp.fromDate(input.membershipEndDate) : null,
+      trainerId: input.trainerId || null,
+      trainerName: input.trainerName || null,
+      emergencyContactName: input.emergencyContactName?.trim() || '',
+      emergencyContactPhone: input.emergencyContactPhone?.trim() || '',
+      emergencyContactRelation: input.emergencyContactRelation?.trim() || '',
+      bloodGroup: input.bloodGroup || null,
+      allergies: input.allergies?.trim() || '',
+      chronicDiseases: input.chronicDiseases?.trim() || '',
+      specialInfo: input.specialInfo?.trim() || '',
+      rfidCardNumber: input.rfidCardNumber?.trim() || '',
+      cardDepositFee: input.cardDepositFee ?? 0,
+      cardDepositPaid: !!input.cardDepositPaid,
       notes: input.notes.trim(),
       createdAt: now,
       updatedAt: now,
     });
+
+    // Otomatik Muhasebe Kaydı (Paket Satışı)
+    if (isActive && (input.packagePrice ?? 0) > 0) {
+      await addDoc(collection(this.firestore, 'accounting_entries'), {
+        tenantId,
+        type: 'income',
+        amount: input.packagePrice,
+        category: 'Üyelik & Paket Satışı',
+        description: `${input.displayName} - ${input.packageLabel || 'Paket'} Kaydı`,
+        referenceId: uid,
+        referenceType: 'membership',
+        paymentMethod: 'cash',
+        notes: `5 Haneli Üye No: ${memberNumber}`,
+        entryDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Otomatik Muhasebe Kaydı (Kart Depozitosu)
+    if (input.cardDepositPaid && (input.cardDepositFee ?? 0) > 0) {
+      await addDoc(collection(this.firestore, 'accounting_entries'), {
+        tenantId,
+        type: 'income',
+        amount: input.cardDepositFee,
+        category: 'Kart Depozito Bedeli',
+        description: `${input.displayName} - Turnike/RFID Kart Depozitosu`,
+        referenceId: uid,
+        referenceType: 'card_deposit',
+        paymentMethod: 'cash',
+        notes: `5 Haneli Üye No: ${memberNumber} (Kart: ${input.rfidCardNumber || '-'})`,
+        entryDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     return uid;
   }
@@ -207,10 +278,161 @@ export class AdminMembersService {
       membershipStartsAt: isActive && input.membershipStartDate ? Timestamp.fromDate(input.membershipStartDate) : null,
       membershipEndsAt: isActive && input.membershipEndDate ? Timestamp.fromDate(input.membershipEndDate) : null,
       notes: input.notes,
+      ...(input.memberNumber ? { memberNumber: input.memberNumber } : {}),
+      ...(input.trainerId !== undefined ? { trainerId: input.trainerId, trainerName: input.trainerName } : {}),
+      ...(input.emergencyContactName !== undefined ? { emergencyContactName: input.emergencyContactName } : {}),
+      ...(input.emergencyContactPhone !== undefined ? { emergencyContactPhone: input.emergencyContactPhone } : {}),
+      ...(input.emergencyContactRelation !== undefined ? { emergencyContactRelation: input.emergencyContactRelation } : {}),
+      ...(input.bloodGroup !== undefined ? { bloodGroup: input.bloodGroup } : {}),
+      ...(input.allergies !== undefined ? { allergies: input.allergies } : {}),
+      ...(input.chronicDiseases !== undefined ? { chronicDiseases: input.chronicDiseases } : {}),
+      ...(input.specialInfo !== undefined ? { specialInfo: input.specialInfo } : {}),
+      ...(input.photoURL !== undefined ? { photoURL: input.photoURL } : {}),
+      ...(input.rfidCardNumber !== undefined ? { rfidCardNumber: input.rfidCardNumber } : {}),
+      ...(input.cardDepositFee !== undefined ? { cardDepositFee: input.cardDepositFee } : {}),
+      ...(input.cardDepositPaid !== undefined ? { cardDepositPaid: input.cardDepositPaid } : {}),
       ...(input.branchId !== undefined ? { branchId: input.branchId || null } : {}),
       ...(input.branchName !== undefined ? { branchName: input.branchName || null } : {}),
       updatedAt: serverTimestamp(),
     });
+  }
+
+  /** Abonelik Devretme: kalan süreyi hedef üyeye aktarır, eski üyeyi iptal eder ve geçmiş kaydı tutar. */
+  async transferSubscription(
+    fromMember: UserProfile,
+    toMemberUid: string,
+    toMemberName: string,
+    reason?: string,
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    const batch = writeBatch(this.firestore);
+
+    // 1. Eski üyenin aboneliğini sonlandır ve not düş
+    const fromRef = doc(this.firestore, 'users', fromMember.uid);
+    batch.update(fromRef, {
+      membershipStatus: 'cancelled',
+      notes: `${fromMember.notes || ''}\n[Devredildi]: Abonelik ${toMemberName} üyesine aktarıldı (${new Date().toLocaleDateString('tr-TR')}).`,
+      updatedAt: now,
+    });
+
+    // 2. Yeni üyeye paketi ve bitiş tarihini aktar
+    const toRef = doc(this.firestore, 'users', toMemberUid);
+    batch.update(toRef, {
+      membershipStatus: 'active',
+      packageLabel: fromMember.packageLabel || 'Devir Aboneliği',
+      membershipStartsAt: now,
+      membershipEndsAt: fromMember.membershipEndsAt || now,
+      updatedAt: now,
+    });
+
+    // 3. Devir geçmişi kaydı
+    const transferRef = doc(collection(this.firestore, 'subscription_transfers'));
+    batch.set(transferRef, {
+      tenantId,
+      fromMemberUid: fromMember.uid,
+      fromMemberName: fromMember.displayName,
+      toMemberUid,
+      toMemberName,
+      packageLabel: fromMember.packageLabel || '',
+      transferredAt: now,
+      reason: reason || 'Kullanıcı talebiyle devir yapıldı.',
+      createdAt: now,
+    });
+
+    await batch.commit();
+  }
+
+  /** Hızlı Abonelik Yenileme: Bitiş tarihini uzatır ve otomatik muhasebe kaydı oluşturur. */
+  async renewMembership(
+    member: UserProfile,
+    input: { packageName: string; durationDays: number; price: number; paymentMethod?: 'cash' | 'card' | 'transfer' },
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    let baseDate = new Date();
+    if (member.membershipStatus === 'active' && member.membershipEndsAt) {
+      const currentEndMs = member.membershipEndsAt.toMillis();
+      if (currentEndMs > Date.now()) {
+        baseDate = new Date(currentEndMs);
+      }
+    }
+    baseDate.setDate(baseDate.getDate() + input.durationDays);
+    const newEndsAt = Timestamp.fromDate(baseDate);
+
+    const batch = writeBatch(this.firestore);
+    const memberRef = doc(this.firestore, 'users', member.uid);
+    batch.update(memberRef, {
+      membershipStatus: 'active',
+      packageLabel: input.packageName,
+      membershipEndsAt: newEndsAt,
+      updatedAt: now,
+    });
+
+    if (input.price > 0) {
+      const entryRef = doc(collection(this.firestore, 'accounting_entries'));
+      batch.set(entryRef, {
+        tenantId,
+        type: 'income',
+        amount: input.price,
+        category: 'Abonelik Yenileme',
+        description: `${member.displayName} - ${input.packageName} (${input.durationDays} Gün) Yenileme`,
+        referenceId: member.uid,
+        referenceType: 'membership_renewal',
+        paymentMethod: input.paymentMethod || 'cash',
+        notes: `5 Haneli Üye No: ${member.memberNumber || '-'}`,
+        entryDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await batch.commit();
+  }
+
+  /** Üyeye RFID / Turnike Kartı Tanımlama ve Depozito Ücretini Kasaya İşleme */
+  async updateCardAssignment(
+    memberUid: string,
+    memberName: string,
+    cardData: { rfidCardNumber: string; cardDepositFee: number; cardDepositPaid: boolean },
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    const batch = writeBatch(this.firestore);
+
+    const memberRef = doc(this.firestore, 'users', memberUid);
+    batch.update(memberRef, {
+      rfidCardNumber: cardData.rfidCardNumber.trim(),
+      cardDepositFee: cardData.cardDepositFee,
+      cardDepositPaid: cardData.cardDepositPaid,
+      updatedAt: now,
+    });
+
+    if (cardData.cardDepositPaid && cardData.cardDepositFee > 0) {
+      const entryRef = doc(collection(this.firestore, 'accounting_entries'));
+      batch.set(entryRef, {
+        tenantId,
+        type: 'income',
+        amount: cardData.cardDepositFee,
+        category: 'Kart Depozito Bedeli',
+        description: `${memberName} - Turnike / RFID Kart Depozitosu (Kart No: ${cardData.rfidCardNumber})`,
+        referenceId: memberUid,
+        referenceType: 'card_deposit',
+        paymentMethod: 'cash',
+        notes: 'Turnike kartı tanımlama depozitosu',
+        entryDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await batch.commit();
   }
 
   /** Belirli bir üyenin cüzdan geçmişini dinler */

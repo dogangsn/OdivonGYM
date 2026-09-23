@@ -1,0 +1,222 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Header -->
+  <app-page-header
+    title="Satış & Kasa Raporları"
+    icon="analytics"
+    description="Günlük bar satışları, ödeme yöntemleri dağılımı, iade geçmişi ve detaylı ciro dökümü."
+  />
+
+  <!-- 2. KPI Kartları -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Toplam Ciro -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Satış Cirosu</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          ₺{{ money(totalRevenue()) }}
+        </div>
+        <div class="text-xs font-semibold text-emerald-500 mt-0.5">
+          Tamamlanan Satışlar
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">payments</mat-icon>
+      </div>
+    </div>
+
+    <!-- Toplam İşlem -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İşlem Adedi</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          {{ totalTransactionCount() }} Satış
+        </div>
+        <div class="text-xs font-semibold text-indigo-500 mt-0.5">
+          Başarılı Kasa Fişi
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">receipt_long</mat-icon>
+      </div>
+    </div>
+
+    <!-- Ortalama Sepet -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ortalama Sepet</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          ₺{{ money(averageTicket()) }}
+        </div>
+        <div class="text-xs font-semibold text-sky-500 mt-0.5">
+          Fiş Başına Ortalama
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">shopping_basket</mat-icon>
+      </div>
+    </div>
+
+    <!-- İadeler -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İade Edilenler</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          {{ refundedCount() }} İşlem
+        </div>
+        <div class="text-xs font-semibold text-rose-500 mt-0.5">
+          İptal ve İade
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">assignment_return</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Ödeme Yöntemi Dağılımı -->
+  <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+    <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Ödeme Yöntemi Dağılımı</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      @for (m of ['cash', 'card', 'wallet', 'transfer']; track m) {
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+          <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+            <mat-icon class="icon-size-4">{{ paymentIcon[m] }}</mat-icon>
+            <span>{{ paymentLabel[m] }}</span>
+          </div>
+          <div class="text-base font-black text-slate-900 dark:text-white">
+            ₺{{ money(paymentStats()[m]?.total || 0) }}
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5">
+            {{ paymentStats()[m]?.count || 0 }} İşlem
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- 4. Satış Geçmişi Tablosu -->
+  <div class="odv-card space-y-4 p-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="relative flex-1 max-w-sm">
+        <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Ürün adı, not veya fiş no ara…"
+          class="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        />
+      </div>
+
+      <!-- Ödeme Filtresi -->
+      <div class="flex items-center gap-1.5">
+        <button
+          type="button"
+          (click)="filterPayment.set('all')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [class]="filterPayment() === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+        >
+          Tümü
+        </button>
+        <button
+          type="button"
+          (click)="filterPayment.set('cash')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [class]="filterPayment() === 'cash' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+        >
+          Nakit
+        </button>
+        <button
+          type="button"
+          (click)="filterPayment.set('card')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [class]="filterPayment() === 'card' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+        >
+          Kredi Kartı
+        </button>
+        <button
+          type="button"
+          (click)="filterPayment.set('wallet')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          [class]="filterPayment() === 'wallet' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+        >
+          E-Cüzdan
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto custom-scroll">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <th class="odv-th">Tarih / Saat</th>
+            <th class="odv-th">Satılan Ürün / Kalem</th>
+            <th class="odv-th">Adet</th>
+            <th class="odv-th">Toplam Tutar</th>
+            <th class="odv-th">Ödeme Tipi</th>
+            <th class="odv-th">Durum & Not</th>
+            <th class="odv-th text-right">İşlem</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+          @for (s of filteredSales(); track s.id) {
+            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="odv-td whitespace-nowrap text-slate-500">
+                {{ dateTime(s.saleDate) }}
+              </td>
+              <td class="odv-td font-bold text-slate-900 dark:text-white">
+                {{ s.productName }}
+              </td>
+              <td class="odv-td font-semibold text-slate-700 dark:text-slate-300">
+                {{ s.quantity }} Adet
+              </td>
+              <td class="odv-td font-black text-slate-900 dark:text-white whitespace-nowrap">
+                ₺{{ money(s.totalAmount) }}
+              </td>
+              <td class="odv-td whitespace-nowrap">
+                <span class="inline-flex items-center gap-1 font-semibold text-xs text-slate-700 dark:text-slate-300">
+                  <mat-icon class="icon-size-4 text-slate-400">{{ paymentIcon[s.paymentMethod || 'cash'] }}</mat-icon>
+                  {{ paymentLabel[s.paymentMethod || 'cash'] }}
+                </span>
+              </td>
+              <td class="odv-td">
+                <div class="flex items-center gap-1.5">
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    [class]="s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'"
+                  >
+                    {{ s.status === 'completed' ? 'Tamamlandı' : 'İade Edildi' }}
+                  </span>
+                  @if (s.notes) {
+                    <span class="text-[11px] text-slate-400 truncate max-w-xs" [title]="s.notes">
+                      {{ s.notes }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="odv-td text-right whitespace-nowrap">
+                @if (s.status === 'completed') {
+                  <button
+                    type="button"
+                    (click)="refundSale(s)"
+                    class="text-[11px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 border-none cursor-pointer"
+                  >
+                    İade Al
+                  </button>
+                } @else {
+                  <span class="text-[11px] text-slate-400 italic">İptal</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="py-12 text-center text-xs text-slate-400">
+                Satış kaydı bulunamadı.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

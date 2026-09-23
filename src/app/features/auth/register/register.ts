@@ -11,8 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
-import { LanguageService } from '../../../core/i18n/language.service';
-import { COUNTRIES, DEFAULT_COUNTRY_CODE, findCountry } from '../../../core/data/countries';
+import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
+import { COUNTRIES, DEFAULT_COUNTRY_CODE, SupportedLanguage, findCountry } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 import { AuthBrandPanel } from '../../../shared/components/auth-brand-panel/auth-brand-panel';
 
@@ -37,9 +37,17 @@ export class Register {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
-  private readonly language = inject(LanguageService);
+  protected readonly language = inject(LanguageService);
+
 
   protected readonly countries = COUNTRIES;
+  protected readonly languageNames = LANGUAGE_NAMES;
+  protected readonly supportedLanguages = ['tr', 'en', 'de', 'es', 'fr', 'ar'] as SupportedLanguage[];
+
+  changeLanguage(lang: SupportedLanguage): void {
+    this.language.setLanguage(lang);
+  }
+
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -88,7 +96,7 @@ export class Register {
         phone: `${this.dialCode()} ${phone}`.trim(),
         language: this.language.current(),
       });
-      await this.router.navigateByUrl('/dashboard');
+      await this.router.navigateByUrl('/onboarding/wizard');
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
@@ -102,7 +110,8 @@ export class Register {
     this.googleSubmitting.set(true);
     try {
       await this.auth.signInWithGoogle();
-      await this.router.navigateByUrl('/dashboard');
+      await this.router.navigateByUrl('/onboarding/wizard');
+
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {

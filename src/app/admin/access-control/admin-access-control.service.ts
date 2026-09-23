@@ -7,11 +7,13 @@ import {
   query,
   where,
   addDoc,
+  deleteDoc,
+  getDocs,
   serverTimestamp,
   Timestamp,
 } from '@angular/fire/firestore';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, of, switchMap } from 'rxjs';
+import { Observable, catchError, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserProfile } from '../../core/models/user-profile.model';
 import {
@@ -21,6 +23,24 @@ import {
   AccessStatus,
   CreateAccessLogInput,
 } from '../../core/models/access-log.model';
+
+export type TurnstileConnectionProtocol = 'reverse_tunnel' | 'mqtt' | 'websocket';
+
+export interface TurnstileGate {
+  id?: string;
+  tenantId: string;
+  name: string;
+  location: string;
+  direction: AccessDirection | 'both';
+  status: 'online' | 'busy' | 'offline';
+  readerType: string;
+  connectionProtocol: TurnstileConnectionProtocol;
+  endpoint: string;
+  topicOrChannel?: string;
+  port?: number | null;
+  secretToken?: string | null;
+  createdAt?: any;
+}
 
 export interface GateScanResult {
   allowed: boolean;
@@ -37,10 +57,108 @@ export class AdminAccessControlService {
   private readonly firestore = inject(Firestore);
   private readonly auth = inject(AuthService);
 
+  watchGates(): Observable<TurnstileGate[]> {
+    return toObservable(this.auth.profile).pipe(
+      switchMap((profile) => {
+        const tenantId = profile?.tenantId || profile?.uid;
+        if (!tenantId) {
+          return of([] as TurnstileGate[]);
+        }
+
+        const q = query(
+          collection(this.firestore, 'turnstile_gates'),
+          where('tenantId', '==', tenantId),
+        );
+
+        return (collectionData(q, { idField: 'id' }) as Observable<TurnstileGate[]>).pipe(
+          catchError((err) => {
+            console.warn('OdivonGYM: turnikeler dinlenirken hata:', err);
+            return of([] as TurnstileGate[]);
+          }),
+        );
+      }),
+    );
+  }
+
+  async createGate(input: Omit<TurnstileGate, 'id' | 'tenantId' | 'createdAt'>): Promise<string> {
+    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
+    if (!tenantId) {
+      throw new Error('Salon bilgisi bulunamadı');
+    }
+
+    const cleanData: Record<string, any> = {
+      tenantId,
+      createdAt: serverTimestamp(),
+    };
+    for (const [k, v] of Object.entries(input)) {
+      if (v !== undefined) {
+        cleanData[k] = v;
+      }
+    }
+
+    const docRef = await addDoc(collection(this.firestore, 'turnstile_gates'), cleanData);
+    return docRef.id;
+  }
+
+  async deleteGate(gateId: string): Promise<void> {
+    const docRef = doc(this.firestore, 'turnstile_gates', gateId);
+    await deleteDoc(docRef);
+  }
+
+  async seedDefaultGatesIfEmpty(): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
+    if (!tenantId) return;
+
+    const q = query(
+      collection(this.firestore, 'turnstile_gates'),
+      where('tenantId', '==', tenantId),
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) return;
+
+    const defaults: Omit<TurnstileGate, 'id' | 'tenantId' | 'createdAt'>[] = [
+      {
+        name: 'Turnike 01 (Ana Giriş)',
+        location: 'Giriş Holü - Turnike A',
+        direction: 'in',
+        status: 'online',
+        readerType: 'Dinamik QR + NFC Mifare',
+        connectionProtocol: 'websocket',
+        endpoint: 'wss://turnstile-gateway.odivon.com/ws/gate-01',
+        port: 8080,
+      },
+      {
+        name: 'Turnike 02 (Ana Çıkış)',
+        location: 'Giriş Holü - Turnike B',
+        direction: 'out',
+        status: 'online',
+        readerType: 'Dinamik QR + Optik Sensör',
+        connectionProtocol: 'mqtt',
+        endpoint: 'mqtt://broker.odivon.com:1883',
+        topicOrChannel: `odivon/${tenantId}/gate-02/events`,
+        port: 1883,
+      },
+      {
+        name: 'Turnike 03 (VIP / Studio)',
+        location: '2. Kat Pilates & Reformer Alanı',
+        direction: 'both',
+        status: 'online',
+        readerType: 'Dinamik QR Okuyucu',
+        connectionProtocol: 'reverse_tunnel',
+        endpoint: 'edge-tunnel://gate03.internal-mesh:2201',
+        port: 2201,
+      },
+    ];
+
+    for (const gate of defaults) {
+      await this.createGate(gate);
+    }
+  }
+
   watchLogs(): Observable<AccessLog[]> {
     return toObservable(this.auth.profile).pipe(
       switchMap((profile) => {
-        const tenantId = profile?.tenantId;
+        const tenantId = profile?.tenantId || profile?.uid;
 
         if (!tenantId) {
           return of([] as AccessLog[]);
@@ -51,13 +169,18 @@ export class AdminAccessControlService {
           where('tenantId', '==', tenantId),
         );
 
-        return collectionData(q, { idField: 'id' }) as Observable<AccessLog[]>;
+        return (collectionData(q, { idField: 'id' }) as Observable<AccessLog[]>).pipe(
+          catchError((err) => {
+            console.warn('OdivonGYM: turnike logları dinlenirken hata:', err);
+            return of([] as AccessLog[]);
+          }),
+        );
       }),
     );
   }
 
   async logAccess(input: CreateAccessLogInput): Promise<string> {
-    const tenantId = this.auth.profile()?.tenantId;
+    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
 
     if (!tenantId) {
       throw new Error('Salon bilgisi bulunamadı');

@@ -11,6 +11,8 @@ import {
 } from '@angular/fire/firestore';
 import { DEFAULT_DISCIPLINES_PRESETS } from '../models/sports-discipline.model';
 import { DEFAULT_EQUIPMENT_PRESETS } from '../models/gym-equipment.model';
+import { DEFAULT_SUPPLIER_CATEGORIES } from '../models/supplier.model';
+import { DEFAULT_STOCK_CATEGORIES } from '../models/stock-category.model';
 
 @Injectable({ providedIn: 'root' })
 export class TenantOnboardingService {
@@ -226,6 +228,60 @@ export class TenantOnboardingService {
             id: pRef.id,
             tenantId,
             ...pkg,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        await batch.commit();
+      }
+
+      // 6. TEDARİKÇİ KATEGORİLERİ (SUPPLIER CATEGORIES)
+      const suppCatSnap = await getDocs(
+        query(collection(this.firestore, 'gym_supplier_categories'), where('tenantId', '==', tenantId)),
+      );
+
+      if (suppCatSnap.empty) {
+        const batch = writeBatch(this.firestore);
+        const now = serverTimestamp();
+
+        for (const cat of DEFAULT_SUPPLIER_CATEGORIES) {
+          const cRef = doc(collection(this.firestore, 'gym_supplier_categories'));
+          batch.set(cRef, {
+            id: cRef.id,
+            tenantId,
+            key: cat.key,
+            name: cat.name,
+            colorTag: cat.colorTag || 'indigo',
+            badgeClass: cat.badgeClass || '',
+            description: cat.description || '',
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        await batch.commit();
+      }
+
+      // 7. STOK & ÜRÜN KATEGORİLERİ (STOCK CATEGORIES)
+      const stockCatSnap = await getDocs(
+        query(collection(this.firestore, 'gym_stock_categories'), where('tenantId', '==', tenantId)),
+      );
+
+      if (stockCatSnap.empty) {
+        const batch = writeBatch(this.firestore);
+        const now = serverTimestamp();
+
+        for (const cat of DEFAULT_STOCK_CATEGORIES) {
+          const cRef = doc(collection(this.firestore, 'gym_stock_categories'));
+          batch.set(cRef, {
+            id: cRef.id,
+            tenantId,
+            key: cat.key,
+            name: cat.name,
+            icon: cat.icon || 'inventory_2',
+            colorTag: cat.colorTag || 'indigo',
+            description: cat.description || '',
+            isDefault: true,
+            order: cat.order || 1,
             createdAt: now,
             updatedAt: now,
           });

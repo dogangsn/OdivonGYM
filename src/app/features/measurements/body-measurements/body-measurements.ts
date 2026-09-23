@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { MeasurementsService } from '../measurements.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../../core/services/alert.service';
 import { MeasurementDialog } from './measurement-dialog';
 import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 
@@ -81,6 +82,7 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 export class BodyMeasurements {
   private readonly service = inject(MeasurementsService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   private readonly rawMeasurements = toSignal(this.service.watchMeasurements(), { initialValue: [] as BodyMeasurement[] });
   protected readonly measurements = computed(() => sortDesc(this.rawMeasurements(), (m) => m.date));
@@ -98,12 +100,12 @@ export class BodyMeasurements {
   }
 
   async deleteMeasurement(id: string): Promise<void> {
-    if (confirm('Bu ölçümü silmek istediğinizden emin misiniz?')) {
+    if (await this.alertService.deleteConfirm('Vücut Ölçümü')) {
       try {
         await this.service.deleteMeasurement(id);
-        this.snackBar.open('Ölçüm silindi', 'Kapat', { duration: 2000 });
+        this.alertService.toastSuccess('Ölçüm silindi.');
       } catch {
-        this.snackBar.open('Hata oluştu', 'Kapat', { duration: 3000 });
+        this.alertService.toastError('Hata oluştu.');
       }
     }
   }

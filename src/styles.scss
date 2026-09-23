@@ -88,3 +88,236 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ==========================================================================
+   SweetAlert2 - Odivon SaaS Theme
+   ========================================================================== */
+
+// Prevent SweetAlert2 from collapsing body/html height and breaking 100vh SPA layout
+html.swal2-shown,
+html.swal2-height-auto,
+body.swal2-shown,
+body.swal2-height-auto {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+div.swal2-container {
+  z-index: 10000 !important;
+
+  // Backdrop with glassmorphic blur
+  &.swal2-backdrop-show {
+    background: rgba(15, 23, 42, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  // Popup Modal
+  .swal2-popup {
+    background: var(--odivon-bg-card) !important;
+    color: var(--odivon-text-default) !important;
+    border: 1px solid var(--odivon-border) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35) !important;
+    padding: 1.75rem !important;
+    font-family: inherit !important;
+
+    // Title
+    .swal2-title {
+      font-size: 1.25rem !important;
+      font-weight: 800 !important;
+      color: var(--odivon-text-default) !important;
+      letter-spacing: -0.02em !important;
+      padding: 0.5rem 1rem 0 !important;
+    }
+
+    // HTML / Text content
+    .swal2-html-container {
+      font-size: 0.875rem !important;
+      line-height: 1.5 !important;
+      color: var(--odivon-text-secondary) !important;
+      margin: 0.75rem 1rem 1.25rem !important;
+    }
+
+    // Actions container
+    .swal2-actions {
+      margin-top: 1.25rem !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+      justify-content: flex-end !important;
+      padding: 0 0.5rem !important;
+
+      button {
+        font-family: inherit !important;
+        font-size: 0.8125rem !important;
+        font-weight: 700 !important;
+        padding: 0.625rem 1.25rem !important;
+        border-radius: 0.75rem !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+
+        &:focus {
+          box-shadow: none !important;
+        }
+      }
+
+      // Default Confirm button (Odivon Gradient)
+      .swal2-confirm.odivon-btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        &:active {
+          transform: translateY(0) !important;
+        }
+      }
+
+      // Destructive Confirm button (Red / Rose Gradient)
+      .swal2-confirm.odivon-btn-danger {
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 16px rgba(244, 63, 94, 0.35) !important;
+        }
+
+        &:active {
+          transform: translateY(0) !important;
+        }
+      }
+
+      // Cancel button
+      .swal2-cancel.odivon-btn-cancel {
+        background: transparent !important;
+        color: var(--odivon-text-secondary) !important;
+        border: 1px solid var(--odivon-border) !important;
+
+        &:hover {
+          background: var(--odivon-bg-hover) !important;
+          color: var(--odivon-text-default) !important;
+        }
+      }
+    }
+
+    // Icons
+    .swal2-icon {
+      border-width: 3px !important;
+      margin: 1rem auto 0.5rem !important;
+
+      &.swal2-warning {
+        border-color: #f59e0b !important;
+        color: #f59e0b !important;
+      }
+
+      &.swal2-error {
+        border-color: #f43f5e !important;
+        color: #f43f5e !important;
+
+        [class^='swal2-x-mark-line'] {
+          background-color: #f43f5e !important;
+        }
+      }
+
+      &.swal2-success {
+        border-color: #10b981 !important;
+        color: #10b981 !important;
+
+        .swal2-success-ring {
+          border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        [class^='swal2-success-line'] {
+          background-color: #10b981 !important;
+        }
+      }
+
+      &.swal2-info {
+        border-color: #6366f1 !important;
+        color: #6366f1 !important;
+      }
+    }
+
+    // Toast Style
+    &.swal2-toast {
+      padding: 0.75rem 1rem !important;
+      border-radius: 1rem !important;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15) !important;
+
+      .swal2-title {
+        font-size: 0.875rem !important;
+        font-weight: 700 !important;
+        padding: 0 !important;
+      }
+
+      .swal2-icon {
+        margin: 0 0.5rem 0 0 !important;
+        transform: scale(0.8) !important;
+      }
+    }
+  }
+}
+
+// ==============================================================================
+// ODIVON UI: MatMenu Theme & Dropdown Enhancement
+// ==============================================================================
+.mat-mdc-menu-panel {
+  border-radius: 1.25rem !important;
+  background-color: var(--odivon-bg-card) !important;
+  border: 1px solid var(--odivon-border) !important;
+  box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  overflow: hidden !important;
+  min-width: 200px !important;
+
+  .mat-mdc-menu-content {
+    padding: 6px !important;
+    background: transparent !important;
+  }
+
+  .mat-mdc-menu-item {
+    border-radius: 0.75rem !important;
+    margin: 2px 0 !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: var(--odivon-text-default) !important;
+    transition: background-color 0.12s ease, color 0.12s ease !important;
+
+    .mat-icon {
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+      margin-right: 10px !important;
+      color: var(--odivon-text-secondary) !important;
+    }
+
+    &:hover:not([disabled]) {
+      background-color: var(--odivon-bg-hover) !important;
+      color: var(--odivon-primary) !important;
+
+      .mat-icon {
+        color: var(--odivon-primary) !important;
+      }
+    }
+
+    &[disabled] {
+      opacity: 0.45 !important;
+    }
+  }
+}
+
+

@@ -18,6 +18,11 @@ export const adminRoutes: Routes = [
     title: 'Üye Kayıtları · OdivonGYM',
   },
   {
+    path: 'guest-members',
+    loadComponent: () => import('./guest-members/admin-guest-members').then((m) => m.AdminGuestMembers),
+    title: 'Misafir Üyeler · OdivonGYM',
+  },
+  {
     path: 'branches',
     loadComponent: () => import('./branches/admin-branches').then((m) => m.AdminBranches),
     title: 'Şubeler · OdivonGYM',
@@ -38,9 +43,39 @@ export const adminRoutes: Routes = [
     title: 'Branşlar & Donanım · OdivonGYM',
   },
   {
+    path: 'definitions',
+    loadComponent: () => import('./disciplines/admin-disciplines').then((m) => m.AdminDisciplines),
+    title: 'Tanımlar & Branşlar · OdivonGYM',
+  },
+  {
+    path: 'stock-categories',
+    loadComponent: () => import('./disciplines/admin-disciplines').then((m) => m.AdminDisciplines),
+    title: 'Stok & Ürün Kategorileri · OdivonGYM',
+  },
+  {
+    path: 'sales',
+    loadComponent: () => import('./sales/admin-sales').then((m) => m.AdminSales),
+    title: 'Paket & Market Satışı · OdivonGYM',
+  },
+  {
+    path: 'pos',
+    loadComponent: () => import('./pos/admin-pos').then((m) => m.AdminPos),
+    title: 'Hızlı Kasa & POS · OdivonGYM',
+  },
+  {
+    path: 'products',
+    loadComponent: () => import('./products/admin-products').then((m) => m.AdminProducts),
+    title: 'Ürün & Stok Yönetimi · OdivonGYM',
+  },
+  {
+    path: 'reports',
+    loadComponent: () => import('./reports/admin-reports').then((m) => m.AdminReports),
+    title: 'Satış & Kasa Raporları · OdivonGYM',
+  },
+  {
     path: 'shop',
-    loadComponent: () => import('./shop/admin-shop').then((m) => m.AdminShop),
-    title: 'Market Satışları · OdivonGYM',
+    redirectTo: 'sales',
+    pathMatch: 'full',
   },
   {
     path: 'accounting',

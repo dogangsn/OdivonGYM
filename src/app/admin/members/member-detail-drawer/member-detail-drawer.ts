@@ -8,11 +8,13 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../../core/services/alert.service';
 import { UserProfile, MembershipStatus } from '../../../core/models/user-profile.model';
 import { WalletTransaction } from '../../../core/models/wallet-transaction.model';
 import { AccessLog } from '../../../core/models/access-log.model';
@@ -77,6 +79,7 @@ export class MemberDetailDrawer {
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   readonly open = input(false);
   readonly member = input<UserProfile | null>(null);
@@ -86,6 +89,32 @@ export class MemberDetailDrawer {
   readonly walletRequested = output<UserProfile>();
 
   protected readonly activeTab = signal<MemberDetailTab>('measurements');
+  protected readonly isExpanded = signal(false);
+
+  // Sub-modal signals
+  protected readonly showCardModal = signal(false);
+  protected readonly showQrModal = signal(false);
+  protected readonly showTransferModal = signal(false);
+  protected readonly showRenewModal = signal(false);
+
+  // Card assignment state
+  protected readonly cardRfid = signal('');
+  protected readonly cardFee = signal(150);
+  protected readonly cardPaid = signal(true);
+  protected readonly savingCard = signal(false);
+
+  // Subscription transfer state
+  protected readonly allMembers = toSignal(this.membersService.watchMembers(), { initialValue: [] });
+  protected readonly transferTargetUid = signal('');
+  protected readonly transferReason = signal('');
+  protected readonly savingTransfer = signal(false);
+
+  // Quick renewal state
+  protected readonly renewPackageName = signal('Aylık Standart');
+  protected readonly renewDurationDays = signal(30);
+  protected readonly renewPrice = signal(1250);
+  protected readonly renewPaymentMethod = signal<'cash' | 'card' | 'transfer'>('cash');
+  protected readonly savingRenew = signal(false);
 
   // Telemetry signals
   protected readonly walletTransactions = signal<WalletTransaction[]>([]);
@@ -452,13 +481,13 @@ export class MemberDetailDrawer {
   }
 
   async deleteMeasurement(id: string): Promise<void> {
-    if (!confirm('Bu ölçüm kaydını silmek istediğinize emin misiniz?')) return;
+    if (!(await this.alertService.deleteConfirm('Ölçüm Kaydı'))) return;
     try {
       await this.membersService.deleteBodyMeasurement(id);
-      this.snackBar.open('Ölçüm kaydı silindi.', 'Tamam', { duration: 3000 });
+      this.alertService.toastSuccess('Ölçüm kaydı silindi.');
     } catch (err) {
       console.error(err);
-      this.snackBar.open('Silme işlemi başarısız oldu.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Silme işlemi başarısız oldu.');
     }
   }
 
@@ -493,13 +522,13 @@ export class MemberDetailDrawer {
   }
 
   async deleteWaterLog(id: string): Promise<void> {
-    if (!confirm('Bu su kaydını silmek istediğinize emin misiniz?')) return;
+    if (!(await this.alertService.deleteConfirm('Su Tüketim Kaydı'))) return;
     try {
       await this.membersService.deleteWaterLog(id);
-      this.snackBar.open('Su kaydı silindi.', 'Tamam', { duration: 2500 });
+      this.alertService.toastSuccess('Su kaydı silindi.');
     } catch (err) {
       console.error(err);
-      this.snackBar.open('Silme başarısız.', 'Kapat', { duration: 2500 });
+      this.alertService.toastError('Silme başarısız.');
     }
   }
 
@@ -619,13 +648,13 @@ export class MemberDetailDrawer {
   }
 
   async deleteWorkoutPlan(id: string): Promise<void> {
-    if (!confirm('Bu antrenman programını silmek istediğinize emin misiniz?')) return;
+    if (!(await this.alertService.deleteConfirm('Antrenman Programı'))) return;
     try {
       await this.membersService.deleteWorkoutPlan(id);
-      this.snackBar.open('Antrenman programı silindi.', 'Tamam', { duration: 2500 });
+      this.alertService.toastSuccess('Antrenman programı silindi.');
     } catch (err) {
       console.error(err);
-      this.snackBar.open('Silme işlemi başarısız.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Silme işlemi başarısız.');
     }
   }
 
@@ -691,13 +720,13 @@ export class MemberDetailDrawer {
   }
 
   async deleteMemberDoc(id: string): Promise<void> {
-    if (!confirm('Bu evrak kaydını silmek istediğinize emin misiniz?')) return;
+    if (!(await this.alertService.deleteConfirm('Evrak / Lisans Kaydı'))) return;
     try {
       await this.membersService.deleteMemberDocument(id);
-      this.snackBar.open('Evrak kaydı silindi.', 'Tamam', { duration: 2500 });
+      this.alertService.toastSuccess('Evrak kaydı silindi.');
     } catch (err) {
       console.error(err);
-      this.snackBar.open('Silme işlemi başarısız.', 'Kapat', { duration: 2500 });
+      this.alertService.toastError('Silme işlemi başarısız.');
     }
   }
 
@@ -740,6 +769,138 @@ export class MemberDetailDrawer {
   getMuscleGroupLabel(group?: MuscleGroup): string {
     if (!group) return 'Tüm Vücut';
     return this.muscleGroupLabels[group] || group;
+  }
+
+  toggleExpand(): void {
+    this.isExpanded.update((v) => !v);
+  }
+
+  // --- KART TANIMLAMA & DEPOZİTO METOTLARI ---
+  openCardModal(): void {
+    const m = this.member();
+    this.cardRfid.set(m?.rfidCardNumber || '');
+    this.cardFee.set(m?.cardDepositFee || 150);
+    this.cardPaid.set(m?.cardDepositPaid ?? false);
+    this.showCardModal.set(true);
+  }
+
+  async saveCardAssignment(): Promise<void> {
+    const m = this.member();
+    if (!m?.uid) return;
+    if (!this.cardRfid().trim()) {
+      this.snackBar.open('Lütfen RFID kart numarasını girin.', 'Kapat', { duration: 2500 });
+      return;
+    }
+
+    this.savingCard.set(true);
+    try {
+      await this.membersService.updateCardAssignment(m.uid, m.displayName, {
+        rfidCardNumber: this.cardRfid().trim(),
+        cardDepositFee: this.cardFee(),
+        cardDepositPaid: this.cardPaid(),
+      });
+      this.alertService.toastSuccess('Turnike kartı tanımlandı ve kaydedildi.');
+      this.showCardModal.set(false);
+    } catch (err) {
+      console.error(err);
+      this.alertService.toastError('Kart tanımlanamadı.');
+    } finally {
+      this.savingCard.set(false);
+    }
+  }
+
+  // --- MOBİL QR EKRANI ---
+  openQrModal(): void {
+    this.showQrModal.set(true);
+  }
+
+  // --- ABONELİK DEVRETME METOTLARI ---
+  openTransferModal(): void {
+    this.transferTargetUid.set('');
+    this.transferReason.set('');
+    this.showTransferModal.set(true);
+  }
+
+  async saveTransfer(): Promise<void> {
+    const from = this.member();
+    if (!from?.uid) return;
+    const targetUid = this.transferTargetUid();
+    if (!targetUid) {
+      this.snackBar.open('Lütfen devredilecek üyeyi seçin.', 'Kapat', { duration: 2500 });
+      return;
+    }
+
+    const target = this.allMembers().find((u) => u.uid === targetUid);
+    if (!target) return;
+
+    if (
+      !(await this.alertService.actionConfirm(
+        'Abonelik Devri Onayı',
+        `"${from.displayName}" kullanıcısının kalan aboneliği "${target.displayName}" kullanıcısına devredilecek. Bu işlem geri alınamaz. Devam edilsin mi?`,
+        'Evet, Devret',
+      ))
+    ) {
+      return;
+    }
+
+    this.savingTransfer.set(true);
+    try {
+      await this.membersService.transferSubscription(from, target.uid, target.displayName, this.transferReason());
+      this.alertService.toastSuccess('Abonelik başarıyla devredildi.');
+      this.showTransferModal.set(false);
+      this.close();
+    } catch (err) {
+      console.error(err);
+      this.alertService.toastError('Abonelik devredilemedi.');
+    } finally {
+      this.savingTransfer.set(false);
+    }
+  }
+
+  // --- HIZLI ABONELİK YENİLEME METOTLARI ---
+  openRenewModal(): void {
+    this.renewPackageName.set(this.member()?.packageLabel || 'Aylık Standart');
+    this.renewDurationDays.set(30);
+    this.renewPrice.set(1250);
+    this.showRenewModal.set(true);
+  }
+
+  onRenewPackageSelect(name: string, days: number, price: number): void {
+    this.renewPackageName.set(name);
+    this.renewDurationDays.set(days);
+    this.renewPrice.set(price);
+  }
+
+  async saveRenew(): Promise<void> {
+    const m = this.member();
+    if (!m?.uid) return;
+
+    if (
+      !(await this.alertService.actionConfirm(
+        'Abonelik Yenileme Onayı',
+        `"${m.displayName}" için ${this.renewPackageName()} (${this.renewDurationDays()} gün) ${this.renewPrice()} ₺ tutarında yenilenecektir. Kasaya gelir kaydı işlenecektir. Onaylıyor musunuz?`,
+        'Evet, Yenile',
+      ))
+    ) {
+      return;
+    }
+
+    this.savingRenew.set(true);
+    try {
+      await this.membersService.renewMembership(m, {
+        packageName: this.renewPackageName(),
+        durationDays: this.renewDurationDays(),
+        price: this.renewPrice(),
+        paymentMethod: this.renewPaymentMethod(),
+      });
+      this.alertService.toastSuccess('Abonelik yenilendi ve muhasebe kaydı oluşturuldu.');
+      this.showRenewModal.set(false);
+    } catch (err) {
+      console.error(err);
+      this.alertService.toastError('Yenileme işlemi başarısız.');
+    } finally {
+      this.savingRenew.set(false);
+    }
   }
 }
 

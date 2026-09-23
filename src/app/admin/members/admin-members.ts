@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { MemberFormDialog } from './member-form-dialog/member-form-dialog';
 import { MemberDetailDrawer } from './member-detail-drawer/member-detail-drawer';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { AlertService } from '../../core/services/alert.service';
 
 const STATUS_LABEL: Record<MembershipStatus, string> = {
   trial: 'Deneme',
@@ -48,6 +49,7 @@ const GENDER_LABEL: Record<string, string> = {
 export class AdminMembers {
   private readonly membersService = inject(AdminMembersService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
   private readonly router = inject(Router);
   private readonly saasSub = inject(SaasSubscriptionService);
   protected readonly branchContext = inject(BranchContextService);
@@ -191,16 +193,16 @@ export class AdminMembers {
   }
 
   async deleteMember(member: UserProfile): Promise<void> {
-    const ok = confirm(
-      `"${member.displayName}" üyesinin profilini silmek istediğine emin misin?\n\n` +
-        'Üyenin giriş hesabı (Firebase Auth) silinmez; profili silinen üye artık salon verilerine erişemez.',
+    const ok = await this.alertService.deleteConfirm(
+      member.displayName,
+      `<strong>"${member.displayName}"</strong> üyesinin profilini silmek istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Üyenin giriş hesabı silinmez; profili silinen üye artık salon verilerine erişemez.</span>`,
     );
     if (!ok) return;
     try {
       await this.membersService.deleteMember(member.uid);
-      this.snackBar.open('Üye profili silindi.', 'Kapat', { duration: 2500 });
+      this.alertService.toastSuccess('Üye profili silindi.');
     } catch {
-      this.snackBar.open('Üye silinemedi, tekrar dene.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Üye silinemedi, tekrar dene.');
     }
   }
 

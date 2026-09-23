@@ -121,7 +121,7 @@
 
           <!-- Kategori Hapları -->
           <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scroll">
-            @for (cat of categories; track cat.id) {
+            @for (cat of categories(); track cat.id) {
               <button
                 type="button"
                 (click)="selectedCategory.set(cat.id)"
@@ -577,11 +577,11 @@
       <app-field label="Kategori" [required]="true" [error]="productErr('category', { required: 'Kategori gerekli.' })">
         <input type="text" formControlName="category" class="odv-input" list="shop-categories" />
         <datalist id="shop-categories">
-          <option value="protein">Protein & Tozlar</option>
-          <option value="bcaa">BCAA & Pre-Workout</option>
-          <option value="drink">İçecek & Su</option>
-          <option value="bar">Bar & Atıştırmalık</option>
-          <option value="accessory">Aksesuar & Shaker</option>
+          @for (c of categories(); track c.id) {
+            @if (c.id !== 'all') {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          }
         </datalist>
       </app-field>
       <app-field label="Satış Fiyatı (₺)" [required]="true" [error]="productErr('price', { required: 'Fiyat gerekli.', min: 'Negatif olamaz.' })">

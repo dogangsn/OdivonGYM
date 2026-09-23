@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../../core/services/alert.service';
 import { PtAppointment } from '../../../core/models/pt-appointment.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { Field } from '../../../shared/ui/field';
@@ -135,6 +136,7 @@ export class PtAppointments {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(AppointmentsService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   protected readonly durations = [30, 45, 60, 90];
   protected readonly statusLabel = STATUS_LABEL;
@@ -223,22 +225,28 @@ export class PtAppointments {
   }
 
   protected async cancel(appointment: PtAppointment): Promise<void> {
-    if (!confirm('Bu randevuyu iptal etmek istediğine emin misin?')) return;
+    const ok = await this.alertService.actionConfirm(
+      'Randevu İptali',
+      'Bu randevuyu iptal etmek istediğinize emin misiniz?',
+      'Randevuyu İptal Et',
+      'warning',
+    );
+    if (!ok) return;
     try {
       await this.service.cancelAppointment(appointment.id);
-      this.snackBar.open('Randevu iptal edildi.', 'Kapat', { duration: 2500 });
+      this.alertService.toastSuccess('Randevu iptal edildi.');
     } catch {
-      this.snackBar.open('İptal edilemedi, tekrar dene.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('İptal edilemedi, tekrar dene.');
     }
   }
 
   protected async remove(appointment: PtAppointment): Promise<void> {
-    if (!confirm('Bu randevu kaydını silmek istediğine emin misin?')) return;
+    if (!(await this.alertService.deleteConfirm('Randevu Kaydı'))) return;
     try {
       await this.service.deleteAppointment(appointment.id);
-      this.snackBar.open('Kayıt silindi.', 'Kapat', { duration: 2500 });
+      this.alertService.toastSuccess('Kayıt silindi.');
     } catch {
-      this.snackBar.open('Kayıt silinemedi, tekrar dene.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Kayıt silinemedi, tekrar dene.');
     }
   }
 }

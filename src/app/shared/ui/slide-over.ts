@@ -13,7 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="closed.emit()"></div>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="onCancel()"></div>
       <div
         class="font-sans fixed inset-y-0 right-0 max-w-lg w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800"
       >
@@ -21,10 +21,10 @@ import { MatIconModule } from '@angular/material/icon';
           <h3 class="text-lg font-bold text-slate-900 dark:text-white m-0">{{ title() }}</h3>
           <button
             type="button"
-            (click)="closed.emit()"
-            class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 flex items-center justify-center cursor-pointer"
+            (click)="onCancel()"
+            class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center cursor-pointer border-none bg-transparent"
           >
-            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+            <mat-icon class="icon-size-5">close</mat-icon>
           </button>
         </div>
 
@@ -40,7 +40,7 @@ import { MatIconModule } from '@angular/material/icon';
           <div
             class="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3"
           >
-            <button type="button" (click)="closed.emit()" class="odv-btn-ghost">Vazgeç</button>
+            <button type="button" (click)="onCancel()" class="odv-btn-ghost">Vazgeç</button>
             <button type="submit" [disabled]="submitting()" class="odv-btn-primary">
               {{ submitting() ? 'Kaydediliyor…' : submitLabel() }}
             </button>
@@ -57,11 +57,20 @@ export class SlideOver {
   readonly submitting = input(false);
   readonly errorMessage = input('');
 
+  // Support both closed/close and submitted/save outputs
   readonly closed = output<void>();
+  readonly close = output<void>();
   readonly submitted = output<void>();
+  readonly save = output<void>();
 
   protected onSubmit(event: Event): void {
     event.preventDefault();
     this.submitted.emit();
+    this.save.emit();
+  }
+
+  protected onCancel(): void {
+    this.closed.emit();
+    this.close.emit();
   }
 }

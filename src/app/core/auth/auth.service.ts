@@ -232,15 +232,17 @@ export class AuthService {
       name: tenantName.trim(),
       slug: `${slugify(tenantName)}-${tenantRef.id.slice(0, 6)}`,
       ownerUid: uid,
+      onboardingCompleted: false,
       createdAt: now,
     });
 
     await setDoc(doc(this.firestore, 'users', uid), {
       uid,
       tenantId: tenantRef.id,
-      role: 'admin',
+      role: 'owner',
       membershipStatus: 'trial',
       trialStartedAt: now,
+
       trialEndsAt,
       email: profile.email,
       displayName: profile.displayName,

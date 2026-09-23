@@ -1,0 +1,355 @@
+<div class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
+  <!-- Ambient background glow -->
+  <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Top Logo & Step Progress -->
+  <header class="max-w-4xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+    <div class="flex items-center gap-3">
+      <app-logo-mark [size]="36" />
+      <div>
+        <span class="font-extrabold text-xl tracking-tight text-white block">OdivonGYM</span>
+        <span class="text-xs text-indigo-400 font-semibold">Salon Kurulum Sihirbazı</span>
+      </div>
+    </div>
+
+    <!-- Stepper Indicator -->
+    <div class="flex items-center gap-2">
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 1 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+      >
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">1</span>
+        <span>Salon Bilgileri</span>
+      </div>
+      <div class="w-4 h-0.5 bg-slate-700"></div>
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 2 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+      >
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">2</span>
+        <span>Şube</span>
+      </div>
+      <div class="w-4 h-0.5 bg-slate-700"></div>
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 3 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+      >
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">3</span>
+        <span>İlk Antrenör</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Step Content Card -->
+  <main class="max-w-2xl w-full mx-auto my-8 relative z-10">
+    <div class="bg-slate-800/90 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl">
+
+      <!-- ================= STEP 1: SALON BİLGİLERİ ================= -->
+      @if (currentStep() === 1) {
+        <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">1. Adım</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">Salon Temel Bilgileri</h2>
+            <p class="text-xs text-slate-400 leading-relaxed m-0">
+              Salonunuzun adını, açık olduğu günleri ve açılış-kapanış saatlerini belirleyin.
+            </p>
+          </div>
+
+          <form [formGroup]="gymForm" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Salon Adı *
+              </label>
+              <div class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white focus-within:border-indigo-500">
+                <mat-icon class="text-slate-400 text-lg">storefront</mat-icon>
+                <input
+                  type="text"
+                  formControlName="name"
+                  placeholder="Örn: Odivon Fitness & Fight Club"
+                  class="bg-transparent border-none outline-none text-sm w-full text-white placeholder-slate-500"
+                />
+              </div>
+            </div>
+
+            <!-- Açık Olduğu Günler -->
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                Salonun Açık Olduğu Günler *
+              </label>
+              <div class="flex flex-wrap gap-2">
+                @for (d of workingDays(); track d.day) {
+                  <button
+                    type="button"
+                    (click)="toggleDay(d.day)"
+                    class="px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer"
+                    [ngClass]="d.selected ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'"
+                  >
+                    {{ d.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Çalışma Saatleri -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Açılış Saati *
+                </label>
+                <input
+                  type="time"
+                  formControlName="openTime"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Kapanış Saati *
+                </label>
+                <input
+                  type="time"
+                  formControlName="closeTime"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  İletişim Telefonu *
+                </label>
+                <input
+                  type="tel"
+                  formControlName="phone"
+                  placeholder="+90 216 450 1020"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Şehir *
+                </label>
+                <input
+                  type="text"
+                  formControlName="city"
+                  placeholder="İstanbul"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Salon Adresi *
+              </label>
+              <input
+                type="text"
+                formControlName="address"
+                placeholder="Mahalle, Cadde, No"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Salon Logosu (Opsiyonel URL)
+              </label>
+              <input
+                type="url"
+                formControlName="logoUrl"
+                placeholder="https://.../logo.png"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+              />
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- ================= STEP 2: ŞUBE BİLGİLERİ ================= -->
+      @if (currentStep() === 2) {
+        <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">2. Adım</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">İlk Şubenizi Tanımlayın</h2>
+            <p class="text-xs text-slate-400 leading-relaxed m-0">
+              Kulübünüzün ana operasyonlarının yürütüleceği ilk şube veya merkez tesis bilgileri.
+            </p>
+          </div>
+
+          <form [formGroup]="branchForm" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Şube Adı *
+              </label>
+              <input
+                type="text"
+                formControlName="branchName"
+                placeholder="Örn: Kadıköy Merkez Şube"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Maksimum Kapasite (Kişi) *
+                </label>
+                <input
+                  type="number"
+                  formControlName="capacity"
+                  min="10"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Şube Telefonu *
+                </label>
+                <input
+                  type="tel"
+                  formControlName="branchPhone"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Şube Açık Adresi *
+              </label>
+              <textarea
+                formControlName="branchAddress"
+                rows="3"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none resize-none"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- ================= STEP 3: İLK ANTRENÖR / PERSONEL ================= -->
+      @if (currentStep() === 3) {
+        <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">3. Adım (Zorunlu)</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">İlk Antrenör / Eğitmen Kaydı</h2>
+            <p class="text-xs text-slate-400 leading-relaxed m-0">
+              Üye kayıtlarında zorunlu antrenör eşlemesi ve seans yönetimi için ilk antrenörünüzü kaydedin.
+            </p>
+          </div>
+
+          <form [formGroup]="trainerForm" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Antrenör Adı Soyadı *
+              </label>
+              <div class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white focus-within:border-indigo-500">
+                <mat-icon class="text-slate-400 text-lg">person</mat-icon>
+                <input
+                  type="text"
+                  formControlName="displayName"
+                  placeholder="Örn: Mert Demir"
+                  class="bg-transparent border-none outline-none text-sm w-full text-white placeholder-slate-500"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  E-Posta Adresi *
+                </label>
+                <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="antrenor@odivongym.com"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Telefon Numarası *
+                </label>
+                <input
+                  type="tel"
+                  formControlName="phone"
+                  placeholder="+90 532 000 00 00"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Uzmanlık Alanları (Virgülle Ayırın) *
+              </label>
+              <input
+                type="text"
+                formControlName="specialties"
+                placeholder="Fitness, Vücut Geliştirme, Reformer Pilates, Boks"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Rol / Unvan
+              </label>
+              <input
+                type="text"
+                formControlName="notes"
+                placeholder="Baş Antrenör / PT Sorumlusu"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
+              />
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- Bottom Nav Controls -->
+      <div class="mt-8 pt-6 border-t border-slate-700/80 flex items-center justify-between gap-4">
+        @if (currentStep() > 1) {
+          <button
+            type="button"
+            (click)="prevStep()"
+            class="px-5 py-2.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <mat-icon class="text-sm">arrow_back</mat-icon>
+            Geri
+          </button>
+        } @else {
+          <div></div>
+        }
+
+        @if (currentStep() < 3) {
+          <button
+            type="button"
+            (click)="nextStep()"
+            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+          >
+            Devam Et
+            <mat-icon class="text-sm">arrow_forward</mat-icon>
+          </button>
+        } @else {
+          <button
+            type="button"
+            (click)="completeWizard()"
+            [disabled]="submitting()"
+            class="px-8 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/30 disabled:opacity-50"
+          >
+            <mat-icon class="text-sm">{{ submitting() ? 'sync' : 'check_circle' }}</mat-icon>
+            {{ submitting() ? 'Kuruluyor...' : 'Kurulumu Tamamla & Başla' }}
+          </button>
+        }
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-xs text-slate-500 relative z-10">
+    © 2026 OdivonGYM Bulut Salon Yönetim Platformu · Tüm Hakları Saklıdır.
+  </footer>
+</div>

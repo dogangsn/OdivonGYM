@@ -1,0 +1,347 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Header -->
+  <app-page-header
+    title="Ürün & Stok Yönetimi"
+    icon="inventory_2"
+    description="Protein tozları, vitamin barlar, içecekler ve spor ekipmanı stok seviyeleri ve fiyat takibi."
+  >
+    <div actions class="flex items-center gap-2">
+      <button type="button" class="odv-btn-primary" (click)="openCreate()">
+        <mat-icon class="icon-size-4.5">add</mat-icon>
+        <span>Yeni Ürün Ekle</span>
+      </button>
+      <a routerLink="/admin/stock-categories" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">category</mat-icon>
+        <span>Kategorileri Yönet ({{ stockCategories().length }})</span>
+      </a>
+      @if (products().length === 0) {
+        <button
+          type="button"
+          (click)="seedDefaultProducts()"
+          [disabled]="seeding()"
+          class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+        >
+          <mat-icon class="icon-size-4">auto_awesome</mat-icon>
+          <span>{{ seeding() ? 'Yükleniyor…' : 'Örnek Ürünleri Yükle' }}</span>
+        </button>
+      }
+      <a routerLink="/admin/suppliers" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">local_shipping</mat-icon>
+        <span>Tedarikçiler →</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  <!-- 2. KPI Kartları -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <!-- Toplam Ürün Çeşidi -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Ürün Çeşidi</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          {{ products().length }} Çeşit
+        </div>
+        <div class="text-xs font-semibold text-indigo-500 mt-0.5">
+          {{ totalStockUnits() }} Adet Toplam Stok
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">inventory</mat-icon>
+      </div>
+    </div>
+
+    <!-- Toplam Envanter Değeri -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Stok Değeri</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          ₺{{ money(totalStockValue()) }}
+        </div>
+        <div class="text-xs font-semibold text-emerald-500 mt-0.5">
+          Satış Değeri Toplamı
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+        <mat-icon class="icon-size-6">payments</mat-icon>
+      </div>
+    </div>
+
+    <!-- Kritik Stok Alarmı -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Kritik Stok Uyarısı</span>
+        <div class="text-2xl font-black" [class]="lowStockCount() > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'">
+          {{ lowStockCount() }} Ürün
+        </div>
+        <div class="text-xs font-semibold text-slate-400 mt-0.5">
+          {{ lowStockCount() > 0 ? '5 veya daha az kalan ürünler' : 'Tüm stoklar yeterli' }}
+        </div>
+      </div>
+      <div
+        class="w-12 h-12 rounded-2xl flex items-center justify-center"
+        [class]="lowStockCount() > 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+      >
+        <mat-icon class="icon-size-6">warning_amber</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Filtreler & Tablo -->
+  <div class="odv-card space-y-4 p-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <!-- Arama -->
+      <div class="relative flex-1 max-w-sm">
+        <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+        <input
+          type="text"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          placeholder="Ürün adı, barkod (SKU) ara…"
+          class="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        />
+      </div>
+
+      <!-- Kategori Hapları -->
+      <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll">
+        @for (c of filterCategories(); track c.id) {
+          <button
+            type="button"
+            (click)="selectedCategory.set(c.id)"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+            [class]="selectedCategory() === c.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+          >
+            <span>{{ c.icon }}</span>
+            <span>{{ c.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Ürünler Tablosu -->
+    <div class="overflow-x-auto custom-scroll">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <th class="odv-th">Ürün & Kategori</th>
+            <th class="odv-th">Barkod / SKU</th>
+            <th class="odv-th">Mevcut Stok</th>
+            <th class="odv-th">Hızlı Stok Ekle</th>
+            <th class="odv-th">Satış Fiyatı</th>
+            <th class="odv-th">Maliyet</th>
+            <th class="odv-th">Durum</th>
+            <th class="odv-th text-right">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+          @for (p of filteredProducts(); track p.id) {
+            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="odv-td">
+                <p class="font-bold text-slate-900 dark:text-white m-0">{{ p.name }}</p>
+                <div class="flex items-center gap-1.5 mt-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                    <span>{{ getCategoryIcon(p.category) }}</span>
+                    <span>{{ getCategoryLabel(p.category) }}</span>
+                  </span>
+                  @if (p.supplier) {
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500">
+                      • {{ p.supplier }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="odv-td font-mono text-xs text-slate-500 dark:text-slate-400">
+                {{ p.sku }}
+              </td>
+              <td class="odv-td whitespace-nowrap">
+                <span
+                  class="font-black text-sm px-2 py-0.5 rounded-md"
+                  [class]="p.stock <= 5 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300' : 'text-slate-900 dark:text-white'"
+                >
+                  {{ p.stock }} Adet
+                </span>
+              </td>
+              <!-- Hızlı Stok +/- Butonları -->
+              <td class="odv-td">
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    (click)="quickAdjustStock(p, -1)"
+                    title="1 Adet Düş"
+                    class="px-2 py-1 rounded bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-slate-600 text-xs font-bold border-none cursor-pointer"
+                  >
+                    -1
+                  </button>
+                  <button
+                    type="button"
+                    (click)="quickAdjustStock(p, 5)"
+                    title="5 Adet Ekle"
+                    class="px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-600 text-xs font-bold border-none cursor-pointer"
+                  >
+                    +5
+                  </button>
+                  <button
+                    type="button"
+                    (click)="quickAdjustStock(p, 10)"
+                    title="10 Adet Ekle"
+                    class="px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-600 text-xs font-bold border-none cursor-pointer"
+                  >
+                    +10
+                  </button>
+                </div>
+              </td>
+              <td class="odv-td font-black text-slate-900 dark:text-white whitespace-nowrap">
+                ₺{{ money(p.price) }}
+              </td>
+              <td class="odv-td text-slate-500 whitespace-nowrap">
+                ₺{{ money(p.cost || 0) }}
+              </td>
+              <td class="odv-td whitespace-nowrap">
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  [class]="p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'"
+                >
+                  {{ p.status === 'active' ? 'Satışta' : 'Pasif' }}
+                </span>
+              </td>
+              <td class="odv-td text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    (click)="openEdit(p)"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors border-none bg-transparent cursor-pointer"
+                    title="Düzenle"
+                  >
+                    <mat-icon class="icon-size-4.5">edit</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteProduct(p)"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors border-none bg-transparent cursor-pointer"
+                    title="Sil"
+                  >
+                    <mat-icon class="icon-size-4.5">delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="py-12 text-center text-xs text-slate-400">
+                Stokta ürün bulunamadı.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Ürün Ekle / Düzenle Slide-Over -->
+  <app-slide-over
+    [open]="drawerOpen()"
+    [title]="editingProduct() ? 'Ürün Düzenle: ' + (editingProduct()?.name ?? '') : 'Yeni Ürün Ekle'"
+    [submitting]="submitting()"
+    [submitLabel]="editingProduct() ? 'Güncelle' : 'Kaydet'"
+    (closed)="drawerOpen.set(false)"
+    (close)="drawerOpen.set(false)"
+    (submitted)="saveProduct()"
+    (save)="saveProduct()"
+  >
+    <div [formGroup]="form" class="space-y-4">
+      @if (errorMessage()) {
+        <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <app-field label="Ürün Adı *" [error]="fieldErr('name', { required: 'Ürün adı zorunludur' })">
+        <input type="text" formControlName="name" class="odv-input" placeholder="Örn. Optimum Gold Whey 2270g" />
+      </app-field>
+
+      <!-- Barkod / SKU -->
+      <app-field label="Barkod / SKU *" [error]="fieldErr('sku', { required: 'SKU zorunludur' })">
+        <input type="text" formControlName="sku" class="odv-input font-mono" placeholder="PRD-1001" />
+      </app-field>
+
+      <!-- Modern Kategori Seçim Bloğu (Görsel Seçim Kartları) -->
+      <div class="space-y-1.5 pt-1">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400">category</mat-icon>
+            <span>Ürün Kategorisi *</span>
+          </label>
+          <a
+            routerLink="/admin/stock-categories"
+            (click)="drawerOpen.set(false)"
+            class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 cursor-pointer no-underline"
+          >
+            <mat-icon class="icon-size-3">tune</mat-icon>
+            <span>Kategorileri Yönet</span>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          @for (cat of stockCategories(); track cat.id || cat.key) {
+            <button
+              type="button"
+              (click)="selectCategory(cat.key)"
+              class="p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer"
+              [class]="form.controls.category.value === cat.key
+                ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 ring-2 ring-indigo-500/70 shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80'"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-base shrink-0">{{ cat.icon || '📦' }}</span>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-slate-900 dark:text-white truncate m-0 leading-tight">
+                    {{ cat.name }}
+                  </p>
+                  <span class="text-[9px] font-mono text-slate-400 uppercase tracking-wider block">
+                    {{ cat.key }}
+                  </span>
+                </div>
+              </div>
+
+              @if (form.controls.category.value === cat.key) {
+                <div class="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-3">check</mat-icon>
+                </div>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <app-field label="Satış Fiyatı (₺) *" [error]="fieldErr('price', { required: 'Fiyat zorunludur', min: 'Negatif olamaz' })">
+          <input type="number" formControlName="price" class="odv-input" min="0" step="0.5" />
+        </app-field>
+
+        <app-field label="Maliyet / Alış Fiyatı (₺)">
+          <input type="number" formControlName="cost" class="odv-input" min="0" step="0.5" />
+        </app-field>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <app-field label="Mevcut Stok Miktarı *" [error]="fieldErr('stock', { required: 'Stok zorunludur', min: 'Negatif olamaz' })">
+          <input type="number" formControlName="stock" class="odv-input" min="0" />
+        </app-field>
+
+        <app-field label="Durum">
+          <select formControlName="status" class="odv-select">
+            <option value="active">Satışta (Aktif)</option>
+            <option value="inactive">Pasif</option>
+          </select>
+        </app-field>
+      </div>
+
+      <app-field label="Tedarikçi">
+        <input type="text" formControlName="supplier" class="odv-input" placeholder="Örn. Supplementler Dağıtım A.Ş." />
+      </app-field>
+
+      <app-field label="Açıklama">
+        <textarea formControlName="description" class="odv-textarea" rows="2" placeholder="Ürün içerik veya kullanım bilgisi…"></textarea>
+      </app-field>
+    </div>
+  </app-slide-over>
+</div>

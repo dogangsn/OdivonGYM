@@ -47,12 +47,22 @@ export class AdminPackagesService {
     const docRef = await addDoc(collection(this.firestore, 'gym_packages'), {
       tenantId,
       name: input.name,
+      category: input.category || 'Genel Fitness',
       durationDays: input.durationDays,
+      durationType: input.durationType || 'day',
+      durationValue: input.durationValue ?? input.durationDays,
       price: input.price,
       description: input.description || '',
       features: input.features,
       maxFreeze: input.maxFreeze || 0,
       trialEligible: input.trialEligible,
+      allowedDays: input.allowedDays ?? [1, 2, 3, 4, 5, 6, 7],
+      checkInStartTime: input.checkInStartTime || '06:00',
+      checkInEndTime: input.checkInEndTime || '23:00',
+      sessionCount: input.sessionCount ?? null,
+      isUnlimitedSessions: !!input.isUnlimitedSessions,
+      barcode: input.barcode?.trim() || '',
+      isHidden: !!input.isHidden,
       status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -66,12 +76,22 @@ export class AdminPackagesService {
 
     if (input.status !== undefined) updateData.status = input.status;
     if (input.name !== undefined) updateData.name = input.name;
+    if (input.category !== undefined) updateData.category = input.category;
     if (input.durationDays !== undefined) updateData.durationDays = input.durationDays;
+    if (input.durationType !== undefined) updateData.durationType = input.durationType;
+    if (input.durationValue !== undefined) updateData.durationValue = input.durationValue;
     if (input.price !== undefined) updateData.price = input.price;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.features !== undefined) updateData.features = input.features;
     if (input.maxFreeze !== undefined) updateData.maxFreeze = input.maxFreeze;
     if (input.trialEligible !== undefined) updateData.trialEligible = input.trialEligible;
+    if (input.allowedDays !== undefined) updateData.allowedDays = input.allowedDays;
+    if (input.checkInStartTime !== undefined) updateData.checkInStartTime = input.checkInStartTime;
+    if (input.checkInEndTime !== undefined) updateData.checkInEndTime = input.checkInEndTime;
+    if (input.sessionCount !== undefined) updateData.sessionCount = input.sessionCount;
+    if (input.isUnlimitedSessions !== undefined) updateData.isUnlimitedSessions = input.isUnlimitedSessions;
+    if (input.barcode !== undefined) updateData.barcode = input.barcode;
+    if (input.isHidden !== undefined) updateData.isHidden = input.isHidden;
 
     await updateDoc(doc(this.firestore, 'gym_packages', id), updateData);
   }

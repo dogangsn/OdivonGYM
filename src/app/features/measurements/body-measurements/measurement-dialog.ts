@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, output, sign
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MeasurementsService } from '../measurements.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 
 @Component({
@@ -70,6 +71,7 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 export class MeasurementDialog {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(MeasurementsService);
+  private readonly alertService = inject(AlertService);
 
   readonly open = input(false);
   readonly measurement = input<BodyMeasurement | null>(null);
@@ -154,7 +156,7 @@ export class MeasurementDialog {
       }
       this.closed.emit(true);
     } catch {
-      alert('Hata oluştu');
+      await this.alertService.error('İşlem Başarısız', 'Ölçüm kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       this.submitting.set(false);
     }

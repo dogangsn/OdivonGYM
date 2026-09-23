@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { WaterService } from '../water.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../../core/services/alert.service';
 import { WaterLogDialog } from './water-log-dialog';
 import { WaterLog } from '../../../core/models/water-log.model';
 import { formatDate, sortDesc } from '../../../shared/ui/ui-utils';
@@ -117,6 +118,7 @@ import { formatDate, sortDesc } from '../../../shared/ui/ui-utils';
 export class WaterTracker {
   private readonly waterService = inject(WaterService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   private readonly rawLogs = toSignal(this.waterService.watchLogs(), { initialValue: [] as WaterLog[] });
   protected readonly logs = computed(() => sortDesc(this.rawLogs(), (l) => l.date));
@@ -151,12 +153,12 @@ export class WaterTracker {
   }
 
   async deleteLog(id: string): Promise<void> {
-    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+    if (await this.alertService.deleteConfirm('Su Tüketim Kaydı')) {
       try {
         await this.waterService.deleteLog(id);
-        this.snackBar.open('Kayıt silindi', 'Kapat', { duration: 2000 });
+        this.alertService.toastSuccess('Kayıt silindi.');
       } catch {
-        this.snackBar.open('Hata oluştu', 'Kapat', { duration: 3000 });
+        this.alertService.toastError('Hata oluştu.');
       }
     }
   }

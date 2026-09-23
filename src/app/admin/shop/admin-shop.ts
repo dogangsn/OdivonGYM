@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
@@ -12,6 +13,7 @@ import { AdminShopService } from './admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { ShopProduct, ShopSale } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
+import { StockCategoryItem } from '../../core/models/stock-category.model';
 
 type Tab = 'pos' | 'products' | 'sales';
 
@@ -19,15 +21,6 @@ export interface CartItem {
   product: ShopProduct;
   quantity: number;
 }
-
-const CATEGORIES = [
-  { id: 'all', label: 'Tümü', icon: '⚡' },
-  { id: 'protein', label: 'Protein & Tozlar', icon: '🥛' },
-  { id: 'bcaa', label: 'BCAA & Pre-Workout', icon: '🔥' },
-  { id: 'drink', label: 'İçecek & Su', icon: '💧' },
-  { id: 'bar', label: 'Bar & Atıştırmalık', icon: '🍫' },
-  { id: 'accessory', label: 'Aksesuar & Shaker', icon: '🎒' },
-];
 
 const PRODUCT_STATUS_LABEL: Record<ShopProduct['status'], string> = {
   active: 'Satışta',
@@ -73,6 +66,7 @@ export class AdminShop {
   private readonly shopService = inject(AdminShopService);
   private readonly membersService = inject(AdminMembersService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   protected readonly tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'pos', label: 'Kasa / POS', icon: 'point_of_sale' },
@@ -80,7 +74,22 @@ export class AdminShop {
     { id: 'sales', label: 'Satış Raporları', icon: 'receipt_long' },
   ];
 
-  protected readonly categories = CATEGORIES;
+  private readonly rawCategories = toSignal(this.shopService.watchCategories(), {
+    initialValue: [] as StockCategoryItem[],
+  });
+
+  protected readonly categories = computed(() => {
+    const list = this.rawCategories();
+    return [
+      { id: 'all', label: 'Tümü', icon: '⚡' },
+      ...list.map((c) => ({
+        id: c.key,
+        label: c.name,
+        icon: c.icon || 'inventory_2',
+      })),
+    ];
+  });
+
   protected readonly selectedCategory = signal<string>('all');
   protected readonly posSearch = signal<string>('');
 
@@ -376,22 +385,28 @@ export class AdminShop {
   }
 
   async removeProduct(p: ShopProduct): Promise<void> {
-    if (!confirm(`"${p.name}" ürününü silmek istediğine emin misin?`)) return;
+    if (!(await this.alertService.deleteConfirm(p.name))) return;
     try {
       await this.shopService.deleteProduct(p.id);
-      this.snackBar.open('Ürün silindi.', 'Kapat', { duration: 3000 });
+      this.alertService.toastSuccess('Ürün silindi.');
     } catch {
-      this.snackBar.open('Silme işlemi başarısız.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Silme işlemi başarısız.');
     }
   }
 
   async refund(sale: ShopSale): Promise<void> {
-    if (!confirm(`"${sale.productName}" satışını iade etmek istediğine emin misin? Ürün adedi stoğa geri eklenecektir.`)) return;
+    const ok = await this.alertService.actionConfirm(
+      'Satış İadesi',
+      `<strong>"${sale.productName}"</strong> satışını iade etmek istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Ürün adedi stoğa geri eklenecektir.</span>`,
+      'İade Et',
+      'warning',
+    );
+    if (!ok) return;
     try {
       await this.shopService.refundSale(sale);
-      this.snackBar.open('Satış iade edildi, stok güncellendi.', 'Kapat', { duration: 3000 });
+      this.alertService.toastSuccess('Satış iade edildi, stok güncellendi.');
     } catch {
-      this.snackBar.open('İade başarısız.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('İade başarısız.');
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   collectionData,
   deleteDoc,
   doc,
+  getDocs,
   query,
   serverTimestamp,
   setDoc,
@@ -102,15 +103,28 @@ export class AdminDisciplinesService {
     await deleteDoc(doc(this.firestore, 'sports_disciplines', id));
   }
 
-  /** Salon için varsayılan branşları (Fitness, Kickboks, Boks, Reformer vb.) toplu oluşturur */
+  /** Salon için varsayılan branşları toplu oluşturur (mükerrer kayıt engelli) */
   async seedDefaultDisciplines(): Promise<void> {
     const tenantId = this.auth.profile()?.tenantId;
     if (!tenantId) throw new Error('Salon bilgisi bulunamadı.');
 
+    const q = query(
+      collection(this.firestore, 'sports_disciplines'),
+      where('tenantId', '==', tenantId),
+    );
+    const snap = await getDocs(q);
+    const existingCodes = new Set(snap.docs.map((d) => d.data()['code']));
+    const existingNames = new Set(snap.docs.map((d) => d.data()['name']?.toLowerCase()));
+
+    const toAdd = DEFAULT_DISCIPLINES_PRESETS.filter(
+      (preset) => !existingCodes.has(preset.code) && !existingNames.has(preset.name.toLowerCase()),
+    );
+    if (toAdd.length === 0) return;
+
     const batch = writeBatch(this.firestore);
     const now = serverTimestamp();
 
-    for (const preset of DEFAULT_DISCIPLINES_PRESETS) {
+    for (const preset of toAdd) {
       const newDoc = doc(collection(this.firestore, 'sports_disciplines'));
       batch.set(newDoc, {
         id: newDoc.id,
@@ -246,15 +260,27 @@ export class AdminDisciplinesService {
     await deleteDoc(doc(this.firestore, 'gym_equipment', id));
   }
 
-  /** Varsayılan donanımları (Chest Press, Smith Machine, Kum Torbası, Reformer vb.) toplu oluşturur */
+  /** Varsayılan donanımları toplu oluşturur (mükerrer kayıt engelli) */
   async seedDefaultEquipment(): Promise<void> {
     const tenantId = this.auth.profile()?.tenantId;
     if (!tenantId) throw new Error('Salon bilgisi bulunamadı.');
 
+    const q = query(
+      collection(this.firestore, 'gym_equipment'),
+      where('tenantId', '==', tenantId),
+    );
+    const snap = await getDocs(q);
+    const existingNames = new Set(snap.docs.map((d) => d.data()['name']?.toLowerCase()));
+
+    const toAdd = DEFAULT_EQUIPMENT_PRESETS.filter(
+      (preset) => !existingNames.has(preset.name.toLowerCase()),
+    );
+    if (toAdd.length === 0) return;
+
     const batch = writeBatch(this.firestore);
     const now = serverTimestamp();
 
-    for (const preset of DEFAULT_EQUIPMENT_PRESETS) {
+    for (const preset of toAdd) {
       const newDoc = doc(collection(this.firestore, 'gym_equipment'));
       batch.set(newDoc, {
         id: newDoc.id,

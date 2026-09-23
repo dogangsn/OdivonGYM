@@ -18,17 +18,50 @@
         <button
           type="button"
           class="topbar__icon-btn topbar__menu-btn"
-          (click)="openMobileNav()"
+          (click)="onMenuClick()"
           [attr.aria-label]="'shell.openMenu' | transloco"
+          [matTooltip]="'Menü'"
         >
           <mat-icon>menu</mat-icon>
         </button>
 
-        <!-- Arama Çubuğu (Pill Format) -->
-        <label class="topbar__search">
-          <mat-icon>search</mat-icon>
-          <input type="text" [placeholder]="'shell.searchPlaceholder' | transloco" />
-        </label>
+        <!-- Arama Çubuğu (Pill Format) & Canlı Sayfa Arama Dropdown -->
+        <div class="topbar__search-wrapper">
+          <label class="topbar__search">
+            <mat-icon>search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              (focus)="onSearchFocus()"
+              (blur)="onSearchBlur()"
+              (keydown.enter)="searchResults().length && navigateToRoute(searchResults()[0].link)"
+              [placeholder]="'Sayfa veya işlem ara...'"
+            />
+            @if (searchQuery()) {
+              <button
+                type="button"
+                class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer flex items-center p-0.5"
+                (click)="searchQuery.set('')"
+              >
+                <mat-icon class="text-[16px] w-4 h-4">close</mat-icon>
+              </button>
+            }
+          </label>
+
+          @if (searchFocused() && searchResults().length > 0) {
+            <div class="topbar__search-dropdown">
+              @for (res of searchResults(); track res.link + res.title) {
+                <div class="search-result-item" (mousedown)="navigateToRoute(res.link)">
+                  <mat-icon>{{ res.icon }}</mat-icon>
+                  <span class="item-title">{{ res.title }}</span>
+                  <span class="item-category">{{ res.category }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
 
         <!-- Şube / Salon Rozeti & Çoklu Şube Değiştirici -->
         @if (branchContext.hasMultipleBranches()) {

@@ -33,7 +33,233 @@
     </div>
   </section>
 
-  <!-- 2. Executive KPI Cards (4-Column Grid) -->
+  <!-- ========================================================================= -->
+  <!-- SECTION 8: EXECUTIVE & LIVE SALON OPERATIONS WIDGETS (Admin/Trainer/Staff)-->
+  <!-- ========================================================================= -->
+  @if (isStaffOrTrainer()) {
+    <section class="flex flex-col gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200/80 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-3 w-3 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0 tracking-tight">
+            Günlük Salon Operasyon Özeti
+          </h2>
+        </div>
+        <span class="text-xs text-slate-500 dark:text-slate-400">Canlı salon verileri ve günlük akış</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        
+        <!-- WIDGET 1: Bugün Yapılan Satışlar -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Bugünkü Satışlar</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:shopping-bag'"></mat-icon>
+              </div>
+            </div>
+            
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">₺{{ money(todaySalesTotalAmount()) }}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                {{ todaySales().length }} Satış
+              </span>
+            </div>
+
+            <!-- Mini List of Today's Sales -->
+            <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800/80 max-h-36 overflow-y-auto pr-1">
+              @for (sale of todaySales().slice(0, 3); track sale.id) {
+                <div class="py-2 flex items-center justify-between text-xs">
+                  <div class="min-w-0 pr-2">
+                    <p class="font-bold text-slate-800 dark:text-slate-200 truncate m-0">{{ sale.productName || 'Market Ürünü' }}</p>
+                    <p class="text-[10px] text-slate-400 m-0">{{ formatTime(sale.saleDate) }} • {{ sale.paymentMethod }}</p>
+                  </div>
+                  <span class="font-black text-slate-900 dark:text-white whitespace-nowrap">₺{{ money(sale.totalAmount) }}</span>
+                </div>
+              } @empty {
+                <div class="py-4 text-center text-xs text-slate-400">
+                  Bugün henüz satış kaydedilmedi.
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Market & Otomat</span>
+            <a routerLink="/admin/shop" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline no-underline inline-flex items-center gap-1">
+              Satış Yap →
+            </a>
+          </div>
+        </div>
+
+        <!-- WIDGET 2: Günlük Gelen Kadın / Erkek Üye İstatistikleri -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Turnike Dağılımı</span>
+              <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:user-group'"></mat-icon>
+              </div>
+            </div>
+
+            <div class="flex items-baseline gap-2 mb-3">
+              <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ todayGenderStats().total }}</span>
+              <span class="text-xs font-medium text-slate-400">Toplam Giriş</span>
+            </div>
+
+            <!-- Visual Progress Split Bar -->
+            <div class="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex mb-3">
+              <div
+                class="h-full bg-gradient-to-r from-pink-400 to-rose-500 transition-all duration-500"
+                [style.width.%]="todayGenderStats().femalePercent"
+                title="Kadın Üyeler: %{{ todayGenderStats().femalePercent }}"
+              ></div>
+              <div
+                class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-500"
+                [style.width.%]="todayGenderStats().malePercent"
+                title="Erkek Üyeler: %{{ todayGenderStats().malePercent }}"
+              ></div>
+            </div>
+
+            <!-- Breakdown Numbers -->
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <div class="p-2.5 rounded-xl bg-pink-50/60 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40">
+                <div class="text-[11px] font-bold text-pink-600 dark:text-pink-400">Kadın</div>
+                <div class="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                  {{ todayGenderStats().female }}
+                  <span class="text-[11px] font-medium text-slate-400">(%{{ todayGenderStats().femalePercent }})</span>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
+                <div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Erkek</div>
+                <div class="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                  {{ todayGenderStats().male }}
+                  <span class="text-[11px] font-medium text-slate-400">(%{{ todayGenderStats().malePercent }})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Canlı Kapı & Turnike</span>
+            <a routerLink="/admin/access-control" class="font-bold text-sky-600 dark:text-sky-400 hover:underline no-underline inline-flex items-center gap-1">
+              Turnike Kayıtları →
+            </a>
+          </div>
+        </div>
+
+        <!-- WIDGET 3: Bugün Abonelik Yapan & Yenileyenler -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kayıt & Yenileme</span>
+              <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:user-plus'"></mat-icon>
+              </div>
+            </div>
+
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ todayNewAndRenewedMembers().length }}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300">
+                Bugünkü İşlem
+              </span>
+            </div>
+
+            <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800/80 max-h-36 overflow-y-auto pr-1">
+              @for (member of todayNewAndRenewedMembers().slice(0, 3); track member.uid) {
+                <div class="py-2 flex items-center justify-between text-xs">
+                  <div class="min-w-0 pr-2">
+                    <p class="font-bold text-slate-800 dark:text-slate-200 truncate m-0">
+                      {{ member.displayName || member.email }}
+                    </p>
+                    <p class="text-[10px] text-slate-400 m-0">
+                      #{{ member.memberNumber || member.uid.slice(0, 5) }} • {{ member.packageLabel || 'Standart' }}
+                    </p>
+                  </div>
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
+                    [class]="isMemberCreatedToday(member) ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400'"
+                  >
+                    {{ isMemberCreatedToday(member) ? 'Yeni Kayıt' : 'Yenilendi' }}
+                  </span>
+                </div>
+              } @empty {
+                <div class="py-4 text-center text-xs text-slate-400">
+                  Bugün yeni kayıt veya yenileme yapılmadı.
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Üye Takibi</span>
+            <a routerLink="/admin/members" class="font-bold text-purple-600 dark:text-purple-400 hover:underline no-underline inline-flex items-center gap-1">
+              Tüm Üyeler →
+            </a>
+          </div>
+        </div>
+
+        <!-- WIDGET 4: Bugün Aboneliği Biten & Yenileme Zamanı Gelenler -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Biten & Yenileme Bekleyen</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:clock'"></mat-icon>
+              </div>
+            </div>
+
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ todayExpiringMembers().length }}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300">
+                Süre Bitiyor
+              </span>
+            </div>
+
+            <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800/80 max-h-36 overflow-y-auto pr-1">
+              @for (member of todayExpiringMembers().slice(0, 3); track member.uid) {
+                <div class="py-2 flex items-center justify-between text-xs">
+                  <div class="min-w-0 pr-2">
+                    <p class="font-bold text-slate-800 dark:text-slate-200 truncate m-0">
+                      {{ member.displayName || member.email }}
+                    </p>
+                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold m-0">
+                      Bitiş: {{ formatDate(member.membershipEndsAt) }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="notifyRenewal(member)"
+                    class="px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold text-[10px] cursor-pointer transition-colors"
+                  >
+                    Hatırlat
+                  </button>
+                </div>
+              } @empty {
+                <div class="py-4 text-center text-xs text-slate-400">
+                  Bugün süresi dolan üye bulunmuyor.
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Abonelik İşlemleri</span>
+            <a routerLink="/admin/members" class="font-bold text-amber-600 dark:text-amber-400 hover:underline no-underline inline-flex items-center gap-1">
+              Yenileme Yap →
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  }
+
+  <!-- 2. Personal Member KPI Cards (4-Column Grid) -->
   <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
     
     <!-- KPI 1: Üyelik / Deneme Durumu (Signature Primary Gradient Card) -->
@@ -160,7 +386,7 @@
       <h2 class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
         {{ 'dashboard.quickAccessTitle' | transloco }}
       </h2>
-      <span class="text-xs text-slate-400">7 Hızlı Kısayol</span>
+      <span class="text-xs text-slate-400">Hızlı Kısayollar</span>
     </div>
 
     <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-7">
@@ -193,4 +419,3 @@
     </div>
   </section>
 </div>
-

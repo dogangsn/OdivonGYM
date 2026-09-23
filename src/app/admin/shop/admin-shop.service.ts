@@ -6,14 +6,16 @@ import {
   deleteDoc,
   doc,
   addDoc,
+  getDocs,
   query,
   runTransaction,
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from '@angular/fire/firestore';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, of, switchMap } from 'rxjs';
+import { Observable, map, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   CreateShopProductInput,
@@ -22,6 +24,10 @@ import {
   ShopSale,
   UpdateShopProductInput,
 } from '../../core/models/shop-product.model';
+import {
+  DEFAULT_STOCK_CATEGORIES,
+  StockCategoryItem,
+} from '../../core/models/stock-category.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +40,98 @@ export class AdminShopService {
     const tenantId = this.auth.profile()?.tenantId;
     if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
     return tenantId;
+  }
+
+  /**
+   * Tenant'a ait dinamik stok & ürün kategorilerini gerçek zamanlı dinler.
+   * Eğer hiç kategori yoksa otomatik olarak varsayılanları tohumlar (seed).
+   */
+  watchCategories(): Observable<StockCategoryItem[]> {
+    return this.profile$.pipe(
+      switchMap((profile) => {
+        const tenantId = profile?.tenantId;
+        if (!tenantId) return of([] as StockCategoryItem[]);
+        const q = query(
+          collection(this.firestore, 'gym_stock_categories'),
+          where('tenantId', '==', tenantId),
+        );
+        return (collectionData(q, { idField: 'id' }) as Observable<StockCategoryItem[]>).pipe(
+          tap((cats) => {
+            if (cats && cats.length === 0) {
+              void this.seedDefaultCategoriesIfEmpty(tenantId);
+            }
+          }),
+          map((cats) =>
+            [...cats].sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name, 'tr')),
+          ),
+        );
+      }),
+    );
+  }
+
+  async createCategory(
+    input: Omit<StockCategoryItem, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>,
+  ): Promise<string> {
+    const tenantId = this.tenantId();
+    const docRef = await addDoc(collection(this.firestore, 'gym_stock_categories'), {
+      tenantId,
+      key: input.key || input.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      name: input.name,
+      icon: input.icon || 'inventory_2',
+      colorTag: input.colorTag || 'indigo',
+      description: input.description ?? '',
+      isDefault: input.isDefault ?? false,
+      order: input.order ?? 99,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  }
+
+  async updateCategory(id: string, input: Partial<StockCategoryItem>): Promise<void> {
+    const cleanData: Record<string, any> = { updatedAt: serverTimestamp() };
+    if (input.name !== undefined) cleanData['name'] = input.name;
+    if (input.key !== undefined) cleanData['key'] = input.key;
+    if (input.icon !== undefined) cleanData['icon'] = input.icon;
+    if (input.colorTag !== undefined) cleanData['colorTag'] = input.colorTag;
+    if (input.description !== undefined) cleanData['description'] = input.description;
+    if (input.order !== undefined) cleanData['order'] = input.order;
+
+    await updateDoc(doc(this.firestore, 'gym_stock_categories', id), cleanData);
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, 'gym_stock_categories', id));
+  }
+
+  async seedDefaultCategoriesIfEmpty(tenantIdParam?: string): Promise<void> {
+    const tenantId = tenantIdParam || this.tenantId();
+    const q = query(
+      collection(this.firestore, 'gym_stock_categories'),
+      where('tenantId', '==', tenantId),
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) return;
+
+    const batch = writeBatch(this.firestore);
+    const now = serverTimestamp();
+    for (const cat of DEFAULT_STOCK_CATEGORIES) {
+      const docRef = doc(collection(this.firestore, 'gym_stock_categories'));
+      batch.set(docRef, {
+        id: docRef.id,
+        tenantId,
+        key: cat.key,
+        name: cat.name,
+        icon: cat.icon || 'inventory_2',
+        colorTag: cat.colorTag || 'indigo',
+        description: cat.description || '',
+        isDefault: true,
+        order: cat.order || 1,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await batch.commit();
   }
 
   watchProducts(): Observable<ShopProduct[]> {
@@ -171,7 +269,7 @@ export class AdminShopService {
    * 3. Ödeme 'wallet' ise üyenin bakiyesini kontrol eder, düşer ve wallet_transactions ekler.
    */
   async checkout(input: {
-    items: { product: ShopProduct; quantity: number }[];
+    items: { product: ShopProduct; quantity: number; isPackageIncluded?: boolean }[];
     paymentMethod: 'cash' | 'card' | 'wallet' | 'transfer';
     member?: UserProfile | null;
     discount?: number;
@@ -180,7 +278,10 @@ export class AdminShopService {
     const tenantId = this.tenantId();
     if (input.items.length === 0) throw new Error('Sepetiniz boş.');
 
-    const subtotal = input.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const subtotal = input.items.reduce(
+      (sum, item) => sum + (item.isPackageIncluded ? 0 : item.product.price * item.quantity),
+      0,
+    );
     const totalAmount = Math.max(0, subtotal - (input.discount ?? 0));
 
     if (input.paymentMethod === 'wallet') {
@@ -225,6 +326,12 @@ export class AdminShopService {
           updatedAt: serverTimestamp(),
         });
 
+        const effectivePrice = item.isPackageIncluded ? 0 : item.product.price;
+        const lineTotal = effectivePrice * item.quantity;
+        const itemNote = item.isPackageIncluded
+          ? `[Pakete Dahil Ücretsiz Hak] ${input.notes ?? ''}`.trim()
+          : input.notes ?? '';
+
         const saleRef = doc(collection(this.firestore, 'shop_sales'));
         tx.set(saleRef, {
           tenantId,
@@ -232,11 +339,11 @@ export class AdminShopService {
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
-          unitPrice: item.product.price,
-          totalAmount: item.product.price * item.quantity,
+          unitPrice: effectivePrice,
+          totalAmount: lineTotal,
           paymentMethod: input.paymentMethod,
           discount: 0,
-          notes: input.notes ?? '',
+          notes: itemNote,
           saleDate: serverTimestamp(),
           status: 'completed',
           createdAt: serverTimestamp(),

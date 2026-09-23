@@ -22,6 +22,7 @@ import { PermissionService } from '../../core/services/permission.service';
 
 import { RouterLink } from '@angular/router';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { AlertService } from '../../core/services/alert.service';
 
 type ActiveTab = 'campaigns' | 'quickBroadcast' | 'retentionRadar';
 
@@ -35,6 +36,7 @@ type ActiveTab = 'campaigns' | 'quickBroadcast' | 'retentionRadar';
 })
 export class AdminCampaigns {
   private readonly campaignsService = inject(AdminCampaignsService);
+  private readonly alertService = inject(AlertService);
   protected readonly membersService = inject(AdminMembersService);
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
@@ -267,8 +269,13 @@ export class AdminCampaigns {
   }
 
   async deleteCampaign(campaign: Campaign): Promise<void> {
-    if (confirm(`"${campaign.title}" kampanyasını silmek istediğinize emin misiniz?`)) {
-      await this.campaignsService.deleteCampaign(campaign.id);
+    if (await this.alertService.deleteConfirm(campaign.title)) {
+      try {
+        await this.campaignsService.deleteCampaign(campaign.id);
+        this.alertService.toastSuccess('Kampanya silindi.');
+      } catch {
+        this.alertService.toastError('Kampanya silinemedi.');
+      }
     }
   }
 

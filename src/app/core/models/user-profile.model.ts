@@ -53,5 +53,29 @@ export interface UserProfile {
   branchId?: string | null;
   /** Şube adı (hızlı gösterim için denormalize) */
   branchName?: string | null;
+
+  /** Takip kolaylığı için benzersiz 5 haneli üye ID'si (örn. '10042') */
+  memberNumber?: string;
+  /** Bağlı olduğu zorunlu antrenör ID'si ve adı */
+  trainerId?: string | null;
+  trainerName?: string | null;
+  /** Acil durum yakını bilgileri */
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  /** Kan grubu */
+  bloodGroup?: string;
+  /** Alerjen ve kronik hastalık bilgileri */
+  allergies?: string;
+  chronicDiseases?: string;
+  /** Özel kullanıcı bilgisi / not */
+  specialInfo?: string;
+  /** RFID / NFC Turnike Kart Numarası */
+  rfidCardNumber?: string;
+  /** Kart depozito ücreti (TL) */
+  cardDepositFee?: number;
+  /** Kart depozito ücreti alındı mı? */
+  cardDepositPaid?: boolean;
 }
+
 

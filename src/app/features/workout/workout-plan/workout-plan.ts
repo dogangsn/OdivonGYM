@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../../core/services/alert.service';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SlideOver } from '../../../shared/ui/slide-over';
 import { Field } from '../../../shared/ui/field';
@@ -463,6 +464,7 @@ export class WorkoutPlan {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(WorkoutService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly statusLabel = STATUS_LABEL;
@@ -744,12 +746,12 @@ export class WorkoutPlan {
   }
 
   protected async remove(plan: PlanModel): Promise<void> {
-    if (!confirm(`"${plan.title}" programını silmek istediğinize emin misiniz?`)) return;
+    if (!(await this.alertService.deleteConfirm(plan.title))) return;
     try {
       await this.service.deletePlan(plan.id);
-      this.snackBar.open('Program silindi.', 'Kapat', { duration: 2500 });
+      this.alertService.toastSuccess('Program silindi.');
     } catch {
-      this.snackBar.open('Program silinemedi, tekrar deneyin.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError('Program silinemedi, tekrar deneyin.');
     }
   }
 }

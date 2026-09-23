@@ -6,13 +6,29 @@
         <span>OdivonGYM</span>
       </div>
 
-      <div class="form-panel__head">
-        <h1>{{ 'auth.register.title' | transloco }}</h1>
-        <p>
-          {{ 'auth.register.hasAccount' | transloco }}
-          <a routerLink="/auth/login">{{ 'auth.register.loginLink' | transloco }}</a>
-        </p>
+      <div class="form-panel__head flex items-start justify-between gap-4">
+        <div>
+          <h1 class="m-0">{{ 'auth.register.title' | transloco }}</h1>
+          <p class="mt-1 mb-0">
+            {{ 'auth.register.hasAccount' | transloco }}
+            <a routerLink="/auth/login">{{ 'auth.register.loginLink' | transloco }}</a>
+          </p>
+        </div>
+        <!-- Dil Seçimi -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs">
+          <mat-icon class="text-slate-500 dark:text-slate-400 text-[16px] w-4 h-4">language</mat-icon>
+          <select
+            [value]="language.current()"
+            (change)="changeLanguage($any($event.target).value)"
+            class="bg-transparent border-none text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
+          >
+            @for (lang of supportedLanguages; track lang) {
+              <option [value]="lang" class="dark:bg-slate-900 text-slate-800 dark:text-slate-100">{{ languageNames[lang] }}</option>
+            }
+          </select>
+        </div>
       </div>
+
 
       @if (errorMessage()) {
         <div class="form-panel__error">

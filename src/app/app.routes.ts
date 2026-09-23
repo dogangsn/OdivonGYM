@@ -21,6 +21,14 @@ export const routes: Routes = [
       import('./features/onboarding/trial-expired/trial-expired').then((m) => m.TrialExpired),
     title: 'Paket Satın Al · OdivonGYM',
   },
+  {
+    path: 'onboarding/wizard',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/tenant-wizard/tenant-wizard').then((m) => m.TenantWizard),
+    title: 'Salon Kurulum Sihirbazı · OdivonGYM',
+  },
+
 
   {
     path: '',
@@ -80,6 +88,16 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () => import('./features/profile/profile/profile').then((m) => m.Profile),
         title: 'Profil · OdivonGYM',
+      },
+      {
+        path: 'suppliers',
+        redirectTo: 'admin/suppliers',
+        pathMatch: 'full',
+      },
+      {
+        path: 'e-invoice',
+        redirectTo: 'admin/e-invoice',
+        pathMatch: 'full',
       },
       {
         path: 'admin',

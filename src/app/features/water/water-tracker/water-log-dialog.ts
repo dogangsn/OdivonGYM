@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, output, sign
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { WaterService } from '../water.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { WaterLog, CreateWaterLogInput } from '../../../core/models/water-log.model';
 
 @Component({
@@ -98,6 +99,7 @@ import { WaterLog, CreateWaterLogInput } from '../../../core/models/water-log.mo
 export class WaterLogDialog {
   private readonly fb = inject(FormBuilder);
   private readonly waterService = inject(WaterService);
+  private readonly alertService = inject(AlertService);
 
   readonly open = input(false);
   readonly log = input<WaterLog | null>(null);
@@ -161,7 +163,7 @@ export class WaterLogDialog {
       }
       this.closed.emit(true);
     } catch {
-      alert('Hata oluştu');
+      await this.alertService.error('İşlem Başarısız', 'Su kaydı kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       this.submitting.set(false);
     }

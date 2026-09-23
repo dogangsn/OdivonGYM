@@ -145,4 +145,44 @@ export class ClassesService {
       }
     });
   }
+
+  /** Resepsiyonist veya Antrenör tarafından öğrenci ataması */
+  async assignMemberToClass(scheduleId: string, memberId: string): Promise<void> {
+    const scheduleRef = doc(this.firestore, 'class_schedules', scheduleId);
+    await runTransaction(this.firestore, async (tx) => {
+      const snap = await tx.get(scheduleRef);
+      if (!snap.exists()) throw new Error('Ders bulunamadı.');
+      const data = snap.data();
+      const currentList: string[] = data['enrolledMemberIds'] || [];
+      if (currentList.includes(memberId)) {
+        throw new Error('Üye zaten bu derse atanmış.');
+      }
+      const capacity = data['capacity'] || 20;
+      if (currentList.length >= capacity) {
+        throw new Error('Ders kontenjanı dolmuştur.');
+      }
+      const updatedList = [...currentList, memberId];
+      tx.update(scheduleRef, {
+        enrolledMemberIds: updatedList,
+        currentBookings: updatedList.length,
+        updatedAt: serverTimestamp(),
+      });
+    });
+  }
+
+  async removeMemberFromClass(scheduleId: string, memberId: string): Promise<void> {
+    const scheduleRef = doc(this.firestore, 'class_schedules', scheduleId);
+    await runTransaction(this.firestore, async (tx) => {
+      const snap = await tx.get(scheduleRef);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const currentList: string[] = data['enrolledMemberIds'] || [];
+      const updatedList = currentList.filter((id) => id !== memberId);
+      tx.update(scheduleRef, {
+        enrolledMemberIds: updatedList,
+        currentBookings: updatedList.length,
+        updatedAt: serverTimestamp(),
+      });
+    });
+  }
 }

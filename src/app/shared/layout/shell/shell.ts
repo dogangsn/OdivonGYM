@@ -20,6 +20,44 @@ import { AiAssistantModal } from '../../components/ai-assistant-modal/ai-assista
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 
+import { FormsModule } from '@angular/forms';
+
+export interface RouteSearchResult {
+  title: string;
+  category: string;
+  icon: string;
+  link: string;
+  keywords: string[];
+}
+
+const SEARCHABLE_ROUTES: RouteSearchResult[] = [
+  { title: 'Dashboard', category: 'Genel', icon: 'dashboard', link: '/dashboard', keywords: ['ana sayfa', 'dashboard', 'panel', 'istatistik', 'özet'] },
+  { title: 'Salon Durumu & Genel Bakış', category: 'Genel', icon: 'space_dashboard', link: '/admin/overview', keywords: ['genel bakış', 'durum', 'overview', 'rapor'] },
+  { title: 'Üye Kayıtları & Yönetimi', category: 'Kulüp', icon: 'groups', link: '/admin/members', keywords: ['üye', 'üyeler', 'kayıt', 'sporcu', 'profil', 'members'] },
+  { title: 'Misafir Üyeler & Anket', category: 'Kulüp', icon: 'person_search', link: '/admin/guest-members', keywords: ['misafir', 'ziyaretçi', 'anket', 'tanıtım', 'guest'] },
+  { title: 'Üyelik Paketleri & Fiyatlandırma', category: 'Satış', icon: 'sell', link: '/admin/packages', keywords: ['paket', 'fiyat', 'abonelik', 'tarife', 'packages'] },
+  { title: 'Hızlı Kasa & POS', category: 'Kasa / POS', icon: 'shopping_cart_checkout', link: '/admin/shop', keywords: ['kasa', 'pos', 'market', 'satış', 'ödeme', 'shop'] },
+  { title: 'Ürün & Stok Yönetimi', category: 'Ürün & Stok', icon: 'inventory_2', link: '/admin/shop', keywords: ['ürün', 'stok', 'envanter', 'protein', 'su', 'bar'] },
+  { title: 'Tedarikçiler', category: 'Ürün & Stok', icon: 'local_shipping', link: '/admin/suppliers', keywords: ['tedarikçi', 'firmalar', 'toptancı', 'suppliers'] },
+  { title: 'Kasa & Muhasebe', category: 'Finans', icon: 'account_balance', link: '/admin/accounting', keywords: ['muhasebe', 'kasa', 'gelir', 'gider', 'finans', 'accounting'] },
+  { title: 'E-Fatura & Uyumsoft', category: 'Finans', icon: 'receipt_long', link: '/admin/e-invoice', keywords: ['fatura', 'e-fatura', 'e-arşiv', 'uyumsoft', 'mali mühür'] },
+  { title: 'Turnike & Geçiş Kontrol', category: 'Erişim', icon: 'nfc', link: '/admin/access-control', keywords: ['turnike', 'kapı', 'rfid', 'qr', 'geçiş', 'donanım'] },
+  { title: 'Ders & Seans Takvimi', category: 'Kulüp', icon: 'calendar_month', link: '/classes', keywords: ['ders', 'seans', 'grup dersi', 'kickboks', 'pilates', 'classes'] },
+  { title: 'PT Randevuları', category: 'Kulüp', icon: 'event_available', link: '/appointments', keywords: ['randevu', 'pt', 'özel ders', 'antrenör', 'appointments'] },
+  { title: 'Genel Tanımlar', category: 'Tanımlar', icon: 'tune', link: '/admin/definitions', keywords: ['tanımlar', 'kategori', 'aletler', 'branş', 'donanım', 'definitions'] },
+  { title: 'Branşlar & Ekipman', category: 'Tanımlar', icon: 'sports_martial_arts', link: '/admin/disciplines', keywords: ['branş', 'disiplin', 'ekipman', 'cihaz', 'disciplines'] },
+  { title: 'Eğitim Sihirbazı', category: 'Tanımlar', icon: 'auto_awesome', link: '/admin/wizard', keywords: ['sihirbaz', 'zincirleme', 'tanımlama', 'wizard'] },
+  { title: 'Personel & Rol Yönetimi', category: 'Yönetim', icon: 'badge', link: '/admin/staff', keywords: ['personel', 'çalışan', 'hoca', 'antrenör', 'staff'] },
+  { title: 'Şubeler', category: 'Yönetim', icon: 'store', link: '/admin/branches', keywords: ['şube', 'şubeler', 'branches'] },
+  { title: 'Salon Bilgileri', category: 'Yönetim', icon: 'business', link: '/admin/gym-info', keywords: ['salon bilgileri', 'logo', 'çalışma saatleri', 'gym'] },
+  { title: 'SaaS Paket & Lisans', category: 'Yönetim', icon: 'card_membership', link: '/admin/subscription', keywords: ['lisans', 'paket', 'abonelik', 'odivon lisans', 'subscription'] },
+  { title: 'Antrenman Programım', category: 'Sporcu', icon: 'fitness_center', link: '/workout', keywords: ['antrenman', 'program', 'workout'] },
+  { title: 'Vücut Ölçümlerim', category: 'Sporcu', icon: 'monitor_weight', link: '/measurements', keywords: ['ölçüm', 'kilo', 'yağ oranı', 'inbody'] },
+  { title: 'Su Takibi', category: 'Sporcu', icon: 'water_drop', link: '/water', keywords: ['su', 'su takibi', 'litre'] },
+  { title: 'Cüzdanım', category: 'Sporcu', icon: 'account_balance_wallet', link: '/wallet', keywords: ['cüzdan', 'bakiye', 'para yükle'] },
+  { title: 'Profil & Ayarlarım', category: 'Sporcu', icon: 'person', link: '/profile', keywords: ['profil', 'ayarlar', 'şifre', 'profile'] },
+];
+
 export interface ShellNotification {
   id: string;
   title: string;
@@ -40,6 +78,7 @@ export interface ShellNotification {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -73,6 +112,45 @@ export class Shell {
 
   protected readonly collapsed = signal(false);
   protected readonly mobileOpen = signal(false);
+
+  // Topbar Page Search
+  readonly searchQuery = signal('');
+  readonly searchFocused = signal(false);
+
+  readonly searchResults = computed<RouteSearchResult[]>(() => {
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return [];
+    return SEARCHABLE_ROUTES.filter((route) => {
+      const matchTitle = route.title.toLowerCase().includes(q);
+      const matchCategory = route.category.toLowerCase().includes(q);
+      const matchKeywords = route.keywords.some((kw) => kw.toLowerCase().includes(q));
+      return matchTitle || matchCategory || matchKeywords;
+    }).slice(0, 8);
+  });
+
+  onSearchFocus(): void {
+    this.searchFocused.set(true);
+  }
+
+  onSearchBlur(): void {
+    setTimeout(() => this.searchFocused.set(false), 220);
+  }
+
+  navigateToRoute(link: string): void {
+
+    this.searchQuery.set('');
+    this.searchFocused.set(false);
+    void this.router.navigateByUrl(link);
+  }
+
+  onMenuClick(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 900) {
+      this.mobileOpen.update((v) => !v);
+    } else {
+      this.collapsed.update((v) => !v);
+    }
+  }
+
 
   protected readonly notifications = signal<ShellNotification[]>([
     {

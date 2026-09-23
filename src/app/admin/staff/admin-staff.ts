@@ -8,6 +8,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlertService } from '../../core/services/alert.service';
 import { AdminStaffService } from './admin-staff.service';
 import { StaffMember, StaffStatus } from '../../core/models/staff.model';
 import { UserRole, ROLE_DEFINITIONS } from '../../core/models/user-role.model';
@@ -28,6 +29,7 @@ type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator';
 export class AdminStaff {
   private readonly staffService = inject(AdminStaffService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
   private readonly router = inject(Router);
   private readonly saasSub = inject(SaasSubscriptionService);
   protected readonly permissions = inject(PermissionService);
@@ -279,8 +281,13 @@ export class AdminStaff {
   }
 
   async deleteStaff(staff: StaffMember): Promise<void> {
-    if (confirm(`"${staff.displayName}" personel kaydını silmek istediğinize emin misiniz?`)) {
-      await this.staffService.deleteStaff(staff.id);
+    if (await this.alertService.deleteConfirm(staff.displayName)) {
+      try {
+        await this.staffService.deleteStaff(staff.id);
+        this.alertService.toastSuccess('Personel kaydı silindi.');
+      } catch {
+        this.alertService.toastError('Personel silinemedi.');
+      }
     }
   }
 
