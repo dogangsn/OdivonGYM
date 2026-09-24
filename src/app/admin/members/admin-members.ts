@@ -59,6 +59,12 @@ export class AdminMembers {
   protected readonly genderLabel = GENDER_LABEL;
   protected readonly searchTerm = signal('');
   protected readonly selectedBranchFilter = signal('');
+  protected readonly showArchived = signal(false);
+
+  // Pagination
+  protected readonly currentPage = signal(1);
+  protected readonly pageSize = signal(25);
+  protected readonly pageSizeOptions = [10, 25, 50, 100];
 
   protected readonly branches = this.branchContext.branches;
   protected readonly drawerOpen = signal(false);
@@ -85,8 +91,14 @@ export class AdminMembers {
 
   protected readonly loading = computed(() => this.members() === null);
 
+  protected readonly activeCount = computed(() => (this.members() ?? []).filter((m) => !m.isArchived).length);
+  protected readonly archivedCount = computed(() => (this.members() ?? []).filter((m) => !!m.isArchived).length);
+
   protected readonly filteredMembers = computed<UserProfile[]>(() => {
     let list = this.members() ?? [];
+    const isArchivedView = this.showArchived();
+    list = list.filter((m) => (isArchivedView ? !!m.isArchived : !m.isArchived));
+
     const branchFilter = this.selectedBranchFilter();
     if (branchFilter) {
       list = list.filter((m) => m.branchId === branchFilter);
@@ -98,9 +110,76 @@ export class AdminMembers {
         m.displayName?.toLowerCase().includes(term) ||
         m.email?.toLowerCase().includes(term) ||
         m.phone?.toLowerCase().includes(term) ||
+        m.memberNumber?.toLowerCase().includes(term) ||
+        m.rfidCardNumber?.toLowerCase().includes(term) ||
         m.branchName?.toLowerCase().includes(term),
     );
   });
+
+  // Pagination computed
+  protected readonly totalItems = computed(() => this.filteredMembers().length);
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.pageSize())));
+  protected readonly startIndex = computed(() => (this.currentPage() - 1) * this.pageSize());
+  protected readonly endIndex = computed(() => Math.min(this.startIndex() + this.pageSize(), this.totalItems()));
+
+  protected readonly paginatedMembers = computed(() => {
+    const start = this.startIndex();
+    return this.filteredMembers().slice(start, start + this.pageSize());
+  });
+
+  protected readonly visiblePages = computed<number[]>(() => {
+    const current = this.currentPage();
+    const total = this.totalPages();
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  });
+
+  onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+    this.currentPage.set(1);
+  }
+
+  onBranchChange(branchId: string): void {
+    this.selectedBranchFilter.set(branchId);
+    this.currentPage.set(1);
+  }
+
+  setShowArchived(val: boolean): void {
+    this.showArchived.set(val);
+    this.currentPage.set(1);
+  }
+
+  onPageSizeChange(size: number | string): void {
+    this.pageSize.set(Number(size));
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.set(this.currentPage() + 1);
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage() > 1) {
+      this.currentPage.set(this.currentPage() - 1);
+    }
+  }
 
   openNewMemberDrawer(): void {
     const check = this.saasSub.canAddMember();
@@ -203,6 +282,28 @@ export class AdminMembers {
       this.alertService.toastSuccess('Üye profili silindi.');
     } catch {
       this.alertService.toastError('Üye silinemedi, tekrar dene.');
+    }
+  }
+
+  async toggleArchive(member: UserProfile): Promise<void> {
+    const isArchiving = !member.isArchived;
+    const confirmMsg = isArchiving
+      ? `<strong>"${member.displayName}"</strong> adlı üyeyi arşive kaldırmak istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Arşivlenen üyeler aktif üye listesinde ve otomatik geçişlerde gizlenir, ancak geçmiş verileri ve bakiye hareketleri korunur.</span>`
+      : `<strong>"${member.displayName}"</strong> adlı üyeyi arşivden çıkarıp tekrar aktif üye listesine almak istediğinize emin misiniz?`;
+
+    const ok = await this.alertService.deleteConfirm(
+      isArchiving ? 'Arşive Kaldır' : 'Arşivden Çıkar',
+      confirmMsg,
+    );
+    if (!ok) return;
+
+    try {
+      await this.membersService.toggleArchiveMember(member.uid, isArchiving);
+      this.alertService.toastSuccess(
+        isArchiving ? 'Üye arşive kaldırıldı.' : 'Üye arşivden çıkarıldı ve aktifleştirildi.',
+      );
+    } catch {
+      this.alertService.toastError('İşlem tamamlanamadı, lütfen tekrar deneyin.');
     }
   }
 

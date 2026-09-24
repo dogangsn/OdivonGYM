@@ -264,6 +264,7 @@ export class AdminMembersService {
     await deleteDoc(doc(this.firestore, 'users', uid));
   }
 
+
   /** Mevcut bir üyenin profil bilgilerini günceller (hesap/e-posta/şifre hariç). */
   async updateMember(uid: string, input: UpdateMemberInput): Promise<void> {
     const isActive = input.membershipStatus === 'active';
@@ -293,6 +294,15 @@ export class AdminMembersService {
       ...(input.cardDepositPaid !== undefined ? { cardDepositPaid: input.cardDepositPaid } : {}),
       ...(input.branchId !== undefined ? { branchId: input.branchId || null } : {}),
       ...(input.branchName !== undefined ? { branchName: input.branchName || null } : {}),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  /** Üyeyi arşive kaldırır veya arşivden çıkarır */
+  async toggleArchiveMember(uid: string, isArchived: boolean): Promise<void> {
+    await updateDoc(doc(this.firestore, 'users', uid), {
+      isArchived,
+      archivedAt: isArchived ? serverTimestamp() : null,
       updatedAt: serverTimestamp(),
     });
   }

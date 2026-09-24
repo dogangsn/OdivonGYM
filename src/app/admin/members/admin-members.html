@@ -31,28 +31,101 @@
   </div>
   }
 
-  <!-- 2. Search Toolbar -->
-  <div
-    class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-    <div class="relative flex-1">
-      <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5"
-        [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
-      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-        placeholder="Ad, e-posta, telefon veya şube ara…"
-        class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all" />
+  <!-- 2. Archive Tabs & Search Toolbar -->
+  <div class="space-y-3">
+    <!-- Aktif vs Arşiv Sekmesi -->
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold shadow-xs">
+        <button
+          type="button"
+          (click)="setShowArchived(false)"
+          class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+          [class.bg-white]="!showArchived()"
+          [class.dark:bg-slate-700]="!showArchived()"
+          [class.text-indigo-600]="!showArchived()"
+          [class.dark:text-indigo-400]="!showArchived()"
+          [class.shadow-xs]="!showArchived()"
+          [class.text-slate-500]="showArchived()"
+          [class.dark:text-slate-400]="showArchived()"
+        >
+          <mat-icon class="icon-size-4">groups</mat-icon>
+          <span>Aktif Üyeler</span>
+          <span
+            class="px-2 py-0.5 rounded-full text-[11px] font-bold"
+            [class.bg-indigo-50]="!showArchived()"
+            [class.dark:bg-indigo-950/80]="!showArchived()"
+            [class.text-indigo-600]="!showArchived()"
+            [class.dark:text-indigo-400]="!showArchived()"
+            [class.bg-slate-200]="showArchived()"
+            [class.dark:bg-slate-600]="showArchived()"
+            [class.text-slate-600]="showArchived()"
+            [class.dark:text-slate-300]="showArchived()"
+          >
+            {{ activeCount() }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          (click)="setShowArchived(true)"
+          class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+          [class.bg-white]="showArchived()"
+          [class.dark:bg-slate-700]="showArchived()"
+          [class.text-amber-600]="showArchived()"
+          [class.dark:text-amber-400]="showArchived()"
+          [class.shadow-xs]="showArchived()"
+          [class.text-slate-500]="!showArchived()"
+          [class.dark:text-slate-400]="!showArchived()"
+        >
+          <mat-icon class="icon-size-4">archive</mat-icon>
+          <span>Arşivdekiler</span>
+          <span
+            class="px-2 py-0.5 rounded-full text-[11px] font-bold"
+            [class.bg-amber-50]="showArchived()"
+            [class.dark:bg-amber-950/80]="showArchived()"
+            [class.text-amber-600]="showArchived()"
+            [class.dark:text-amber-400]="showArchived()"
+            [class.bg-slate-200]="!showArchived()"
+            [class.dark:bg-slate-600]="!showArchived()"
+            [class.text-slate-600]="!showArchived()"
+            [class.dark:text-slate-300]="!showArchived()"
+          >
+            {{ archivedCount() }}
+          </span>
+        </button>
+      </div>
+
+      @if (showArchived()) {
+        <div class="px-3.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+          <mat-icon class="icon-size-4 shrink-0">info</mat-icon>
+          <span>Arşivdeki üyeler turnike geçişlerinde pasif kalır, istendiğinde tek tıkla geri aktif edilebilir.</span>
+        </div>
+      }
     </div>
 
-    <!-- Şube Filtresi -->
-    <div class="flex items-center gap-2">
-      <label
-        class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">Şube:</label>
-      <select [ngModel]="selectedBranchFilter()" (ngModelChange)="selectedBranchFilter.set($event)"
-        class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 font-semibold cursor-pointer transition-all">
-        <option value="">Tüm Şubeler</option>
-        @for (b of branches(); track b.id) {
-        <option [value]="b.id">{{ b.name }}</option>
-        }
-      </select>
+    <!-- Search & Filters Toolbar -->
+    <div
+      class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div class="relative flex-1">
+        <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5"
+          [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+        <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)"
+          placeholder="Ad, e-posta, telefon, üye no veya şube ara…"
+          class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all" />
+      </div>
+
+      <!-- Şube Filtresi -->
+      <div class="flex items-center gap-2">
+        <label
+          class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">Şube:</label>
+        <select [ngModel]="selectedBranchFilter()" (ngModelChange)="onBranchChange($event)"
+          class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 font-semibold cursor-pointer transition-all">
+          <option value="">Tüm Şubeler</option>
+          @for (b of branches(); track b.id) {
+          <option [value]="b.id">{{ b.name }}</option>
+          }
+        </select>
+      </div>
     </div>
   </div>
 
@@ -78,32 +151,53 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
-          @for (member of filteredMembers(); track member.uid) {
+          @for (member of paginatedMembers(); track member.uid) {
           <tr (click)="openDetailDrawer(member)"
-            class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group">
+            class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+            [class.opacity-75]="member.isArchived">
             <td class="py-3 px-6">
               <div class="flex items-center gap-3">
                 @if (member.photoURL) {
                   <img
                     [src]="member.photoURL"
                     [alt]="member.displayName || 'Üye'"
-                    class="w-8 h-8 rounded-full object-cover flex-shrink-0 group-hover:scale-105 transition-transform border border-slate-200 dark:border-slate-700"
+                    class="w-8 h-8 rounded-full object-cover flex-shrink-0 group-hover:scale-105 transition-transform border border-slate-200 dark:border-slate-700 shadow-2xs"
                   />
                 } @else {
                   <span
-                    class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+                    class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
                     {{ initials(member.displayName) }}
                   </span>
                 }
                 <div>
-                  <p
-                    class="font-bold text-slate-900 dark:text-white m-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    {{ member.displayName || 'Üye' }}
-                  </p>
-                  @if (member.role === 'admin') {
-                  <p class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 m-0">Admin</p>
-                  }
-                  <p class="text-[11px] text-slate-400 m-0">Bakiye: {{ money(member.walletBalance) }}</p>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <p
+                      class="font-bold text-slate-900 dark:text-white m-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {{ member.displayName || 'Üye' }}
+                    </p>
+                    @if (member.memberNumber) {
+                      <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold border border-slate-200 dark:border-slate-700">
+                        #{{ member.memberNumber }}
+                      </span>
+                    }
+                    @if (member.isArchived) {
+                      <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60">
+                        Arşivde
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    @if (member.role === 'admin') {
+                      <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Admin</span>
+                    }
+                    <span class="text-[11px] text-slate-400">Bakiye: {{ money(member.walletBalance) }}</span>
+                    @if (member.rfidCardNumber) {
+                      <span class="text-[10px] font-mono text-slate-400 flex items-center gap-0.5" title="RFID Kart Numarası">
+                        <mat-icon class="icon-size-3">credit_card</mat-icon>
+                        {{ member.rfidCardNumber }}
+                      </span>
+                    }
+                  </div>
                 </div>
               </div>
             </td>
@@ -149,18 +243,30 @@
             <td class="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">
               {{ formatDate(member.createdAt) }}
             </td>
-            <td class="py-3 px-6 text-right" (click)="$event.stopPropagation()">
+            <td class="py-3 px-6 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
               <button type="button" (click)="openWallet(member)" [matTooltip]="'Bakiye yükle / düş'"
                 class="odv-icon-btn mr-1">
                 <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
               </button>
               <button type="button" (click)="openEditDrawer(member)" [matTooltip]="'Üye bilgilerini düzenle'"
-                class="odv-icon-btn">
+                class="odv-icon-btn mr-1">
                 <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
               </button>
+              <!-- Arşive Kaldır / Arşivden Çıkar Butonu -->
+              @if (!member.isArchived) {
+                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'Üyeyi Arşive Kaldır'"
+                  class="odv-icon-btn text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 mr-1">
+                  <mat-icon class="icon-size-4">archive</mat-icon>
+                </button>
+              } @else {
+                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'Arşivden Çıkar ve Aktifleştir'"
+                  class="odv-icon-btn text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 mr-1">
+                  <mat-icon class="icon-size-4">unarchive</mat-icon>
+                </button>
+              }
               @if (member.role !== 'admin') {
               <button type="button" (click)="deleteMember(member)" [matTooltip]="'Üye profilini sil'"
-                class="odv-icon-btn odv-icon-btn-danger ml-1">
+                class="odv-icon-btn odv-icon-btn-danger">
                 <mat-icon class="icon-size-4">delete</mat-icon>
               </button>
               }
@@ -172,11 +278,13 @@
               <div class="max-w-sm mx-auto flex flex-col items-center">
                 <div
                   class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-4">
-                  <mat-icon class="icon-size-8">group</mat-icon>
+                  <mat-icon class="icon-size-8">{{ showArchived() ? 'archive' : 'group' }}</mat-icon>
                 </div>
                 <h4 class="text-base font-bold text-slate-900 dark:text-white m-0">
                   @if (searchTerm()) {
                   Eşleşen üye bulunamadı
+                  } @else if (showArchived()) {
+                  Arşivde Üye Yok
                   } @else {
                   Henüz Üye Bulunamadı
                   }
@@ -184,11 +292,13 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
                   @if (searchTerm()) {
                   "{{ searchTerm() }}" ile eşleşen bir kayıt yok.
+                  } @else if (showArchived()) {
+                  Arşive kaldırılmış üye bulunmuyor.
                   } @else {
                   Yeni bir üye ekleyerek hemen başlayabilirsiniz.
                   }
                 </p>
-                @if (!searchTerm()) {
+                @if (!searchTerm() && !showArchived()) {
                 <button type="button" (click)="openNewMemberDrawer()"
                   class="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer">
                   + İlk Üyeyi Ekle
@@ -201,6 +311,103 @@
         </tbody>
       </table>
     </div>
+
+    <!-- 4. Modern Pagination Footer -->
+    @if (!loading() && totalItems() > 0) {
+      <div class="px-6 py-3.5 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+        <!-- Item Count Info -->
+        <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Toplam <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ totalItems() }}</strong> kayıttan
+          <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ startIndex() + 1 }}-{{ endIndex() }}</strong> arası gösteriliyor
+        </div>
+
+        <!-- Controls: Page Size & Nav Buttons -->
+        <div class="flex items-center gap-3">
+          <!-- Page Size Selector -->
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">Sayfa Başına:</label>
+            <select
+              [ngModel]="pageSize()"
+              (ngModelChange)="onPageSizeChange($event)"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer shadow-2xs"
+            >
+              @for (sz of pageSizeOptions; track sz) {
+                <option [value]="sz">{{ sz }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Nav Buttons -->
+          <div class="flex items-center gap-1">
+            <!-- First Page -->
+            <button
+              type="button"
+              (click)="goToPage(1)"
+              [disabled]="currentPage() === 1"
+              class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              matTooltip="İlk Sayfa"
+            >
+              <mat-icon class="icon-size-4">first_page</mat-icon>
+            </button>
+
+            <!-- Prev Page -->
+            <button
+              type="button"
+              (click)="prevPage()"
+              [disabled]="currentPage() === 1"
+              class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              matTooltip="Önceki Sayfa"
+            >
+              <mat-icon class="icon-size-4">chevron_left</mat-icon>
+            </button>
+
+            <!-- Numbered Buttons -->
+            @for (p of visiblePages(); track p) {
+              <button
+                type="button"
+                (click)="goToPage(p)"
+                class="min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center"
+                [class.bg-indigo-600]="currentPage() === p"
+                [class.text-white]="currentPage() === p"
+                [class.border]="currentPage() !== p"
+                [class.border-slate-200]="currentPage() !== p"
+                [class.dark:border-slate-700]="currentPage() !== p"
+                [class.bg-white]="currentPage() !== p"
+                [class.dark:bg-slate-800]="currentPage() !== p"
+                [class.text-slate-700]="currentPage() !== p"
+                [class.dark:text-slate-200]="currentPage() !== p"
+                [class.hover:bg-slate-100]="currentPage() !== p"
+                [class.dark:hover:bg-slate-700]="currentPage() !== p"
+              >
+                {{ p }}
+              </button>
+            }
+
+            <!-- Next Page -->
+            <button
+              type="button"
+              (click)="nextPage()"
+              [disabled]="currentPage() === totalPages()"
+              class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              matTooltip="Sonraki Sayfa"
+            >
+              <mat-icon class="icon-size-4">chevron_right</mat-icon>
+            </button>
+
+            <!-- Last Page -->
+            <button
+              type="button"
+              (click)="goToPage(totalPages())"
+              [disabled]="currentPage() === totalPages()"
+              class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              matTooltip="Son Sayfa"
+            >
+              <mat-icon class="icon-size-4">last_page</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
     }
   </div>
 </div>

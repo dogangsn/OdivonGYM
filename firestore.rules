@@ -350,6 +350,21 @@ service cloud.firestore {
       allow delete: if adminDoc();
     }
 
+    // ---- device_commands & device_sync_queue: turnike ve donanım komut kuyruğu ----
+    match /device_commands/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create: if adminCreate() || (isSignedIn() && request.resource.data.tenantId == myTenantId());
+      allow update: if adminDoc() && tenantUnchanged();
+      allow delete: if adminDoc();
+    }
+
+    match /device_sync_queue/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create: if adminCreate() || (isSignedIn() && request.resource.data.tenantId == myTenantId());
+      allow update: if adminDoc() && tenantUnchanged();
+      allow delete: if adminDoc();
+    }
+
     // ---- guest_members: misafir üyeler ve salon tanıtım kayıtları ----
     match /guest_members/{docId} {
       allow read: if belongsToMyTenant(resource.data.tenantId);

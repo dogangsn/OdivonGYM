@@ -106,7 +106,7 @@
   <nav class="sidebar__nav custom-scroll">
     @for (group of groups(); track group.titleKey) {
       @if (!collapsed()) {
-        <details class="group-details" [open]="true">
+        <details class="group-details">
           <summary class="group-summary">
             <span class="group-title">
               {{ group.titleKey.includes('.') ? (group.titleKey | transloco) : group.titleKey }}

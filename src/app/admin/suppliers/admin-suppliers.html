@@ -1,38 +1,25 @@
 <div class="font-sans space-y-6">
   <!-- 1. Header -->
-  <app-page-header
-    title="Tedarikçi & Cari Hesap Yönetimi"
-    icon="storefront"
-    description="Ekipman üreticileri, supplement toptancıları, temizlik ve içecek tedarikçilerinin cari hesaplarını takip edin."
-  >
+  <app-page-header title="Tedarikçi & Cari Hesap Yönetimi" icon="storefront"
+    description="Ekipman üreticileri, supplement toptancıları, temizlik ve içecek tedarikçilerinin cari hesaplarını takip edin.">
     <div actions class="flex items-center gap-2">
-      <button
-        type="button"
-        (click)="openCategoryModal()"
-        class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
-      >
+      <button type="button" (click)="openCategoryModal()"
+        class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5">
         <mat-icon class="icon-size-4 text-indigo-600">category</mat-icon>
         <span>Kategorileri Yönet ({{ categories().length }})</span>
       </button>
 
       @if (suppliers().length === 0) {
-        <button
-          type="button"
-          (click)="seedDefaults()"
-          class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
-        >
-          <mat-icon class="icon-size-4 text-indigo-600">auto_fix_high</mat-icon>
-          <span>Örnek Tedarikçileri Yükle</span>
-        </button>
+      <button type="button" (click)="seedDefaults()"
+        class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5">
+        <mat-icon class="icon-size-4 text-indigo-600">auto_fix_high</mat-icon>
+        <span>Örnek Tedarikçileri Yükle</span>
+      </button>
       }
 
-      <button
-        type="button"
-        (click)="openNewDrawer()"
-        class="odv-btn-primary text-xs flex items-center gap-1.5"
-      >
+      <button type="button" (click)="openNewDrawer()" class="odv-btn-primary text-xs flex items-center gap-1.5">
         <mat-icon class="icon-size-4">add</mat-icon>
-        <span>+ Yeni Tedarikçi Ekle</span>
+        <span>Yeni Tedarikçi Ekle</span>
       </button>
     </div>
   </app-page-header>
@@ -42,7 +29,8 @@
     <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
       <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Kayıtlı Tedarikçi</span>
       <div class="text-2xl font-black text-slate-900 dark:text-white">{{ suppliers().length }} Firma</div>
-      <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ categories().length }} Aktif Kategori</span>
+      <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ categories().length }} Aktif
+        Kategori</span>
     </div>
 
     <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
@@ -62,41 +50,37 @@
   </div>
 
   <!-- 3. Filter Toolbar -->
-  <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+  <div
+    class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
     <div class="relative flex-1">
       <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4">search</mat-icon>
-      <input
-        type="text"
-        [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event)"
+      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
         placeholder="Firma adı, yetkili, telefon veya vergi no ara..."
-        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold"
-      />
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold" />
     </div>
 
     <div class="flex items-center gap-2">
       <label class="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">Kategori:</label>
-      <select
-        [ngModel]="selectedCategory()"
-        (ngModelChange)="selectedCategory.set($event)"
-        class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      >
+      <select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event)"
+        class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
         <option value="all">Tüm Kategoriler ({{ suppliers().length }})</option>
         @for (cat of categories(); track cat.id || cat.key) {
-          <option [value]="cat.key">
-            {{ cat.name }} ({{ getCategorySupplierCount(cat.key) }})
-          </option>
+        <option [value]="cat.key">
+          {{ cat.name }} ({{ getCategorySupplierCount(cat.key) }})
+        </option>
         }
       </select>
     </div>
   </div>
 
   <!-- 4. Suppliers Data Table -->
-  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+  <div
+    class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <tr
+            class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <th class="py-3.5 px-6">Tedarikçi Firma</th>
             <th class="py-3.5 px-6">Kategori</th>
             <th class="py-3.5 px-6">İletişim</th>
@@ -107,92 +91,76 @@
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
           @for (s of filteredSuppliers(); track s.id) {
-            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-              <td class="py-3.5 px-6">
-                <div>
-                  <strong class="font-bold text-slate-900 dark:text-white block">{{ s.name }}</strong>
-                  @if (s.contactPerson) {
-                    <span class="text-[11px] text-slate-500 dark:text-slate-400">Yetkili: {{ s.contactPerson }}</span>
-                  }
-                </div>
-              </td>
-              <td class="py-3.5 px-6 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border" [class]="getCategoryBadge(s.category)">
-                  {{ getCategoryLabel(s.category) }}
-                </span>
-              </td>
-              <td class="py-3.5 px-6 whitespace-nowrap">
-                <p class="m-0 font-semibold text-slate-800 dark:text-slate-200">{{ s.phone }}</p>
-                @if (s.email) {
-                  <p class="m-0 text-[11px] text-slate-400">{{ s.email }}</p>
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+            <td class="py-3.5 px-6">
+              <div>
+                <strong class="font-bold text-slate-900 dark:text-white block">{{ s.name }}</strong>
+                @if (s.contactPerson) {
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">Yetkili: {{ s.contactPerson }}</span>
                 }
-              </td>
-              <td class="py-3.5 px-6 whitespace-nowrap">
-                @if (s.taxNumber) {
-                  <span class="font-semibold text-slate-700 dark:text-slate-300 block">{{ s.taxOffice || 'VD' }}</span>
-                  <span class="text-[11px] text-slate-400 font-mono">{{ s.taxNumber }}</span>
-                } @else {
-                  <span class="text-slate-400">—</span>
-                }
-              </td>
-              <td class="py-3.5 px-6 text-right whitespace-nowrap">
-                <span
-                  class="font-black text-sm tracking-tight"
-                  [class.text-rose-600]="s.balance > 0"
-                  [class.text-slate-900]="s.balance === 0"
-                  [class.dark:text-white]="s.balance === 0"
-                  [class.text-emerald-600]="s.balance < 0"
-                >
-                  {{ money(s.balance) }}
-                </span>
-              </td>
-              <td class="py-3.5 px-6 text-right whitespace-nowrap">
-                <button
-                  type="button"
-                  (click)="openEditDrawer(s)"
-                  matTooltip="Düzenle"
-                  class="odv-icon-btn mr-1"
-                >
-                  <mat-icon class="icon-size-4">edit</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  (click)="deleteSupplier(s)"
-                  matTooltip="Sil"
-                  class="odv-icon-btn odv-icon-btn-danger"
-                >
-                  <mat-icon class="icon-size-4">delete</mat-icon>
-                </button>
-              </td>
-            </tr>
+              </div>
+            </td>
+            <td class="py-3.5 px-6 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border"
+                [class]="getCategoryBadge(s.category)">
+                {{ getCategoryLabel(s.category) }}
+              </span>
+            </td>
+            <td class="py-3.5 px-6 whitespace-nowrap">
+              <p class="m-0 font-semibold text-slate-800 dark:text-slate-200">{{ s.phone }}</p>
+              @if (s.email) {
+              <p class="m-0 text-[11px] text-slate-400">{{ s.email }}</p>
+              }
+            </td>
+            <td class="py-3.5 px-6 whitespace-nowrap">
+              @if (s.taxNumber) {
+              <span class="font-semibold text-slate-700 dark:text-slate-300 block">{{ s.taxOffice || 'VD' }}</span>
+              <span class="text-[11px] text-slate-400 font-mono">{{ s.taxNumber }}</span>
+              } @else {
+              <span class="text-slate-400">—</span>
+              }
+            </td>
+            <td class="py-3.5 px-6 text-right whitespace-nowrap">
+              <span class="font-black text-sm tracking-tight" [class.text-rose-600]="s.balance > 0"
+                [class.text-slate-900]="s.balance === 0" [class.dark:text-white]="s.balance === 0"
+                [class.text-emerald-600]="s.balance < 0">
+                {{ money(s.balance) }}
+              </span>
+            </td>
+            <td class="py-3.5 px-6 text-right whitespace-nowrap">
+              <button type="button" (click)="openEditDrawer(s)" matTooltip="Düzenle" class="odv-icon-btn mr-1">
+                <mat-icon class="icon-size-4">edit</mat-icon>
+              </button>
+              <button type="button" (click)="deleteSupplier(s)" matTooltip="Sil"
+                class="odv-icon-btn odv-icon-btn-danger">
+                <mat-icon class="icon-size-4">delete</mat-icon>
+              </button>
+            </td>
+          </tr>
           } @empty {
-            <tr>
-              <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
-                <div class="flex flex-col items-center justify-center gap-2">
-                  <mat-icon class="icon-size-8 text-slate-300">storefront</mat-icon>
-                  <p class="font-semibold text-slate-600 dark:text-slate-300 text-sm m-0">Henüz kayıtlı tedarikçi bulunamadı</p>
-                  <p class="text-xs text-slate-400 max-w-sm m-0">Yeni bir tedarikçi ekleyebilir veya hızlıca örnek tedarikçileri yükleyerek başlayabilirsiniz.</p>
-                  <div class="flex items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      (click)="seedDefaults()"
-                      class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <mat-icon class="icon-size-4 text-indigo-600">auto_fix_high</mat-icon>
-                      <span>Örnek Tedarikçileri Yükle</span>
-                    </button>
-                    <button
-                      type="button"
-                      (click)="openNewDrawer()"
-                      class="odv-btn-primary text-xs flex items-center gap-1.5"
-                    >
-                      <mat-icon class="icon-size-4">add</mat-icon>
-                      <span>+ Yeni Tedarikçi Ekle</span>
-                    </button>
-                  </div>
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <mat-icon class="icon-size-8 text-slate-300">storefront</mat-icon>
+                <p class="font-semibold text-slate-600 dark:text-slate-300 text-sm m-0">Henüz kayıtlı tedarikçi
+                  bulunamadı</p>
+                <p class="text-xs text-slate-400 max-w-sm m-0">Yeni bir tedarikçi ekleyebilir veya hızlıca örnek
+                  tedarikçileri yükleyerek başlayabilirsiniz.</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <button type="button" (click)="seedDefaults()"
+                    class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-indigo-600">auto_fix_high</mat-icon>
+                    <span>Örnek Tedarikçileri Yükle</span>
+                  </button>
+                  <button type="button" (click)="openNewDrawer()"
+                    class="odv-btn-primary text-xs flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4">add</mat-icon>
+                    <span>Yeni Tedarikçi Ekle</span>
+                  </button>
                 </div>
-              </td>
-            </tr>
+              </div>
+            </td>
+          </tr>
           }
         </tbody>
       </table>
@@ -201,19 +169,12 @@
 </div>
 
 <!-- 5. Slide-Over Drawer (Tedarikçi Ekle / Düzenle) -->
-<app-slide-over
-  [open]="drawerOpen()"
-  [title]="editingSupplier() ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi Tanımla'"
-  submitLabel="Kaydet"
-  [submitting]="submitting()"
-  [errorMessage]="errorMessage()"
-  (closed)="closeDrawer()"
-  (close)="closeDrawer()"
-  (submitted)="submit()"
-  (save)="submit()"
->
+<app-slide-over [open]="drawerOpen()" [title]="editingSupplier() ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi Tanımla'"
+  submitLabel="Kaydet" [submitting]="submitting()" [errorMessage]="errorMessage()" (closed)="closeDrawer()"
+  (close)="closeDrawer()" (submitted)="submit()" (save)="submit()">
   <div [formGroup]="form" class="space-y-4">
-    <app-field label="Firma / Tedarikçi Adı" [required]="true" [error]="fieldErr('name', { required: 'Firma adı zorunludur' })">
+    <app-field label="Firma / Tedarikçi Adı" [required]="true"
+      [error]="fieldErr('name', { required: 'Firma adı zorunludur' })">
       <input type="text" formControlName="name" placeholder="Örn: Technogym Fitness A.Ş." class="odv-input" />
     </app-field>
 
@@ -221,7 +182,7 @@
       <app-field label="Kategori" [required]="true">
         <select formControlName="category" class="odv-input">
           @for (cat of categories(); track cat.id || cat.key) {
-            <option [value]="cat.key">{{ cat.name }}</option>
+          <option [value]="cat.key">{{ cat.name }}</option>
           }
         </select>
       </app-field>
@@ -232,7 +193,8 @@
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <app-field label="Telefon" [required]="true" [error]="fieldErr('phone', { required: 'Telefon numarası zorunludur' })">
+      <app-field label="Telefon" [required]="true"
+        [error]="fieldErr('phone', { required: 'Telefon numarası zorunludur' })">
         <input type="tel" formControlName="phone" placeholder="0212..." class="odv-input" />
       </app-field>
 
@@ -266,38 +228,30 @@
     </app-field>
 
     <app-field label="Özel Notlar">
-      <textarea rows="2" formControlName="notes" placeholder="Ödeme vadesi, indirim şartları vb." class="odv-input text-xs"></textarea>
+      <textarea rows="2" formControlName="notes" placeholder="Ödeme vadesi, indirim şartları vb."
+        class="odv-input text-xs"></textarea>
     </app-field>
   </div>
 </app-slide-over>
 
 <!-- 6. Slide-Over Drawer (Tedarikçi Kategorileri Yönetimi) -->
-<app-slide-over
-  [open]="categoryModalOpen()"
-  title="Tedarikçi Kategorileri Yönetimi"
-  submitLabel="Kategoriyi Kaydet"
-  [submitting]="savingCategory()"
-  (closed)="closeCategoryModal()"
-  (close)="closeCategoryModal()"
-  (submitted)="saveNewCategory()"
-  (save)="saveNewCategory()"
->
+<app-slide-over [open]="categoryModalOpen()" title="Tedarikçi Kategorileri Yönetimi" submitLabel="Kategoriyi Kaydet"
+  [submitting]="savingCategory()" (closed)="closeCategoryModal()" (close)="closeCategoryModal()"
+  (submitted)="saveNewCategory()" (save)="saveNewCategory()">
   <div class="space-y-5">
     <!-- Yeni Kategori Ekleme Kartı -->
-    <div class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 space-y-3">
-      <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
+    <div
+      class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 space-y-3">
+      <div
+        class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
         <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400">add_circle</mat-icon>
         <span>Yeni Kategori Ekle</span>
       </div>
 
       <div>
         <label class="odv-label required text-xs font-bold text-slate-700 dark:text-slate-200">Kategori Adı</label>
-        <input
-          type="text"
-          [(ngModel)]="newCategoryName"
-          placeholder="Örn: Tekstil & Forma, Hukuk & Danışmanlık"
-          class="odv-input"
-        />
+        <input type="text" [(ngModel)]="newCategoryName" placeholder="Örn: Tekstil & Forma, Hukuk & Danışmanlık"
+          class="odv-input" />
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -305,19 +259,14 @@
           <label class="odv-label text-xs font-bold text-slate-700 dark:text-slate-200">Renk Teması</label>
           <select [(ngModel)]="newCategoryColor" class="odv-input">
             @for (opt of colorOptions; track opt.id) {
-              <option [value]="opt.id">{{ opt.label }}</option>
+            <option [value]="opt.id">{{ opt.label }}</option>
             }
           </select>
         </div>
 
         <div>
           <label class="odv-label text-xs font-bold text-slate-700 dark:text-slate-200">Açıklama (İsteğe Bağlı)</label>
-          <input
-            type="text"
-            [(ngModel)]="newCategoryDescription"
-            placeholder="Kategori kapsamı..."
-            class="odv-input"
-          />
+          <input type="text" [(ngModel)]="newCategoryDescription" placeholder="Kategori kapsamı..." class="odv-input" />
         </div>
       </div>
     </div>
@@ -331,53 +280,48 @@
         <span class="text-[11px] text-slate-400">Firestore'da depolanır</span>
       </div>
 
-      <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-96 overflow-y-auto custom-scroll">
+      <div
+        class="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-96 overflow-y-auto custom-scroll">
         @for (cat of categories(); track cat.id || cat.key) {
-          <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <span
-                class="w-2.5 h-2.5 rounded-full shrink-0"
-                [class.bg-indigo-500]="cat.colorTag === 'indigo' || !cat.colorTag"
-                [class.bg-emerald-500]="cat.colorTag === 'emerald'"
-                [class.bg-cyan-500]="cat.colorTag === 'cyan'"
-                [class.bg-amber-500]="cat.colorTag === 'amber'"
-                [class.bg-purple-500]="cat.colorTag === 'purple'"
-                [class.bg-rose-500]="cat.colorTag === 'rose'"
-                [class.bg-slate-500]="cat.colorTag === 'slate'"
-              ></span>
-              <div class="min-w-0">
-                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate">
-                  {{ cat.name }}
-                </span>
-                @if (cat.description) {
-                  <span class="text-[10px] text-slate-400 block truncate max-w-xs">
-                    {{ cat.description }}
-                  </span>
-                }
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 shrink-0">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                {{ getCategorySupplierCount(cat.key) }} Firma
+        <div
+          class="p-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0"
+              [class.bg-indigo-500]="cat.colorTag === 'indigo' || !cat.colorTag"
+              [class.bg-emerald-500]="cat.colorTag === 'emerald'" [class.bg-cyan-500]="cat.colorTag === 'cyan'"
+              [class.bg-amber-500]="cat.colorTag === 'amber'" [class.bg-purple-500]="cat.colorTag === 'purple'"
+              [class.bg-rose-500]="cat.colorTag === 'rose'" [class.bg-slate-500]="cat.colorTag === 'slate'"></span>
+            <div class="min-w-0">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate">
+                {{ cat.name }}
               </span>
-
-              @if (cat.id) {
-                <button
-                  type="button"
-                  (click)="deleteCategory(cat)"
-                  class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center cursor-pointer transition-colors"
-                  title="Kategoriyi Sil"
-                >
-                  <mat-icon class="icon-size-4">delete_outline</mat-icon>
-                </button>
+              @if (cat.description) {
+              <span class="text-[10px] text-slate-400 block truncate max-w-xs">
+                {{ cat.description }}
+              </span>
               }
             </div>
           </div>
-        } @empty {
-          <div class="p-6 text-center text-xs text-slate-400">
-            Henüz kategori bulunmuyor. Otomatik yükleniyor…
+
+          <div class="flex items-center gap-2 shrink-0">
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+              {{ getCategorySupplierCount(cat.key) }} Firma
+            </span>
+
+            @if (cat.id) {
+            <button type="button" (click)="deleteCategory(cat)"
+              class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center cursor-pointer transition-colors"
+              title="Kategoriyi Sil">
+              <mat-icon class="icon-size-4">delete_outline</mat-icon>
+            </button>
+            }
           </div>
+        </div>
+        } @empty {
+        <div class="p-6 text-center text-xs text-slate-400">
+          Henüz kategori bulunmuyor. Otomatik yükleniyor…
+        </div>
         }
       </div>
     </div>

@@ -25,6 +25,7 @@ export class AlertService {
     showConfirmButton: false,
     timer: 3000,
     timerProgressBar: true,
+    backdrop: false,
     didOpen: (toast) => {
       toast.onmouseenter = Swal.stopTimer;
       toast.onmouseleave = Swal.resumeTimer;

@@ -106,54 +106,13 @@ export class AdminAccessControlService {
     await deleteDoc(docRef);
   }
 
+  /**
+   * Statik / mock veri oluşturulmaz. Turnikeler yalnızca işletme yöneticisi tarafından
+   * gerçek donanım bilgileriyle tanımlanır.
+   */
   async seedDefaultGatesIfEmpty(): Promise<void> {
-    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
-    if (!tenantId) return;
-
-    const q = query(
-      collection(this.firestore, 'turnstile_gates'),
-      where('tenantId', '==', tenantId),
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) return;
-
-    const defaults: Omit<TurnstileGate, 'id' | 'tenantId' | 'createdAt'>[] = [
-      {
-        name: 'Turnike 01 (Ana Giriş)',
-        location: 'Giriş Holü - Turnike A',
-        direction: 'in',
-        status: 'online',
-        readerType: 'Dinamik QR + NFC Mifare',
-        connectionProtocol: 'websocket',
-        endpoint: 'wss://turnstile-gateway.odivon.com/ws/gate-01',
-        port: 8080,
-      },
-      {
-        name: 'Turnike 02 (Ana Çıkış)',
-        location: 'Giriş Holü - Turnike B',
-        direction: 'out',
-        status: 'online',
-        readerType: 'Dinamik QR + Optik Sensör',
-        connectionProtocol: 'mqtt',
-        endpoint: 'mqtt://broker.odivon.com:1883',
-        topicOrChannel: `odivon/${tenantId}/gate-02/events`,
-        port: 1883,
-      },
-      {
-        name: 'Turnike 03 (VIP / Studio)',
-        location: '2. Kat Pilates & Reformer Alanı',
-        direction: 'both',
-        status: 'online',
-        readerType: 'Dinamik QR Okuyucu',
-        connectionProtocol: 'reverse_tunnel',
-        endpoint: 'edge-tunnel://gate03.internal-mesh:2201',
-        port: 2201,
-      },
-    ];
-
-    for (const gate of defaults) {
-      await this.createGate(gate);
-    }
+    // Sabit / sahte turnike verisi enjekte edilmez.
+    return Promise.resolve();
   }
 
   watchLogs(): Observable<AccessLog[]> {
@@ -330,5 +289,47 @@ export class AdminAccessControlService {
         timestamp: new Date(),
       };
     }
+  }
+
+  /**
+   * Yerel Edge Ajanına (Perkotek YT-32 Servisi) anlık log çekme emri gönderir
+   */
+  async requestDeviceSync(): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
+    if (!tenantId) return;
+
+    await addDoc(collection(this.firestore, 'device_commands'), {
+      tenantId,
+      command: 'PULL_LOGS_NOW',
+      targetDevice: 'ALL_GATES',
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
+  }
+
+  /**
+   * Üyenin abonelik bitiş tarihi değiştiğinde Perkotek YT-32 cihazında
+   * üyenin erişimini açmak veya engellemek için senkronizasyon kuyruğuna yazar
+   */
+  async queueMemberDeviceSync(
+    userId: string,
+    displayName: string,
+    action: 'ENABLE' | 'DISABLE' | 'UPDATE_EXPIRY',
+    endsAt?: Date,
+    cardNo?: string,
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId || this.auth.profile()?.uid;
+    if (!tenantId) return;
+
+    await addDoc(collection(this.firestore, 'device_sync_queue'), {
+      tenantId,
+      userId,
+      displayName,
+      cardNo: cardNo || null,
+      action,
+      expiresAt: endsAt ? Timestamp.fromDate(endsAt) : null,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
   }
 }

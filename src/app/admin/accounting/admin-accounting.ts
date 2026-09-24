@@ -189,7 +189,7 @@ const PAYMENT_LABEL: Record<string, string> = {
               class="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-bold flex items-center gap-1 cursor-pointer"
             >
               <mat-icon class="icon-size-3.5">add_circle</mat-icon>
-              <span>+ Yeni Kategori Tanımla</span>
+              <span>Yeni Kategori Tanımla</span>
             </button>
           </div>
           <select formControlName="category" class="odv-input">
@@ -328,7 +328,7 @@ export class AdminAccounting implements OnInit {
 
   ngOnInit(): void {
     // Seed standard categories dynamically if tenant has none
-    this.service.seedDefaultCategoriesIfEmpty().catch(() => {});
+    this.service.seedDefaultCategoriesIfEmpty().catch(() => { });
   }
 
   protected readonly entries = computed(() => {

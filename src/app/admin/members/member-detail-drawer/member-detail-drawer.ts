@@ -7,7 +7,9 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
+import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -76,7 +78,16 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
 @Component({
   selector: 'app-member-detail-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, SignaturePadModal],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatTooltipModule,
+    SignaturePadModal,
+    CdkDrag,
+    CdkDragHandle,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-detail-drawer.html',
   styleUrl: './member-detail-drawer.scss',
@@ -98,6 +109,7 @@ export class MemberDetailDrawer {
 
   protected readonly activeTab = signal<MemberDetailTab>('measurements');
   protected readonly isExpanded = signal(false);
+  protected readonly cdkDrag = viewChild(CdkDrag);
 
   // Hazır Antrenman Şablonları (Templates)
   protected readonly workoutTemplates = toSignal(this.templatesService.watchTemplates(), { initialValue: [] });
@@ -334,6 +346,7 @@ export class MemberDetailDrawer {
         this.showAddMeasurementForm.set(false);
         this.showAddWorkoutPlanForm.set(false);
         this.showAddDocForm.set(false);
+        this.cdkDrag()?.reset();
         return;
       }
 
@@ -433,6 +446,7 @@ export class MemberDetailDrawer {
 
   close(): void {
     this.showAddMeasurementForm.set(false);
+    this.cdkDrag()?.reset();
     this.closed.emit();
   }
 
@@ -838,6 +852,7 @@ export class MemberDetailDrawer {
 
   toggleExpand(): void {
     this.isExpanded.update((v) => !v);
+    this.cdkDrag()?.reset();
   }
 
   // --- KART TANIMLAMA & DEPOZİTO METOTLARI ---

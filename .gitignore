@@ -54,3 +54,9 @@ functions/lib
 # Environment secrets (gerçek Firebase config değerlerini burada tutma)
 .env
 .env.*
+
+# Edge Agent Secrets & State
+*serviceAccountKey*.json
+edge-agent/node_modules/
+edge-agent/config.json
+edge-agent/state.json

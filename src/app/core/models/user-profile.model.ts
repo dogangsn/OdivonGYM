@@ -76,6 +76,10 @@ export interface UserProfile {
   cardDepositFee?: number;
   /** Kart depozito ücreti alındı mı? */
   cardDepositPaid?: boolean;
+  /** Üye arşivlendi mi? Arşivlenen üyeler ana listede gizlenir ancak kayıtları korunur. */
+  isArchived?: boolean;
+  /** Arşive kaldırılma tarihi */
+  archivedAt?: Timestamp | null;
 }
 
 

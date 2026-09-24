@@ -102,14 +102,44 @@ body.swal2-height-auto {
   min-height: 100% !important;
 }
 
+// Toast specific: ensure body and html keep full layout without any backdrop interference
+body.swal2-toast-shown {
+  div.swal2-container {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+}
+
 div.swal2-container {
   z-index: 10000 !important;
 
-  // Backdrop with glassmorphic blur
-  &.swal2-backdrop-show {
+  // Backdrop with glassmorphic blur (ONLY for modal dialogs, NEVER for toasts)
+  &.swal2-backdrop-show:not(.swal2-top):not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom):not(.swal2-bottom-end):not(.swal2-bottom-start) {
     background: rgba(15, 23, 42, 0.5) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  // Toast Container Override: Never show background, blur, or block the screen
+  &:has(.swal2-toast),
+  &.swal2-top,
+  &.swal2-top-end,
+  &.swal2-top-start,
+  &.swal2-bottom,
+  &.swal2-bottom-end,
+  &.swal2-bottom-start {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+
+  .swal2-toast {
+    pointer-events: auto !important;
   }
 
   // Popup Modal

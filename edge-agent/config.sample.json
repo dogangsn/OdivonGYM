@@ -1,0 +1,18 @@
+{
+  "tenantId": "SALON_TENANT_ID_BURAYA",
+  "device": {
+    "ip": "192.168.1.201",
+    "port": 4370,
+    "timeout": 5000,
+    "inMemory": true,
+    "gateName": "Turnike 1 - Ana Giriş",
+    "direction": "in"
+  },
+  "polling": {
+    "intervalSeconds": 5,
+    "stateFilePath": "./state.json"
+  },
+  "firebase": {
+    "serviceAccountKeyPath": "./serviceAccountKey.json"
+  }
+}
