@@ -45,4 +45,5 @@ jobs:
         run: npm --prefix functions run build
 
       - name: Deploy to Firebase
-        run: npx --yes firebase-tools@latest deploy --non-interactive --project odivongym
+        # Storage requires a default bucket and the Blaze plan before its rules can be deployed.
+        run: npx --yes firebase-tools@latest deploy --only hosting,functions,firestore --non-interactive --project odivongym
