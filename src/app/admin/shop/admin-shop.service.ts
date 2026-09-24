@@ -73,13 +73,31 @@ export class AdminShopService {
     input: Omit<StockCategoryItem, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
     const tenantId = this.tenantId();
+    const cleanName = input.name.trim();
+    const key = (input.key || cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_')).trim();
+
+    const q = query(
+      collection(this.firestore, 'gym_stock_categories'),
+      where('tenantId', '==', tenantId),
+    );
+    const snap = await getDocs(q);
+    const exists = snap.docs.some((d) => {
+      const data = d.data();
+      const sameName = (data['name'] || '').trim().toLocaleLowerCase('tr') === cleanName.toLocaleLowerCase('tr');
+      const sameKey = data['key'] === key;
+      return sameName || sameKey;
+    });
+    if (exists) {
+      throw new Error(`"${cleanName}" isimli veya benzer anahtara sahip bir stok kategorisi zaten mevcut.`);
+    }
+
     const docRef = await addDoc(collection(this.firestore, 'gym_stock_categories'), {
       tenantId,
-      key: input.key || input.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-      name: input.name,
+      key,
+      name: cleanName,
       icon: input.icon || 'inventory_2',
       colorTag: input.colorTag || 'indigo',
-      description: input.description ?? '',
+      description: input.description?.trim() ?? '',
       isDefault: input.isDefault ?? false,
       order: input.order ?? 99,
       createdAt: serverTimestamp(),
@@ -89,12 +107,33 @@ export class AdminShopService {
   }
 
   async updateCategory(id: string, input: Partial<StockCategoryItem>): Promise<void> {
+    const tenantId = this.tenantId();
+    if (input.name || input.key) {
+      const q = query(
+        collection(this.firestore, 'gym_stock_categories'),
+        where('tenantId', '==', tenantId),
+      );
+      const snap = await getDocs(q);
+      const cleanName = input.name ? input.name.trim().toLocaleLowerCase('tr') : null;
+      const targetKey = input.key ? input.key.trim() : null;
+      const exists = snap.docs.some((d) => {
+        if (d.id === id) return false;
+        const data = d.data();
+        const sameName = cleanName && (data['name'] || '').trim().toLocaleLowerCase('tr') === cleanName;
+        const sameKey = targetKey && data['key'] === targetKey;
+        return sameName || sameKey;
+      });
+      if (exists) {
+        throw new Error('Bu isim veya anahtara sahip başka bir stok kategorisi zaten mevcut.');
+      }
+    }
+
     const cleanData: Record<string, any> = { updatedAt: serverTimestamp() };
-    if (input.name !== undefined) cleanData['name'] = input.name;
-    if (input.key !== undefined) cleanData['key'] = input.key;
+    if (input.name !== undefined) cleanData['name'] = input.name.trim();
+    if (input.key !== undefined) cleanData['key'] = input.key.trim();
     if (input.icon !== undefined) cleanData['icon'] = input.icon;
     if (input.colorTag !== undefined) cleanData['colorTag'] = input.colorTag;
-    if (input.description !== undefined) cleanData['description'] = input.description;
+    if (input.description !== undefined) cleanData['description'] = input.description.trim();
     if (input.order !== undefined) cleanData['order'] = input.order;
 
     await updateDoc(doc(this.firestore, 'gym_stock_categories', id), cleanData);
@@ -111,11 +150,21 @@ export class AdminShopService {
       where('tenantId', '==', tenantId),
     );
     const snap = await getDocs(q);
-    if (!snap.empty) return;
+    const existingKeys = new Set(snap.docs.map((d) => d.data()['key']));
+    const existingNames = new Set(
+      snap.docs.map((d) => (d.data()['name'] || '').trim().toLocaleLowerCase('tr')),
+    );
+
+    const toAdd = DEFAULT_STOCK_CATEGORIES.filter(
+      (cat) =>
+        !existingKeys.has(cat.key) &&
+        !existingNames.has(cat.name.trim().toLocaleLowerCase('tr')),
+    );
+    if (toAdd.length === 0) return;
 
     const batch = writeBatch(this.firestore);
     const now = serverTimestamp();
-    for (const cat of DEFAULT_STOCK_CATEGORIES) {
+    for (const cat of toAdd) {
       const docRef = doc(collection(this.firestore, 'gym_stock_categories'));
       batch.set(docRef, {
         id: docRef.id,

@@ -12,7 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
-import { AdminDisciplinesService } from './admin-disciplines.service';
+import { AdminDisciplinesService, normalizeDisciplineKey } from './admin-disciplines.service';
 import {
   DisciplineCategory,
   DisciplineCode,
@@ -198,6 +198,7 @@ export class AdminDisciplines {
 
   protected readonly isSaving = signal(false);
   protected readonly isSeeding = signal(false);
+  protected readonly isCleaning = signal(false);
 
   // Forms
   protected readonly disciplineForm: FormGroup = this.fb.group({
@@ -316,8 +317,16 @@ export class AdminDisciplines {
       return;
     }
     const val = this.exerciseForm.value;
+    const name = val.name?.trim() || '';
+    const normName = normalizeDisciplineKey(name);
+
+    if (this.exerciseLibrary().some((e) => normalizeDisciplineKey(e.name) === normName)) {
+      this.alertService.toastError(`"${name}" isimli egzersiz kütüphanede zaten mevcut.`);
+      return;
+    }
+
     const newEx: Exercise = {
-      name: val.name?.trim() || '',
+      name,
       muscleGroup: val.muscleGroup as MuscleGroup,
       equipmentName: val.equipmentName?.trim() || '',
       sets: Number(val.sets) || 3,
@@ -326,7 +335,7 @@ export class AdminDisciplines {
       notes: val.notes?.trim() || '',
     };
     this.exerciseLibrary.update((list) => [newEx, ...list]);
-    this.snackBar.open('Egzersiz kütüphaneye eklendi.', 'Tamam', { duration: 2500 });
+    this.alertService.toastSuccess('Egzersiz kütüphaneye eklendi.');
     this.closeExerciseModal();
   }
 
@@ -408,15 +417,15 @@ export class AdminDisciplines {
       const editId = this.editingDisciplineId();
       if (editId) {
         await this.disciplinesService.updateDiscipline(editId, val);
-        this.snackBar.open('Branş bilgileri güncellendi.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Branş bilgileri güncellendi.');
       } else {
         await this.disciplinesService.createDiscipline(val);
-        this.snackBar.open('Yeni spor branşı başarıyla eklendi.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Yeni spor branşı başarıyla eklendi.');
       }
       this.disciplineModalOpen.set(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.snackBar.open('İşlem başarısız oldu.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError(err?.message || 'İşlem başarısız oldu.');
     } finally {
       this.isSaving.set(false);
     }
@@ -495,15 +504,15 @@ export class AdminDisciplines {
       const editId = this.editingEquipmentId();
       if (editId) {
         await this.disciplinesService.updateEquipment(editId, val);
-        this.snackBar.open('Cihaz bilgileri güncellendi.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Cihaz bilgileri güncellendi.');
       } else {
         await this.disciplinesService.createEquipment(val);
-        this.snackBar.open('Yeni cihaz/ekipman envantere eklendi.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Yeni cihaz/ekipman envantere eklendi.');
       }
       this.equipmentModalOpen.set(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.snackBar.open('Cihaz kaydedilemedi.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError(err?.message || 'Cihaz kaydedilemedi.');
     } finally {
       this.isSaving.set(false);
     }
@@ -561,15 +570,15 @@ export class AdminDisciplines {
       const editId = this.editingFacilityId();
       if (editId) {
         await this.disciplinesService.updateFacility(editId, val);
-        this.snackBar.open('Alan güncellendi.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Alan güncellendi.');
       } else {
         await this.disciplinesService.createFacility(val);
-        this.snackBar.open('Yeni stüdyo/alan oluşturuldu.', 'Tamam', { duration: 3000 });
+        this.alertService.toastSuccess('Yeni stüdyo/alan oluşturuldu.');
       }
       this.facilityModalOpen.set(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.snackBar.open('İşlem başarısız.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError(err?.message || 'İşlem başarısız.');
     } finally {
       this.isSaving.set(false);
     }
@@ -595,16 +604,42 @@ export class AdminDisciplines {
   async seedAllDefaults(): Promise<void> {
     this.isSeeding.set(true);
     try {
-      await this.disciplinesService.seedDefaultDisciplines();
-      await this.disciplinesService.seedDefaultEquipment();
-      this.snackBar.open('Varsayılan branş ve ekipmanlar başarıyla yüklendi!', 'Tamam', {
-        duration: 3500,
-      });
-    } catch (err) {
+      const discResult = await this.disciplinesService.seedDefaultDisciplines();
+      const eqResult = await this.disciplinesService.seedDefaultEquipment();
+      const totalAdded = discResult.added + eqResult.added;
+
+      if (totalAdded === 0) {
+        this.alertService.toastInfo('Tüm hazır branş ve ekipmanlar zaten envanterde mevcut.');
+      } else {
+        this.alertService.toastSuccess(
+          `${discResult.added} branş ve ${eqResult.added} ekipman başarıyla eklendi!`,
+        );
+      }
+    } catch (err: any) {
       console.error(err);
-      this.snackBar.open('Yükleme sırasında hata oluştu.', 'Kapat', { duration: 3000 });
+      this.alertService.toastError(err?.message || 'Yükleme sırasında hata oluştu.');
     } finally {
       this.isSeeding.set(false);
+    }
+  }
+
+  async cleanupDuplicates(): Promise<void> {
+    this.isCleaning.set(true);
+    try {
+      const result = await this.disciplinesService.cleanupDuplicateRecords();
+      const total = result.deletedDisciplines + result.deletedEquipment;
+      if (total > 0) {
+        this.alertService.toastSuccess(
+          `${result.deletedDisciplines} mükerrer branş ve ${result.deletedEquipment} mükerrer cihaz temizlendi.`,
+        );
+      } else {
+        this.alertService.toastInfo('Herhangi bir mükerrer kayıt bulunamadı, tüm kayıtlar tekil.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      this.alertService.toastError(err?.message || 'Mükerrer temizleme işlemi başarısız oldu.');
+    } finally {
+      this.isCleaning.set(false);
     }
   }
 
