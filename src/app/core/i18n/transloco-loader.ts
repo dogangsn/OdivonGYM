@@ -6,8 +6,11 @@ import { Translation, TranslocoLoader } from '@jsverse/transloco';
 @Injectable({ providedIn: 'root' })
 export class TranslocoHttpLoader implements TranslocoLoader {
   private readonly http = inject(HttpClient);
+  // Her uygulama başlatılışında güncel i18n dosyasını çekmek için dinamik versiyon damgası
+  private readonly cacheBuster = Date.now();
 
   getTranslation(lang: string) {
-    return this.http.get<Translation>(`/i18n/${lang}.json`);
+    return this.http.get<Translation>(`/i18n/${lang}.json?v=${this.cacheBuster}`);
   }
 }
+
