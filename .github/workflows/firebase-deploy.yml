@@ -24,11 +24,12 @@ jobs:
           project_id: odivongym
           workload_identity_provider: projects/560162164944/locations/global/workloadIdentityPools/github-odivongym/providers/github-master
           service_account: github-firebase-deploy@odivongym.iam.gserviceaccount.com
+          token_format: access_token
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Frontend Dependencies
