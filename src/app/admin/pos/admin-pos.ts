@@ -13,6 +13,9 @@ import { AdminMembersService } from '../members/admin-members.service';
 import { ShopProduct, ShopSale } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 
+import { TranslocoPipe } from '@jsverse/transloco';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+
 export interface PosCartItem {
   product: ShopProduct;
   quantity: number;
@@ -23,7 +26,7 @@ const QUICK_CASH_AMOUNTS = [20, 50, 100, 200, 500];
 @Component({
   selector: 'app-admin-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, RouterLink],
+  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-pos.html',
   styleUrl: './admin-pos.scss',
@@ -33,6 +36,7 @@ export class AdminPos {
   private readonly membersService = inject(AdminMembersService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
 
   protected readonly money = formatMoney;
   protected readonly dateTime = formatDateTime;
@@ -183,6 +187,14 @@ export class AdminPos {
   }
 
   async pay(paymentMethod: 'cash' | 'card' | 'wallet'): Promise<void> {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için yeni kasa satışı ve tahsilat yapılamaz. Lütfen SaaS Paket & Lisans menüsünden paketinizi yenileyiniz.',
+      );
+      return;
+    }
+
     const items = this.cart();
     if (items.length === 0 || this.isPaying()) return;
 

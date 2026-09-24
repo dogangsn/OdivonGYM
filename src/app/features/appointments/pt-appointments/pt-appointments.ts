@@ -217,8 +217,9 @@ export class PtAppointments {
       }
       this.snackBar.open(current ? 'Randevu güncellendi.' : 'Randevu alındı.', 'Kapat', { duration: 3000 });
       this.close();
-    } catch {
-      this.errorMessage.set('Kaydedilemedi, tekrar dene.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kaydedilemedi, tekrar dene.';
+      this.errorMessage.set(msg);
     } finally {
       this.submitting.set(false);
     }

@@ -25,6 +25,8 @@ export interface SalesCartItem {
   unitPrice: number;
 }
 
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+
 @Component({
   selector: 'app-admin-sales',
   standalone: true,
@@ -39,6 +41,7 @@ export class AdminSales {
   private readonly packagesService = inject(AdminPackagesService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
 
   protected readonly money = formatMoney;
   protected readonly dateTime = formatDateTime;
@@ -318,6 +321,14 @@ export class AdminSales {
   }
 
   async checkout(paymentMethod: 'wallet' | 'cash' | 'card' | 'transfer'): Promise<void> {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için paket ve market satışı yapılamaz. Lütfen SaaS Paket & Lisans menüsünden paketinizi yenileyiniz.',
+      );
+      return;
+    }
+
     const items = this.cart();
     if (items.length === 0 || this.isPaying()) return;
 

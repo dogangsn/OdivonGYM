@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, effect } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import * as QRCode from 'qrcode';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AdminAccessControlService } from '../../../admin/access-control/admin-access-control.service';
 import { MemberQrService } from './member-qr.service';
@@ -8,14 +11,14 @@ import { MemberQrService } from './member-qr.service';
 @Component({
   selector: 'app-member-qr-modal',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [CommonModule, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (qrService.isOpen()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
            (click)="onBackdropClick($event)">
         
-        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative"
+        <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative"
              (click)="$event.stopPropagation()">
           
           <!-- Üst Kart Header (Spor Kulübü Dijital Kart Tasarımı) -->
@@ -31,8 +34,8 @@ import { MemberQrService } from './member-qr.service';
                 <mat-icon class="icon-size-5">qr_code_scanner</mat-icon>
               </div>
               <div>
-                <span class="text-[10px] uppercase font-black tracking-widest text-indigo-300">DİJİTAL GEÇİŞ KARTI</span>
-                <h3 class="m-0 text-base font-bold text-white leading-tight">OdivonGYM Akıllı Turnike</h3>
+                <span class="text-[10px] uppercase font-black tracking-widest text-indigo-300">{{ 'turnstileModal.badge' | transloco }}</span>
+                <h3 class="m-0 text-base font-bold text-white leading-tight">{{ 'turnstileModal.title' | transloco }}</h3>
               </div>
             </div>
 
@@ -46,7 +49,7 @@ import { MemberQrService } from './member-qr.service';
                 </div>
               }
               <div class="min-w-0 flex-1">
-                <h4 class="m-0 text-sm font-bold text-white truncate">{{ profile()?.displayName || 'Değerli Üyemiz' }}</h4>
+                <h4 class="m-0 text-sm font-bold text-white truncate">{{ profile()?.displayName || ('turnstileModal.valuedMember' | transloco) }}</h4>
                 <p class="m-0 text-xs text-indigo-200 truncate">{{ profile()?.email || 'uye@odivongym.com' }}</p>
                 <div class="mt-1 flex items-center gap-1.5">
                   <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -58,90 +61,45 @@ import { MemberQrService } from './member-qr.service';
             </div>
           </div>
 
-          <!-- Gövde: QR Kod & Güvenlik Dinamikleri -->
-          <div class="p-6 flex flex-col items-center text-center">
+          <!-- QR Kod & Gövde Bölümü -->
+          <div class="p-6 text-center">
             @if (scanSuccess()) {
-              <!-- Başarılı Geçiş Animasyonu -->
-              <div class="py-8 flex flex-col items-center gap-3 animate-fade-in">
-                <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner animate-bounce">
-                  <mat-icon class="icon-size-10">check_circle</mat-icon>
+              <!-- Geçiş Başarılı Animasyon Ekranı -->
+              <div class="py-6 flex flex-col items-center justify-center animate-fade-in">
+                <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/20">
+                  <mat-icon class="icon-size-10">check</mat-icon>
                 </div>
-                <h3 class="m-0 text-lg font-black text-slate-900">Turnike Açıldı! 🟢</h3>
-                <p class="m-0 text-xs text-slate-600 max-w-xs">
-                  Geçiş onaylandı. Turnike kilidi çözüldü. İyi ve verimli bir antrenman dileriz!
+                <h3 class="m-0 text-lg font-bold text-slate-900 dark:text-white">{{ 'turnstileModal.welcome' | transloco }}</h3>
+                <p class="m-0 text-xs text-slate-600 dark:text-slate-300 max-w-xs mt-1">
+                  {{ 'turnstileModal.successMsg' | transloco }}
                 </p>
-                <div class="mt-2 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  Ana Giriş Turnikesi · {{ currentTimeString() }}
+                <div class="mt-3 text-[11px] font-mono text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  {{ 'turnstileModal.gateName' | transloco }} · {{ currentTimeString() }}
                 </div>
               </div>
             } @else {
               <!-- QR Kod Çerçevesi -->
-              <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-indigo-200 shadow-sm relative group">
-                <!-- SVG QR Kodu (Responsive & Canlı Desen) -->
-                <svg class="w-48 h-48 sm:w-52 sm:h-52" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Arka Plan -->
-                  <rect width="100" height="100" rx="6" fill="#ffffff"/>
-                  
-                  <!-- Sol Üst Kare (Finder Pattern) -->
-                  <rect x="8" y="8" width="26" height="26" rx="4" fill="#0f172a"/>
-                  <rect x="12" y="12" width="18" height="18" rx="2" fill="#ffffff"/>
-                  <rect x="16" y="16" width="10" height="10" rx="1.5" fill="#4f46e5"/>
+              <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-indigo-200 shadow-sm relative group max-w-[220px] mx-auto">
+                <!-- Gerçek Taranabilir Dinamik QR Kodu -->
+                @if (qrDataUrl()) {
+                  <img [src]="qrDataUrl()" class="w-48 h-48 rounded-xl object-contain mx-auto" [alt]="'turnstileModal.dynamicQrAlt' | transloco" />
+                } @else {
+                  <div class="w-48 h-48 flex items-center justify-center text-slate-400">
+                    <mat-icon class="icon-size-8 animate-spin">refresh</mat-icon>
+                  </div>
+                }
 
-                  <!-- Sağ Üst Kare (Finder Pattern) -->
-                  <rect x="66" y="8" width="26" height="26" rx="4" fill="#0f172a"/>
-                  <rect x="70" y="12" width="18" height="18" rx="2" fill="#ffffff"/>
-                  <rect x="74" y="16" width="10" height="10" rx="1.5" fill="#4f46e5"/>
-
-                  <!-- Sol Alt Kare (Finder Pattern) -->
-                  <rect x="8" y="66" width="26" height="26" rx="4" fill="#0f172a"/>
-                  <rect x="12" y="70" width="18" height="18" rx="2" fill="#ffffff"/>
-                  <rect x="16" y="74" width="10" height="10" rx="1.5" fill="#4f46e5"/>
-
-                  <!-- Dinamik Matris Noktaları -->
-                  <!-- Sıra 1-2 -->
-                  <rect x="40" y="10" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="52" y="10" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="46" y="18" width="6" height="6" rx="1" fill="#4f46e5"/>
-                  <rect x="58" y="18" width="5" height="5" rx="1" fill="#0f172a"/>
-
-                  <!-- Orta Bölüm -->
-                  <rect x="10" y="40" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="20" y="44" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="30" y="38" width="6" height="6" rx="1" fill="#4f46e5"/>
-                  <rect x="38" y="46" width="7" height="7" rx="1" fill="#0f172a"/>
-                  <rect x="50" y="38" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="60" y="44" width="7" height="7" rx="1" fill="#4f46e5"/>
-                  <rect x="74" y="40" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="84" y="44" width="7" height="7" rx="1" fill="#0f172a"/>
-
-                  <!-- Alt Bölüm -->
-                  <rect x="40" y="60" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="48" y="68" width="6" height="6" rx="1" fill="#4f46e5"/>
-                  <rect x="58" y="62" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="66" y="70" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="76" y="62" width="6" height="6" rx="1" fill="#4f46e5"/>
-                  <rect x="86" y="72" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="42" y="80" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="54" y="84" width="6" height="6" rx="1" fill="#0f172a"/>
-                  <rect x="64" y="82" width="6" height="6" rx="1" fill="#4f46e5"/>
-                  <rect x="78" y="84" width="6" height="6" rx="1" fill="#0f172a"/>
-
-                  <!-- Merkez Amblem Rozeti -->
-                  <rect x="43" y="43" width="14" height="14" rx="3" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
-                  <circle cx="50" cy="50" r="4" fill="#4f46e5"/>
-                </svg>
-                
                 <!-- Güvenlik Işığı Efekti -->
                 <div class="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent top-1/2 -translate-y-1/2 opacity-70 animate-pulse pointer-events-none"></div>
               </div>
 
               <!-- Ekran Görüntüsü Koruması & Sayaç -->
-              <div class="mt-3 flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <div class="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
                 <mat-icon class="icon-size-3.5 text-indigo-600 animate-spin">refresh</mat-icon>
-                <span>Dinamik Kod: <b>{{ secondsUntilRefresh() }}s</b> sonra yenilenir</span>
+                <span>{{ 'turnstileModal.refreshCountdown' | transloco:{ seconds: secondsUntilRefresh() } }}</span>
               </div>
               <p class="m-0 mt-1 text-[11px] text-slate-400">
-                Turnike kamerasından 15-20 cm mesafede tutunuz.
+                {{ 'turnstileModal.scanDistance' | transloco }}
               </p>
 
               <!-- Turnike Simülasyon Butonu -->
@@ -151,21 +109,21 @@ import { MemberQrService } from './member-qr.service';
                       (click)="simulateTurnstileScan()">
                 @if (scanning()) {
                   <mat-icon class="icon-size-4.5 animate-spin">refresh</mat-icon>
-                  <span>Turnike Doğrulanıyor…</span>
+                  <span>{{ 'turnstileModal.verifying' | transloco }}</span>
                 } @else {
                   <mat-icon class="icon-size-4.5">sensors</mat-icon>
-                  <span>Turnikeye Okut (Simüle Et)</span>
+                  <span>{{ 'turnstileModal.simulateBtn' | transloco }}</span>
                 }
               </button>
             }
           </div>
 
           <!-- Alt Bilgi / Güvenlik Şeridi -->
-          <div class="bg-slate-50 px-5 py-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+          <div class="bg-slate-50 dark:bg-slate-800/60 px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>ID: #{{ memberIdShort() }}</span>
             <span class="flex items-center gap-1">
               <mat-icon class="icon-size-3 text-emerald-600">verified</mat-icon>
-              256-Bit SSL Doğrulandı
+              {{ 'turnstileModal.totpActive' | transloco }}
             </span>
           </div>
         </div>
@@ -179,6 +137,7 @@ export class MemberQrModal {
   private readonly accessService = inject(AdminAccessControlService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly profile = this.auth.profile;
 
@@ -197,12 +156,14 @@ export class MemberQrModal {
 
   protected readonly membershipLabel = computed(() => {
     const status = this.profile()?.membershipStatus;
-    if (status === 'active') return 'Aktif Üyelik';
-    if (status === 'trial') return '14 Günlük Deneme';
-    if (status === 'expired') return 'Süresi Dolmuş';
-    return 'Kayıtlı Sporcu';
+    if (status === 'active') return this.transloco.translate('turnstileModal.activeMembership');
+    if (status === 'trial') return this.transloco.translate('turnstileModal.trialMembership');
+    if (status === 'expired') return this.transloco.translate('turnstileModal.expiredMembership');
+    return this.transloco.translate('turnstileModal.registeredAthlete');
   });
 
+  protected readonly qrDataUrl = signal<string | null>(null);
+  protected readonly currentRawPayload = signal<string>('');
   protected readonly scanning = signal(false);
   protected readonly scanSuccess = signal(false);
   protected readonly secondsUntilRefresh = signal(30);
@@ -212,6 +173,14 @@ export class MemberQrModal {
 
   constructor() {
     this.startCountdown();
+
+    // Modal açıldığında veya profil değiştiğinde QR kodunu yenile
+    effect(() => {
+      if (this.qrService.isOpen() && this.profile()) {
+        void this.generateDynamicQr();
+      }
+    });
+
     this.destroyRef.onDestroy(() => {
       if (this.countdownInterval) {
         clearInterval(this.countdownInterval);
@@ -224,10 +193,45 @@ export class MemberQrModal {
       const cur = this.secondsUntilRefresh();
       if (cur <= 1) {
         this.secondsUntilRefresh.set(30);
+        if (this.qrService.isOpen()) {
+          void this.generateDynamicQr();
+        }
       } else {
         this.secondsUntilRefresh.set(cur - 1);
       }
     }, 1000);
+  }
+
+  protected async generateDynamicQr(): Promise<void> {
+    const user = this.profile();
+    if (!user || !user.uid) return;
+
+    const payload = JSON.stringify({
+      app: 'odivon_pass',
+      ver: 1,
+      uid: user.uid,
+      tenantId: user.tenantId,
+      name: user.displayName || 'Üye',
+      exp: Date.now() + 30000,
+      r: Math.random().toString(36).slice(2, 8),
+    });
+
+    this.currentRawPayload.set(payload);
+
+    try {
+      const url = await QRCode.toDataURL(payload, {
+        width: 220,
+        margin: 1,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff',
+        },
+        errorCorrectionLevel: 'M',
+      });
+      this.qrDataUrl.set(url);
+    } catch (err) {
+      console.error('Odivon dynamic QR generate error:', err);
+    }
   }
 
   protected onBackdropClick(event: MouseEvent): void {
@@ -239,14 +243,14 @@ export class MemberQrModal {
   protected async simulateTurnstileScan(): Promise<void> {
     const user = this.profile();
     if (!user) {
-      this.snackBar.open('Kullanıcı profili bulunamadı.', 'Kapat', { duration: 2500 });
+      this.snackBar.open(this.transloco.translate('turnstileModal.userNotFound'), this.transloco.translate('common.close'), { duration: 2500 });
       return;
     }
 
     this.scanning.set(true);
     try {
       const now = new Date();
-      this.currentTimeString.set(now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      this.currentTimeString.set(now.toLocaleTimeString(this.transloco.getActiveLang() === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
       // Access control servisini tetikle
       const result = await this.accessService.processGateScan(user, 'in', 'Ana Turnike (A1)', 'qr');
@@ -261,11 +265,11 @@ export class MemberQrModal {
           this.qrService.close();
         }, 3200);
       } else {
-        this.snackBar.open(`Turnike Reddedildi: ${result.message}`, 'Kapat', { duration: 4000 });
+        this.snackBar.open(this.transloco.translate('turnstileModal.gateDenied', { msg: result.message }), this.transloco.translate('common.close'), { duration: 4000 });
       }
     } catch {
       this.scanning.set(false);
-      this.snackBar.open('Turnike bağlantı hatası, tekrar deneyin.', 'Kapat', { duration: 3000 });
+      this.snackBar.open(this.transloco.translate('turnstileModal.connError'), this.transloco.translate('common.close'), { duration: 3000 });
     }
   }
 

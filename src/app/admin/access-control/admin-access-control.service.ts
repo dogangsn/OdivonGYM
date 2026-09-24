@@ -8,6 +8,7 @@ import {
   where,
   addDoc,
   deleteDoc,
+  getDoc,
   getDocs,
   serverTimestamp,
   Timestamp,
@@ -268,5 +269,66 @@ export class AdminAccessControlService {
       gateName,
       notes: `Manuel kapı açma: ${reason}`,
     });
+  }
+
+  /**
+   * Taranan dinamik QR kodunu veya RFID token'ını doğrular, üyeyi bulur ve kapı geçişini işletir
+   */
+  async validateAndProcessDynamicQrToken(
+    tokenRaw: string,
+    direction: AccessDirection = 'in',
+    gateName: string = 'Turnike Okuyucu',
+  ): Promise<GateScanResult> {
+    try {
+      let payload: any;
+      try {
+        payload = JSON.parse(tokenRaw);
+      } catch {
+        payload = { uid: tokenRaw.trim() };
+      }
+
+      const uid = payload.uid;
+      if (!uid) {
+        throw new Error('Geçersiz QR kod veya kimlik bilgisi.');
+      }
+
+      // 30 saniyelik süresi geçmiş mi kontrolü (15 sn tolerans payı)
+      if (payload.exp && Date.now() > payload.exp + 15000) {
+        return {
+          allowed: false,
+          status: 'denied',
+          message: 'Dinamik QR kodun süresi dolmuş. Lütfen uygulamadaki QR kodunu yenileyin.',
+          userName: payload.name || 'Bilinmeyen Üye',
+          gateName,
+          timestamp: new Date(),
+        };
+      }
+
+      // Veritabanından üye profilini çek
+      const userDocRef = doc(this.firestore, 'users', uid);
+      const snap = await getDoc(userDocRef);
+      if (!snap.exists()) {
+        return {
+          allowed: false,
+          status: 'denied',
+          message: 'Üye kaydı sistemde bulunamadı.',
+          userName: payload.name || 'Tanımsız Üye',
+          gateName,
+          timestamp: new Date(),
+        };
+      }
+
+      const member = { uid: snap.id, ...snap.data() } as UserProfile;
+      return await this.processGateScan(member, direction, gateName, 'qr');
+    } catch (err: any) {
+      return {
+        allowed: false,
+        status: 'denied',
+        message: err.message || 'Geçiş okuma hatası meydana geldi.',
+        userName: 'Tanımsız Kart',
+        gateName,
+        timestamp: new Date(),
+      };
+    }
   }
 }

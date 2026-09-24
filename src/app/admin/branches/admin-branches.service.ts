@@ -47,6 +47,7 @@ export class AdminBranchesService {
     const docRef = await addDoc(collection(this.firestore, 'gym_branches'), {
       tenantId,
       name: input.name,
+      logoUrl: input.logoUrl || '',
       address: input.address,
       city: input.city,
       postalCode: input.postalCode || '',
@@ -56,6 +57,7 @@ export class AdminBranchesService {
       capacity: input.capacity,
       currentOccupancy: 0,
       openingHours: input.openingHours,
+      openDays: input.openDays || [1, 2, 3, 4, 5, 6, 0],
       features: input.features,
       status: 'active',
       managerName: input.managerName || '',
@@ -76,6 +78,7 @@ export class AdminBranchesService {
     const updateData: any = { updatedAt: serverTimestamp() };
 
     if (input.status !== undefined) updateData.status = input.status;
+    if (input.logoUrl !== undefined) updateData.logoUrl = input.logoUrl;
     if (input.phone !== undefined) updateData.phone = input.phone;
     if (input.name !== undefined) updateData.name = input.name;
     if (input.address !== undefined) updateData.address = input.address;
@@ -85,6 +88,7 @@ export class AdminBranchesService {
     if (input.website !== undefined) updateData.website = input.website;
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
     if (input.openingHours !== undefined) updateData.openingHours = input.openingHours;
+    if (input.openDays !== undefined) updateData.openDays = input.openDays;
     if (input.features !== undefined) updateData.features = input.features;
     if (input.managerName !== undefined) updateData.managerName = input.managerName;
 

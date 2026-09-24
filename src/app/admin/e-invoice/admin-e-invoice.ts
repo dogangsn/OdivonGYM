@@ -72,10 +72,13 @@ const PROVIDER_NAMES: Record<InvoiceProvider, string> = {
   parasut: 'Paraşüt / Logo',
 };
 
+import { RouterLink } from '@angular/router';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+
 @Component({
   selector: 'app-admin-e-invoice',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-e-invoice.html',
 })
@@ -83,6 +86,7 @@ export class AdminEInvoice {
   private readonly invoiceService = inject(AdminEInvoiceService);
   private readonly fb = inject(FormBuilder);
   private readonly alertService = inject(AlertService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
 
   protected readonly providers = PROVIDERS;
   protected readonly statusLabels = STATUS_LABELS;
@@ -259,6 +263,13 @@ export class AdminEInvoice {
   }
 
   openCreateDrawer(): void {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için yeni E-Fatura veya E-Arşiv düzenlenemez. Lütfen SaaS Paket & Lisans menüsünden paketinizi yenileyiniz.',
+      );
+      return;
+    }
     this.invoiceError.set('');
     const cfg = this.config();
     const currentProvider = cfg?.provider || 'manuel';

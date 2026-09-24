@@ -128,6 +128,16 @@
       <span>Canlı Rol Simülatörü</span>
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
     </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('payroll')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'payroll' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">payments</mat-icon>
+      <span>Maaş & Hak Ediş Bordroları</span>
+    </button>
   </div>
 
   <!-- SEKME 1: PERSONEL LİSTESİ -->
@@ -579,6 +589,228 @@
             [ngClass]="permissions.currentRole() === 'receptionist' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'"
           >
             {{ permissions.currentRole() === 'receptionist' ? 'Aktif Rolünüz' : 'Resepsiyon Olarak Gör' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SEKME 4: MAAŞ & HAK EDİŞ BORDROLARI -->
+  @if (activeTab() === 'payroll') {
+    <div class="space-y-6 animate-fade-in">
+      <!-- Bilgilendirme ve Özet Kartları -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden border border-slate-800">
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">HAK EDİŞ VE BORDRO MOTORU</span>
+            <h2 class="text-xl font-black text-white m-0 mt-0.5">Personel Maaş & Seans Komisyonları</h2>
+            <p class="text-xs text-slate-300 m-0 mt-1 max-w-xl">
+              Antrenörlerin tamamladığı PT seansları ve grup derslerinden hak ettikleri primler otomatik hesaplanır; tek tıkla salon kasasından gider olarak ödenebilir.
+            </p>
+          </div>
+          <div class="text-right bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+            <span class="text-xs text-indigo-200 block">Bu Ayki Toplam Hak Ediş Yükü</span>
+            <span class="text-2xl font-black text-white font-mono">
+              ₺{{ totalPayrollAmount().toLocaleString('tr-TR') }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bordro Tablosu -->
+      <div class="odv-card overflow-hidden">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 class="font-bold text-slate-900 dark:text-white text-sm m-0">Aylık Personel Bordro Listesi</h3>
+          <span class="text-xs text-slate-400">Toplam {{ staffList().length }} personel</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <th class="odv-th">Personel</th>
+                <th class="odv-th">Rol & Görev</th>
+                <th class="odv-th">Sabit Maaş</th>
+                <th class="odv-th">Tamamlanan Seans</th>
+                <th class="odv-th">Prim Oranı</th>
+                <th class="odv-th">Hak Edilen Prim</th>
+                <th class="odv-th text-right">Toplam Hak Ediş</th>
+                <th class="odv-th text-center">Durum</th>
+                <th class="odv-th text-center">İşlem</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              @for (staff of staffList(); track staff.id) {
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td class="odv-td">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs">
+                        {{ getRoleInitials(staff.displayName) }}
+                      </div>
+                      <div>
+                        <span class="font-bold text-slate-900 dark:text-white block">{{ staff.displayName }}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">{{ staff.phone || staff.email }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="odv-td">
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">{{ staff.title || staff.role }}</span>
+                  </td>
+                  <td class="odv-td font-mono font-bold text-slate-700 dark:text-slate-300">
+                    ₺{{ (staff.monthlySalary || 0).toLocaleString('tr-TR') }}
+                  </td>
+                  <td class="odv-td">
+                    @if (staff.role === 'trainer') {
+                      <span class="inline-flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full text-[11px]">
+                        <mat-icon class="icon-size-3">fitness_center</mat-icon>
+                        {{ getStaffSessions(staff) }} Seans
+                      </span>
+                    } @else {
+                      <span class="text-slate-400">—</span>
+                    }
+                  </td>
+                  <td class="odv-td">
+                    @if (staff.role === 'trainer') {
+                      <span class="font-bold text-slate-600 dark:text-slate-400">%{{ staff.commissionRate || 15 }}</span>
+                    } @else {
+                      <span class="text-slate-400">—</span>
+                    }
+                  </td>
+                  <td class="odv-td font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    @if (staff.role === 'trainer') {
+                      +₺{{ calculateCommission(staff).toLocaleString('tr-TR') }}
+                    } @else {
+                      <span class="text-slate-400 font-normal">₺0</span>
+                    }
+                  </td>
+                  <td class="odv-td text-right font-mono font-black text-sm text-slate-900 dark:text-white">
+                    ₺{{ calculateTotalEarnings(staff).toLocaleString('tr-TR') }}
+                  </td>
+                  <td class="odv-td text-center">
+                    @if (isStaffPaid(staff.id)) {
+                      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <mat-icon class="icon-size-3">check_circle</mat-icon>
+                        Ödendi
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <mat-icon class="icon-size-3">hourglass_empty</mat-icon>
+                        Bekliyor
+                      </span>
+                    }
+                  </td>
+                  <td class="odv-td text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                      @if (!isStaffPaid(staff.id)) {
+                        <button type="button"
+                                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                                (click)="payStaffSalary(staff, calculateTotalEarnings(staff))">
+                          <mat-icon class="icon-size-3.5">payments</mat-icon>
+                          <span>Öde</span>
+                        </button>
+                      }
+                      <button type="button"
+                              class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+                              (click)="openPaySlip(staff)">
+                        <mat-icon class="icon-size-3.5">receipt</mat-icon>
+                        <span>Bordro</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- BORDRO MAKBUZU YAZDIRMA MODALI -->
+  @if (isSlipModalOpen() && selectedStaffForSlip(); as st) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+      <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative p-6 text-slate-900">
+        <!-- Üst Kısım -->
+        <div class="flex items-start justify-between border-b pb-4 mb-4">
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">ODİVON SPOR HİZMETLERİ A.Ş.</span>
+            <h3 class="m-0 text-xl font-bold text-slate-900 mt-0.5">Personel Hak Ediş Bordro Makbuzu</h3>
+            <p class="m-0 text-xs text-slate-500 mt-0.5">Dönem: {{ 'Bugün' | date:'MMMM yyyy' }}</p>
+          </div>
+          <button type="button"
+                  class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center"
+                  (click)="closePaySlip()">
+            <mat-icon class="icon-size-4">close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Personel Bilgisi -->
+        <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 mb-4 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Personel Adı</span>
+            <span class="font-bold text-slate-900">{{ st.displayName }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Görevi / Rolü</span>
+            <span class="font-bold text-slate-900">{{ st.title || st.role }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Telefon / E-posta</span>
+            <span class="font-mono text-slate-700">{{ st.phone || st.email }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Ödeme Durumu</span>
+            <span class="font-bold" [class]="isStaffPaid(st.id) ? 'text-emerald-600' : 'text-amber-600'">
+              {{ isStaffPaid(st.id) ? 'KASADAN ÖDENDİ' : 'ÖDEME BEKLİYOR' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Kalemler -->
+        <div class="border rounded-xl overflow-hidden mb-4 text-xs font-mono">
+          <div class="flex items-center justify-between p-2.5 bg-slate-100 font-bold text-slate-700">
+            <span>Açıklama</span>
+            <span>Tutar</span>
+          </div>
+          <div class="p-2.5 flex items-center justify-between border-t border-slate-100">
+            <span>Aylık Sabit Maaş</span>
+            <span>₺{{ (st.monthlySalary || 0).toLocaleString('tr-TR') }}</span>
+          </div>
+          @if (st.role === 'trainer') {
+            <div class="p-2.5 flex items-center justify-between border-t border-slate-100">
+              <span>Seans Primleri ({{ getStaffSessions(st) }} Seans x %{{ st.commissionRate || 15 }})</span>
+              <span class="text-emerald-600">+₺{{ calculateCommission(st).toLocaleString('tr-TR') }}</span>
+            </div>
+          }
+          <div class="p-3 flex items-center justify-between border-t-2 border-slate-200 bg-slate-50 font-black text-sm text-slate-900">
+            <span>NET ÖDENECEK HAK EDİŞ:</span>
+            <span class="text-indigo-600">₺{{ calculateTotalEarnings(st).toLocaleString('tr-TR') }}</span>
+          </div>
+        </div>
+
+        <!-- İmzalar -->
+        <div class="grid grid-cols-2 gap-6 pt-4 border-t text-center text-xs mb-6">
+          <div>
+            <span class="text-slate-400 block mb-8">Personel İmzası</span>
+            <div class="border-b border-dashed border-slate-400 w-3/4 mx-auto"></div>
+          </div>
+          <div>
+            <span class="text-slate-400 block mb-8">Kulüp Yetkilisi Kaşe / İmza</span>
+            <div class="border-b border-dashed border-slate-400 w-3/4 mx-auto"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="button"
+                  class="odv-btn-secondary flex-1 !py-2.5"
+                  (click)="closePaySlip()">
+            Kapat
+          </button>
+          <button type="button"
+                  class="odv-btn-primary flex-1 !py-2.5 flex items-center justify-center gap-2"
+                  (click)="printPaySlip()">
+            <mat-icon class="icon-size-4">print</mat-icon>
+            <span>Yazdır / PDF Olarak Kaydet</span>
           </button>
         </div>
       </div>

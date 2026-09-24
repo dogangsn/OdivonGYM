@@ -1,222 +1,483 @@
 <div class="font-sans space-y-6">
-  <!-- 1. Header -->
-  <app-page-header
-    title="Satış & Kasa Raporları"
-    icon="analytics"
-    description="Günlük bar satışları, ödeme yöntemleri dağılımı, iade geçmişi ve detaylı ciro dökümü."
-  />
+  <!-- 1. Header & Filtre Barı -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <app-page-header
+      title="Birleşik ERP & Mali Raporlar"
+      icon="analytics"
+      description="Salon gelir-giderleri, kâr/zarar (P&L), üyelik paketleri, market satışları ve turnike yoğunluk analizi."
+    />
 
-  <!-- 2. KPI Kartları -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- Toplam Ciro -->
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Satış Cirosu</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
-          ₺{{ money(totalRevenue()) }}
-        </div>
-        <div class="text-xs font-semibold text-emerald-500 mt-0.5">
-          Tamamlanan Satışlar
-        </div>
+    <!-- Tarih Filtreleri & Dışa Aktar -->
+    <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
+      <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
+        <button type="button"
+                class="px-3 py-1.5 rounded-lg transition-all"
+                [class]="dateRange() === 'today' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                (click)="setDateRange('today')">
+          Bugün
+        </button>
+        <button type="button"
+                class="px-3 py-1.5 rounded-lg transition-all"
+                [class]="dateRange() === 'this_month' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                (click)="setDateRange('this_month')">
+          Bu Ay
+        </button>
+        <button type="button"
+                class="px-3 py-1.5 rounded-lg transition-all"
+                [class]="dateRange() === 'last_30_days' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                (click)="setDateRange('last_30_days')">
+          Son 30 Gün
+        </button>
+        <button type="button"
+                class="px-3 py-1.5 rounded-lg transition-all"
+                [class]="dateRange() === 'all' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                (click)="setDateRange('all')">
+          Tüm Zamanlar
+        </button>
       </div>
-      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-        <mat-icon class="icon-size-6">payments</mat-icon>
-      </div>
-    </div>
 
-    <!-- Toplam İşlem -->
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İşlem Adedi</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
-          {{ totalTransactionCount() }} Satış
-        </div>
-        <div class="text-xs font-semibold text-indigo-500 mt-0.5">
-          Başarılı Kasa Fişi
-        </div>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-        <mat-icon class="icon-size-6">receipt_long</mat-icon>
-      </div>
-    </div>
-
-    <!-- Ortalama Sepet -->
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ortalama Sepet</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
-          ₺{{ money(averageTicket()) }}
-        </div>
-        <div class="text-xs font-semibold text-sky-500 mt-0.5">
-          Fiş Başına Ortalama
-        </div>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center">
-        <mat-icon class="icon-size-6">shopping_basket</mat-icon>
-      </div>
-    </div>
-
-    <!-- İadeler -->
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İade Edilenler</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
-          {{ refundedCount() }} İşlem
-        </div>
-        <div class="text-xs font-semibold text-rose-500 mt-0.5">
-          İptal ve İade
-        </div>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-        <mat-icon class="icon-size-6">assignment_return</mat-icon>
-      </div>
+      <button type="button"
+              class="odv-btn-secondary !py-2 !px-3 text-xs flex items-center gap-1.5"
+              (click)="exportToCsv()">
+        <mat-icon class="icon-size-4">download</mat-icon>
+        <span>CSV İndir</span>
+      </button>
     </div>
   </div>
 
-  <!-- 3. Ödeme Yöntemi Dağılımı -->
-  <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
-    <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Ödeme Yöntemi Dağılımı</h3>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      @for (m of ['cash', 'card', 'wallet', 'transfer']; track m) {
-        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-          <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
-            <mat-icon class="icon-size-4">{{ paymentIcon[m] }}</mat-icon>
-            <span>{{ paymentLabel[m] }}</span>
-          </div>
-          <div class="text-base font-black text-slate-900 dark:text-white">
-            ₺{{ money(paymentStats()[m]?.total || 0) }}
-          </div>
-          <div class="text-[10px] text-slate-400 mt-0.5">
-            {{ paymentStats()[m]?.count || 0 }} İşlem
-          </div>
-        </div>
-      }
-    </div>
+  <!-- 2. Raporlama Modül Sekmeleri (Tabs) -->
+  <div class="border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto custom-scroll">
+    <button type="button"
+            class="pb-3 px-3.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2"
+            [class]="activeTab() === 'pnl' 
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+            (click)="setTab('pnl')">
+      <mat-icon class="icon-size-4">account_balance</mat-icon>
+      <span>Kâr / Zarar & Mali Durum (P&L)</span>
+    </button>
+
+    <button type="button"
+            class="pb-3 px-3.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2"
+            [class]="activeTab() === 'memberships' 
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+            (click)="setTab('memberships')">
+      <mat-icon class="icon-size-4">card_membership</mat-icon>
+      <span>Üyelik & Paket Dağılımı</span>
+    </button>
+
+    <button type="button"
+            class="pb-3 px-3.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2"
+            [class]="activeTab() === 'shop' 
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+            (click)="setTab('shop')">
+      <mat-icon class="icon-size-4">storefront</mat-icon>
+      <span>Market & Kafe Satışları</span>
+    </button>
+
+    <button type="button"
+            class="pb-3 px-3.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2"
+            [class]="activeTab() === 'turnstile' 
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+            (click)="setTab('turnstile')">
+      <mat-icon class="icon-size-4">meeting_room</mat-icon>
+      <span>Turnike & Pik Saatler Analizi</span>
+    </button>
   </div>
 
-  <!-- 4. Satış Geçmişi Tablosu -->
-  <div class="odv-card space-y-4 p-5">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="relative flex-1 max-w-sm">
-        <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
-        <input
-          type="text"
-          [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
-          placeholder="Ürün adı, not veya fiş no ara…"
-          class="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
-        />
+  <!-- ================= TAB 1: KÂR / ZARAR (P&L) ================= -->
+  @if (activeTab() === 'pnl') {
+    <!-- 4 Mali KPI Kartı -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Toplam Gelir -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Gelir</span>
+          <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+            ₺{{ money(totalIncome()) }}
+          </div>
+          <div class="text-xs font-semibold text-slate-500 mt-0.5">
+            Paket + Market + Ek Hizmet
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+          <mat-icon class="icon-size-6">trending_up</mat-icon>
+        </div>
       </div>
 
-      <!-- Ödeme Filtresi -->
-      <div class="flex items-center gap-1.5">
-        <button
-          type="button"
-          (click)="filterPayment.set('all')"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          [class]="filterPayment() === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-        >
-          Tümü
-        </button>
-        <button
-          type="button"
-          (click)="filterPayment.set('cash')"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          [class]="filterPayment() === 'cash' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-        >
-          Nakit
-        </button>
-        <button
-          type="button"
-          (click)="filterPayment.set('card')"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          [class]="filterPayment() === 'card' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-        >
-          Kredi Kartı
-        </button>
-        <button
-          type="button"
-          (click)="filterPayment.set('wallet')"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          [class]="filterPayment() === 'wallet' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-        >
-          E-Cüzdan
-        </button>
+      <!-- Toplam Gider -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Gider</span>
+          <div class="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 font-mono">
+            ₺{{ money(totalExpense()) }}
+          </div>
+          <div class="text-xs font-semibold text-slate-500 mt-0.5">
+            Kira + Maaş + Faturalar
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+          <mat-icon class="icon-size-6">trending_down</mat-icon>
+        </div>
+      </div>
+
+      <!-- Net Kâr / Faaliyet Sonucu -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Net Faaliyet Kârı</span>
+          <div class="text-2xl font-black mt-1 font-mono"
+               [class]="netProfit() >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'">
+            ₺{{ money(netProfit()) }}
+          </div>
+          <div class="text-xs font-semibold text-slate-500 mt-0.5">
+            {{ netProfit() >= 0 ? 'Net Pozitif Nakit Akışı' : 'Faaliyet Açığı' }}
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center"
+             [class]="netProfit() >= 0 ? 'bg-indigo-500/10 text-indigo-500' : 'bg-rose-500/10 text-rose-500'">
+          <mat-icon class="icon-size-6">{{ netProfit() >= 0 ? 'savings' : 'warning' }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Kâr Marjı -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Kâr Marjı</span>
+          <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
+            %{{ profitMargin() }}
+          </div>
+          <div class="text-xs font-semibold text-slate-500 mt-0.5">
+            Gelir Kârlılık Oranı
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+          <mat-icon class="icon-size-6">pie_chart</mat-icon>
+        </div>
       </div>
     </div>
 
-    <div class="overflow-x-auto custom-scroll">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-            <th class="odv-th">Tarih / Saat</th>
-            <th class="odv-th">Satılan Ürün / Kalem</th>
-            <th class="odv-th">Adet</th>
-            <th class="odv-th">Toplam Tutar</th>
-            <th class="odv-th">Ödeme Tipi</th>
-            <th class="odv-th">Durum & Not</th>
-            <th class="odv-th text-right">İşlem</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
-          @for (s of filteredSales(); track s.id) {
-            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-              <td class="odv-td whitespace-nowrap text-slate-500">
-                {{ dateTime(s.saleDate) }}
-              </td>
-              <td class="odv-td font-bold text-slate-900 dark:text-white">
-                {{ s.productName }}
-              </td>
-              <td class="odv-td font-semibold text-slate-700 dark:text-slate-300">
-                {{ s.quantity }} Adet
-              </td>
-              <td class="odv-td font-black text-slate-900 dark:text-white whitespace-nowrap">
-                ₺{{ money(s.totalAmount) }}
-              </td>
-              <td class="odv-td whitespace-nowrap">
-                <span class="inline-flex items-center gap-1 font-semibold text-xs text-slate-700 dark:text-slate-300">
-                  <mat-icon class="icon-size-4 text-slate-400">{{ paymentIcon[s.paymentMethod || 'cash'] }}</mat-icon>
-                  {{ paymentLabel[s.paymentMethod || 'cash'] }}
-                </span>
-              </td>
-              <td class="odv-td">
-                <div class="flex items-center gap-1.5">
-                  <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    [class]="s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'"
-                  >
-                    {{ s.status === 'completed' ? 'Tamamlandı' : 'İade Edildi' }}
+    <!-- Gelir & Gider Kategori Dağılımı (2 Kolon) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Gelir Dağılımı -->
+      <div class="odv-card p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Gelir Kaynakları Dağılımı</span>
+          </h3>
+          <span class="text-xs font-black text-emerald-600 font-mono">₺{{ money(totalIncome()) }}</span>
+        </div>
+
+        @if (incomeByCategory().length === 0) {
+          <p class="py-8 text-center text-xs text-slate-400 m-0">Seçili dönemde gelir kaydı bulunmuyor.</p>
+        } @else {
+          <div class="space-y-3">
+            @for (item of incomeByCategory(); track item.category) {
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">{{ item.category }}</span>
+                  <span class="font-mono text-slate-900 dark:text-white font-bold">
+                    ₺{{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
                   </span>
-                  @if (s.notes) {
-                    <span class="text-[11px] text-slate-400 truncate max-w-xs" [title]="s.notes">
-                      {{ s.notes }}
-                    </span>
-                  }
                 </div>
-              </td>
-              <td class="odv-td text-right whitespace-nowrap">
-                @if (s.status === 'completed') {
-                  <button
-                    type="button"
-                    (click)="refundSale(s)"
-                    class="text-[11px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 border-none cursor-pointer"
-                  >
-                    İade Al
-                  </button>
-                } @else {
-                  <span class="text-[11px] text-slate-400 italic">İptal</span>
-                }
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7" class="py-12 text-center text-xs text-slate-400">
-                Satış kaydı bulunamadı.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" [style.width.%]="item.percentage"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Gider Dağılımı -->
+      <div class="odv-card p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>Gider Kalemleri Dağılımı</span>
+          </h3>
+          <span class="text-xs font-black text-rose-600 font-mono">₺{{ money(totalExpense()) }}</span>
+        </div>
+
+        @if (expenseByCategory().length === 0) {
+          <p class="py-8 text-center text-xs text-slate-400 m-0">Seçili dönemde gider kaydı bulunmuyor.</p>
+        } @else {
+          <div class="space-y-3">
+            @for (item of expenseByCategory(); track item.category) {
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">{{ item.category }}</span>
+                  <span class="font-mono text-slate-900 dark:text-white font-bold">
+                    ₺{{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full bg-rose-500 rounded-full transition-all duration-500" [style.width.%]="item.percentage"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
-  </div>
+
+    <!-- Kasa Defteri / Muhasebe Hareketleri Özeti -->
+    <div class="odv-card p-5 space-y-3">
+      <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">
+        Dönem Kasa & Hesap Hareketleri
+      </h3>
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <th class="odv-th">Tarih</th>
+              <th class="odv-th">Tür</th>
+              <th class="odv-th">Kategori</th>
+              <th class="odv-th">Açıklama</th>
+              <th class="odv-th">Yöntem</th>
+              <th class="odv-th text-right">Tutar</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            @for (entry of filteredEntries(); track entry.id) {
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <td class="odv-td text-slate-500 whitespace-nowrap">{{ date(entry.entryDate) }}</td>
+                <td class="odv-td">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        [class]="entry.type === 'income' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'">
+                    {{ entry.type === 'income' ? 'GELİR' : 'GİDER' }}
+                  </span>
+                </td>
+                <td class="odv-td font-semibold text-slate-900 dark:text-white">{{ entry.category }}</td>
+                <td class="odv-td text-slate-600 dark:text-slate-300">{{ entry.description }}</td>
+                <td class="odv-td text-slate-500">{{ paymentLabel[entry.paymentMethod || 'cash'] || entry.paymentMethod }}</td>
+                <td class="odv-td text-right font-black font-mono"
+                    [class]="entry.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                  {{ entry.type === 'income' ? '+' : '−' }}₺{{ money(entry.amount) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ================= TAB 2: ÜYELİK & PAKET DAĞILIMI ================= -->
+  @if (activeTab() === 'memberships') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Aktif Üyeler</span>
+        <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ activeMemberCount() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Salona giriş yetkili</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Süresi Bitenler</span>
+        <div class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-1">{{ expiredMemberCount() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Yenileme adayı üyeler</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Deneme Süresinde</span>
+        <div class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ trialMemberCount() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Dönüşüm bekleyenler</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Üye Kaydı</span>
+        <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">{{ allMembers().length }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Veritabanı toplamı</span>
+      </div>
+    </div>
+
+    <!-- Paket Dağılımı Listesi -->
+    <div class="odv-card p-6 space-y-4">
+      <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">
+        Paket Tercih Dağılımı (Üye Sayısına Göre)
+      </h3>
+      <div class="space-y-4">
+        @for (item of packageDistribution(); track item.name) {
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-slate-800 dark:text-slate-200">{{ item.name }}</span>
+              <span class="font-mono text-slate-600 dark:text-slate-400">
+                {{ item.count }} Üye (%{{ item.percentage }})
+              </span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div class="h-full bg-indigo-600 rounded-full transition-all duration-500" [style.width.%]="item.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ================= TAB 3: MARKET & KAFE SATIŞLARI ================= -->
+  @if (activeTab() === 'shop') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Satış Cirosu</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">₺{{ money(totalShopRevenue()) }}</div>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İşlem Adedi</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">{{ totalTransactionCount() }} Satış</div>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ortalama Fiş</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">₺{{ money(averageTicket()) }}</div>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İadeler</span>
+        <div class="text-2xl font-black text-rose-500 mt-1 font-mono">{{ refundedCount() }} İşlem</div>
+      </div>
+    </div>
+
+    <!-- Ödeme Yöntemi Dağılımı -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Ödeme Yöntemi Dağılımı</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        @for (m of ['cash', 'card', 'wallet', 'transfer']; track m) {
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+              <mat-icon class="icon-size-4">{{ paymentIcon[m] }}</mat-icon>
+              <span>{{ paymentLabel[m] }}</span>
+            </div>
+            <div class="text-base font-black text-slate-900 dark:text-white font-mono">
+              ₺{{ money(paymentStats()[m]?.total || 0) }}
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">
+              {{ paymentStats()[m]?.count || 0 }} İşlem
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Satış Geçmişi Tablosu -->
+    <div class="odv-card space-y-4 p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="relative flex-1 max-w-sm">
+          <input
+            type="text"
+            placeholder="Ürün adı veya işlem no ara…"
+            class="odv-input pl-9 text-xs w-full"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+          <mat-icon class="icon-size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+        </div>
+        <select
+          class="odv-input text-xs"
+          [ngModel]="filterPayment()"
+          (ngModelChange)="filterPayment.set($event)"
+        >
+          <option value="all">Tüm Ödeme Yöntemleri</option>
+          <option value="cash">Nakit</option>
+          <option value="card">Kredi Kartı</option>
+          <option value="wallet">E-Cüzdan</option>
+          <option value="transfer">Havale/EFT</option>
+        </select>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <th class="odv-th">Tarih</th>
+              <th class="odv-th">Ürün</th>
+              <th class="odv-th">Adet</th>
+              <th class="odv-th">Ödeme Yöntemi</th>
+              <th class="odv-th">Durum</th>
+              <th class="odv-th text-right">Tutar</th>
+              <th class="odv-th text-center">İşlem</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            @for (sale of filteredSales(); track sale.id) {
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <td class="odv-td text-slate-500 whitespace-nowrap">{{ dateTime(sale.saleDate) }}</td>
+                <td class="odv-td font-semibold text-slate-900 dark:text-white">{{ sale.productName }}</td>
+                <td class="odv-td">{{ sale.quantity }}</td>
+                <td class="odv-td">{{ paymentLabel[sale.paymentMethod || 'cash'] }}</td>
+                <td class="odv-td">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        [class]="sale.status === 'completed' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'">
+                    {{ sale.status === 'completed' ? 'Tamamlandı' : 'İade Edildi' }}
+                  </span>
+                </td>
+                <td class="odv-td text-right font-black font-mono">₺{{ money(sale.totalAmount) }}</td>
+                <td class="odv-td text-center">
+                  @if (sale.status === 'completed') {
+                    <button type="button"
+                            class="text-rose-600 hover:text-rose-700 font-semibold text-[11px]"
+                            (click)="refundSale(sale)">
+                      İade Et
+                    </button>
+                  } @else {
+                    <span class="text-slate-400 text-[11px]">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ================= TAB 4: TURNİKE & PİK SAATLER ================= -->
+  @if (activeTab() === 'turnstile') {
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Giriş Hareketi</span>
+        <div class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{{ totalVisits() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Kayıtlı geçiş logu</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Onaylanan Geçişler</span>
+        <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ allowedVisits() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Başarılı salon girişi</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Engellenen / Reddedilen</span>
+        <div class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-1">{{ deniedVisits() }}</div>
+        <span class="text-xs text-slate-500 mt-0.5">Süresi biten / yetkisiz kart</span>
+      </div>
+    </div>
+
+    <!-- Pik Saatler Yoğunluk Çubukları -->
+    <div class="odv-card p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">
+            Günün Saatlerine Göre Salon Yoğunluğu (Pik Saatler)
+          </h3>
+          <p class="m-0 text-xs text-slate-500 mt-0.5">
+            Turnike sensör kayıtlarına göre antrenman saatleri dağılımı.
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-4 pt-2">
+        @for (bucket of peakHoursStats(); track bucket.label) {
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-bold text-slate-700 dark:text-slate-300">{{ bucket.label }}</span>
+              <span class="font-mono text-slate-900 dark:text-white font-bold">
+                {{ bucket.count }} Giriş (%{{ bucket.percentage }})
+              </span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500"
+                   [class]="bucket.percentage >= 70 ? 'bg-rose-500' : bucket.percentage >= 40 ? 'bg-amber-500' : 'bg-indigo-500'"
+                   [style.width.%]="bucket.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>

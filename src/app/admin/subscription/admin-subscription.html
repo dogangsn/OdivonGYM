@@ -1,23 +1,62 @@
 <div class="space-y-8 font-sans pb-16">
+  <!-- SAAS SÜRESİ BİTTİ UYARI HERO BANNERI -->
+  @if (subService.isExpired()) {
+    <div class="p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-red-950/80 to-slate-900 border-2 border-rose-500/80 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+          <mat-icon class="text-3xl">warning</mat-icon>
+        </div>
+        <div>
+          <span class="text-xs font-black uppercase tracking-wider text-rose-300 block">{{ 'saasSubscription.heroExpiredNotice' | transloco }}</span>
+          <h2 class="text-xl font-black text-white m-0">{{ 'saasSubscription.heroExpiredTitle' | transloco }}</h2>
+          <p class="text-xs text-rose-200/80 mt-1 mb-0">
+            {{ 'saasSubscription.heroExpiredDesc' | transloco }}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          (click)="openUpgradeModal(activePlan())"
+          class="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-sm shadow-lg shadow-rose-600/40 transition-all cursor-pointer whitespace-nowrap"
+        >
+          {{ 'saasSubscription.renewNowBtn' | transloco }}
+        </button>
+      </div>
+    </div>
+  }
+
   <!-- 1. Header (Temiz & Göz Yormayan Modern Tasarım) -->
   <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
     <div class="space-y-1.5 max-w-2xl">
       <div class="flex items-center gap-2">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
           <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-          Odivon SaaS Lisansı
+          {{ 'saasSubscription.badgeLicense' | transloco }}
         </span>
         @if (subService.isTrial()) {
           <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-            {{ subService.trialDaysLeft() }} gün deneme süresi
+            {{ 'saasSubscription.badgeTrialDays' | transloco: { days: subService.trialDaysLeft() } }}
           </span>
         }
+        @if (subService.isExpired()) {
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+            {{ 'saasSubscription.badgeExpired' | transloco }}
+          </span>
+        }
+        <button
+          type="button"
+          (click)="subService.toggleDemoExpired()"
+          class="ml-2 text-[10px] text-slate-400 hover:text-slate-200 underline cursor-pointer"
+        >
+          {{ subService.isExpired() ? ('saasSubscription.normalModeBtn' | transloco) : ('saasSubscription.simulateExpiredBtn' | transloco) }}
+        </button>
       </div>
       <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight m-0">
-        Paket & Lisans Yönetimi
+        {{ 'saasSubscription.title' | transloco }}
       </h1>
       <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 m-0">
-        Salonunuzun üye, şube ve personel kotalarını kontrol edin; dilediğiniz an tek tıkla üst pakete geçiş yapın.
+        {{ 'saasSubscription.desc' | transloco }}
       </p>
     </div>
 
@@ -27,7 +66,7 @@
         <mat-icon class="icon-size-5">workspace_premium</mat-icon>
       </div>
       <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Mevcut Lisansınız</span>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ 'saasSubscription.currentLicense' | transloco }}</span>
         <strong class="text-base font-black text-slate-900 dark:text-white">{{ activePlan().name }}</strong>
       </div>
     </div>
@@ -38,12 +77,12 @@
     <!-- Üye Kotası -->
     <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kayıtlı Üye Kapasitesi</span>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ 'saasSubscription.memberCapacity' | transloco }}</span>
         <mat-icon class="icon-size-4 text-slate-400">group</mat-icon>
       </div>
       <div class="flex items-baseline gap-1.5">
         <span class="text-2xl font-black text-slate-900 dark:text-white">{{ subService.memberCount() }}</span>
-        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxMembers >= 999999 ? 'Sınırsız' : activePlan().limits.maxMembers }} Üye</span>
+        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxMembers >= 999999 ? ('saasSubscription.unlimited' | transloco) : activePlan().limits.maxMembers }} {{ 'saasSubscription.membersSuffix' | transloco }}</span>
       </div>
       <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-3">
         <div
@@ -56,12 +95,12 @@
     <!-- Şube Kotası -->
     <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Şube Limiti</span>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ 'saasSubscription.branchLimit' | transloco }}</span>
         <mat-icon class="icon-size-4 text-slate-400">store</mat-icon>
       </div>
       <div class="flex items-baseline gap-1.5">
         <span class="text-2xl font-black text-slate-900 dark:text-white">{{ subService.branchCount() }}</span>
-        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxBranches >= 9999 ? 'Sınırsız' : activePlan().limits.maxBranches }} Şube</span>
+        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxBranches >= 9999 ? ('saasSubscription.unlimited' | transloco) : activePlan().limits.maxBranches }} {{ 'saasSubscription.branchesSuffix' | transloco }}</span>
       </div>
       <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-3">
         <div
@@ -74,12 +113,12 @@
     <!-- Personel Kotası -->
     <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Antrenör & Personel</span>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ 'saasSubscription.staffLimit' | transloco }}</span>
         <mat-icon class="icon-size-4 text-slate-400">badge</mat-icon>
       </div>
       <div class="flex items-baseline gap-1.5">
         <span class="text-2xl font-black text-slate-900 dark:text-white">{{ subService.staffCount() }}</span>
-        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxStaff >= 9999 ? 'Sınırsız' : activePlan().limits.maxStaff }} Personel</span>
+        <span class="text-xs text-slate-400 font-bold">/ {{ activePlan().limits.maxStaff >= 9999 ? ('saasSubscription.unlimited' | transloco) : activePlan().limits.maxStaff }} {{ 'saasSubscription.trainersSuffix' | transloco }}</span>
       </div>
       <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-3">
         <div
@@ -104,7 +143,7 @@
         [class.shadow-xs]="selectedCycle() === 'monthly'"
         [class.text-slate-500]="selectedCycle() !== 'monthly'"
       >
-        Aylık Ödeme
+        {{ 'saasSubscription.billingMonthly' | transloco }}
       </button>
 
       <button
@@ -118,9 +157,9 @@
         [class.shadow-xs]="selectedCycle() === 'yearly'"
         [class.text-slate-500]="selectedCycle() !== 'yearly'"
       >
-        <span>Yıllık Lisans</span>
+        <span>{{ 'shell.yearlyLicense' | transloco }}</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-          %17 İndirim (2 Ay Hediye)
+          {{ 'saasSubscription.discountBadge' | transloco }}
         </span>
       </button>
     </div>
@@ -142,7 +181,7 @@
       >
         @if (isPro) {
           <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-indigo-600 text-white shadow-xs">
-            En Çok Tercih Edilen
+            {{ 'saasSubscription.mostPopular' | transloco }}
           </div>
         }
 
@@ -160,7 +199,7 @@
               <span class="text-xs text-slate-400 font-bold">{{ getPeriodLabel() }}</span>
             </div>
             @if (selectedCycle() === 'yearly') {
-              <p class="text-[11px] text-slate-400 mt-1 m-0">Aylık ~₺{{ getMonthlyEquivalent(plan) }} eşdeğeri</p>
+              <p class="text-[11px] text-slate-400 mt-1 m-0">{{ 'saasSubscription.monthlyEquivalent' | transloco: { amount: getMonthlyEquivalent(plan) } }}</p>
             }
           </div>
 
@@ -168,15 +207,15 @@
           <ul class="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 list-none p-0 m-0">
             <li class="flex items-center gap-2">
               <mat-icon class="icon-size-4 text-emerald-500">check_circle</mat-icon>
-              <span><strong>{{ plan.limits.maxMembers >= 999999 ? 'Sınırsız' : plan.limits.maxMembers }}</strong> Üye Kapasitesi</span>
+              <span><strong>{{ plan.limits.maxMembers >= 999999 ? ('saasSubscription.unlimited' | transloco) : plan.limits.maxMembers }}</strong> {{ 'saasSubscription.memberCapacity' | transloco }}</span>
             </li>
             <li class="flex items-center gap-2">
               <mat-icon class="icon-size-4 text-emerald-500">check_circle</mat-icon>
-              <span><strong>{{ plan.limits.maxBranches >= 9999 ? 'Sınırsız' : plan.limits.maxBranches }}</strong> Şube Yönetimi</span>
+              <span><strong>{{ plan.limits.maxBranches >= 9999 ? ('saasSubscription.unlimited' | transloco) : plan.limits.maxBranches }}</strong> {{ 'saasSubscription.branchLimit' | transloco }}</span>
             </li>
             <li class="flex items-center gap-2">
               <mat-icon class="icon-size-4 text-emerald-500">check_circle</mat-icon>
-              <span><strong>{{ plan.limits.maxStaff >= 9999 ? 'Sınırsız' : plan.limits.maxStaff }}</strong> Personel / Antrenör</span>
+              <span><strong>{{ plan.limits.maxStaff >= 9999 ? ('saasSubscription.unlimited' | transloco) : plan.limits.maxStaff }}</strong> {{ 'saasSubscription.staffLimit' | transloco }}</span>
             </li>
             @for (f of plan.features; track f.name) {
               <li class="flex items-center gap-2">
@@ -198,7 +237,7 @@
               class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs cursor-default flex items-center justify-center gap-1.5"
             >
               <mat-icon class="icon-size-4 text-emerald-500">check</mat-icon>
-              <span>Mevcut Planınız</span>
+              <span>{{ 'saasSubscription.currentPlanBtn' | transloco }}</span>
             </button>
           } @else {
             <button
@@ -215,7 +254,7 @@
               [class.dark:hover:bg-slate-600]="!isPro"
               [class.text-white]="!isPro"
             >
-              <span>Bu Plana Yükselt</span>
+              <span>{{ 'saasSubscription.upgradeBtn' | transloco }}</span>
               <mat-icon class="icon-size-4">arrow_forward</mat-icon>
             </button>
           }
@@ -227,8 +266,8 @@
   <!-- 5. Sıkça Sorulan Sorular (Kompakt Akordiyon) -->
   <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm max-w-3xl mx-auto space-y-4">
     <div class="text-center space-y-1 mb-4">
-      <h3 class="text-base font-bold text-slate-900 dark:text-white m-0">Sıkça Sorulan Sorular</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400 m-0">Abonelik, lisanslama ve faturalandırma süreçleri hakkında bilgi alın.</p>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white m-0">{{ 'saasSubscription.faqTitle' | transloco }}</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 m-0">{{ 'saasSubscription.faqSubtitle' | transloco }}</p>
     </div>
 
     <div class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -239,14 +278,14 @@
             (click)="toggleFaq($index)"
             class="w-full text-left flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 transition-colors cursor-pointer py-1"
           >
-            <span>{{ faq.question }}</span>
+            <span>{{ faq.questionKey | transloco }}</span>
             <mat-icon class="icon-size-4 text-slate-400 transition-transform" [class.rotate-180]="openFaqIndex() === $index">
               expand_more
             </mat-icon>
           </button>
           @if (openFaqIndex() === $index) {
             <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mt-2 mb-1 pr-4">
-              {{ faq.answer }}
+              {{ faq.answerKey | transloco }}
             </p>
           }
         </div>
@@ -263,35 +302,35 @@
             <mat-icon class="icon-size-5">upgrade</mat-icon>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Paket Yükseltme Onayı</h3>
-            <p class="text-xs text-slate-500 m-0">{{ target.name }} Lisansına Geçiş</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">{{ 'saasSubscription.confirmUpgradeTitle' | transloco }}</h3>
+            <p class="text-xs text-slate-500 m-0">{{ 'saasSubscription.confirmUpgradeSubtitle' | transloco: { plan: target.name } }}</p>
           </div>
         </div>
 
         <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs space-y-1.5">
           <div class="flex justify-between">
-            <span class="text-slate-500">Seçilen Plan:</span>
+            <span class="text-slate-500">{{ 'saasSubscription.selectedPlanLabel' | transloco }}</span>
             <strong class="text-slate-900 dark:text-white">{{ target.name }}</strong>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-500">Fatura Dönemi:</span>
-            <strong class="text-slate-900 dark:text-white">{{ selectedCycle() === 'yearly' ? 'Yıllık' : 'Aylık' }}</strong>
+            <span class="text-slate-500">{{ 'saasSubscription.billingPeriodLabel' | transloco }}</span>
+            <strong class="text-slate-900 dark:text-white">{{ selectedCycle() === 'yearly' ? ('saasSubscription.yearly' | transloco) : ('saasSubscription.monthly' | transloco) }}</strong>
           </div>
           <div class="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold pt-1 border-t border-slate-200 dark:border-slate-700">
-            <span>Tutar:</span>
+            <span>{{ 'saasSubscription.amountLabel' | transloco }}</span>
             <span>₺{{ getPrice(target) }} {{ getPeriodLabel() }}</span>
           </div>
         </div>
 
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" (click)="closeUpgradeModal()" class="odv-btn-ghost text-xs">Vazgeç</button>
+          <button type="button" (click)="closeUpgradeModal()" class="odv-btn-ghost text-xs">{{ 'common.cancel' | transloco }}</button>
           <button
             type="button"
             (click)="confirmUpgrade()"
             [disabled]="upgrading()"
             class="odv-btn-primary text-xs disabled:opacity-50"
           >
-            {{ upgrading() ? 'Yükseltiliyor...' : 'Yükseltmeyi Onayla' }}
+            {{ upgrading() ? ('saasSubscription.upgrading' | transloco) : ('saasSubscription.confirmUpgradeAction' | transloco) }}
           </button>
         </div>
       </div>

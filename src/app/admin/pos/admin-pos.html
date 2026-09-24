@@ -1,23 +1,44 @@
 <div class="font-sans space-y-6">
   <!-- 1. POS Header -->
   <app-page-header
-    title="Hızlı Kasa & POS"
+    title="pos.title"
     icon="point_of_sale"
-    description="Barkodlu satış, hızlı nakit/kart tahsilat ve anlık kasa fişi kesme terminali."
+    description="pos.desc"
   >
     <div actions class="flex items-center gap-2">
       <div class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-          Bugün Kasa: ₺{{ money(todaySalesTotal()) }} ({{ todaySalesCount() }} Fiş)
+          {{ 'pos.todayCash' | transloco: { amount: money(todaySalesTotal()), count: todaySalesCount() } }}
         </span>
       </div>
       <a routerLink="/admin/sales" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
         <mat-icon class="icon-size-4">shopping_bag</mat-icon>
-        <span>Paket & Market Satışı →</span>
+        <span>{{ 'pos.packageShopSales' | transloco }}</span>
       </a>
     </div>
   </app-page-header>
+
+  <!-- SAAS SÜRESİ DOLDU UYARISI -->
+  @if (saasSub.isExpired()) {
+    <div class="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+          <mat-icon class="text-xl">lock</mat-icon>
+        </div>
+        <div>
+          <span class="font-extrabold text-sm block text-rose-100">{{ 'pos.lockedTitle' | transloco }}</span>
+          <span class="text-xs text-rose-200/80">{{ 'pos.lockedDesc' | transloco }}</span>
+        </div>
+      </div>
+      <a
+        routerLink="/admin/subscription"
+        class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
+      >
+        {{ 'pos.renewPlanBtn' | transloco }}
+      </a>
+    </div>
+  }
 
   <!-- 2. POS Split Layout (12 Kolon) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -33,7 +54,7 @@
             type="text"
             [ngModel]="search()"
             (ngModelChange)="search.set($event)"
-            placeholder="Barkod okutun veya ürün adı yazın…"
+            [placeholder]="'pos.scanBarcodePlaceholder' | transloco"
             autofocus
             class="w-full pl-11 pr-4 py-3 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
           />

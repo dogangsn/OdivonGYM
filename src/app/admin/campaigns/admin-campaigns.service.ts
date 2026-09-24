@@ -13,8 +13,10 @@ import {
   where,
   writeBatch,
 } from '@angular/fire/firestore';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, firstValueFrom, map, of, switchMap, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { SmsGatewayService } from '../../core/services/sms-gateway.service';
+import { UserProfile } from '../../core/models/user-profile.model';
 import {
   Campaign,
   CampaignChannel,
@@ -290,14 +292,67 @@ export class AdminCampaignsService {
     await this.updateCampaign(id, { status: nextStatus });
   }
 
+  private readonly smsGateway = inject(SmsGatewayService);
+
   /**
-   * Kampanyayı seçilen kanaldan üyelerin ekranlarına veya mesaj kanallarına anında iletir.
+   * Hedef kitleye ait üyelerin listesini gerçek veritabanından çeker.
+   */
+  async getTargetMembers(audience: TargetAudience): Promise<UserProfile[]> {
+    try {
+      const members = await firstValueFrom(this.membersService.watchMembers().pipe(take(1)));
+      if (!members || members.length === 0) return [];
+
+      const now = Date.now();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+      switch (audience) {
+        case 'active_members':
+          return members.filter((m) => m.membershipStatus === 'active');
+        case 'trial_members':
+          return members.filter((m) => m.membershipStatus === 'trial');
+        case 'inactive_members':
+          return members.filter((m) => m.membershipStatus === 'expired' || m.membershipStatus === 'cancelled');
+        case 'expiring_soon':
+          return members.filter((m) => {
+            if (m.membershipStatus !== 'active' || !m.membershipEndsAt) return false;
+            const diff = m.membershipEndsAt.toMillis() - now;
+            return diff > 0 && diff <= sevenDaysMs;
+          });
+        case 'all_members':
+        default:
+          return members;
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Kampanyayı seçilen kanaldan üyelerin ekranlarına veya mesaj kanallarına iletir.
+   * SMS kanalı seçildiğinde SmsGatewayService üzerinden gerçek toplu gönderim yapar.
    */
   async dispatchCampaign(
     campaign: Campaign,
     channel: CampaignChannel,
   ): Promise<{ sentCount: number }> {
-    const targetCount = campaign.stats.targetCount || this.getEstimatedAudienceCount(campaign.targetAudience);
+    const targetMembers = await this.getTargetMembers(campaign.targetAudience);
+    const targetCount = targetMembers.length > 0 ? targetMembers.length : (campaign.stats.targetCount || 50);
+
+    if (channel === 'sms') {
+      const phones = targetMembers
+        .map((m) => m.phone)
+        .filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
+
+      const smsText = campaign.messageTemplate?.smsBody || campaign.title;
+      if (phones.length > 0) {
+        await this.smsGateway.sendBulkSms({
+          recipients: phones,
+          message: smsText,
+          title: campaign.title,
+        });
+      }
+    }
+
     const updatedSentCount = campaign.stats.sentCount + targetCount;
 
     await this.updateCampaign(campaign.id, {
@@ -317,7 +372,23 @@ export class AdminCampaignsService {
   async sendQuickBroadcast(
     input: QuickBroadcastInput,
   ): Promise<{ recipientCount: number }> {
-    const recipientCount = this.getEstimatedAudienceCount(input.segment);
+    const targetMembers = await this.getTargetMembers(input.segment);
+    const recipientCount = targetMembers.length > 0 ? targetMembers.length : this.getEstimatedAudienceCount(input.segment);
+
+    // SMS kanalı seçildiyse SMS Gateway üzerinden anında ilet
+    if (input.channels.includes('sms')) {
+      const phones = targetMembers
+        .map((m) => m.phone)
+        .filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
+
+      if (phones.length > 0) {
+        await this.smsGateway.sendBulkSms({
+          recipients: phones,
+          message: input.message,
+          title: input.title,
+        });
+      }
+    }
 
     // Otomatik bir kampanya kaydı olarak da kaydeder
     await this.createCampaign({

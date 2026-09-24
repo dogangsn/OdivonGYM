@@ -348,7 +348,14 @@ export class AdminMembersService {
   /** Hızlı Abonelik Yenileme: Bitiş tarihini uzatır ve otomatik muhasebe kaydı oluşturur. */
   async renewMembership(
     member: UserProfile,
-    input: { packageName: string; durationDays: number; price: number; paymentMethod?: 'cash' | 'card' | 'transfer' },
+    input: {
+      packageName: string;
+      durationDays: number;
+      price: number;
+      paymentMethod?: 'cash' | 'card' | 'transfer' | 'wallet';
+      notes?: string;
+      recordAccounting?: boolean;
+    },
   ): Promise<void> {
     const tenantId = this.auth.profile()?.tenantId;
     if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
@@ -366,14 +373,18 @@ export class AdminMembersService {
 
     const batch = writeBatch(this.firestore);
     const memberRef = doc(this.firestore, 'users', member.uid);
+    const logNote = `[Abonelik Yenileme]: ${input.packageName} (${input.durationDays} Gün, ${input.price} ₺) - ${new Date().toLocaleDateString('tr-TR')}${input.notes ? ' - Not: ' + input.notes : ''}`;
+    const updatedNotes = member.notes ? `${member.notes}\n${logNote}` : logNote;
+
     batch.update(memberRef, {
       membershipStatus: 'active',
       packageLabel: input.packageName,
       membershipEndsAt: newEndsAt,
+      notes: updatedNotes,
       updatedAt: now,
     });
 
-    if (input.price > 0) {
+    if (input.price > 0 && input.recordAccounting !== false) {
       const entryRef = doc(collection(this.firestore, 'accounting_entries'));
       batch.set(entryRef, {
         tenantId,
@@ -384,7 +395,7 @@ export class AdminMembersService {
         referenceId: member.uid,
         referenceType: 'membership_renewal',
         paymentMethod: input.paymentMethod || 'cash',
-        notes: `5 Haneli Üye No: ${member.memberNumber || '-'}`,
+        notes: input.notes || `5 Haneli Üye No: ${member.memberNumber || '-'}`,
         entryDate: now,
         createdAt: now,
         updatedAt: now,
@@ -392,6 +403,86 @@ export class AdminMembersService {
     }
 
     await batch.commit();
+  }
+
+  /** Hızlı Süre Ekleme (Telafi / Bonus): Ücret almadan bitiş tarihini uzatır. */
+  async extendMembershipDays(
+    member: UserProfile,
+    additionalDays: number,
+    reason?: string,
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    let baseDate = new Date();
+    if (member.membershipEndsAt) {
+      const currentEndMs = member.membershipEndsAt.toMillis();
+      if (currentEndMs > Date.now()) {
+        baseDate = new Date(currentEndMs);
+      }
+    }
+    baseDate.setDate(baseDate.getDate() + additionalDays);
+    const newEndsAt = Timestamp.fromDate(baseDate);
+
+    const memberRef = doc(this.firestore, 'users', member.uid);
+    const logNote = `[Süre Eklendi]: +${additionalDays} Gün (${reason || 'Telafi/Hediye'}) - ${new Date().toLocaleDateString('tr-TR')}`;
+    const updatedNotes = member.notes ? `${member.notes}\n${logNote}` : logNote;
+
+    await updateDoc(memberRef, {
+      membershipStatus: 'active',
+      membershipEndsAt: newEndsAt,
+      notes: updatedNotes,
+      updatedAt: now,
+    });
+  }
+
+  /** Abonelik Dondurma: Bitiş tarihini dondurma süresi kadar erteler. */
+  async freezeMembership(
+    member: UserProfile,
+    freezeDays: number,
+    reason?: string,
+  ): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    let baseDate = new Date();
+    if (member.membershipEndsAt) {
+      const currentEndMs = member.membershipEndsAt.toMillis();
+      if (currentEndMs > Date.now()) {
+        baseDate = new Date(currentEndMs);
+      }
+    }
+    baseDate.setDate(baseDate.getDate() + freezeDays);
+    const newEndsAt = Timestamp.fromDate(baseDate);
+
+    const memberRef = doc(this.firestore, 'users', member.uid);
+    const logNote = `[Donduruldu]: ${freezeDays} Gün donduruldu (${reason || 'Üye talebi'}) - ${new Date().toLocaleDateString('tr-TR')}`;
+    const updatedNotes = member.notes ? `${member.notes}\n${logNote}` : logNote;
+
+    await updateDoc(memberRef, {
+      membershipEndsAt: newEndsAt,
+      notes: updatedNotes,
+      updatedAt: now,
+    });
+  }
+
+  /** Aboneliği İptal Et */
+  async cancelMembership(member: UserProfile, reason?: string): Promise<void> {
+    const tenantId = this.auth.profile()?.tenantId;
+    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
+
+    const now = Timestamp.now();
+    const memberRef = doc(this.firestore, 'users', member.uid);
+    const logNote = `[İptal Edildi]: ${reason || 'Yönetici tarafından iptal edildi.'} - ${new Date().toLocaleDateString('tr-TR')}`;
+    const updatedNotes = member.notes ? `${member.notes}\n${logNote}` : logNote;
+
+    await updateDoc(memberRef, {
+      membershipStatus: 'cancelled',
+      notes: updatedNotes,
+      updatedAt: now,
+    });
   }
 
   /** Üyeye RFID / Turnike Kartı Tanımlama ve Depozito Ücretini Kasaya İşleme */

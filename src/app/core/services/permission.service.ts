@@ -89,6 +89,7 @@ export class PermissionService {
         '/admin/overview',
         '/admin/wizard',
         '/admin/members',
+        '/admin/subscriptions',
         '/admin/disciplines',
         '/classes',
         '/appointments',
@@ -105,6 +106,7 @@ export class PermissionService {
       const allowedReceptionRoutes = [
         '/admin/overview',
         '/admin/members',
+        '/admin/subscriptions',
         '/admin/access-control',
         '/admin/shop',
         '/admin/packages',

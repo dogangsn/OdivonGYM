@@ -4,7 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
@@ -23,45 +23,46 @@ import { SaasSubscriptionService } from '../../../core/services/saas-subscriptio
 import { FormsModule } from '@angular/forms';
 
 export interface RouteSearchResult {
-  title: string;
-  category: string;
+  titleKey: string;
+  categoryKey: string;
   icon: string;
   link: string;
   keywords: string[];
 }
 
 const SEARCHABLE_ROUTES: RouteSearchResult[] = [
-  { title: 'Dashboard', category: 'Genel', icon: 'dashboard', link: '/dashboard', keywords: ['ana sayfa', 'dashboard', 'panel', 'istatistik', 'özet'] },
-  { title: 'Salon Durumu & Genel Bakış', category: 'Genel', icon: 'space_dashboard', link: '/admin/overview', keywords: ['genel bakış', 'durum', 'overview', 'rapor'] },
-  { title: 'Üye Kayıtları & Yönetimi', category: 'Kulüp', icon: 'groups', link: '/admin/members', keywords: ['üye', 'üyeler', 'kayıt', 'sporcu', 'profil', 'members'] },
-  { title: 'Misafir Üyeler & Anket', category: 'Kulüp', icon: 'person_search', link: '/admin/guest-members', keywords: ['misafir', 'ziyaretçi', 'anket', 'tanıtım', 'guest'] },
-  { title: 'Üyelik Paketleri & Fiyatlandırma', category: 'Satış', icon: 'sell', link: '/admin/packages', keywords: ['paket', 'fiyat', 'abonelik', 'tarife', 'packages'] },
-  { title: 'Hızlı Kasa & POS', category: 'Kasa / POS', icon: 'shopping_cart_checkout', link: '/admin/shop', keywords: ['kasa', 'pos', 'market', 'satış', 'ödeme', 'shop'] },
-  { title: 'Ürün & Stok Yönetimi', category: 'Ürün & Stok', icon: 'inventory_2', link: '/admin/shop', keywords: ['ürün', 'stok', 'envanter', 'protein', 'su', 'bar'] },
-  { title: 'Tedarikçiler', category: 'Ürün & Stok', icon: 'local_shipping', link: '/admin/suppliers', keywords: ['tedarikçi', 'firmalar', 'toptancı', 'suppliers'] },
-  { title: 'Kasa & Muhasebe', category: 'Finans', icon: 'account_balance', link: '/admin/accounting', keywords: ['muhasebe', 'kasa', 'gelir', 'gider', 'finans', 'accounting'] },
-  { title: 'E-Fatura & Uyumsoft', category: 'Finans', icon: 'receipt_long', link: '/admin/e-invoice', keywords: ['fatura', 'e-fatura', 'e-arşiv', 'uyumsoft', 'mali mühür'] },
-  { title: 'Turnike & Geçiş Kontrol', category: 'Erişim', icon: 'nfc', link: '/admin/access-control', keywords: ['turnike', 'kapı', 'rfid', 'qr', 'geçiş', 'donanım'] },
-  { title: 'Ders & Seans Takvimi', category: 'Kulüp', icon: 'calendar_month', link: '/classes', keywords: ['ders', 'seans', 'grup dersi', 'kickboks', 'pilates', 'classes'] },
-  { title: 'PT Randevuları', category: 'Kulüp', icon: 'event_available', link: '/appointments', keywords: ['randevu', 'pt', 'özel ders', 'antrenör', 'appointments'] },
-  { title: 'Genel Tanımlar', category: 'Tanımlar', icon: 'tune', link: '/admin/definitions', keywords: ['tanımlar', 'kategori', 'aletler', 'branş', 'donanım', 'definitions'] },
-  { title: 'Branşlar & Ekipman', category: 'Tanımlar', icon: 'sports_martial_arts', link: '/admin/disciplines', keywords: ['branş', 'disiplin', 'ekipman', 'cihaz', 'disciplines'] },
-  { title: 'Eğitim Sihirbazı', category: 'Tanımlar', icon: 'auto_awesome', link: '/admin/wizard', keywords: ['sihirbaz', 'zincirleme', 'tanımlama', 'wizard'] },
-  { title: 'Personel & Rol Yönetimi', category: 'Yönetim', icon: 'badge', link: '/admin/staff', keywords: ['personel', 'çalışan', 'hoca', 'antrenör', 'staff'] },
-  { title: 'Şubeler', category: 'Yönetim', icon: 'store', link: '/admin/branches', keywords: ['şube', 'şubeler', 'branches'] },
-  { title: 'Salon Bilgileri', category: 'Yönetim', icon: 'business', link: '/admin/gym-info', keywords: ['salon bilgileri', 'logo', 'çalışma saatleri', 'gym'] },
-  { title: 'SaaS Paket & Lisans', category: 'Yönetim', icon: 'card_membership', link: '/admin/subscription', keywords: ['lisans', 'paket', 'abonelik', 'odivon lisans', 'subscription'] },
-  { title: 'Antrenman Programım', category: 'Sporcu', icon: 'fitness_center', link: '/workout', keywords: ['antrenman', 'program', 'workout'] },
-  { title: 'Vücut Ölçümlerim', category: 'Sporcu', icon: 'monitor_weight', link: '/measurements', keywords: ['ölçüm', 'kilo', 'yağ oranı', 'inbody'] },
-  { title: 'Su Takibi', category: 'Sporcu', icon: 'water_drop', link: '/water', keywords: ['su', 'su takibi', 'litre'] },
-  { title: 'Cüzdanım', category: 'Sporcu', icon: 'account_balance_wallet', link: '/wallet', keywords: ['cüzdan', 'bakiye', 'para yükle'] },
-  { title: 'Profil & Ayarlarım', category: 'Sporcu', icon: 'person', link: '/profile', keywords: ['profil', 'ayarlar', 'şifre', 'profile'] },
+  { titleKey: 'sidebar.items.dashboard', categoryKey: 'sidebar.groups.general', icon: 'dashboard', link: '/dashboard', keywords: ['ana sayfa', 'dashboard', 'panel', 'home'] },
+  { titleKey: 'sidebar.items.adminOverview', categoryKey: 'sidebar.groups.general', icon: 'space_dashboard', link: '/admin/overview', keywords: ['genel bakış', 'durum', 'overview', 'rapor'] },
+  { titleKey: 'sidebar.items.adminMembers', categoryKey: 'sidebar.groups.club', icon: 'groups', link: '/admin/members', keywords: ['üye', 'üyeler', 'kayıt', 'members'] },
+  { titleKey: 'sidebar.items.adminSubscriptions', categoryKey: 'sidebar.groups.club', icon: 'card_membership', link: '/admin/subscriptions', keywords: ['abonelik', 'abone', 'yenileme', 'subscriptions'] },
+  { titleKey: 'sidebar.items.adminGuestMembers', categoryKey: 'sidebar.groups.club', icon: 'person_search', link: '/admin/guest-members', keywords: ['misafir', 'ziyaretçi', 'guest'] },
+  { titleKey: 'sidebar.items.adminPackages', categoryKey: 'sidebar.groups.sales', icon: 'sell', link: '/admin/packages', keywords: ['paket', 'fiyat', 'tarife', 'packages'] },
+  { titleKey: 'sidebar.items.adminPos', categoryKey: 'sidebar.groups.pos', icon: 'shopping_cart_checkout', link: '/admin/shop', keywords: ['kasa', 'pos', 'market', 'satış', 'shop'] },
+  { titleKey: 'sidebar.items.adminProducts', categoryKey: 'sidebar.groups.stock', icon: 'inventory_2', link: '/admin/products', keywords: ['ürün', 'stok', 'envanter', 'products'] },
+  { titleKey: 'sidebar.items.adminSuppliers', categoryKey: 'sidebar.groups.stock', icon: 'local_shipping', link: '/admin/suppliers', keywords: ['tedarikçi', 'suppliers'] },
+  { titleKey: 'sidebar.items.adminAccounting', categoryKey: 'sidebar.groups.finance', icon: 'account_balance', link: '/admin/accounting', keywords: ['muhasebe', 'kasa', 'gelir', 'accounting'] },
+  { titleKey: 'sidebar.items.adminEInvoice', categoryKey: 'sidebar.groups.finance', icon: 'receipt_long', link: '/admin/e-invoice', keywords: ['fatura', 'e-fatura', 'uyumsoft', 'invoice'] },
+  { titleKey: 'sidebar.items.adminAccessControl', categoryKey: 'sidebar.groups.access', icon: 'nfc', link: '/admin/access-control', keywords: ['turnike', 'kapı', 'rfid', 'qr', 'access'] },
+  { titleKey: 'sidebar.items.classSchedule', categoryKey: 'sidebar.groups.club', icon: 'calendar_month', link: '/classes', keywords: ['ders', 'seans', 'classes'] },
+  { titleKey: 'sidebar.items.ptAppointments', categoryKey: 'sidebar.groups.club', icon: 'event_available', link: '/appointments', keywords: ['randevu', 'pt', 'appointments'] },
+  { titleKey: 'sidebar.items.adminDefinitions', categoryKey: 'sidebar.groups.definitions', icon: 'tune', link: '/admin/definitions', keywords: ['tanımlar', 'definitions'] },
+  { titleKey: 'sidebar.items.adminDisciplines', categoryKey: 'sidebar.groups.definitions', icon: 'sports_martial_arts', link: '/admin/disciplines', keywords: ['branş', 'ekipman', 'disciplines'] },
+  { titleKey: 'sidebar.items.adminWizard', categoryKey: 'sidebar.groups.definitions', icon: 'auto_awesome', link: '/admin/wizard', keywords: ['sihirbaz', 'wizard'] },
+  { titleKey: 'sidebar.items.adminStaff', categoryKey: 'sidebar.groups.management', icon: 'badge', link: '/admin/staff', keywords: ['personel', 'çalışan', 'staff'] },
+  { titleKey: 'sidebar.items.adminBranches', categoryKey: 'sidebar.groups.management', icon: 'store', link: '/admin/branches', keywords: ['şube', 'branches'] },
+  { titleKey: 'sidebar.items.adminGymInfo', categoryKey: 'sidebar.groups.management', icon: 'business', link: '/admin/gym-info', keywords: ['salon bilgileri', 'gym'] },
+  { titleKey: 'sidebar.items.adminSubscription', categoryKey: 'sidebar.groups.management', icon: 'card_membership', link: '/admin/subscription', keywords: ['lisans', 'paket', 'subscription'] },
+  { titleKey: 'sidebar.items.workoutPlan', categoryKey: 'sidebar.groups.fitness', icon: 'fitness_center', link: '/workout', keywords: ['antrenman', 'workout'] },
+  { titleKey: 'sidebar.items.bodyMeasurements', categoryKey: 'sidebar.groups.health', icon: 'monitor_weight', link: '/measurements', keywords: ['ölçüm', 'measurements'] },
+  { titleKey: 'sidebar.items.waterTracker', categoryKey: 'sidebar.groups.health', icon: 'water_drop', link: '/water', keywords: ['su', 'water'] },
+  { titleKey: 'sidebar.items.wallet', categoryKey: 'sidebar.groups.account', icon: 'account_balance_wallet', link: '/wallet', keywords: ['cüzdan', 'wallet'] },
+  { titleKey: 'sidebar.items.profile', categoryKey: 'sidebar.groups.account', icon: 'person', link: '/profile', keywords: ['profil', 'profile'] },
 ];
 
 export interface ShellNotification {
   id: string;
-  title: string;
-  message: string;
+  titleKey: string;
+  messageKey: string;
   time: string;
   type: 'warning' | 'info' | 'success';
   icon: string;
@@ -99,6 +100,7 @@ export class Shell {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   protected readonly language = inject(LanguageService);
+  protected readonly transloco = inject(TranslocoService);
   protected readonly qrService = inject(MemberQrService);
   protected readonly branchContext = inject(BranchContextService);
   protected readonly wizard = inject(TrainingWizardService);
@@ -117,10 +119,14 @@ export class Shell {
   readonly searchQuery = signal('');
   readonly searchFocused = signal(false);
 
-  readonly searchResults = computed<RouteSearchResult[]>(() => {
+  readonly searchResults = computed<{ title: string; category: string; icon: string; link: string }[]>(() => {
     const q = this.searchQuery().trim().toLowerCase();
     if (!q) return [];
-    return SEARCHABLE_ROUTES.filter((route) => {
+    return SEARCHABLE_ROUTES.map((route) => {
+      const title = this.transloco.translate(route.titleKey);
+      const category = this.transloco.translate(route.categoryKey);
+      return { ...route, title, category };
+    }).filter((route) => {
       const matchTitle = route.title.toLowerCase().includes(q);
       const matchCategory = route.category.toLowerCase().includes(q);
       const matchKeywords = route.keywords.some((kw) => kw.toLowerCase().includes(q));
@@ -137,7 +143,6 @@ export class Shell {
   }
 
   navigateToRoute(link: string): void {
-
     this.searchQuery.set('');
     this.searchFocused.set(false);
     void this.router.navigateByUrl(link);
@@ -151,21 +156,20 @@ export class Shell {
     }
   }
 
-
   protected readonly notifications = signal<ShellNotification[]>([
     {
       id: 'notif-1',
-      title: 'Üyelik Süresi Uyarısı',
-      message: 'Ahmet Yılmaz üyesinin paket süresi 3 gün sonra doluyor. Otomatik yenileme teklifi gönderildi.',
-      time: '5 dk önce',
+      titleKey: 'shell.notif1Title',
+      messageKey: 'shell.notif1Msg',
+      time: '5m',
       type: 'warning',
       icon: 'notifications_active',
       read: false,
     },
     {
       id: 'notif-2',
-      title: 'Turnike Geçişi Onaylandı',
-      message: 'Kadıköy Şube 1 Nolu Turnikeden Zeynep Kaya geçiş yaptı.',
+      titleKey: 'shell.notif2Title',
+      messageKey: 'shell.notif2Msg',
       time: '14:32',
       type: 'info',
       icon: 'door_sliding',
@@ -173,18 +177,18 @@ export class Shell {
     },
     {
       id: 'notif-3',
-      title: 'Kritik Stok Seviyesi',
-      message: 'Optimum Gold Whey Protein (Çikolata) stoğu kritik seviyede: 2 adet kaldı.',
-      time: '1 saat önce',
+      titleKey: 'shell.notif3Title',
+      messageKey: 'shell.notif3Msg',
+      time: '1h',
       type: 'warning',
       icon: 'inventory_2',
       read: false,
     },
     {
       id: 'notif-4',
-      title: 'Uyumsoft E-Fatura Kesildi',
-      message: 'GİB onaylı #ODV20260001 nolu e-arşiv fatura başarıyla mühürlendi.',
-      time: '2 saat önce',
+      titleKey: 'shell.notif4Title',
+      messageKey: 'shell.notif4Msg',
+      time: '2h',
       type: 'success',
       icon: 'receipt_long',
       read: true,

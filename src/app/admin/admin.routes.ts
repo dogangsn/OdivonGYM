@@ -18,6 +18,12 @@ export const adminRoutes: Routes = [
     title: 'Üye Kayıtları · OdivonGYM',
   },
   {
+    path: 'subscriptions',
+    loadComponent: () =>
+      import('./subscriptions/admin-subscriptions').then((m) => m.AdminSubscriptions),
+    title: 'Abonelik İşlemleri · OdivonGYM',
+  },
+  {
     path: 'guest-members',
     loadComponent: () => import('./guest-members/admin-guest-members').then((m) => m.AdminGuestMembers),
     title: 'Misafir Üyeler · OdivonGYM',

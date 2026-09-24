@@ -17,10 +17,13 @@ import { AdminMembersService } from '../members/admin-members.service';
 import { AccessDirection, AccessLog, AccessMethod, AccessStatus } from '../../core/models/access-log.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 
+import { RouterLink } from '@angular/router';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+
 @Component({
   selector: 'app-admin-access-control',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6">
@@ -50,6 +53,27 @@ import { UserProfile } from '../../core/models/user-profile.model';
           </button>
         </div>
       </app-page-header>
+
+      <!-- SAAS SÜRESİ DOLDU UYARISI -->
+      @if (saasSub.isExpired()) {
+        <div class="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+              <mat-icon class="text-xl">lock</mat-icon>
+            </div>
+            <div>
+              <span class="font-extrabold text-sm block text-rose-100">Turnike Donanım Senkronizasyonu Kilitlendi</span>
+              <span class="text-xs text-rose-200/80">SaaS lisans süreniz bittiği için otomatik turnike röleleri ve QR geçişleri askıya alınmıştır. Kesintisiz geçiş için paketinizi yenileyiniz.</span>
+            </div>
+          </div>
+          <a
+            routerLink="/admin/subscription"
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer no-underline"
+          >
+            Paketi Yenile ➜
+          </a>
+        </div>
+      }
 
       <!-- 2. Turnstile Hardware Grid -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -256,6 +280,29 @@ import { UserProfile } from '../../core/models/user-profile.model';
                 <span>{{ scanning() ? 'Taranıyor...' : 'Geçişi Test Et' }}</span>
               </button>
             </div>
+          </div>
+
+          <!-- Canlı USB / El Tipi Barkod Okuyucu Girişi -->
+          <div class="mt-4 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-3">
+            <div class="relative flex-1 w-full">
+              <input
+                type="text"
+                placeholder="Fiziksel USB Barkod/QR Okuyucu ile Okutun veya Kodu Yapıştırın (Enter tuşuna basın)…"
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-xs sm:text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                [(ngModel)]="barcodeInput"
+                (keydown.enter)="onBarcodeScanned()"
+              />
+              <mat-icon class="icon-size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">qr_code_scanner</mat-icon>
+            </div>
+            <button
+              type="button"
+              (click)="onBarcodeScanned()"
+              [disabled]="!barcodeInput.trim() || scanning()"
+              class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer whitespace-nowrap"
+            >
+              <mat-icon class="icon-size-4">bolt</mat-icon>
+              <span>Barkodu Okut / Doğrula</span>
+            </button>
           </div>
 
           <!-- Last Scan Result Feedback Banner -->
@@ -637,6 +684,7 @@ export class AdminAccessControl implements OnInit {
   private readonly accessService = inject(AdminAccessControlService);
   private readonly membersService = inject(AdminMembersService);
   private readonly alertService = inject(AlertService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
 
   protected readonly gates = toSignal(this.accessService.watchGates(), { initialValue: [] });
   protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
@@ -701,6 +749,13 @@ export class AdminAccessControl implements OnInit {
   }
 
   protected async openGateManually(gate: TurnstileGate): Promise<void> {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için uzaktan turnike açma komutları kilitlenmiştir. Lütfen SaaS Paket & Lisans menüsünden paketinizi yenileyiniz.',
+      );
+      return;
+    }
     const gateId = gate.id || gate.name;
     this.openingGate.set(gateId);
     try {
@@ -840,6 +895,34 @@ export class AdminAccessControl implements OnInit {
         'qr',
       );
       this.lastResult.set(result);
+    } finally {
+      this.scanning.set(false);
+    }
+  }
+
+  protected barcodeInput = '';
+
+  protected async onBarcodeScanned(): Promise<void> {
+    const code = this.barcodeInput.trim();
+    if (!code || this.scanning()) return;
+
+    this.scanning.set(true);
+    try {
+      const result = await this.accessService.validateAndProcessDynamicQrToken(
+        code,
+        this.selectedDirection,
+        this.selectedGateName,
+      );
+      this.lastResult.set(result);
+      this.barcodeInput = '';
+
+      if (result.allowed) {
+        this.alertService.toastSuccess(`${result.userName}: Geçiş onaylandı!`);
+      } else {
+        this.alertService.toastError(`${result.userName}: ${result.message}`);
+      }
+    } catch (err: any) {
+      this.alertService.toastError(err.message || 'Geçiş okunamadı.');
     } finally {
       this.scanning.set(false);
     }

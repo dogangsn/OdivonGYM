@@ -6,6 +6,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 import { LogoMark } from '../../components/logo-mark/logo-mark';
 
 export interface NavItem {
@@ -13,7 +14,12 @@ export interface NavItem {
   labelKey: string;
   link: string;
   badge?: string;
+  badgeKey?: string;
+  badgeParams?: Record<string, unknown>;
   badgeClass?: string;
+  requiresActiveSaas?: boolean;
+  isLocked?: boolean;
+  isHighlighted?: boolean;
 }
 
 export interface NavGroup {
@@ -23,112 +29,124 @@ export interface NavGroup {
 
 const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
   {
-    titleKey: 'Genel',
+    titleKey: 'sidebar.groups.general',
     items: [
-      { icon: 'dashboard', labelKey: 'Dashboard', link: '/dashboard' },
-      { icon: 'space_dashboard', labelKey: 'Salon Özeti', link: '/admin/overview' },
+      { icon: 'dashboard', labelKey: 'sidebar.items.dashboard', link: '/dashboard' },
+      { icon: 'space_dashboard', labelKey: 'sidebar.items.adminOverview', link: '/admin/overview' },
     ],
   },
   {
-    titleKey: 'Kulüp & Sporcular',
+    titleKey: 'sidebar.groups.club',
     items: [
-      { icon: 'groups', labelKey: 'Üye Kayıtları', link: '/admin/members' },
-      { icon: 'person_search', labelKey: 'Misafir Üyeler', link: '/admin/guest-members' },
-      { icon: 'calendar_month', labelKey: 'Ders & Seans Takvimi', link: '/classes' },
-      { icon: 'event_available', labelKey: 'PT Randevuları', link: '/appointments' },
-      { icon: 'auto_awesome', labelKey: 'Eğitim Sihirbazı', link: '/admin/wizard' },
+      { icon: 'groups', labelKey: 'sidebar.items.adminMembers', link: '/admin/members' },
+      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscriptions', link: '/admin/subscriptions', badgeKey: 'sidebar.badges.renewal', badgeClass: 'badge-emerald' },
+      { icon: 'person_search', labelKey: 'sidebar.items.adminGuestMembers', link: '/admin/guest-members' },
+      { icon: 'calendar_month', labelKey: 'sidebar.items.classSchedule', link: '/classes' },
+      { icon: 'event_available', labelKey: 'sidebar.items.ptAppointments', link: '/appointments' },
+      { icon: 'auto_awesome', labelKey: 'sidebar.items.adminWizard', link: '/admin/wizard' },
     ],
   },
   {
-    titleKey: 'Kasa / POS',
+    titleKey: 'sidebar.groups.pos',
     items: [
-      { icon: 'point_of_sale', labelKey: 'Hızlı Kasa & POS', link: '/admin/pos', badge: 'Canlı', badgeClass: 'badge-emerald' },
+      {
+        icon: 'point_of_sale',
+        labelKey: 'sidebar.items.adminPos',
+        link: '/admin/pos',
+        badgeKey: 'sidebar.badges.live',
+        badgeClass: 'badge-emerald',
+        requiresActiveSaas: true,
+      },
     ],
   },
   {
-    titleKey: 'Satış',
+    titleKey: 'sidebar.groups.sales',
     items: [
-      { icon: 'sell', labelKey: 'Üyelik Paketleri', link: '/admin/packages', badge: 'Yeni', badgeClass: 'badge-rose' },
-      { icon: 'shopping_bag', labelKey: 'Paket & Market Satışı', link: '/admin/sales' },
-      { icon: 'campaign', labelKey: 'Kampanyalar & İndirim', link: '/admin/campaigns' },
-    ],
-  },
-
-  {
-    titleKey: 'Ürün & Stok',
-    items: [
-      { icon: 'inventory_2', labelKey: 'Ürün & Stok Yönetimi', link: '/admin/products' },
-      { icon: 'local_shipping', labelKey: 'Tedarikçiler', link: '/admin/suppliers' },
+      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages', badgeKey: 'sidebar.badges.new', badgeClass: 'badge-rose' },
+      { icon: 'shopping_bag', labelKey: 'sidebar.items.adminSales', link: '/admin/sales', requiresActiveSaas: true },
+      { icon: 'campaign', labelKey: 'sidebar.items.adminCampaigns', link: '/admin/campaigns', requiresActiveSaas: true },
     ],
   },
   {
-    titleKey: 'Finans',
+    titleKey: 'sidebar.groups.stock',
     items: [
-      { icon: 'account_balance', labelKey: 'Kasa & Muhasebe', link: '/admin/accounting' },
-      { icon: 'receipt_long', labelKey: 'Fatura & E-Fatura', link: '/admin/e-invoice', badge: 'GİB', badgeClass: 'badge-teal' },
+      { icon: 'inventory_2', labelKey: 'sidebar.items.adminProducts', link: '/admin/products' },
+      { icon: 'local_shipping', labelKey: 'sidebar.items.adminSuppliers', link: '/admin/suppliers' },
     ],
   },
   {
-    titleKey: 'Raporlar',
+    titleKey: 'sidebar.groups.finance',
     items: [
-      { icon: 'analytics', labelKey: 'Satış & Kasa Raporları', link: '/admin/reports' },
+      { icon: 'account_balance', labelKey: 'sidebar.items.adminAccounting', link: '/admin/accounting' },
+      { icon: 'receipt_long', labelKey: 'sidebar.items.adminEInvoice', link: '/admin/e-invoice', badgeKey: 'sidebar.badges.gib', badgeClass: 'badge-teal', requiresActiveSaas: true },
     ],
   },
   {
-    titleKey: 'Erişim Kontrolü',
+    titleKey: 'sidebar.groups.reports',
     items: [
-      { icon: 'nfc', labelKey: 'Turnike & Geçiş Kontrol', link: '/admin/access-control', badge: 'IoT', badgeClass: 'badge-purple' },
-    ],
-  },
-
-  {
-    titleKey: 'Tanımlar',
-    items: [
-      { icon: 'sports_martial_arts', labelKey: 'Branşlar & Donanım', link: '/admin/disciplines' },
-      { icon: 'accessibility_new', labelKey: 'Kas Grupları & Egzersiz', link: '/admin/definitions' },
-      { icon: 'inventory_2', labelKey: 'Stok & Ürün Kategorileri', link: '/admin/stock-categories' },
-
+      { icon: 'analytics', labelKey: 'sidebar.items.adminReports', link: '/admin/reports' },
     ],
   },
   {
-    titleKey: 'Ayarlar & Yönetim',
+    titleKey: 'sidebar.groups.access',
     items: [
-      { icon: 'badge', labelKey: 'Personel & Eğitmenler', link: '/admin/staff' },
-      { icon: 'store', labelKey: 'Şubeler', link: '/admin/branches' },
-      { icon: 'business', labelKey: 'Salon Bilgileri', link: '/admin/gym-info' },
-      { icon: 'card_membership', labelKey: 'SaaS Paket & Lisans', link: '/admin/subscription', badge: 'Plan', badgeClass: 'badge-purple' },
+      {
+        icon: 'nfc',
+        labelKey: 'sidebar.items.adminAccessControl',
+        link: '/admin/access-control',
+        badgeKey: 'sidebar.badges.iot',
+        badgeClass: 'badge-purple',
+        requiresActiveSaas: true,
+      },
+    ],
+  },
+  {
+    titleKey: 'sidebar.groups.definitions',
+    items: [
+      { icon: 'sports_martial_arts', labelKey: 'sidebar.items.adminDisciplines', link: '/admin/disciplines' },
+      { icon: 'accessibility_new', labelKey: 'sidebar.items.adminDefinitions', link: '/admin/definitions' },
+      { icon: 'inventory_2', labelKey: 'sidebar.items.adminStockCategories', link: '/admin/stock-categories' },
+    ],
+  },
+  {
+    titleKey: 'sidebar.groups.management',
+    items: [
+      { icon: 'badge', labelKey: 'sidebar.items.adminStaff', link: '/admin/staff' },
+      { icon: 'store', labelKey: 'sidebar.items.adminBranches', link: '/admin/branches' },
+      { icon: 'business', labelKey: 'sidebar.items.adminGymInfo', link: '/admin/gym-info' },
+      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription', badgeKey: 'sidebar.badges.plan', badgeClass: 'badge-purple' },
     ],
   },
 ];
 
 const MEMBER_GROUPS: NavGroup[] = [
   {
-    titleKey: 'Genel',
+    titleKey: 'sidebar.groups.general',
     items: [
-      { icon: 'space_dashboard', labelKey: 'sidebar.dashboard', link: '/dashboard' },
+      { icon: 'space_dashboard', labelKey: 'sidebar.items.dashboard', link: '/dashboard' },
     ],
   },
   {
-    titleKey: 'Fitness & Antrenman',
+    titleKey: 'sidebar.groups.fitness',
     items: [
-      { icon: 'sports_gymnastics', labelKey: 'sidebar.workoutPlan', link: '/workout' },
-      { icon: 'calendar_month', labelKey: 'sidebar.classSchedule', link: '/classes' },
-      { icon: 'event_available', labelKey: 'sidebar.ptAppointments', link: '/appointments' },
+      { icon: 'sports_gymnastics', labelKey: 'sidebar.items.workoutPlan', link: '/workout' },
+      { icon: 'calendar_month', labelKey: 'sidebar.items.classSchedule', link: '/classes' },
+      { icon: 'event_available', labelKey: 'sidebar.items.ptAppointments', link: '/appointments' },
     ],
   },
   {
-    titleKey: 'Sağlık & Gelişim',
+    titleKey: 'sidebar.groups.health',
     items: [
-      { icon: 'monitor_weight', labelKey: 'sidebar.bodyMeasurements', link: '/measurements' },
-      { icon: 'water_drop', labelKey: 'sidebar.waterTracker', link: '/water' },
+      { icon: 'monitor_weight', labelKey: 'sidebar.items.bodyMeasurements', link: '/measurements' },
+      { icon: 'water_drop', labelKey: 'sidebar.items.waterTracker', link: '/water' },
     ],
   },
   {
-    titleKey: 'Hesap & Cüzdan',
+    titleKey: 'sidebar.groups.account',
     items: [
-      { icon: 'account_balance_wallet', labelKey: 'sidebar.wallet', link: '/wallet' },
-      { icon: 'card_membership', labelKey: 'sidebar.packages', link: '/packages' },
-      { icon: 'person', labelKey: 'sidebar.profile', link: '/profile' },
+      { icon: 'account_balance_wallet', labelKey: 'sidebar.items.wallet', link: '/wallet' },
+      { icon: 'card_membership', labelKey: 'sidebar.items.packages', link: '/packages' },
+      { icon: 'person', labelKey: 'sidebar.items.profile', link: '/profile' },
     ],
   },
 ];
@@ -153,6 +171,7 @@ export class Sidebar {
   protected readonly auth = inject(AuthService);
   protected readonly transloco = inject(TranslocoService);
   protected readonly permissions = inject(PermissionService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
 
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */
   readonly collapsed = input(false);
@@ -161,6 +180,8 @@ export class Sidebar {
   readonly collapseToggle = output<void>();
   readonly closeMobile = output<void>();
   readonly logOutRequested = output<void>();
+
+  protected readonly isExpired = computed(() => this.saasSub.isExpired());
 
   protected readonly userInitials = computed(() => {
     const name = this.auth.profile()?.displayName || 'AD';
@@ -171,32 +192,65 @@ export class Sidebar {
     return name.slice(0, 2).toUpperCase();
   });
 
-  protected readonly roleBadge = computed(() => {
+  protected readonly roleBadgeKey = computed(() => {
     const role = this.auth.profile()?.role;
-    if (role === 'owner' || role === 'admin') return 'Yönetici';
-    if (role === 'trainer') return 'Antrenör';
-    if (role === 'receptionist') return 'Resepsiyon';
-    return 'Üye';
+    if (role === 'owner') return 'sidebar.roles.owner';
+    if (role === 'admin') return 'sidebar.roles.admin';
+    if (role === 'trainer') return 'sidebar.roles.trainer';
+    if (role === 'receptionist') return 'sidebar.roles.receptionist';
+    return 'sidebar.roles.user';
   });
 
   protected readonly groups = computed<NavGroup[]>(() => {
     const role = this.permissions.currentRole();
+    const expired = this.isExpired();
+
     if (role === 'user') {
       return MEMBER_GROUPS;
     }
 
-    if (role === 'owner' || role === 'admin') {
-      return ADMIN_OPERATIONAL_GROUPS;
-    }
+    const baseGroups = ADMIN_OPERATIONAL_GROUPS;
 
-    // Antrenör veya Resepsiyon: yetkilerine göre filtrelenmiş gruplar
-    return ADMIN_OPERATIONAL_GROUPS.map((group) => {
-      const allowedItems = group.items.filter((item) =>
-        this.permissions.canAccessRoute(item.link),
-      );
+    return baseGroups.map((group) => {
+      let allowedItems = group.items;
+      if (role !== 'owner' && role !== 'admin') {
+        allowedItems = allowedItems.filter((item) => this.permissions.canAccessRoute(item.link));
+      }
+
+      // Expired SaaS durumu için item'ları dönüştür
+      const mappedItems = allowedItems.map((item) => {
+        if (expired && item.requiresActiveSaas) {
+          return {
+            ...item,
+            isLocked: true,
+            badgeKey: 'sidebar.badges.locked',
+            badgeClass: 'badge-rose',
+          };
+        }
+        if (item.link === '/admin/subscription') {
+          if (expired) {
+            return {
+              ...item,
+              badgeKey: 'sidebar.badges.expiredRenew',
+              badgeClass: 'badge-rose animate-pulse',
+              isHighlighted: true,
+            };
+          }
+          if (this.saasSub.isTrial()) {
+            return {
+              ...item,
+              badgeKey: 'sidebar.badges.daysLeft',
+              badgeParams: { days: this.saasSub.trialDaysLeft() },
+              badgeClass: 'badge-amber',
+            };
+          }
+        }
+        return item;
+      });
+
       return {
         ...group,
-        items: allowedItems,
+        items: mappedItems,
       };
     }).filter((group) => group.items.length > 0);
   });

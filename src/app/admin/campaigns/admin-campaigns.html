@@ -1,6 +1,24 @@
 <div class="campaigns-container p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-  <!-- SaaS Starter Paketi CRM Kısıtlama Uyarısı -->
-  @if (!saasSub.hasFeature('campaignsCrm')) {
+  <!-- SaaS Süresi Doldu veya Kısıtlama Uyarısı -->
+  @if (saasSub.isExpired()) {
+    <div class="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+          <mat-icon class="text-xl">lock</mat-icon>
+        </div>
+        <div>
+          <span class="font-extrabold text-sm block text-rose-100">Kampanyalar & CRM Modülü Kilitlendi</span>
+          <span class="text-xs text-rose-200/80">SaaS abonelik süreniz bittiği için kampanya oluşturma ve toplu mesaj gönderimi durdurulmuştur.</span>
+        </div>
+      </div>
+      <a
+        routerLink="/admin/subscription"
+        class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer no-underline"
+      >
+        Paketi Yenile ➜
+      </a>
+    </div>
+  } @else if (!saasSub.hasFeature('campaignsCrm')) {
     <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border border-amber-300/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">

@@ -1,49 +1,116 @@
 <div class="font-sans">
   <app-page-header
-    title="E-Cüzdan"
+    title="E-Cüzdanım"
     icon="account_balance_wallet"
-    description="Otomat, market ve ek ders satın alımlarında kullanılan bakiyeni yönet."
+    description="Salon içi otomat, market, protein bar ve ek ders harcamalarınızda kullanılan bakiyenizi yönetin."
   />
 
-  <section class="p-6 rounded-2xl mb-4 bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
-    <p class="m-0 text-sm text-white/85">E-Cüzdan Bakiyesi</p>
-    <p class="m-0 mt-1.5 text-4xl font-black tracking-tight">₺{{ balanceLabel() }}</p>
-    <p class="m-0 mt-1.5 text-xs text-white/70">Salon içi otomat ve market alışverişlerinde kullanılır.</p>
+  <!-- Ana Bakiye & Hızlı Yükleme Hero Kartı -->
+  <section class="p-6 sm:p-8 rounded-3xl mb-6 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/40 relative overflow-hidden border border-indigo-800/40">
+    <div class="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs uppercase tracking-widest font-black text-indigo-300">DİJİTAL SPORCU CÜZDANI</span>
+        </div>
+        <p class="m-0 mt-2 text-4xl sm:text-5xl font-black tracking-tight text-white flex items-baseline gap-1">
+          <span>₺{{ balanceLabel() }}</span>
+        </p>
+        <p class="m-0 mt-2 text-xs text-indigo-200/80 max-w-sm">
+          Otomatlarda ve resepsiyon marketinde QR kodunuzu okutarak temassız harcayabilirsiniz.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:items-end">
+        <button type="button"
+                class="px-6 py-3.5 rounded-2xl bg-white text-indigo-950 hover:bg-indigo-50 font-bold text-sm shadow-xl shadow-black/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+                (click)="openTopUp()">
+          <mat-icon class="icon-size-5 text-indigo-600">add_circle</mat-icon>
+          <span>Hemen Bakiye Yükle</span>
+        </button>
+        <span class="text-[11px] text-indigo-300 flex items-center gap-1 font-medium">
+          <mat-icon class="icon-size-3.5 text-emerald-400">verified</mat-icon>
+          3D Secure & Sanal POS Korumalı
+        </span>
+      </div>
+    </div>
+
+    <!-- Hızlı Yükleme Kısayolları -->
+    <div class="mt-6 pt-5 border-t border-white/10 flex flex-wrap items-center gap-2 relative z-10">
+      <span class="text-xs text-indigo-200 font-medium mr-2">Hızlı Yükle:</span>
+      @for (amt of quickAmounts; track amt) {
+        <button type="button"
+                class="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/10 transition-all"
+                (click)="openTopUp(amt)">
+          +₺{{ amt }}
+        </button>
+      }
+    </div>
   </section>
 
-  <div class="odv-card flex items-start gap-3 p-4 mb-6 text-sm text-slate-600 dark:text-slate-300">
-    <mat-icon class="icon-size-5 text-indigo-500 flex-shrink-0" [svgIcon]="'heroicons_solid:information-circle'"></mat-icon>
-    <p class="m-0">Bakiye yüklemek için salon görevlisine başvur; yükleme yapıldığında bakiyen ve aşağıdaki geçmiş anında güncellenir.</p>
+  <!-- Güvenlik & Bilgilendirme -->
+  <div class="odv-card flex items-start gap-3 p-4 mb-6 text-xs text-slate-600 dark:text-slate-300">
+    <mat-icon class="icon-size-5 text-indigo-500 flex-shrink-0">info</mat-icon>
+    <p class="m-0 leading-relaxed">
+      Kartınızla yapacağınız bakiye yüklemeleri anında cüzdanınıza yansır ve banka ekstrenizde <b>Odivon Spor Hizmetleri</b> olarak görünür. İade veya bakiye aktarımı için salon yönetimine başvurabilirsiniz.
+    </p>
   </div>
 
-  <h2 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">İşlem Geçmişi</h2>
+  <!-- İşlem Geçmişi Tablosu -->
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      Cüzdan Hesap Hareketleri
+    </h2>
+    <span class="text-xs text-slate-400">
+      Toplam {{ transactions()?.length || 0 }} işlem
+    </span>
+  </div>
+
   <div class="odv-card overflow-hidden">
     @if (transactions() === null) {
-      <p class="py-12 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+      <p class="py-12 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Hareketler yükleniyor…</p>
     } @else if (transactions()!.length === 0) {
-      <p class="py-12 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Henüz işlem yok.</p>
+      <div class="py-12 text-center">
+        <mat-icon class="icon-size-10 text-slate-300 dark:text-slate-600 mb-2">receipt_long</mat-icon>
+        <p class="m-0 text-sm font-semibold text-slate-700 dark:text-slate-300">Henüz cüzdan hareketi bulunmuyor.</p>
+        <p class="m-0 text-xs text-slate-400 mt-1">Yükleme yaptığınızda veya alışverişlerinizde harcamalarınız burada listelenir.</p>
+      </div>
     } @else {
       <div class="overflow-x-auto custom-scroll">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-              <th class="odv-th">Tarih</th>
-              <th class="odv-th">İşlem</th>
+              <th class="odv-th">Tarih / Saat</th>
+              <th class="odv-th">Açıklama & Tür</th>
               <th class="odv-th">Durum</th>
               <th class="odv-th text-right">Tutar</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
             @for (t of transactions(); track t.id) {
-              <tr>
-                <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ dateTime(t.createdAt) }}</td>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  {{ dateTime(t.createdAt) }}
+                </td>
                 <td class="odv-td">
                   <p class="font-semibold text-slate-900 dark:text-white m-0">{{ t.description }}</p>
-                  <p class="text-[11px] text-slate-400 m-0">{{ typeLabel[t.type] }}</p>
+                  <span class="inline-block mt-0.5 text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">
+                    {{ typeLabel[t.type] || t.type }}
+                  </span>
                 </td>
-                <td class="odv-td text-slate-600 dark:text-slate-300">{{ statusLabel[t.status] }}</td>
+                <td class="odv-td">
+                  <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                        [class]="t.status === 'completed' 
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'">
+                    <span class="w-1.5 h-1.5 rounded-full" [class]="t.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+                    {{ statusLabel[t.status] || t.status }}
+                  </span>
+                </td>
                 <td
-                  class="odv-td text-right font-bold whitespace-nowrap"
+                  class="odv-td text-right font-black whitespace-nowrap font-mono text-sm"
                   [class]="isCredit(t) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
                 >
                   {{ isCredit(t) ? '+' : '−' }}{{ money(t.amount) }}
@@ -55,4 +122,13 @@
       </div>
     }
   </div>
+
+  <!-- Bakiye Yükleme Modalı (3D Secure) -->
+  <app-checkout-modal
+    [open]="isTopUpOpen()"
+    [mode]="'wallet_topup'"
+    [topUpAmount]="topUpAmount()"
+    (closed)="isTopUpOpen.set(false)"
+    (paymentSuccess)="onTopUpSuccess($event)"
+  />
 </div>

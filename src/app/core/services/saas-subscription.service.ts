@@ -99,9 +99,16 @@ export class SaasSubscriptionService {
   // Billing cycle
   readonly billingCycle = computed<SaasBillingCycle>(() => this.subscription().billingCycle || 'monthly');
 
+  // Demo / Test simülasyonu için süresi dolmuş durum anahtarı
+  readonly demoSimulateExpired = signal<boolean>(false);
+
+  toggleDemoExpired(): void {
+    this.demoSimulateExpired.update((v) => !v);
+  }
+
   // Status flags
   readonly isTrial = computed(() => this.subscription().status === 'trial');
-  readonly isExpired = computed(() => this.subscription().status === 'expired' || this.auth.isTrialExpired());
+  readonly isExpired = computed(() => this.demoSimulateExpired() || this.subscription().status === 'expired' || this.auth.isTrialExpired());
   readonly isActive = computed(() => this.subscription().status === 'active' && !this.isExpired());
 
   // Kalan deneme günü

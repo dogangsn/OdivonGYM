@@ -93,7 +93,7 @@ service cloud.firestore {
             && request.resource.data.role == resource.data.role)
         || (isOwner(uid)
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['displayName', 'photoURL', 'phone', 'gender', 'birthDate', 'country', 'language', 'updatedAt']))
+                 .hasOnly(['displayName', 'photoURL', 'phone', 'gender', 'birthDate', 'country', 'language', 'membershipStatus', 'membershipStartsAt', 'membershipEndsAt', 'packageLabel', 'walletBalance', 'updatedAt']))
         || (isOwner(uid)
             && (!('tenantId' in resource.data) || resource.data.tenantId == null)
             && exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId))
@@ -156,6 +156,13 @@ service cloud.firestore {
       allow delete: if ownDoc() || adminDoc();
     }
 
+    match /workout_templates/{docId} {
+      allow read: if belongsToMyTenant(resource.data.tenantId);
+      allow create: if adminCreate();
+      allow update: if adminDoc() && tenantUnchanged();
+      allow delete: if adminDoc();
+    }
+
     match /class_bookings/{docId} {
       allow read: if ownDoc() || adminDoc();
       allow create: if ownCreate();
@@ -177,10 +184,10 @@ service cloud.firestore {
       allow delete: if ownDoc() || adminDoc();
     }
 
-    // ---- Ödeme kayıtları: üye sadece okur (kendi bakiyesini/paketini kendisi yazamaz) ----
+    // ---- Ödeme kayıtları: üye kendi hareketini oluşturabilir veya okuyabilir; admin tam yönetir ----
     match /wallet_transactions/{docId} {
       allow read: if ownDoc() || adminDoc();
-      allow create: if adminCreate();
+      allow create: if ownCreate() || adminCreate();
       allow update: if adminDoc() && tenantUnchanged();
       allow delete: if adminDoc();
     }
@@ -264,7 +271,7 @@ service cloud.firestore {
 
     match /accounting_entries/{docId} {
       allow read: if adminDoc();
-      allow create: if adminCreate();
+      allow create: if adminCreate() || (isSignedIn() && request.resource.data.tenantId == myTenantId());
       allow update: if adminDoc() && tenantUnchanged();
       allow delete: if adminDoc();
     }
@@ -330,7 +337,7 @@ service cloud.firestore {
 
     match /einvoice_items/{docId} {
       allow read: if adminDoc();
-      allow create: if adminCreate();
+      allow create: if adminCreate() || (isSignedIn() && request.resource.data.tenantId == myTenantId());
       allow update: if adminDoc() && tenantUnchanged();
       allow delete: if adminDoc();
     }

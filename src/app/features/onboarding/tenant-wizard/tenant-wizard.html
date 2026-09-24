@@ -9,34 +9,62 @@
       <app-logo-mark [size]="36" />
       <div>
         <span class="font-extrabold text-xl tracking-tight text-white block">OdivonGYM</span>
-        <span class="text-xs text-indigo-400 font-semibold">Salon Kurulum Sihirbazı</span>
+        <span class="text-xs text-indigo-400 font-semibold">{{ 'tenantWizard.headerSubtitle' | transloco }}</span>
       </div>
     </div>
 
-    <!-- Stepper Indicator -->
-    <div class="flex items-center gap-2">
+    <!-- Stepper Indicator (5 Steps) -->
+    <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
       <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-        [ngClass]="currentStep() === 1 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 1 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : currentStep() > 1 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'"
       >
-        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">1</span>
-        <span>Salon Bilgileri</span>
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">
+          {{ currentStep() > 1 ? '✓' : '1' }}
+        </span>
+        <span class="hidden md:inline">{{ 'tenantWizard.steps.gym' | transloco }}</span>
       </div>
-      <div class="w-4 h-0.5 bg-slate-700"></div>
+      <div class="w-2 sm:w-3 h-0.5 bg-slate-700"></div>
+
       <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-        [ngClass]="currentStep() === 2 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 2 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : currentStep() > 2 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'"
       >
-        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">2</span>
-        <span>Şube</span>
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">
+          {{ currentStep() > 2 ? '✓' : '2' }}
+        </span>
+        <span class="hidden md:inline">{{ 'tenantWizard.steps.branch' | transloco }}</span>
       </div>
-      <div class="w-4 h-0.5 bg-slate-700"></div>
+      <div class="w-2 sm:w-3 h-0.5 bg-slate-700"></div>
+
       <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-        [ngClass]="currentStep() === 3 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 3 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : currentStep() > 3 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'"
       >
-        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">3</span>
-        <span>İlk Antrenör</span>
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">
+          {{ currentStep() > 3 ? '✓' : '3' }}
+        </span>
+        <span class="hidden md:inline">{{ 'tenantWizard.steps.trainer' | transloco }}</span>
+      </div>
+      <div class="w-2 sm:w-3 h-0.5 bg-slate-700"></div>
+
+      <div
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 4 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : currentStep() > 4 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'"
+      >
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">
+          {{ currentStep() > 4 ? '✓' : '4' }}
+        </span>
+        <span class="hidden md:inline">{{ 'tenantWizard.steps.packages' | transloco }}</span>
+      </div>
+      <div class="w-2 sm:w-3 h-0.5 bg-slate-700"></div>
+
+      <div
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+        [ngClass]="currentStep() === 5 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-800 text-slate-400'"
+      >
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">5</span>
+        <span class="hidden md:inline">{{ 'tenantWizard.steps.launch' | transloco }}</span>
       </div>
     </div>
   </header>
@@ -45,38 +73,96 @@
   <main class="max-w-2xl w-full mx-auto my-8 relative z-10">
     <div class="bg-slate-800/90 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl">
 
-      <!-- ================= STEP 1: SALON BİLGİLERİ ================= -->
+      <!-- ================= STEP 1: SALON BİLGİLERİ & LOGO ================= -->
       @if (currentStep() === 1) {
         <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
           <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">1. Adım</span>
-            <h2 class="text-2xl font-black text-white mt-1 mb-2">Salon Temel Bilgileri</h2>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">{{ 'tenantWizard.step1Badge' | transloco }}</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">{{ 'tenantWizard.step1Title' | transloco }}</h2>
             <p class="text-xs text-slate-400 leading-relaxed m-0">
-              Salonunuzun adını, açık olduğu günleri ve açılış-kapanış saatlerini belirleyin.
+              {{ 'tenantWizard.step1Subtitle' | transloco }}
             </p>
+          </div>
+
+          <!-- Logo Yükleme / Önizleme Bölümü -->
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/80 flex items-center gap-4">
+            <div class="w-20 h-20 rounded-2xl border-2 border-dashed border-indigo-500/40 bg-slate-800/80 flex items-center justify-center overflow-hidden relative shrink-0">
+              @if (previewLogo()) {
+                <img [src]="previewLogo()" [alt]="'tenantWizard.logoLabel' | transloco" class="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  (click)="removeLogo()"
+                  class="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shadow-md cursor-pointer hover:bg-rose-500"
+                  [title]="'tenantWizard.removeLogoBtn' | transloco"
+                >
+                  ✕
+                </button>
+              } @else {
+                <div class="text-center text-slate-500 p-1">
+                  <mat-icon class="text-2xl">add_photo_alternate</mat-icon>
+                  <span class="block text-[9px] font-bold">Logo</span>
+                </div>
+              }
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <label class="block text-xs font-bold text-white">{{ 'tenantWizard.logoLabel' | transloco }}</label>
+              <p class="text-[11px] text-slate-400 m-0">{{ 'tenantWizard.logoHint' | transloco }}</p>
+              <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold cursor-pointer border border-indigo-500/30 transition-colors">
+                <mat-icon class="text-sm">upload_file</mat-icon>
+                <span>{{ 'tenantWizard.uploadLogoBtn' | transloco }}</span>
+                <input type="file" accept="image/*" (change)="onLogoFileSelected($event)" class="hidden" />
+              </label>
+            </div>
           </div>
 
           <form [formGroup]="gymForm" class="space-y-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Salon Adı *
+                {{ 'tenantWizard.gymNameLabel' | transloco }}
               </label>
               <div class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white focus-within:border-indigo-500">
                 <mat-icon class="text-slate-400 text-lg">storefront</mat-icon>
                 <input
                   type="text"
                   formControlName="name"
-                  placeholder="Örn: Odivon Fitness & Fight Club"
+                  [placeholder]="'tenantWizard.gymNamePlaceholder' | transloco"
                   class="bg-transparent border-none outline-none text-sm w-full text-white placeholder-slate-500"
                 />
               </div>
             </div>
 
-            <!-- Açık Olduğu Günler -->
+            <!-- Açık Olduğu Günler & Hızlı Şablonlar -->
             <div>
-              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                Salonun Açık Olduğu Günler *
-              </label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  {{ 'tenantWizard.openDaysLabel' | transloco }}
+                </label>
+                <!-- Hızlı Şablon Butonları -->
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    (click)="setDaysPreset('all')"
+                    class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/50 cursor-pointer"
+                  >
+                    {{ 'tenantWizard.presetAllDays' | transloco }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setDaysPreset('weekdays')"
+                    class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                  >
+                    {{ 'tenantWizard.presetWeekdays' | transloco }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setDaysPreset('mon_sat')"
+                    class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                  >
+                    {{ 'tenantWizard.presetMonSat' | transloco }}
+                  </button>
+                </div>
+              </div>
+
               <div class="flex flex-wrap gap-2">
                 @for (d of workingDays(); track d.day) {
                   <button
@@ -85,7 +171,7 @@
                     class="px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer"
                     [ngClass]="d.selected ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'"
                   >
-                    {{ d.label }}
+                    {{ d.labelKey | transloco }}
                   </button>
                 }
               </div>
@@ -95,7 +181,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Açılış Saati *
+                  {{ 'tenantWizard.openTimeLabel' | transloco }}
                 </label>
                 <input
                   type="time"
@@ -105,7 +191,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Kapanış Saati *
+                  {{ 'tenantWizard.closeTimeLabel' | transloco }}
                 </label>
                 <input
                   type="time"
@@ -118,7 +204,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  İletişim Telefonu *
+                  {{ 'tenantWizard.phoneLabel' | transloco }}
                 </label>
                 <input
                   type="tel"
@@ -129,7 +215,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Şehir *
+                  {{ 'tenantWizard.cityLabel' | transloco }}
                 </label>
                 <input
                   type="text"
@@ -142,7 +228,7 @@
 
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Salon Adresi *
+                {{ 'tenantWizard.addressLabel' | transloco }}
               </label>
               <input
                 type="text"
@@ -151,42 +237,30 @@
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
               />
             </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Salon Logosu (Opsiyonel URL)
-              </label>
-              <input
-                type="url"
-                formControlName="logoUrl"
-                placeholder="https://.../logo.png"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
-              />
-            </div>
           </form>
         </div>
       }
 
-      <!-- ================= STEP 2: ŞUBE BİLGİLERİ ================= -->
+      <!-- ================= STEP 2: ŞUBE & TESİS OLANAKLARI ================= -->
       @if (currentStep() === 2) {
         <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
           <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">2. Adım</span>
-            <h2 class="text-2xl font-black text-white mt-1 mb-2">İlk Şubenizi Tanımlayın</h2>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">{{ 'tenantWizard.step2Badge' | transloco }}</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">{{ 'tenantWizard.step2Title' | transloco }}</h2>
             <p class="text-xs text-slate-400 leading-relaxed m-0">
-              Kulübünüzün ana operasyonlarının yürütüleceği ilk şube veya merkez tesis bilgileri.
+              {{ 'tenantWizard.step2Subtitle' | transloco }}
             </p>
           </div>
 
           <form [formGroup]="branchForm" class="space-y-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Şube Adı *
+                {{ 'tenantWizard.branchNameLabel' | transloco }}
               </label>
               <input
                 type="text"
                 formControlName="branchName"
-                placeholder="Örn: Kadıköy Merkez Şube"
+                [placeholder]="'tenantWizard.branchNamePlaceholder' | transloco"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
               />
             </div>
@@ -194,7 +268,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Maksimum Kapasite (Kişi) *
+                  {{ 'tenantWizard.capacityLabel' | transloco }}
                 </label>
                 <input
                   type="number"
@@ -205,7 +279,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Şube Telefonu *
+                  {{ 'tenantWizard.branchPhoneLabel' | transloco }}
                 </label>
                 <input
                   type="tel"
@@ -217,13 +291,40 @@
 
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Şube Açık Adresi *
+                {{ 'tenantWizard.branchAddressLabel' | transloco }}
               </label>
               <textarea
                 formControlName="branchAddress"
-                rows="3"
+                rows="2"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none resize-none"
               ></textarea>
+            </div>
+
+            <!-- Tesis Olanakları (Amenities) -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  {{ 'tenantWizard.amenitiesTitle' | transloco }}
+                </label>
+                <span class="text-[11px] text-indigo-400 font-semibold">
+                  {{ 'tenantWizard.amenitiesSelectedCount' | transloco:{ count: selectedAmenities().length } }}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                @for (amenity of allAmenities; track amenity.id) {
+                  <button
+                    type="button"
+                    (click)="toggleAmenity(amenity.id)"
+                    class="p-2.5 rounded-xl text-xs font-medium text-left border flex items-center justify-between transition-all cursor-pointer"
+                    [ngClass]="selectedAmenities().includes(amenity.id) ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:border-slate-700'"
+                  >
+                    <span>{{ amenity.labelKey | transloco }}</span>
+                    <mat-icon class="text-sm">
+                      {{ selectedAmenities().includes(amenity.id) ? 'check_circle' : 'add_circle_outline' }}
+                    </mat-icon>
+                  </button>
+                }
+              </div>
             </div>
           </form>
         </div>
@@ -233,24 +334,24 @@
       @if (currentStep() === 3) {
         <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
           <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">3. Adım (Zorunlu)</span>
-            <h2 class="text-2xl font-black text-white mt-1 mb-2">İlk Antrenör / Eğitmen Kaydı</h2>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">{{ 'tenantWizard.step3Badge' | transloco }}</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">{{ 'tenantWizard.step3Title' | transloco }}</h2>
             <p class="text-xs text-slate-400 leading-relaxed m-0">
-              Üye kayıtlarında zorunlu antrenör eşlemesi ve seans yönetimi için ilk antrenörünüzü kaydedin.
+              {{ 'tenantWizard.step3Subtitle' | transloco }}
             </p>
           </div>
 
           <form [formGroup]="trainerForm" class="space-y-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Antrenör Adı Soyadı *
+                {{ 'tenantWizard.trainerNameLabel' | transloco }}
               </label>
               <div class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white focus-within:border-indigo-500">
                 <mat-icon class="text-slate-400 text-lg">person</mat-icon>
                 <input
                   type="text"
                   formControlName="displayName"
-                  placeholder="Örn: Mert Demir"
+                  [placeholder]="'tenantWizard.trainerNamePlaceholder' | transloco"
                   class="bg-transparent border-none outline-none text-sm w-full text-white placeholder-slate-500"
                 />
               </div>
@@ -259,7 +360,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  E-Posta Adresi *
+                  {{ 'tenantWizard.trainerEmailLabel' | transloco }}
                 </label>
                 <input
                   type="email"
@@ -270,7 +371,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Telefon Numarası *
+                  {{ 'tenantWizard.trainerPhoneLabel' | transloco }}
                 </label>
                 <input
                   type="tel"
@@ -283,28 +384,204 @@
 
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Uzmanlık Alanları (Virgülle Ayırın) *
+                {{ 'tenantWizard.trainerSpecialtiesLabel' | transloco }}
               </label>
               <input
                 type="text"
                 formControlName="specialties"
-                placeholder="Fitness, Vücut Geliştirme, Reformer Pilates, Boks"
+                [placeholder]="'tenantWizard.trainerSpecialtiesPlaceholder' | transloco"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
               />
             </div>
 
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Rol / Unvan
+                {{ 'tenantWizard.trainerTitleLabel' | transloco }}
               </label>
               <input
                 type="text"
                 formControlName="notes"
-                placeholder="Baş Antrenör / PT Sorumlusu"
+                [placeholder]="'tenantWizard.trainerTitlePlaceholder' | transloco"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
               />
             </div>
           </form>
+        </div>
+      }
+
+      <!-- ================= STEP 4: HIZLI BAŞLANGIÇ (PAKETLER & ŞABLONLAR) ================= -->
+      @if (currentStep() === 4) {
+        <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">{{ 'tenantWizard.step4Badge' | transloco }}</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">{{ 'tenantWizard.step4Title' | transloco }}</h2>
+            <p class="text-xs text-slate-400 leading-relaxed m-0">
+              {{ 'tenantWizard.step4Subtitle' | transloco }}
+            </p>
+          </div>
+
+          <!-- Paket Tohumlama -->
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/80 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <mat-icon class="text-indigo-400">card_membership</mat-icon>
+                <div>
+                  <h4 class="text-sm font-bold text-white">{{ 'tenantWizard.seedPackagesTitle' | transloco }}</h4>
+                  <p class="text-[11px] text-slate-400">{{ 'tenantWizard.seedPackagesDesc' | transloco }}</p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                [checked]="seedDefaultPackages()"
+                (change)="seedDefaultPackages.set(!seedDefaultPackages())"
+                class="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+              />
+            </div>
+
+            @if (seedDefaultPackages()) {
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">{{ 'tenantWizard.package1PriceLabel' | transloco }}</label>
+                  <input
+                    type="number"
+                    [value]="package1Price()"
+                    (input)="package1Price.set(+$any($event.target).value)"
+                    class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">{{ 'tenantWizard.package3PriceLabel' | transloco }}</label>
+                  <input
+                    type="number"
+                    [value]="package3Price()"
+                    (input)="package3Price.set(+$any($event.target).value)"
+                    class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">{{ 'tenantWizard.package12PriceLabel' | transloco }}</label>
+                  <input
+                    type="number"
+                    [value]="package12Price()"
+                    (input)="package12Price.set(+$any($event.target).value)"
+                    class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Antrenman Şablonları Tohumlama -->
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/80 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-emerald-400">fitness_center</mat-icon>
+              <div>
+                <h4 class="text-sm font-bold text-white">{{ 'tenantWizard.seedTemplatesTitle' | transloco }}</h4>
+                <p class="text-[11px] text-slate-400">
+                  {{ 'tenantWizard.seedTemplatesDesc' | transloco }}
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [checked]="seedWorkoutTemplates()"
+              (change)="seedWorkoutTemplates.set(!seedWorkoutTemplates())"
+              class="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+            />
+          </div>
+
+          <!-- Branş Tohumlama -->
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/80 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-amber-400">sports_martial_arts</mat-icon>
+              <div>
+                <h4 class="text-sm font-bold text-white">{{ 'tenantWizard.seedDisciplinesTitle' | transloco }}</h4>
+                <p class="text-[11px] text-slate-400">{{ 'tenantWizard.seedDisciplinesDesc' | transloco }}</p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [checked]="seedDisciplines()"
+              (change)="seedDisciplines.set(!seedDisciplines())"
+              class="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+            />
+          </div>
+        </div>
+      }
+
+      <!-- ================= STEP 5: ÖZET & LANSMAN ================= -->
+      @if (currentStep() === 5) {
+        <div class="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">{{ 'tenantWizard.step5Badge' | transloco }}</span>
+            <h2 class="text-2xl font-black text-white mt-1 mb-2">{{ 'tenantWizard.step5Title' | transloco }}</h2>
+            <p class="text-xs text-slate-400 leading-relaxed m-0">
+              {{ 'tenantWizard.step5Subtitle' | transloco }}
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Salon & Şube Özeti -->
+            <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/80 flex items-start gap-4">
+              <div class="w-14 h-14 rounded-xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center shrink-0 overflow-hidden">
+                @if (previewLogo()) {
+                  <img [src]="previewLogo()" alt="Logo" class="w-full h-full object-cover" />
+                } @else {
+                  <mat-icon class="text-indigo-400 text-2xl">storefront</mat-icon>
+                }
+              </div>
+              <div class="space-y-1 flex-1">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-extrabold text-white">{{ gymForm.get('name')?.value }}</h4>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">{{ 'tenantWizard.readyBadge' | transloco }}</span>
+                </div>
+                <p class="text-xs text-slate-300">
+                  {{ branchForm.get('branchName')?.value }} · {{ 'tenantWizard.summaryCapacity' | transloco:{ count: branchForm.get('capacity')?.value } }}
+                </p>
+                <p class="text-[11px] text-slate-400">
+                  {{ gymForm.get('openTime')?.value }} - {{ gymForm.get('closeTime')?.value }} · {{ gymForm.get('city')?.value }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Antrenör & Ekipman Özeti -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/80">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">{{ 'tenantWizard.summaryFirstTrainer' | transloco }}</span>
+                <span class="text-xs font-bold text-white block">{{ trainerForm.get('displayName')?.value }}</span>
+                <span class="text-[11px] text-slate-400 block">{{ trainerForm.get('specialties')?.value }}</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/80">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">{{ 'tenantWizard.summaryAmenities' | transloco }}</span>
+                <span class="text-xs font-bold text-indigo-300 block">{{ 'tenantWizard.summaryAmenitiesCount' | transloco:{ count: selectedAmenities().length } }}</span>
+                <span class="text-[11px] text-slate-400 block truncate">
+                  {{ getSelectedAmenitiesSummary() }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Tohumlanacak Modüller -->
+            <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/80">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block mb-2">{{ 'tenantWizard.summaryAutoModules' | transloco }}</span>
+              <div class="flex flex-wrap gap-2 text-xs">
+                @if (seedDefaultPackages()) {
+                  <span class="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                    <mat-icon class="text-xs">check</mat-icon> {{ 'tenantWizard.summaryPackages' | transloco }}
+                  </span>
+                }
+                @if (seedWorkoutTemplates()) {
+                  <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <mat-icon class="text-xs">check</mat-icon> {{ 'tenantWizard.summaryTemplates' | transloco }}
+                  </span>
+                }
+                @if (seedDisciplines()) {
+                  <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                    <mat-icon class="text-xs">check</mat-icon> {{ 'tenantWizard.summaryDisciplines' | transloco }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
         </div>
       }
 
@@ -317,19 +594,19 @@
             class="px-5 py-2.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <mat-icon class="text-sm">arrow_back</mat-icon>
-            Geri
+            {{ 'tenantWizard.prevBtn' | transloco }}
           </button>
         } @else {
           <div></div>
         }
 
-        @if (currentStep() < 3) {
+        @if (currentStep() < 5) {
           <button
             type="button"
             (click)="nextStep()"
             class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
           >
-            Devam Et
+            {{ 'tenantWizard.nextBtn' | transloco }}
             <mat-icon class="text-sm">arrow_forward</mat-icon>
           </button>
         } @else {
@@ -339,8 +616,8 @@
             [disabled]="submitting()"
             class="px-8 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/30 disabled:opacity-50"
           >
-            <mat-icon class="text-sm">{{ submitting() ? 'sync' : 'check_circle' }}</mat-icon>
-            {{ submitting() ? 'Kuruluyor...' : 'Kurulumu Tamamla & Başla' }}
+            <mat-icon class="text-sm">{{ submitting() ? 'sync' : 'rocket_launch' }}</mat-icon>
+            {{ submitting() ? ('tenantWizard.submittingBtn' | transloco) : ('tenantWizard.completeBtn' | transloco) }}
           </button>
         }
       </div>
@@ -350,6 +627,7 @@
 
   <!-- Footer -->
   <footer class="text-center text-xs text-slate-500 relative z-10">
-    © 2026 OdivonGYM Bulut Salon Yönetim Platformu · Tüm Hakları Saklıdır.
+    {{ 'tenantWizard.copyright' | transloco }}
   </footer>
 </div>
+

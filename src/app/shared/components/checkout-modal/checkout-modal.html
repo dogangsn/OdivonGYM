@@ -1,0 +1,425 @@
+@if (open()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto">
+    <div class="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative transition-all my-auto"
+         (click)="$event.stopPropagation()">
+
+      <!-- Kapatma Butonu -->
+      @if (step() !== '3ds_simulation' && !isProcessing()) {
+        <button type="button"
+                class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-all"
+                (click)="closeModal()">
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      }
+
+      <!-- ================= STEP 1: FORM ================= -->
+      @if (step() === 'form') {
+        <!-- Başlık & Özet Şerit -->
+        <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-xl bg-indigo-600/90 text-white flex items-center justify-center shadow-md">
+              <mat-icon class="icon-size-5">
+                {{ mode() === 'package' ? 'card_membership' : 'account_balance_wallet' }}
+              </mat-icon>
+            </span>
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">ODİVON GÜVENLİ ÖDEME</span>
+              <h3 class="m-0 text-lg font-bold text-white leading-tight">
+                {{ mode() === 'package' ? (selectedPackage()?.name || 'Üyelik Paketi') : 'E-Cüzdan Bakiye Yükleme' }}
+              </h3>
+            </div>
+          </div>
+
+          <!-- Sipariş Tutarı Özeti -->
+          <div class="mt-4 flex items-center justify-between bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/10">
+            <div>
+              <span class="text-xs text-indigo-200 block">Ödenecek Tutar</span>
+              <span class="text-2xl font-black text-white">
+                ₺{{ totalAmount().toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+              </span>
+            </div>
+            @if (mode() === 'package' && selectedPackage()) {
+              <div class="text-right">
+                <span class="text-[11px] text-indigo-300 block">Paket Süresi</span>
+                <span class="inline-flex items-center gap-1 font-bold text-sm text-emerald-300">
+                  <mat-icon class="icon-size-3.5">event_available</mat-icon>
+                  {{ selectedPackage()!.durationDays }} Gün
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="p-6">
+          <!-- Hata Uyarısı -->
+          @if (errorMessage()) {
+            <div class="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+              <mat-icon class="icon-size-4 flex-shrink-0">error_outline</mat-icon>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
+
+          <!-- Ödeme Yöntemi Seçimi -->
+          <div class="mb-5">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Ödeme Yöntemi
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <!-- Kart ile Öde -->
+              <button type="button"
+                      class="p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all"
+                      [class]="paymentMethod() === 'card' 
+                        ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 dark:border-indigo-500 ring-2 ring-indigo-600/20' 
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
+                      (click)="setMethod('card')">
+                <div class="flex items-center justify-between">
+                  <mat-icon class="icon-size-4.5" [class]="paymentMethod() === 'card' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">
+                    credit_card
+                  </mat-icon>
+                  <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">3D Secure</span>
+                </div>
+                <span class="text-xs font-bold text-slate-900 dark:text-white mt-1">Kredi/Banka Kartı</span>
+                <span class="text-[10px] text-slate-500">Tüm kartlar geçerli</span>
+              </button>
+
+              <!-- Cüzdan ile Öde (Sadece Paket Satın Alımında) -->
+              @if (mode() === 'package') {
+                <button type="button"
+                        class="p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all relative"
+                        [class]="paymentMethod() === 'wallet' 
+                          ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 dark:border-indigo-500 ring-2 ring-indigo-600/20' 
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
+                        (click)="setMethod('wallet')">
+                  <div class="flex items-center justify-between">
+                    <mat-icon class="icon-size-4.5" [class]="paymentMethod() === 'wallet' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">
+                      account_balance_wallet
+                    </mat-icon>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          [class]="isWalletSufficient() ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'">
+                      ₺{{ walletBalance().toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
+                    </span>
+                  </div>
+                  <span class="text-xs font-bold text-slate-900 dark:text-white mt-1">E-Cüzdan</span>
+                  <span class="text-[10px] text-slate-500">Mevcut bakiyeden düş</span>
+                </button>
+              }
+
+              <!-- Havale / EFT -->
+              <button type="button"
+                      class="p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all"
+                      [class]="paymentMethod() === 'transfer' 
+                        ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 dark:border-indigo-500 ring-2 ring-indigo-600/20' 
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
+                      (click)="setMethod('transfer')">
+                <div class="flex items-center justify-between">
+                  <mat-icon class="icon-size-4.5" [class]="paymentMethod() === 'transfer' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">
+                    account_balance
+                  </mat-icon>
+                  <span class="text-[10px] text-slate-400 font-medium">Banka</span>
+                </div>
+                <span class="text-xs font-bold text-slate-900 dark:text-white mt-1">Havale / EFT</span>
+                <span class="text-[10px] text-slate-500">IBAN'a transfer</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ================= METHOD: KREDİ KARTI ================= -->
+          @if (paymentMethod() === 'card') {
+            <!-- Canlı İnteraktif Kredi Kartı Önizlemesi -->
+            <div class="mb-5 p-5 rounded-2xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-800 text-white shadow-xl relative overflow-hidden border border-white/10">
+              <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
+
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-7 rounded-md bg-amber-400/80 border border-amber-300 flex items-center justify-center">
+                  <div class="w-6 h-4 border border-amber-600/50 rounded-sm"></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <mat-icon class="icon-size-4 text-white/70">contactless</mat-icon>
+                  <span class="text-xs font-black uppercase tracking-wider text-indigo-300">
+                    {{ cardBrand() !== 'unknown' ? cardBrand().toUpperCase() : 'ODIVON PAY' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Kart Numarası -->
+              <p class="m-0 font-mono text-lg sm:text-xl font-bold tracking-widest text-slate-100 mb-4 select-none">
+                {{ formattedCardNumber() }}
+              </p>
+
+              <!-- Kart Sahibi & Son Kullanma -->
+              <div class="flex items-center justify-between text-xs text-white/80">
+                <div>
+                  <span class="text-[9px] uppercase tracking-wider text-white/50 block">KART SAHİBİ</span>
+                  <span class="font-semibold uppercase tracking-wider truncate max-w-[180px] block">
+                    {{ cardHolder() || 'AD SOYAD' }}
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] uppercase tracking-wider text-white/50 block">SKT</span>
+                  <span class="font-semibold font-mono">{{ expiryMonth() }}/{{ expiryYear() }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kart Form Girişleri -->
+            <div class="space-y-3.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Kart Sahibi Ad Soyad</label>
+                <input type="text"
+                       class="odv-input w-full uppercase"
+                       placeholder="Örn: AHMET YILMAZ"
+                       [value]="cardHolder()"
+                       (input)="cardHolder.set($any($event.target).value)" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Kart Numarası (16 Hane)</label>
+                <div class="relative">
+                  <input type="text"
+                         class="odv-input w-full font-mono pl-10"
+                         placeholder="4543 •••• •••• ••••"
+                         maxlength="19"
+                         [value]="cardNumber()"
+                         (input)="onCardNumberInput($event)" />
+                  <mat-icon class="icon-size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">credit_card</mat-icon>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Ay</label>
+                  <select class="odv-input w-full"
+                          [value]="expiryMonth()"
+                          (change)="expiryMonth.set($any($event.target).value)">
+                    @for (m of ['01','02','03','04','05','06','07','08','09','10','11','12']; track m) {
+                      <option [value]="m">{{ m }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Yıl</label>
+                  <select class="odv-input w-full"
+                          [value]="expiryYear()"
+                          (change)="expiryYear.set($any($event.target).value)">
+                    @for (y of ['26','27','28','29','30','31','32']; track y) {
+                      <option [value]="y">20{{ y }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CVV / CVC</label>
+                  <input type="password"
+                         class="odv-input w-full font-mono text-center tracking-widest"
+                         placeholder="•••"
+                         maxlength="4"
+                         [value]="cvv()"
+                         (input)="onCvvInput($event)" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Güvenlik Notu -->
+            <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-400">
+              <mat-icon class="icon-size-3.5 text-emerald-500">lock</mat-icon>
+              <span>256-Bit SSL şifreleme ve 3D Secure ile korunmaktadır. Kart bilgileriniz sunucularımızda saklanmaz.</span>
+            </div>
+          }
+
+          <!-- ================= METHOD: E-CÜZDAN ================= -->
+          @if (paymentMethod() === 'wallet') {
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 mb-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs text-slate-500 dark:text-slate-400">Mevcut Cüzdan Bakiyeniz</span>
+                <span class="text-base font-bold text-slate-900 dark:text-white">
+                  ₺{{ walletBalance().toLocaleString('tr-TR', { minimumFractionDigits: 2 }) }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700 text-xs">
+                <span class="text-slate-500 dark:text-slate-400">İşlem Sonrası Kalan</span>
+                <span class="font-bold" [class]="isWalletSufficient() ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                  ₺{{ (walletBalance() - totalAmount()).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) }}
+                </span>
+              </div>
+            </div>
+
+            @if (!isWalletSufficient()) {
+              <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2 mb-4">
+                <mat-icon class="icon-size-4 flex-shrink-0">warning</mat-icon>
+                <span>Cüzdan bakiyeniz bu paket için yetersiz. Lütfen kart ile ödemeyi seçin.</span>
+              </div>
+            } @else {
+              <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 mb-4">
+                <mat-icon class="icon-size-4 flex-shrink-0">check_circle</mat-icon>
+                <span>Bakiyeniz yeterlidir. Tıkladığınız anda paketiniz cüzdan bakiyenizden düşülerek aktif edilecektir.</span>
+              </div>
+            }
+          }
+
+          <!-- ================= METHOD: HAVALE / EFT ================= -->
+          @if (paymentMethod() === 'transfer') {
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 mb-4 text-xs space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 dark:text-slate-400">Banka</span>
+                <span class="font-bold text-slate-900 dark:text-white">Ziraat Bankası A.Ş.</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 dark:text-slate-400">Alıcı Adı</span>
+                <span class="font-bold text-slate-900 dark:text-white">Odivon Spor Tesisleri ve Hizmetleri</span>
+              </div>
+              <div>
+                <span class="text-slate-500 dark:text-slate-400 block mb-1">IBAN</span>
+                <span class="font-mono font-bold text-slate-900 dark:text-white select-all bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 block">
+                  TR42 0001 0090 1083 4567 8901 23
+                </span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[11px]">
+                💡 Havale/EFT açıklama kısmına <b>{{ profile()?.displayName || 'Adınız' }}</b> yazmayı unutmayınız.
+              </div>
+            </div>
+          }
+
+          <!-- Ödeme Butonu -->
+          <div class="mt-6 flex items-center gap-3">
+            <button type="button"
+                    class="odv-btn-secondary flex-1 !py-3"
+                    [disabled]="isProcessing()"
+                    (click)="closeModal()">
+              Vazgeç
+            </button>
+            <button type="button"
+                    class="odv-btn-primary flex-1 !py-3 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                    [disabled]="isProcessing() || (paymentMethod() === 'wallet' && !isWalletSufficient())"
+                    (click)="startPayment()">
+              @if (isProcessing()) {
+                <mat-icon class="icon-size-4.5 animate-spin">refresh</mat-icon>
+                <span>İşleniyor…</span>
+              } @else {
+                <mat-icon class="icon-size-4.5">
+                  {{ paymentMethod() === 'card' ? 'lock' : 'check' }}
+                </mat-icon>
+                <span>
+                  {{ paymentMethod() === 'card' ? '3D Secure ile Öde' : 'Ödemeyi Tamamla' }}
+                </span>
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ================= STEP 2: 3D SECURE SMS SIMULATION ================= -->
+      @if (step() === '3ds_simulation') {
+        <div class="p-6 sm:p-8">
+          <div class="text-center mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3 shadow-sm">
+              <mat-icon class="icon-size-7">verified_user</mat-icon>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">BANKA 3D SECURE ONAYI</span>
+            <h3 class="m-0 text-xl font-bold text-slate-900 dark:text-white mt-1">SMS Doğrulama Kodu</h3>
+            <p class="m-0 mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              Bankanız tarafından kayıtlı cep telefonunuza (••• ••• •• 42) gönderilen 6 haneli güvenlik kodunu giriniz.
+            </p>
+          </div>
+
+          <!-- SMS Kodu Girişi -->
+          <div class="max-w-xs mx-auto mb-6">
+            <input type="text"
+                   maxlength="6"
+                   class="w-full text-center font-mono text-2xl tracking-[0.5em] font-black odv-input !py-3 border-2 border-indigo-500"
+                   placeholder="••••••"
+                   [value]="inputSmsCode()"
+                   (input)="inputSmsCode.set($any($event.target).value)" />
+
+            <!-- Test Kolaylaştırıcı Çip -->
+            <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+              <span class="flex items-center gap-1 text-[11px]">
+                <mat-icon class="icon-size-3.5 text-indigo-500 animate-spin">refresh</mat-icon>
+                Süre: <b>{{ timerSeconds() }}s</b>
+              </span>
+              <button type="button"
+                      class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                      (click)="fillQuickSms()">
+                Test Kodu Gir ({{ smsCode() }})
+              </button>
+            </div>
+          </div>
+
+          @if (errorMessage()) {
+            <div class="mb-4 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs text-center">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <div class="flex items-center gap-3">
+            <button type="button"
+                    class="odv-btn-secondary flex-1 !py-3"
+                    [disabled]="isProcessing()"
+                    (click)="step.set('form')">
+              Geri Dön
+            </button>
+            <button type="button"
+                    class="odv-btn-primary flex-1 !py-3 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                    [disabled]="isProcessing()"
+                    (click)="verifySmsAndComplete()">
+              @if (isProcessing()) {
+                <mat-icon class="icon-size-4.5 animate-spin">refresh</mat-icon>
+                <span>Banka Onaylıyor…</span>
+              } @else {
+                <mat-icon class="icon-size-4.5">done_all</mat-icon>
+                <span>Onayla ve Bitir</span>
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ================= STEP 3: SUCCESS ================= -->
+      @if (step() === 'success') {
+        <div class="p-6 sm:p-8 text-center animate-fade-in">
+          <div class="w-16 h-16 rounded-3xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+            <mat-icon class="icon-size-8">check_circle</mat-icon>
+          </div>
+
+          <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">İŞLEM BAŞARILI</span>
+          <h3 class="m-0 text-2xl font-black text-slate-900 dark:text-white mt-1">Ödeme Alındı!</h3>
+          <p class="m-0 mt-2 text-sm text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
+            {{ lastResult()?.message }}
+          </p>
+
+          <!-- Dekont Özeti -->
+          <div class="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2 font-mono">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Sipariş No:</span>
+              <span class="font-bold text-slate-900 dark:text-white">{{ lastResult()?.orderNumber }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">İşlem Referansı:</span>
+              <span class="font-bold text-slate-900 dark:text-white">{{ lastResult()?.transactionId }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Tutar:</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                ₺{{ lastResult()?.amount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) }}
+              </span>
+            </div>
+            @if (lastResult()?.newExpiryDate) {
+              <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span class="text-slate-500">Yeni Üyelik Bitişi:</span>
+                <span class="font-bold text-indigo-600 dark:text-indigo-400">
+                  {{ lastResult()?.newExpiryDate?.toLocaleDateString('tr-TR') }}
+                </span>
+              </div>
+            }
+          </div>
+
+          <button type="button"
+                  class="odv-btn-primary w-full mt-6 !py-3 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                  (click)="closeModal()">
+            <mat-icon class="icon-size-4.5">home</mat-icon>
+            <span>Harika, Tamamla</span>
+          </button>
+        </div>
+      }
+
+    </div>
+  </div>
+}

@@ -374,6 +374,10 @@
     background: #E11D48;
     color: #FFF;
   }
+  &.badge-amber {
+    background: #D97706;
+    color: #FFF;
+  }
   &.badge-purple {
     background: #7C3AED;
     color: #FFF;
@@ -386,6 +390,116 @@
     background: rgba(255, 255, 255, 0.1);
     color: #E2E8F0;
   }
+}
+
+// SaaS Süresi Doldu Alert Card (Sidebar Üstü)
+.sidebar__saas-alert {
+  margin: 0 12px 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.14) 0%, rgba(217, 119, 6, 0.14) 100%);
+  border: 1px solid rgba(225, 29, 72, 0.4);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.15);
+  animation: fadeIn 0.25s ease-out;
+
+  .saas-alert-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #FDA4AF;
+
+    .alert-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #F43F5E;
+    }
+  }
+
+  .saas-alert-desc {
+    margin: 4px 0 8px;
+    font-size: 9.5px;
+    line-height: 1.35;
+    color: #CBD5E1;
+  }
+
+  .saas-alert-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #E11D48 0%, #EA580C 100%);
+    color: #FFF;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.45);
+    }
+  }
+}
+
+// Collapsed View Alert & Dots
+.collapsed-alert-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.collapsed-alert-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(225, 29, 72, 0.2);
+  border: 1.5px solid #F43F5E;
+  color: #FDA4AF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  animation: pulse-dot 1.8s infinite;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #F43F5E;
+  }
+}
+
+.collapsed-lock-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #F43F5E;
+  box-shadow: 0 0 6px #F43F5E;
+}
+
+// Nav Item Modifier Classes
+.nav-item--locked {
+  opacity: 0.72;
+  border-color: rgba(244, 63, 94, 0.2) !important;
+
+  &:hover {
+    opacity: 0.95;
+    background: rgba(244, 63, 94, 0.08) !important;
+  }
+}
+
+.nav-item--highlighted {
+  border: 1.5px solid rgba(225, 29, 72, 0.7) !important;
+  background: rgba(225, 29, 72, 0.12) !important;
+  box-shadow: 0 0 12px rgba(225, 29, 72, 0.25);
 }
 
 // Footer

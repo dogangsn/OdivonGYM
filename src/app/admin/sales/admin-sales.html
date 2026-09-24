@@ -17,6 +17,27 @@
     </div>
   </app-page-header>
 
+  <!-- SAAS SÜRESİ DOLDU UYARISI -->
+  @if (saasSub.isExpired()) {
+    <div class="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+          <mat-icon class="text-xl">lock</mat-icon>
+        </div>
+        <div>
+          <span class="font-extrabold text-sm block text-rose-100">Paket & Market Satışı Kilitlendi</span>
+          <span class="text-xs text-rose-200/80">SaaS abonelik süreniz bittiği için paket satışı ve tahsilat yapılamaz. Kesintisiz satış için paketinizi yenileyiniz.</span>
+        </div>
+      </div>
+      <a
+        routerLink="/admin/subscription"
+        class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer no-underline"
+      >
+        Paketi Yenile ➜
+      </a>
+    </div>
+  }
+
   <!-- 2. Üye Seçim & Paket Durumu Kartı (Smart Member & Package Bar) -->
   <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">

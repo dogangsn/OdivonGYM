@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 import {
@@ -16,7 +16,7 @@ import { SaasSubscriptionService } from '../../../core/services/saas-subscriptio
 @Component({
   selector: 'app-trial-expired',
   standalone: true,
-  imports: [CommonModule, LogoMark, MatIconModule],
+  imports: [CommonModule, LogoMark, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './trial-expired.html',
   styleUrl: './trial-expired.scss',
@@ -25,6 +25,7 @@ export class TrialExpired {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly subService = inject(SaasSubscriptionService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly selectedCycle = signal<SaasBillingCycle>('monthly');
   readonly activating = signal<string | null>(null);
@@ -46,7 +47,9 @@ export class TrialExpired {
   }
 
   getPeriodLabel(): string {
-    return this.selectedCycle() === 'yearly' ? '/ yıl' : '/ ay';
+    return this.selectedCycle() === 'yearly'
+      ? this.transloco.translate('trialExpired.perYear')
+      : this.transloco.translate('trialExpired.perMonth');
   }
 
   async activatePlan(planId: SaasPlanId): Promise<void> {

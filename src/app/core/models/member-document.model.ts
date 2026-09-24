@@ -1,6 +1,7 @@
 import { Timestamp } from '@angular/fire/firestore';
 
 export type DocumentType =
+  | 'membership_agreement'
   | 'health_report'
   | 'parent_consent'
   | 'federation_license'
@@ -10,6 +11,7 @@ export type DocumentType =
 export type DocumentStatus = 'approved' | 'pending_review' | 'expired' | 'rejected';
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  membership_agreement: 'Dijital Üyelik & KVKK Sözleşmesi (İmzalı)',
   health_report: 'Sağlık Raporu (Spor Yapabilir)',
   parent_consent: '18 Yaş Altı Veli Muvafakatnamesi',
   federation_license: 'Federasyon Sporcu Lisansı',

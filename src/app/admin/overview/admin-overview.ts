@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminMembersService } from '../members/admin-members.service';
@@ -10,6 +11,7 @@ import { AdminAccountingService } from '../accounting/admin-accounting.service';
 import { AdminAccessControlService } from '../access-control/admin-access-control.service';
 import { formatMoney } from '../../shared/ui/ui-utils';
 import { AccessLog } from '../../core/models/access-log.model';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 
 type Accent = 'primary' | 'sky' | 'emerald' | 'amber';
 
@@ -31,15 +33,15 @@ interface QuickAction {
 @Component({
   selector: 'app-admin-overview',
   standalone: true,
-  imports: [RouterLink, MatIconModule, MatTooltipModule, PageHeader],
+  imports: [RouterLink, MatIconModule, MatTooltipModule, PageHeader, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6">
       <!-- 1. Page Header -->
       <app-page-header
-        title="Salon Durumu & Canlı Radar"
+        title="overview.title"
         icon="space_dashboard"
-        description="Üyelik, gelir, anlık doluluk ve turnike hareketlerine tek ekrandan canlı olarak bakın."
+        description="overview.desc"
       >
         <div actions class="flex items-center gap-2">
           <a
@@ -47,17 +49,41 @@ interface QuickAction {
             class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 no-underline shadow-2xs"
           >
             <mat-icon class="icon-size-4">nfc</mat-icon>
-            <span>Turnike Kontrol</span>
+            <span>{{ 'overview.turnstileControl' | transloco }}</span>
           </a>
           <a
             routerLink="/admin/members"
             class="odv-btn-primary no-underline text-xs"
           >
             <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:user-plus'"></mat-icon>
-            <span>+ Yeni Üye Ekle</span>
+            <span>{{ 'overview.addNewMember' | transloco }}</span>
           </a>
         </div>
       </app-page-header>
+
+      <!-- SAAS SÜRESİ DOLDU RADAR UYARISI -->
+      @if (saasSub.isExpired()) {
+        <div class="p-5 rounded-2xl bg-gradient-to-r from-rose-950/90 via-red-950/70 to-slate-900 border-2 border-rose-500/80 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-300 shrink-0">
+              <mat-icon class="text-2xl">warning</mat-icon>
+            </div>
+            <div>
+              <span class="text-xs font-black uppercase tracking-wider text-rose-300 block">{{ 'overview.lockedTitle' | transloco }}</span>
+              <h3 class="text-base font-black text-white m-0">{{ 'overview.lockedTitle' | transloco }}</h3>
+              <p class="text-xs text-rose-200/80 mt-0.5 mb-0">
+                {{ 'overview.lockedDesc' | transloco }}
+              </p>
+            </div>
+          </div>
+          <a
+            routerLink="/admin/subscription"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap self-start md:self-auto cursor-pointer no-underline"
+          >
+            {{ 'overview.renewPlanBtn' | transloco }} ➜
+          </a>
+        </div>
+      }
 
       <!-- 2. Live Occupancy & Gym Health Bar (Patron Radarı) -->
       <section class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden border border-slate-800/80">
@@ -76,14 +102,14 @@ interface QuickAction {
 
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Canlı Doluluk Radarı</span>
-                <span class="text-[11px] px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-medium">Kapasite: {{ maxCapacity }} Kişi</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">{{ 'overview.occupancyRadar' | transloco }}</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-medium">{{ 'overview.capacityLabel' | transloco: { count: maxCapacity } }}</span>
               </div>
               <div class="flex items-baseline gap-2 mt-0.5">
                 <span class="text-3xl font-black text-white tracking-tight leading-none">{{ currentOccupancy() }}</span>
-                <span class="text-sm font-semibold text-slate-300">kişi şu an antrenmanda</span>
+                <span class="text-sm font-semibold text-slate-300">{{ 'overview.peopleInWorkout' | transloco }}</span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  %{{ occupancyPercentage() }} Doluluk
+                  {{ 'overview.occupancyRate' | transloco: { percent: occupancyPercentage() } }}
                 </span>
               </div>
             </div>
@@ -383,6 +409,7 @@ interface QuickAction {
 })
 export class AdminOverview {
   protected readonly auth = inject(AuthService);
+  protected readonly saasSub = inject(SaasSubscriptionService);
   private readonly membersService = inject(AdminMembersService);
   private readonly accountingService = inject(AdminAccountingService);
   private readonly accessService = inject(AdminAccessControlService);

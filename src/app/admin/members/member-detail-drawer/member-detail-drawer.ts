@@ -41,6 +41,13 @@ import { AdminMembersService } from '../admin-members.service';
 import { AdminDisciplinesService } from '../../disciplines/admin-disciplines.service';
 import { formatMoney, formatDateTime } from '../../../shared/ui/ui-utils';
 import { Timestamp } from '@angular/fire/firestore';
+import { SignaturePadModal } from '../../../shared/components/signature-pad-modal/signature-pad-modal';
+import { WorkoutTemplatesService } from '../../../core/services/workout-templates.service';
+import {
+  WorkoutTemplate,
+  FITNESS_LEVEL_LABELS,
+  PROGRAM_GOAL_LABELS,
+} from '../../../core/models/workout-template.model';
 
 export type MemberDetailTab =
   | 'measurements'
@@ -69,7 +76,7 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
 @Component({
   selector: 'app-member-detail-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, SignaturePadModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-detail-drawer.html',
   styleUrl: './member-detail-drawer.scss',
@@ -77,6 +84,7 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
 export class MemberDetailDrawer {
   private readonly membersService = inject(AdminMembersService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
+  private readonly templatesService = inject(WorkoutTemplatesService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
@@ -91,11 +99,20 @@ export class MemberDetailDrawer {
   protected readonly activeTab = signal<MemberDetailTab>('measurements');
   protected readonly isExpanded = signal(false);
 
+  // Hazır Antrenman Şablonları (Templates)
+  protected readonly workoutTemplates = toSignal(this.templatesService.watchTemplates(), { initialValue: [] });
+  protected readonly selectedTemplateId = signal<string>('');
+  protected readonly fitnessLevelLabels = FITNESS_LEVEL_LABELS;
+  protected readonly programGoalLabels = PROGRAM_GOAL_LABELS;
+
   // Sub-modal signals
   protected readonly showCardModal = signal(false);
   protected readonly showQrModal = signal(false);
   protected readonly showTransferModal = signal(false);
   protected readonly showRenewModal = signal(false);
+  protected readonly showSignatureModal = signal(false);
+  protected readonly previewDocUrl = signal<string | null>(null);
+  protected readonly previewDocTitle = signal<string>('');
 
   // Card assignment state
   protected readonly cardRfid = signal('');
@@ -555,12 +572,60 @@ export class MemberDetailDrawer {
   }
 
   // ==========================================
-  // BÖLGESEL ANTRENMAN PROGRAMI METOTLARI
+  // BÖLGESEL ANTRENMAN PROGRAMI & ŞABLON METOTLARI
   // ==========================================
+
+  applyTemplate(template: WorkoutTemplate): void {
+    this.selectedTemplateId.set(template.id);
+    this.workoutPlanTitle.set(template.title);
+    this.workoutPlanNotes.set(template.description);
+    this.workoutPlanDisciplineId.set(template.disciplineId || '');
+
+    const clonedExercises: Exercise[] = template.exercises.map((ex, idx) => ({
+      ...ex,
+      id: `ex-${Date.now()}-${idx}`,
+    }));
+
+    this.currentPlanExercises.set(clonedExercises);
+    this.snackBar.open(
+      `"${template.title}" şablonu yüklendi! (${clonedExercises.length} egzersiz hazır)`,
+      'Tamam',
+      { duration: 3000 },
+    );
+  }
+
+  async saveCurrentAsTemplate(): Promise<void> {
+    const title = this.workoutPlanTitle().trim();
+    const exercises = this.currentPlanExercises();
+
+    if (!title || exercises.length === 0) {
+      this.snackBar.open('Şablon olarak kaydetmek için lütfen başlık ve en az bir egzersiz ekleyin.', 'Kapat', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await this.templatesService.createTemplate({
+        title,
+        level: 'intermediate',
+        goal: 'split',
+        targetDaysPerWeek: 4,
+        description: this.workoutPlanNotes() || 'Antrenör tarafından salona özel oluşturulmuş şablon.',
+        disciplineId: this.workoutPlanDisciplineId() || null,
+        exercises,
+      });
+      this.alertService.toastSuccess(`"${title}" başarıyla yeni şablon olarak kaydedildi.`);
+    } catch (err) {
+      console.error(err);
+      this.alertService.toastError('Şablon kaydedilemedi.');
+    }
+  }
 
   toggleAddWorkoutPlan(): void {
     this.showAddWorkoutPlanForm.update((v) => !v);
     if (this.showAddWorkoutPlanForm()) {
+      this.selectedTemplateId.set('');
       this.currentPlanExercises.set([]);
       this.workoutPlanTitle.set('4 Günlük Bölgesel Split Programı');
       this.workoutPlanNotes.set('');
@@ -901,6 +966,43 @@ export class MemberDetailDrawer {
     } finally {
       this.savingRenew.set(false);
     }
+  }
+
+  // --- DİJİTAL İMZA PEDİ & SÖZLEŞME METOTLARI ---
+  openSignatureModal(): void {
+    this.showSignatureModal.set(true);
+  }
+
+  async onSignatureConfirmed(dataUrl: string): Promise<void> {
+    const current = this.member();
+    if (!current?.uid) return;
+
+    try {
+      const todayStr = new Date().toLocaleDateString('tr-TR');
+      await this.membersService.addMemberDocument({
+        userId: current.uid,
+        documentType: 'membership_agreement',
+        documentName: `Dijital Üyelik & KVKK Sözleşmesi (${todayStr})`,
+        fileUrl: dataUrl,
+        issueDate: new Date(),
+        status: 'approved',
+        notes: 'Tablet / İmza Pedi üzerinden dijital ortamda ıslak imzalandı.',
+      });
+      this.alertService.toastSuccess('Üye sözleşmesi imzalandı ve evraklar arasına başarıyla kaydedildi.');
+      this.showSignatureModal.set(false);
+    } catch (err) {
+      console.error(err);
+      this.alertService.toastError('Sözleşme kaydedilemedi.');
+    }
+  }
+
+  openDocPreview(url: string, title = 'Belge Önizleme'): void {
+    this.previewDocUrl.set(url);
+    this.previewDocTitle.set(title);
+  }
+
+  closeDocPreview(): void {
+    this.previewDocUrl.set(null);
   }
 }
 

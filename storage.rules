@@ -2,14 +2,29 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Kullanıcı sadece kendi klasörüne (profil fotoğrafı vb.) 5MB'a kadar
-    // resim yükleyebilir/okuyabilir.
+    // 1. Kullanıcı kendi profil fotoğrafı ve kişisel dosyaları (resimler, max 10MB)
     match /users/{uid}/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null;
       allow write: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+    }
+
+    // 2. Salon & Şube logoları, market ürün görselleri (resimler, max 10MB)
+    match /tenants/{tenantId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // 3. Üye sözleşmeleri, sağlık raporları ve dekontlar (PDF veya Resim, max 15MB)
+    match /member_documents/{tenantId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 15 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
     }
   }
 }

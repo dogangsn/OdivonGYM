@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 /**
  * Her sayfanın üstünde tutarlı bir başlık şeridi — ikon, başlık, açıklama ve
@@ -9,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-page-header',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="font-sans flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -23,12 +24,12 @@ import { MatIconModule } from '@angular/material/icon';
             </span>
           }
           <h1 class="m-0 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {{ title() }}
+            {{ title().includes('.') ? (title() | transloco) : title() }}
           </h1>
         </div>
         @if (description()) {
           <p class="mt-1.5 mb-0 max-w-[60ch] text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-            {{ description() }}
+            {{ description().includes('.') ? (description() | transloco) : description() }}
           </p>
         }
       </div>

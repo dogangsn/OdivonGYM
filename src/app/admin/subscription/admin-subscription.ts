@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   SAAS_PLANS_CONFIG,
   SaasBillingCycle,
@@ -11,20 +12,21 @@ import {
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 
 interface FaqItem {
-  question: string;
-  answer: string;
+  questionKey: string;
+  answerKey: string;
 }
 
 @Component({
   selector: 'app-admin-subscription',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, MatIconModule, MatTooltipModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-subscription.html',
   styleUrl: './admin-subscription.scss',
 })
 export class AdminSubscription {
   protected readonly subService = inject(SaasSubscriptionService);
+  private readonly transloco = inject(TranslocoService);
 
   // Fatura Döngüsü (Aylık / Yıllık)
   readonly selectedCycle = signal<SaasBillingCycle>('yearly'); // Default to yearly to show value
@@ -49,29 +51,24 @@ export class AdminSubscription {
 
   readonly faqs: FaqItem[] = [
     {
-      question: 'Deneme sürem bittiğinde salonumdaki veriler veya üye kayıtları silinir mi?',
-      answer:
-        'Kesinlikle hayır. Deneme süreniz sona erse dahi tüm şube, üye, turnike geçiş ve muhasebe kayıtlarınız güvenli bulut ortamımızda şifrelenmiş olarak saklanır. Paket seçimi yaptığınız anda sisteminiz kaldığı yerden kesintisiz açılır.',
+      questionKey: 'saasSubscription.faq1Q',
+      answerKey: 'saasSubscription.faq1A',
     },
     {
-      question: 'İstediğim zaman paketler arasında geçiş veya yükseltme yapabilir miyim?',
-      answer:
-        'Evet! Kulübünüz büyüdükçe veya yeni bir şube açtığınızda tek tıkla üst pakete geçebilirsiniz. Yıllık veya aylık paket farkı gün bazlı olarak oransal (prorated) hesaplanır, hiçbir kaybınız olmaz.',
+      questionKey: 'saasSubscription.faq2Q',
+      answerKey: 'saasSubscription.faq2A',
     },
     {
-      question: 'Yıllık ödeme seçtiğimde avantajım nedir?',
-      answer:
-        'Yıllık ödeme planında 12 ay yerine yalnızca 10 ay ücreti ödersiniz (2 ay tamamen OdivonGYM hediyesidir) ve %17 net nakit tasarruf sağlarsınız. Ayrıca yıllık lisanslarda öncelikli teknik destek ve donanım kurulum rehberliği ücretsiz verilir.',
+      questionKey: 'saasSubscription.faq3Q',
+      answerKey: 'saasSubscription.faq3A',
     },
     {
-      question: 'Uyumsoft E-Fatura ve Mali Mühür entegrasyonu nasıl çalışır?',
-      answer:
-        'Profesyonel ve Enterprise paketlerimizde Uyumsoft API entegrasyonu yerleşik olarak gelir. Salonunuzun VKN ve portal bilgilerini girdikten sonra, paket veya market satışlarında tek tıkla e-Arşiv ve e-Fatura kesebilir, mali müşavirinize tek tıkla döküm iletebilirsiniz.',
+      questionKey: 'saasSubscription.faq4Q',
+      answerKey: 'saasSubscription.faq4A',
     },
     {
-      question: 'Fiziksel turnike, QR ve kart okuyucu donanımlarını nasıl bağlıyoruz?',
-      answer:
-        'OdivonGYM; röle kontrol kartları, USB/Network barkod okuyucular, RFID proximity kartlar ve mobil turnike QR kodlarıyla tam uyumludur. Gerekli API ve donanım ayarlarını Turnike & Geçiş Kontrol menümüzden kolayca yapabilirsiniz.',
+      questionKey: 'saasSubscription.faq5Q',
+      answerKey: 'saasSubscription.faq5A',
     },
   ];
 
@@ -119,6 +116,8 @@ export class AdminSubscription {
   }
 
   getPeriodLabel(): string {
-    return this.selectedCycle() === 'yearly' ? '/ yıl' : '/ ay';
+    return this.selectedCycle() === 'yearly'
+      ? this.transloco.translate('saasSubscription.perYear')
+      : this.transloco.translate('saasSubscription.perMonth');
   }
 }
