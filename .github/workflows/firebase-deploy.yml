@@ -10,10 +10,20 @@ jobs:
   build_and_deploy:
     name: Build & Deploy to Firebase
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: odivongym
+          workload_identity_provider: projects/560162164944/locations/global/workloadIdentityPools/github-odivongym/providers/github-master
+          service_account: github-firebase-deploy@odivongym.iam.gserviceaccount.com
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,20 +44,4 @@ jobs:
         run: npm --prefix functions run build
 
       - name: Deploy to Firebase
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ODIVONGYM || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "Deploying using Google Cloud Service Account..."
-            echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
-            export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
-            npx --yes firebase-tools@latest deploy --non-interactive --project odivongym
-            rm -f "$RUNNER_TEMP/firebase-sa.json"
-          elif [ -n "$FIREBASE_TOKEN" ]; then
-            echo "Deploying using Firebase Token..."
-            npx --yes firebase-tools@latest deploy --token "$FIREBASE_TOKEN" --non-interactive --project odivongym
-          else
-            echo "::error::Deployment credentials missing! Please configure FIREBASE_SERVICE_ACCOUNT_ODIVONGYM (recommended) or FIREBASE_TOKEN in GitHub Repository Secrets."
-            exit 1
-          fi
+        run: npx --yes firebase-tools@latest deploy --non-interactive --project odivongym

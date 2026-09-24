@@ -44,6 +44,7 @@ Thumbs.db
 
 # Firebase
 .firebase/
+gha-creds-*.json
 firebase-debug.log
 firebase-debug.*.log
 ui-debug.log
