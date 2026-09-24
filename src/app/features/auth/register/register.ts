@@ -8,13 +8,14 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, SupportedLanguage, findCountry } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
-import { AuthBrandPanel } from '../../../shared/components/auth-brand-panel/auth-brand-panel';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -27,7 +28,15 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule, LogoMark, AuthBrandPanel, TranslocoPipe],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    LogoMark,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './register.html',
   styleUrl: './register.scss',
@@ -39,15 +48,10 @@ export class Register {
   private readonly transloco = inject(TranslocoService);
   protected readonly language = inject(LanguageService);
 
-
   protected readonly countries = COUNTRIES;
   protected readonly languageNames = LANGUAGE_NAMES;
-  protected readonly supportedLanguages = ['tr', 'en', 'de', 'es', 'fr', 'ar'] as SupportedLanguage[];
-
-  changeLanguage(lang: SupportedLanguage): void {
-    this.language.setLanguage(lang);
-  }
-
+  protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
+  protected readonly currentYear = new Date().getFullYear();
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -66,11 +70,11 @@ export class Register {
   readonly googleSubmitting = signal(false);
   readonly errorMessage = signal('');
   readonly hidePassword = signal(true);
+  readonly hideConfirmPassword = signal(true);
 
   /** Telefon kutusunun başındaki salt-okunur çevirme kodu — seçili ülkeye göre. */
   protected readonly dialCode = signal(findCountry(DEFAULT_COUNTRY_CODE)?.dialCode ?? '+90');
 
-  /** Ülke seçilince dial code rozetini günceller ve arayüz dilini önerir (kullanıcı elle bir dil seçmediyse). */
   onCountryChange(code: string): void {
     const country = findCountry(code);
     if (!country) return;
@@ -111,7 +115,6 @@ export class Register {
     try {
       await this.auth.signInWithGoogle();
       await this.router.navigateByUrl('/onboarding/wizard');
-
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {

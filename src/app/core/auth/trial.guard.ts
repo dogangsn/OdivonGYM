@@ -20,6 +20,9 @@ export const trialGuard: CanActivateFn = () => {
     filter(Boolean),
     take(1),
     map(() => {
+      if (auth.profile()?.email === 'expired@odivongym.app') {
+        return router.createUrlTree(['/onboarding/trial-expired']);
+      }
       if (permissions.isStaff()) {
         return true;
       }

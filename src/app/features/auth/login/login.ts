@@ -13,10 +13,40 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
-import { environment } from '../../../../environments/environment';
 
-/** Sadece dev ortamında: "Demo Bilgilerini Otomatik Doldur" butonuyla doldurulur. */
-const DEMO_CREDENTIALS = { email: 'demo@odivongym.app', password: 'Demo123456!' };
+export interface DemoProfile {
+  key: 'active' | 'expired';
+  email: string;
+  password: string;
+  roleI18nKey: string;
+  badgeI18nKey: string;
+  descI18nKey: string;
+  icon: string;
+  accent: 'emerald' | 'amber';
+}
+
+export const DEMO_PROFILES: DemoProfile[] = [
+  {
+    key: 'active',
+    email: 'demo@odivongym.app',
+    password: 'Demo123456!',
+    roleI18nKey: 'auth.login.demoActiveTitle',
+    badgeI18nKey: 'auth.login.demoActiveBadge',
+    descI18nKey: 'auth.login.demoActiveDesc',
+    icon: 'verified_user',
+    accent: 'emerald',
+  },
+  {
+    key: 'expired',
+    email: 'expired@odivongym.app',
+    password: 'Demo123456!',
+    roleI18nKey: 'auth.login.demoExpiredTitle',
+    badgeI18nKey: 'auth.login.demoExpiredBadge',
+    descI18nKey: 'auth.login.demoExpiredDesc',
+    icon: 'history_toggle_off',
+    accent: 'amber',
+  },
+];
 
 @Component({
   selector: 'app-login',
@@ -46,8 +76,8 @@ export class Login {
 
   protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
   protected readonly languageNames = LANGUAGE_NAMES;
-
-  protected readonly isDev = !environment.production;
+  protected readonly demoProfiles = DEMO_PROFILES;
+  protected readonly currentYear = new Date().getFullYear();
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -60,6 +90,7 @@ export class Login {
   readonly resettingPassword = signal(false);
   readonly errorMessage = signal('');
   readonly hidePassword = signal(true);
+  readonly activeDemoKey = signal<'active' | 'expired' | null>(null);
 
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
@@ -70,8 +101,32 @@ export class Login {
     this.submitting.set(true);
     try {
       const { email, password, rememberMe } = this.form.getRawValue();
-      await this.auth.signInWithEmail(email, password, rememberMe);
-      await this.router.navigateByUrl('/dashboard');
+
+      try {
+        await this.auth.signInWithEmail(email, password, rememberMe);
+      } catch (err: any) {
+        // Demo hesaplar Firebase Auth'ta henüz oluşturulmamışsa tek tıkla otomatik oluştur
+        const isDemo = email === 'demo@odivongym.app' || email === 'expired@odivongym.app';
+        if (isDemo && (err?.code === 'auth/invalid-credential' || err?.code === 'auth/user-not-found')) {
+          await this.auth.signUpWithEmail({
+            tenantName: email === 'expired@odivongym.app' ? 'Odivon Pasif Salon' : 'Odivon Demo Salonu',
+            email,
+            password,
+            displayName: email === 'expired@odivongym.app' ? 'Demo Pasif Üye' : 'Demo Yönetici',
+            country: 'TR',
+            phone: '+90 555 000 00 00',
+            language: 'tr',
+          });
+        } else {
+          throw err;
+        }
+      }
+
+      if (email === 'expired@odivongym.app') {
+        await this.router.navigateByUrl('/onboarding/trial-expired');
+      } else {
+        await this.router.navigateByUrl('/dashboard');
+      }
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
@@ -121,7 +176,20 @@ export class Login {
     }
   }
 
-  fillDemoCredentials(): void {
-    this.form.patchValue(DEMO_CREDENTIALS);
+  fillDemoCredentials(profile: DemoProfile): void {
+    this.form.patchValue({
+      email: profile.email,
+      password: profile.password,
+    });
+    this.form.markAsDirty();
+    this.activeDemoKey.set(profile.key);
+    this.errorMessage.set('');
+
+    const translatedRole = this.transloco.translate(profile.roleI18nKey);
+    this.snackBar.open(
+      this.transloco.translate('auth.login.demoFilledSnackbar', { role: translatedRole }),
+      this.transloco.translate('common.close'),
+      { duration: 2500 },
+    );
   }
 }

@@ -108,7 +108,13 @@ export class SaasSubscriptionService {
 
   // Status flags
   readonly isTrial = computed(() => this.subscription().status === 'trial');
-  readonly isExpired = computed(() => this.demoSimulateExpired() || this.subscription().status === 'expired' || this.auth.isTrialExpired());
+  readonly isExpired = computed(
+    () =>
+      this.demoSimulateExpired() ||
+      this.auth.profile()?.email === 'expired@odivongym.app' ||
+      this.subscription().status === 'expired' ||
+      this.auth.isTrialExpired(),
+  );
   readonly isActive = computed(() => this.subscription().status === 'active' && !this.isExpired());
 
   // Kalan deneme günü
