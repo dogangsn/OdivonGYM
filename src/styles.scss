@@ -462,18 +462,97 @@ div.swal2-container {
 }
 
 .auth-glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    background: rgba(15, 23, 42, 0.78);
+    background: rgba(15, 23, 42, 0.85);
     border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     transform: translateY(-4px) scale(1.015);
+  }
+}
+
+// Sports & Athletic Telemetry Animations
+@keyframes auth-hero-zoom {
+  0% {
+    transform: scale(1.0);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-auth-hero-zoom {
+  animation: auth-hero-zoom 22s ease-in-out infinite alternate;
+}
+
+@keyframes auth-heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.24);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.18);
+  }
+  56% {
+    transform: scale(1);
+  }
+}
+
+.animate-auth-heartbeat {
+  animation: auth-heartbeat 1.25s ease-in-out infinite;
+}
+
+@keyframes auth-flame-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.4));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.85));
+    transform: scale(1.08);
+  }
+}
+
+.animate-auth-flame {
+  animation: auth-flame-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes auth-ecg-dash {
+  0% {
+    stroke-dashoffset: 600;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-auth-ecg {
+  stroke-dasharray: 200;
+  animation: auth-ecg-dash 2.4s linear infinite;
+}
+
+.auth-sport-chip {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(129, 140, 248, 0.5);
+    transform: translateY(-2px);
   }
 }
 
