@@ -21,7 +21,7 @@
  */
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const DEFAULT_TENANT_NAME = process.env['DEFAULT_TENANT_NAME'] ?? 'OdivonGYM';
@@ -60,7 +60,7 @@ async function main(): Promise<void> {
   const tenantId = await findOrCreateDefaultTenant();
 
   const usersSnap = await db.collection('users').get();
-  const toMigrate = usersSnap.docs.filter((d) => !d.data()['tenantId']);
+  const toMigrate = usersSnap.docs.filter((d: QueryDocumentSnapshot) => !d.data()['tenantId']);
 
   if (toMigrate.length === 0) {
     console.log('[backfill] Taşınacak kullanıcı yok — herkeste zaten tenantId var.');

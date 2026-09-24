@@ -1,6 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { db } from '../firebase-admin';
 
 /**
@@ -30,7 +30,7 @@ export const expireTrials = onSchedule(
     const chunkSize = 400;
     for (let i = 0; i < docs.length; i += chunkSize) {
       const batch = db.batch();
-      docs.slice(i, i + chunkSize).forEach((doc) => {
+      docs.slice(i, i + chunkSize).forEach((doc: QueryDocumentSnapshot) => {
         batch.update(doc.ref, { membershipStatus: 'expired', updatedAt: now });
       });
       await batch.commit();
