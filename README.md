@@ -27,32 +27,12 @@ Firebase Console'da:
 4. **Project settings → General → Your apps** altında bir **Web app**
    ekle, açılan config nesnesini kopyala.
 
-## 2. Config değerlerini yapıştır
+## 2. Firebase
 
-Bu iki dosya Git’e girmez. Şablonları kopyalayıp Firebase config’ini yalnızca
-yerelde doldur:
-
-```bash
-cp src/environments/environment.example.ts src/environments/environment.ts
-cp src/environments/environment.development.example.ts src/environments/environment.development.ts
-```
-
-`src/environments/environment.ts` **ve** `src/environments/environment.development.ts`
-içindeki `firebase` alanını kendi projenin değerleriyle doldur:
-
-```ts
-firebase: {
-  apiKey: '...',
-  authDomain: '...',
-  projectId: '...',
-  storageBucket: '...',
-  messagingSenderId: '...',
-  appId: '...',
-},
-```
-
-`.firebaserc` içindeki `TODO_PROJECT_ID`'yi de gerçek Firebase proje ID'n ile
-değiştir (CLI komutlarının hangi projeye gideceğini belirler).
+Gym client, Vet client ile aynı Firebase projesini kullanır: `odivon-main-api-a2095`.
+Değerler `src/environments/environment.ts` ve `environment.development.ts` içindedir.
+Geliştirmede API adresi `/api/v1` (yerel Main API proxy), production’da
+`https://mainapi.odivon.com/api/v1`.
 
 ## 3. Kurulum ve çalıştırma
 

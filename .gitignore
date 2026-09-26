@@ -51,11 +51,9 @@ ui-debug.log
 functions/node_modules
 functions/lib
 
-# Environment secrets (gerçek Firebase config değerlerini burada tutma)
+# Environment secrets
 .env
 .env.*
-src/environments/environment.ts
-src/environments/environment.development.ts
 
 # Edge Agent Secrets & State
 *serviceAccountKey*.json
