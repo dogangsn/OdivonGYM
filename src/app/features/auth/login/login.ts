@@ -86,7 +86,6 @@ export class Login {
   });
 
   readonly submitting = signal(false);
-  readonly googleSubmitting = signal(false);
   readonly resettingPassword = signal(false);
   readonly errorMessage = signal('');
   readonly hidePassword = signal(true);
@@ -122,7 +121,11 @@ export class Login {
         }
       }
 
-      if (email === 'expired@odivongym.app') {
+      await this.auth.waitUntilReady();
+
+      if (!this.auth.onboardingCompleted()) {
+        await this.router.navigateByUrl('/onboarding/wizard');
+      } else if (this.auth.isTrialExpired() && !this.auth.canAccessApp()) {
         await this.router.navigateByUrl('/onboarding/trial-expired');
       } else {
         await this.router.navigateByUrl('/dashboard');
@@ -131,20 +134,6 @@ export class Login {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
       this.submitting.set(false);
-    }
-  }
-
-  async continueWithGoogle(): Promise<void> {
-    if (this.googleSubmitting()) return;
-    this.errorMessage.set('');
-    this.googleSubmitting.set(true);
-    try {
-      await this.auth.signInWithGoogle();
-      await this.router.navigateByUrl('/dashboard');
-    } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
-    } finally {
-      this.googleSubmitting.set(false);
     }
   }
 

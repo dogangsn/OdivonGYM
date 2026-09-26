@@ -9,6 +9,7 @@ import { AdminStaffService } from '../../staff/admin-staff.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { Gender, MembershipStatus, UserProfile } from '../../../core/models/user-profile.model';
+import { toDateInput, todayInput } from '../../../shared/ui/ui-utils';
 
 /** `custom`: paket dışı, süresi admin tarafından elle (başlangıç/bitiş tarihiyle) belirlenen üyelik. */
 type PackageOption = 30 | 90 | 180 | 365 | 'custom';
@@ -34,15 +35,13 @@ function generate5DigitNumber(): string {
   return Math.floor(10000 + Math.random() * 90000).toString();
 }
 
-/** Firestore Timestamp → `<input type="date">` için "yyyy-MM-dd" metni. */
+/** ISO tarih veya Timestamp → `<input type="date">` için "yyyy-MM-dd" metni. */
 function toDateInputValue(ts: UserProfile['birthDate']): string {
-  if (!ts) return '';
-  const d = ts.toDate();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return toDateInput(ts);
 }
 
 function todayInputValue(): string {
-  return toDateInputValue({ toDate: () => new Date() } as UserProfile['birthDate']);
+  return todayInput();
 }
 
 function addDays(dateStr: string, days: number): string {

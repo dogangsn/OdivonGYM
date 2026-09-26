@@ -1,5 +1,9 @@
-@if (auth.ready()) {
-  <router-outlet />
-} @else {
-  <app-loading-spinner label="Yükleniyor…" />
+<router-outlet />
+@if (!auth.ready()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-(--mat-sys-surface)"
+    aria-busy="true"
+  >
+    <app-loading-spinner label="Yükleniyor…" />
+  </div>
 }

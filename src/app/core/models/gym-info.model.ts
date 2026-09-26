@@ -1,7 +1,5 @@
-import { Timestamp } from '@angular/fire/firestore';
-
 export interface GymInfo {
-  id: string; // Usually same as tenantId
+  id: string;
   tenantId: string;
   businessName: string;
   businessType: 'individual' | 'company';
@@ -10,14 +8,14 @@ export interface GymInfo {
   businessPhone: string;
   website?: string;
   logo?: string;
-  trialDays: number; // default trial duration in days
-  defaultPackageId?: string; // default package for new members
+  trialDays: number;
+  defaultPackageId?: string;
   maxFreezeDays?: number;
   cancellationPolicy?: string;
   termsAndConditions?: string;
-  features: string[]; // gym features/amenities
-  updatedAt: Timestamp;
-  createdAt: Timestamp;
+  features: string[];
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface CreateGymInfoInput {

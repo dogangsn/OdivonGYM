@@ -22,7 +22,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserProfile, MembershipStatus } from '../../core/models/user-profile.model';
 import { GymPackage } from '../../core/models/gym-package.model';
-import { formatDate, formatDateTime, formatMoney } from '../../shared/ui/ui-utils';
+import { formatDate, formatDateTime, formatMoney, toMillis } from '../../shared/ui/ui-utils';
 import { Timestamp } from '@angular/fire/firestore';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -102,7 +102,7 @@ export class AdminSubscriptions {
 
     return rawList.map((m) => {
       const endsTs = m.membershipStatus === 'trial' ? m.trialEndsAt : m.membershipEndsAt;
-      const endMs = endsTs ? endsTs.toMillis() : null;
+      const endMs = endsTs ? toMillis(endsTs) : null;
 
       let remainingDays: number | null = null;
       let isExpired = false;
@@ -277,8 +277,8 @@ export class AdminSubscriptions {
         return (a.member.displayName || '').localeCompare(b.member.displayName || '', 'tr');
       }
       if (sort === 'newest') {
-        const tsA = a.member.updatedAt?.toMillis() ?? 0;
-        const tsB = b.member.updatedAt?.toMillis() ?? 0;
+        const tsA = toMillis(a.member.updatedAt);
+        const tsB = toMillis(b.member.updatedAt);
         return tsB - tsA;
       }
       return 0;
@@ -321,7 +321,7 @@ export class AdminSubscriptions {
     let isExtensionFromFuture = false;
 
     if (m.membershipStatus === 'active' && m.membershipEndsAt) {
-      const currentEndMs = m.membershipEndsAt.toMillis();
+      const currentEndMs = toMillis(m.membershipEndsAt);
       if (currentEndMs > Date.now()) {
         baseDate = new Date(currentEndMs);
         isExtensionFromFuture = true;
@@ -462,7 +462,7 @@ export class AdminSubscriptions {
 
     let base = new Date();
     if (m.membershipEndsAt) {
-      const ms = m.membershipEndsAt.toMillis();
+      const ms = toMillis(m.membershipEndsAt);
       if (ms > Date.now()) base = new Date(ms);
     }
     base.setDate(base.getDate() + days);

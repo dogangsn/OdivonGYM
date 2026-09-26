@@ -18,6 +18,7 @@ import {
   TargetAudience,
 } from '../../core/models/campaign.model';
 import { AdminMembersService } from '../members/admin-members.service';
+import { toMillis } from '../../shared/ui/ui-utils';
 import { PermissionService } from '../../core/services/permission.service';
 
 import { RouterLink } from '@angular/router';
@@ -140,7 +141,7 @@ export class AdminCampaigns {
     return list
       .filter((m) => {
         if (!m.membershipEndsAt) return false;
-        const endMillis = m.membershipEndsAt.toMillis();
+        const endMillis = toMillis(m.membershipEndsAt);
         return endMillis >= now && endMillis <= sevenDaysFromNow;
       })
       .slice(0, 10);

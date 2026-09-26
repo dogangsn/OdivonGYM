@@ -41,7 +41,7 @@ import { MuscleGroup, MUSCLE_GROUP_LABELS, GymEquipment } from '../../../core/mo
 import { SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { AdminMembersService } from '../admin-members.service';
 import { AdminDisciplinesService } from '../../disciplines/admin-disciplines.service';
-import { formatMoney, formatDateTime } from '../../../shared/ui/ui-utils';
+import { formatMoney, formatDateTime, toMillis, toJsDate } from '../../../shared/ui/ui-utils';
 import { Timestamp } from '@angular/fire/firestore';
 import { SignaturePadModal } from '../../../shared/components/signature-pad-modal/signature-pad-modal';
 import { WorkoutTemplatesService } from '../../../core/services/workout-templates.service';
@@ -239,7 +239,7 @@ export class MemberDetailDrawer {
     if (!m) return 0;
     const endTs = m.membershipStatus === 'trial' ? m.trialEndsAt : m.membershipEndsAt;
     if (!endTs) return null;
-    const diffMs = endTs.toMillis() - Date.now();
+    const diffMs = toMillis(endTs) - Date.now();
     return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
   });
 
@@ -563,12 +563,12 @@ export class MemberDetailDrawer {
     }
   }
 
-  formatDate(ts?: Timestamp | null): string {
+  formatDate(ts?: string | Timestamp | null): string {
     if (!ts) return '—';
-    return ts.toDate().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return toJsDate(ts)?.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
   }
 
-  formatTime(ts?: Timestamp | null): string {
+  formatTime(ts?: string | Timestamp | null): string {
     if (!ts) return '—';
     return formatDateTime(ts);
   }

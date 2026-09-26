@@ -19,6 +19,15 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // Üye ilerleme fotoğrafları (ön/yan/arka, max 10MB)
+    match /tenants/{tenantId}/members/{uid}/progress/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // 3. Üye sözleşmeleri, sağlık raporları ve dekontlar (PDF veya Resim, max 15MB)
     match /member_documents/{tenantId}/{allPaths=**} {
       allow read: if request.auth != null;

@@ -206,7 +206,7 @@ export class Sidebar {
     const expired = this.isExpired();
 
     if (role === 'user') {
-      return MEMBER_GROUPS;
+      return MEMBER_GROUPS.filter((group) => group.items.length > 0);
     }
 
     const baseGroups = ADMIN_OPERATIONAL_GROUPS;

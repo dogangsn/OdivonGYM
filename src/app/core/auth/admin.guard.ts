@@ -11,9 +11,11 @@ export const adminGuard: CanActivateFn = () => {
   const permissions = inject(PermissionService);
   const router = inject(Router);
 
-  return toObservable(auth.ready).pipe(
-    filter(Boolean),
-    take(1),
-    map(() => permissions.isStaff() || router.createUrlTree(['/dashboard'])),
-  );
+  const decide = () => permissions.isStaff() || router.createUrlTree(['/dashboard']);
+
+  if (auth.ready()) {
+    return decide();
+  }
+
+  return toObservable(auth.ready).pipe(filter(Boolean), take(1), map(decide));
 };

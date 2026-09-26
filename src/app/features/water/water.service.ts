@@ -1,85 +1,49 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  collectionData,
-  doc,
-  query,
-  where,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  Timestamp,
-} from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, Subject, firstValueFrom, of } from 'rxjs';
+import { HealthApi } from '../../core/api/health.api';
+import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
-import { WaterLog, CreateWaterLogInput } from '../../core/models/water-log.model';
+import { CreateWaterLogInput, WaterLog } from '../../core/models/water-log.model';
 
 @Injectable({ providedIn: 'root' })
 export class WaterService {
-  private readonly firestore = inject(Firestore);
+  private readonly api = inject(HealthApi);
   private readonly auth = inject(AuthService);
+  private readonly profile$ = toObservable(this.auth.profile);
+  private readonly reload$ = new Subject<void>();
 
   watchLogs(): Observable<WaterLog[]> {
-    const userId = this.auth.profile()?.uid;
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!userId || !tenantId) {
-      return new Observable<WaterLog[]>((subscriber) => subscriber.next([]));
-    }
-
-    const q = query(
-      collection(this.firestore, 'water_logs'),
-      where('userId', '==', userId),
-      where('tenantId', '==', tenantId),
-    );
-
-    return collectionData(q, { idField: 'id' }) as Observable<WaterLog[]>;
+    return tenantReload(this.profile$, this.reload$, () => {
+      const userId = this.auth.profile()?.uid;
+      if (!userId) return of([]);
+      return this.api.listWater({ userId });
+    });
   }
 
   async addLog(input: CreateWaterLogInput): Promise<string> {
-    const userId = this.auth.profile()?.uid;
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!userId || !tenantId) {
-      throw new Error('Kullanıcı oturumu bulunamadı');
-    }
-
-    const date = new Date(input.date);
-    date.setHours(0, 0, 0, 0);
-
-    const docRef = await addDoc(collection(this.firestore, 'water_logs'), {
-      userId,
-      tenantId,
-      date: Timestamp.fromDate(date),
-      amount: input.amount,
-      unit: input.unit,
-      notes: input.notes || '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    return docRef.id;
+    const created = await firstValueFrom(
+      this.api.createWater({
+        ...input,
+        date: input.date.toISOString(),
+      }),
+    );
+    this.reload$.next();
+    return created.id;
   }
 
   async updateLog(id: string, input: Partial<CreateWaterLogInput>): Promise<void> {
-    const updateData: any = { updatedAt: serverTimestamp() };
-
-    if (input.amount !== undefined) updateData.amount = input.amount;
-    if (input.unit !== undefined) updateData.unit = input.unit;
-    if (input.notes !== undefined) updateData.notes = input.notes;
-
-    if (input.date) {
-      const date = new Date(input.date);
-      date.setHours(0, 0, 0, 0);
-      updateData.date = Timestamp.fromDate(date);
-    }
-
-    await updateDoc(doc(this.firestore, 'water_logs', id), updateData);
+    await firstValueFrom(
+      this.api.updateWater(id, {
+        ...input,
+        date: input.date ? input.date.toISOString() : undefined,
+      }),
+    );
+    this.reload$.next();
   }
 
   async deleteLog(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'water_logs', id));
+    await firstValueFrom(this.api.removeWater(id));
+    this.reload$.next();
   }
 }

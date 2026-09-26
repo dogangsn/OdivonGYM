@@ -1,27 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import {
-  Firestore,
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-  writeBatch,
-} from '@angular/fire/firestore';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { GymApi } from '../../../core/api/gym.api';
 import { AlertService } from '../../../core/services/alert.service';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
-import { SYSTEM_WORKOUT_TEMPLATES } from '../../../core/models/workout-template.model';
 
 export interface DayOption {
   day: number;
@@ -68,7 +56,7 @@ export const AVAILABLE_FACILITY_AMENITIES: FacilityAmenity[] = [
 export class TenantWizard {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly firestore = inject(Firestore);
+  private readonly gymApi = inject(GymApi);
   private readonly auth = inject(AuthService);
   private readonly alert = inject(AlertService);
   readonly transloco = inject(TranslocoService);
@@ -76,13 +64,13 @@ export class TenantWizard {
   readonly currentStep = signal<1 | 2 | 3 | 4 | 5>(1);
   readonly submitting = signal(false);
 
-  // Gün Seçimleri (Step 1)
+  // GÃ¼n SeÃ§imleri (Step 1)
   readonly workingDays = signal<DayOption[]>(JSON.parse(JSON.stringify(WEEK_DAYS)));
 
-  // Logo Yükleme & Önizleme
+  // Logo YÃ¼kleme & Ã–nizleme
   readonly previewLogo = signal<string | null>(null);
 
-  // Şube Olanakları (Step 2)
+  // Åube OlanaklarÄ± (Step 2)
   readonly allAmenities = AVAILABLE_FACILITY_AMENITIES;
   readonly selectedAmenities = signal<string[]>([
     'fitness',
@@ -90,44 +78,44 @@ export class TenantWizard {
     'locker',
   ]);
 
-  // Hızlı Başlangıç Seçimleri (Step 4)
+  // HÄ±zlÄ± BaÅŸlangÄ±Ã§ SeÃ§imleri (Step 4)
   readonly seedDefaultPackages = signal<boolean>(true);
   readonly seedWorkoutTemplates = signal<boolean>(true);
   readonly seedDisciplines = signal<boolean>(true);
 
-  // Varsayılan Paket Fiyatları
+  // VarsayÄ±lan Paket FiyatlarÄ±
   readonly package1Price = signal<number>(1250);
   readonly package3Price = signal<number>(3200);
   readonly package12Price = signal<number>(9900);
 
-  // Adım 1: Salon Bilgileri
+  // AdÄ±m 1: Salon Bilgileri
   readonly gymForm = this.fb.nonNullable.group({
     name: [this.auth.profile()?.displayName ? `${this.auth.profile()?.displayName} Gym` : 'Odivon GYM', [Validators.required, Validators.minLength(2)]],
     phone: [this.auth.profile()?.phone || '', [Validators.required]],
-    city: ['İstanbul', [Validators.required]],
+    city: ['Ä°stanbul', [Validators.required]],
     address: ['Merkez Mah. Spor Cad. No: 14', [Validators.required]],
     openTime: ['07:00', [Validators.required]],
     closeTime: ['23:00', [Validators.required]],
   });
 
-  // Adım 2: Şube Bilgileri
+  // AdÄ±m 2: Åube Bilgileri
   readonly branchForm = this.fb.nonNullable.group({
-    branchName: ['Merkez Şube', [Validators.required]],
+    branchName: ['Merkez Åube', [Validators.required]],
     capacity: [250, [Validators.required, Validators.min(10)]],
     branchPhone: [this.auth.profile()?.phone || '+90 216 450 1020', [Validators.required]],
-    branchAddress: ['Bağdat Caddesi No: 142', [Validators.required]],
+    branchAddress: ['BaÄŸdat Caddesi No: 142', [Validators.required]],
   });
 
-  // Adım 3: İlk Antrenör / Personel (Zorunlu)
+  // AdÄ±m 3: Ä°lk AntrenÃ¶r / Personel (Zorunlu)
   readonly trainerForm = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required]],
     specialties: ['Fitness & Personal Training', [Validators.required]],
-    notes: ['Head Coach / Baş Antrenör'],
+    notes: ['Head Coach / BaÅŸ AntrenÃ¶r'],
   });
 
-  // Logo Dosyası Seçme
+  // Logo DosyasÄ± SeÃ§me
   onLogoFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
@@ -144,7 +132,7 @@ export class TenantWizard {
     this.previewLogo.set(null);
   }
 
-  // Hızlı Gün Şablonları
+  // HÄ±zlÄ± GÃ¼n ÅablonlarÄ±
   setDaysPreset(preset: 'all' | 'weekdays' | 'mon_sat'): void {
     this.workingDays.update((days) =>
       days.map((d) => {
@@ -237,189 +225,41 @@ export class TenantWizard {
       const amenities = this.selectedAmenities();
       const logo = this.previewLogo();
 
-      // 1. gym_info kaydı
-      await setDoc(
-        doc(this.firestore, 'gym_info', tenantId),
-        {
-          tenantId,
-          name: gymData.name.trim(),
-          phone: gymData.phone.trim(),
-          city: gymData.city.trim(),
-          address: gymData.address.trim(),
-          openTime: gymData.openTime,
-          closeTime: gymData.closeTime,
-          workingDays: selectedDays,
-          logoUrl: logo || null,
-          features: amenities,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-
-      // 2. Şube kaydı / güncelleme
-      const branchesSnap = await getDocs(
-        query(collection(this.firestore, 'gym_branches'), where('tenantId', '==', tenantId)),
-      );
-
-      let branchId: string;
-      if (!branchesSnap.empty) {
-        branchId = branchesSnap.docs[0].id;
-        await updateDoc(doc(this.firestore, 'gym_branches', branchId), {
-          name: branchData.branchName.trim(),
-          capacity: Number(branchData.capacity),
-          phone: branchData.branchPhone.trim(),
-          address: branchData.branchAddress.trim(),
-          logoUrl: logo || null,
-          openDays: selectedDays,
-          features: amenities,
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        const branchRef = await addDoc(collection(this.firestore, 'gym_branches'), {
-          tenantId,
-          name: branchData.branchName.trim(),
-          capacity: Number(branchData.capacity),
-          phone: branchData.branchPhone.trim(),
-          address: branchData.branchAddress.trim(),
-          city: gymData.city.trim(),
-          status: 'active',
-          currentOccupancy: 0,
-          logoUrl: logo || null,
-          openDays: selectedDays,
-          openingHours: ([0, 1, 2, 3, 4, 5, 6] as const).map((day) => ({
-            day,
-            open: gymData.openTime,
-            close: gymData.closeTime,
-            closed: !selectedDays.includes(day),
-          })),
-          features: amenities,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        branchId = branchRef.id;
-      }
-
-      // 3. İlk Antrenör kaydı (gym_staff)
-      const now = new Date().toISOString();
-      await addDoc(collection(this.firestore, 'gym_staff'), {
-        tenantId,
-        displayName: trainerData.displayName.trim(),
-        email: trainerData.email.trim().toLowerCase(),
-        phone: trainerData.phone.trim(),
-        role: 'trainer',
-        title: 'Baş Antrenör / PT',
-        status: 'active',
-        specialties: trainerData.specialties.split(',').map((s) => s.trim()).filter(Boolean),
-        branchId,
-        branchName: branchData.branchName.trim(),
-        hireDate: now.slice(0, 10),
-        emergencyContact: '',
-        monthlySalary: 0,
-        commissionRate: 15,
-        notes: trainerData.notes.trim(),
-        customPermissions: ['workouts:manage', 'measurements:manage', 'wizard:access', 'classes:manage', 'appointments:manage'],
-        createdAt: now,
-        updatedAt: now,
-        createdAtTimestamp: serverTimestamp(),
-      });
-
-      // 4. Varsayılan Üyelik Paketleri Tohumlama (Opsiyonel)
-      if (this.seedDefaultPackages()) {
-        const batch = writeBatch(this.firestore);
-        const pkgCol = collection(this.firestore, 'gym_packages');
-
-        const initialPackages = [
-          {
-            name: '1 Aylık Standart Üyelik',
-            price: this.package1Price(),
-            durationDays: 30,
-            description: 'Tüm fitness alanı, soyunma odaları ve serbest ağırlık erişimi.',
-            features: ['Fitness Alanı', 'Soyunma Odası & Duş', 'Mobil Turnike QR Geçişi'],
+      await firstValueFrom(
+        this.gymApi.completeOnboarding({
+          gym: {
+            name: gymData.name.trim(),
+            phone: gymData.phone.trim(),
+            city: gymData.city.trim(),
+            address: gymData.address.trim(),
+            openTime: gymData.openTime,
+            closeTime: gymData.closeTime,
+            workingDays: selectedDays,
+            logoUrl: logo || null,
+            features: amenities,
           },
-          {
-            name: '3 Aylık Avantajlı Paket',
-            price: this.package3Price(),
-            durationDays: 90,
-            description: 'En popüler paket! 3 ay boyunca kesintisiz salon ve grup dersi erişimi.',
-            features: ['Fitness Alanı', 'Soyunma Odası & Duş', 'Mobil Turnike QR', '1 Seans Antrenör Tanışma'],
-          },
-          {
-            name: '1 Yıllık VIP Sınırsız',
-            price: this.package12Price(),
-            durationDays: 365,
-            description: 'Yıl boyu sınırsız erişim, özel dolap ve tüm tesis olanakları.',
-            features: ['Tüm Şubelerde Geçerli', 'Sınırsız Turnike Girişi', 'VIP Dolap', '2 Seans Birebir PT Dersi'],
-          },
-        ];
-
-        for (const p of initialPackages) {
-          const docRef = doc(pkgCol);
-          batch.set(docRef, {
-            ...p,
-            id: docRef.id,
-            tenantId,
-            status: 'active',
-            branchId,
+          branch: {
             branchName: branchData.branchName.trim(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batch.commit();
-      }
-
-      // 5. Hazır Antrenman Şablonları Tohumlama (Opsiyonel)
-      if (this.seedWorkoutTemplates()) {
-        const batchTpl = writeBatch(this.firestore);
-        const tplCol = collection(this.firestore, 'workout_templates');
-
-        for (const tpl of SYSTEM_WORKOUT_TEMPLATES) {
-          const docRef = doc(tplCol);
-          batchTpl.set(docRef, {
-            ...tpl,
-            id: docRef.id,
-            tenantId,
-            isSystemDefault: false,
-            createdByTrainerName: trainerData.displayName.trim() || 'Baş Antrenör',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batchTpl.commit();
-      }
-
-      // 6. Hazır Spor Branşları Tohumlama (Opsiyonel)
-      if (this.seedDisciplines()) {
-        const batchDisc = writeBatch(this.firestore);
-        const discCol = collection(this.firestore, 'sports_disciplines');
-
-        const defaultDisciplines = [
-          { name: 'Fitness & Vücut Geliştirme', code: 'FIT', description: 'Serbest ağırlık, makineler ve hipertrofi antrenmanı.' },
-          { name: 'Kickboks & Boks', code: 'BOX', description: 'Dövüş sporları, torba ve teknik kombinasyon seansları.' },
-          { name: 'Reformer Pilates', code: 'PIL', description: 'Esneklik, core güçlendirme ve postür düzeltme.' },
-        ];
-
-        for (const disc of defaultDisciplines) {
-          const docRef = doc(discCol);
-          batchDisc.set(docRef, {
-            ...disc,
-            id: docRef.id,
-            tenantId,
-            isActive: true,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batchDisc.commit();
-      }
-
-      // 7. Tenant Onboarding Completed işaretleme
-      await updateDoc(doc(this.firestore, 'tenants', tenantId), {
-        onboardingCompleted: true,
-        name: gymData.name.trim(),
-        logoUrl: logo || null,
-        updatedAt: serverTimestamp(),
-      });
+            capacity: Number(branchData.capacity),
+            branchPhone: branchData.branchPhone.trim(),
+            branchAddress: branchData.branchAddress.trim(),
+          },
+          trainer: {
+            displayName: trainerData.displayName.trim(),
+            email: trainerData.email.trim().toLowerCase(),
+            phone: trainerData.phone.trim(),
+            specialties: trainerData.specialties,
+            notes: trainerData.notes.trim(),
+          },
+          seedDefaultPackages: this.seedDefaultPackages(),
+          package1Price: this.package1Price(),
+          package3Price: this.package3Price(),
+          package12Price: this.package12Price(),
+          seedWorkoutTemplates: this.seedWorkoutTemplates(),
+          seedDisciplines: this.seedDisciplines(),
+        }),
+      );
+      await this.auth.refreshProfile();
 
       await this.alert.success(
         this.transloco.translate('tenantWizard.alerts.successTitle'),
@@ -428,7 +268,7 @@ export class TenantWizard {
 
       await this.router.navigateByUrl('/admin/overview');
     } catch (err) {
-      console.error('Onboarding tamamlanamadı:', err);
+      console.error('Onboarding tamamlanamadÄ±:', err);
       void this.alert.error(
         this.transloco.translate('tenantWizard.alerts.errorTitle'),
         this.transloco.translate('tenantWizard.alerts.errorDesc'),

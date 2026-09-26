@@ -326,8 +326,8 @@ export class AdminMembers {
       .join('');
   }
 
-  formatDate(ts: UserProfile['createdAt'] | undefined): string {
+  formatDate(ts: string | undefined): string {
     if (!ts) return '—';
-    return ts.toDate().toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(ts).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

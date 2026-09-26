@@ -1,20 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  collectionData,
-  doc,
-  query,
-  where,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  serverTimestamp,
-  Timestamp,
-} from '@angular/fire/firestore';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, of, switchMap } from 'rxjs';
+import { Observable, Subject, firstValueFrom } from 'rxjs';
+import { AccountingApi } from '../../core/api/accounting.api';
+import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import { AccountingEntry, CreateAccountingEntryInput } from '../../core/models/accounting-entry.model';
 
@@ -23,122 +11,64 @@ export interface AccountingCategory {
   tenantId: string;
   name: string;
   type: 'income' | 'expense' | 'both';
-  createdAt?: any;
+  createdAt?: unknown;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AdminAccountingService {
-  private readonly firestore = inject(Firestore);
+  private readonly api = inject(AccountingApi);
   private readonly auth = inject(AuthService);
+  private readonly profile$ = toObservable(this.auth.profile);
+  private readonly reload$ = new Subject<void>();
 
   watchEntries(): Observable<AccountingEntry[]> {
-    return toObservable(this.auth.profile).pipe(
-      switchMap((profile) => {
-        const tenantId = profile?.tenantId;
-        if (!tenantId) {
-          return of([] as AccountingEntry[]);
-        }
-        const q = query(
-          collection(this.firestore, 'accounting_entries'),
-          where('tenantId', '==', tenantId),
-        );
-        return collectionData(q, { idField: 'id' }) as Observable<AccountingEntry[]>;
-      }),
-    );
+    return tenantReload(this.profile$, this.reload$, () => this.api.list());
   }
 
   async addEntry(input: CreateAccountingEntryInput): Promise<string> {
-    const tenantId = this.auth.profile()?.tenantId;
-
-    if (!tenantId) {
-      throw new Error('Salon bilgisi bulunamadı');
-    }
-
-    const docRef = await addDoc(collection(this.firestore, 'accounting_entries'), {
-      tenantId,
-      type: input.type,
-      amount: input.amount,
-      category: input.category,
-      description: input.description,
-      referenceId: input.referenceId || '',
-      referenceType: input.referenceType || null,
-      paymentMethod: input.paymentMethod || null,
-      notes: input.notes || '',
-      entryDate: Timestamp.fromDate(input.entryDate),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    return docRef.id;
+    const created = await firstValueFrom(
+      this.api.create({
+        ...input,
+        entryDate: input.entryDate.toISOString(),
+      }),
+    );
+    this.reload$.next();
+    return created.id;
   }
 
   async updateEntry(id: string, input: Partial<CreateAccountingEntryInput>): Promise<void> {
-    const updateData: any = { updatedAt: serverTimestamp() };
-
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.amount !== undefined) updateData.amount = input.amount;
-    if (input.category !== undefined) updateData.category = input.category;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.referenceType !== undefined) updateData.referenceType = input.referenceType;
-    if ('paymentMethod' in input) updateData.paymentMethod = input.paymentMethod ?? null;
-    if (input.notes !== undefined) updateData.notes = input.notes;
-
-    if (input.entryDate) {
-      updateData.entryDate = Timestamp.fromDate(input.entryDate);
-    }
-
-    await updateDoc(doc(this.firestore, 'accounting_entries', id), updateData);
+    await firstValueFrom(
+      this.api.update(id, {
+        ...input,
+        entryDate: input.entryDate ? input.entryDate.toISOString() : undefined,
+      }),
+    );
+    this.reload$.next();
   }
 
   async deleteEntry(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'accounting_entries', id));
+    await firstValueFrom(this.api.remove(id));
+    this.reload$.next();
   }
 
   watchCategories(): Observable<AccountingCategory[]> {
-    return toObservable(this.auth.profile).pipe(
-      switchMap((profile) => {
-        const tenantId = profile?.tenantId;
-        if (!tenantId) {
-          return of([] as AccountingCategory[]);
-        }
-        const q = query(
-          collection(this.firestore, 'accounting_categories'),
-          where('tenantId', '==', tenantId),
-        );
-        return collectionData(q, { idField: 'id' }) as Observable<AccountingCategory[]>;
-      }),
-    );
+    return tenantReload(this.profile$, this.reload$, () => this.api.listCategories() as Observable<AccountingCategory[]>);
   }
 
   async addCategory(name: string, type: 'income' | 'expense' | 'both'): Promise<string> {
-    const tenantId = this.auth.profile()?.tenantId;
-    if (!tenantId) throw new Error('Salon bilgisi bulunamadı');
-
-    const docRef = await addDoc(collection(this.firestore, 'accounting_categories'), {
-      tenantId,
-      name: name.trim(),
-      type,
-      createdAt: serverTimestamp(),
-    });
-
-    return docRef.id;
+    const created = await firstValueFrom(this.api.createCategory({ name: name.trim(), type }));
+    this.reload$.next();
+    return created.id ?? '';
   }
 
   async deleteCategory(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'accounting_categories', id));
+    await firstValueFrom(this.api.removeCategory(id));
+    this.reload$.next();
   }
 
   async seedDefaultCategoriesIfEmpty(): Promise<void> {
-    const tenantId = this.auth.profile()?.tenantId;
-    if (!tenantId) return;
-
-    const q = query(
-      collection(this.firestore, 'accounting_categories'),
-      where('tenantId', '==', tenantId),
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) return;
-
+    const existing = await firstValueFrom(this.api.listCategories());
+    if (existing.length) return;
     const defaults: { name: string; type: 'income' | 'expense' | 'both' }[] = [
       { name: 'Üyelik & Abonelik Satışı', type: 'income' },
       { name: 'Market & Ürün Satışı', type: 'income' },
@@ -154,7 +84,6 @@ export class AdminAccountingService {
       { name: 'Vergi & Muhasebe', type: 'expense' },
       { name: 'Diğer Gider', type: 'expense' },
     ];
-
     for (const cat of defaults) {
       await this.addCategory(cat.name, cat.type);
     }

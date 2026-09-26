@@ -198,7 +198,7 @@ export class Dashboard {
     const profile = this.auth.profile();
     const date = this.isMembershipActive() ? profile?.membershipEndsAt : profile?.trialEndsAt;
     if (!date) return 'Süresiz';
-    return date.toDate().toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   });
 
   protected readonly walletFormatted = computed(() => {

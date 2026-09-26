@@ -7,7 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
-import { formatMoney, formatDateTime } from '../../shared/ui/ui-utils';
+import { formatMoney, formatDateTime, toJsDate } from '../../shared/ui/ui-utils';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminPackagesService } from '../packages/admin-packages.service';
@@ -368,7 +368,7 @@ export class AdminSales {
             displayName: member.displayName,
             phone: member.phone || '',
             gender: member.gender || 'unspecified',
-            birthDate: member.birthDate ? member.birthDate.toDate() : null,
+            birthDate: member.birthDate ? toJsDate(member.birthDate) : null,
             notes: member.notes || '',
             membershipStatus: 'active',
             packageLabel: pItem.gymPackage.name,

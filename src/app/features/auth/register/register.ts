@@ -60,14 +60,13 @@ export class Register {
       country: [DEFAULT_COUNTRY_CODE, [Validators.required]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9\s]{7,14}$/)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
     },
     { validators: passwordsMatchValidator },
   );
 
   readonly submitting = signal(false);
-  readonly googleSubmitting = signal(false);
   readonly errorMessage = signal('');
   readonly hidePassword = signal(true);
   readonly hideConfirmPassword = signal(true);
@@ -100,25 +99,12 @@ export class Register {
         phone: `${this.dialCode()} ${phone}`.trim(),
         language: this.language.current(),
       });
+      await this.auth.waitUntilReady();
       await this.router.navigateByUrl('/onboarding/wizard');
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
       this.submitting.set(false);
-    }
-  }
-
-  async continueWithGoogle(): Promise<void> {
-    if (this.googleSubmitting()) return;
-    this.errorMessage.set('');
-    this.googleSubmitting.set(true);
-    try {
-      await this.auth.signInWithGoogle();
-      await this.router.navigateByUrl('/onboarding/wizard');
-    } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
-    } finally {
-      this.googleSubmitting.set(false);
     }
   }
 }

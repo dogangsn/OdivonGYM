@@ -1,9 +1,7 @@
-import { Timestamp } from '@angular/fire/firestore';
-
 export interface OpeningHours {
-  day: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
-  open: string; // HH:mm
-  close: string; // HH:mm
+  day: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  open: string;
+  close: string;
   closed: boolean;
 }
 
@@ -19,24 +17,24 @@ export const DAYS_OF_WEEK = [
 
 export interface GymBranch {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   name: string;
-  logoUrl?: string; // Şube logosu
+  logoUrl?: string;
   address: string;
   city: string;
   postalCode?: string;
   phone: string;
   email: string;
   website?: string;
-  capacity: number; // max concurrent users
+  capacity: number;
   currentOccupancy: number;
-  openingHours: OpeningHours[]; // array of 7 items for each day
-  openDays?: number[]; // [1, 2, 3, 4, 5, 6, 0] açık olduğu günler
+  openingHours: OpeningHours[];
+  openDays?: number[];
   features: string[];
   status: 'active' | 'closed' | 'maintenance';
   managerName?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateGymBranchInput {
@@ -56,4 +54,3 @@ export interface CreateGymBranchInput {
 }
 
 export type UpdateGymBranchInput = Partial<CreateGymBranchInput> & { status?: GymBranch['status'] };
-

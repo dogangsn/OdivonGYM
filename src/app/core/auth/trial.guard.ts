@@ -16,17 +16,22 @@ export const trialGuard: CanActivateFn = () => {
   const permissions = inject(PermissionService);
   const router = inject(Router);
 
-  return toObservable(auth.ready).pipe(
-    filter(Boolean),
-    take(1),
-    map(() => {
-      if (auth.profile()?.email === 'expired@odivongym.app') {
-        return router.createUrlTree(['/onboarding/trial-expired']);
-      }
-      if (permissions.isStaff()) {
-        return true;
-      }
-      return auth.canAccessApp() || router.createUrlTree(['/onboarding/trial-expired']);
-    }),
-  );
+  const decide = () => {
+    if (!auth.onboardingCompleted()) {
+      return router.createUrlTree(['/onboarding/wizard']);
+    }
+    if (auth.profile()?.email === 'expired@odivongym.app') {
+      return router.createUrlTree(['/onboarding/trial-expired']);
+    }
+    if (permissions.isStaff()) {
+      return true;
+    }
+    return auth.canAccessApp() || router.createUrlTree(['/onboarding/trial-expired']);
+  };
+
+  if (auth.ready()) {
+    return decide();
+  }
+
+  return toObservable(auth.ready).pipe(filter(Boolean), take(1), map(decide));
 };

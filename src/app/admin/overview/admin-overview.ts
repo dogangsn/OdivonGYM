@@ -9,7 +9,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminAccountingService } from '../accounting/admin-accounting.service';
 import { AdminAccessControlService } from '../access-control/admin-access-control.service';
-import { formatMoney } from '../../shared/ui/ui-utils';
+import { formatMoney, toMillis } from '../../shared/ui/ui-utils';
 import { AccessLog } from '../../core/models/access-log.model';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 
@@ -427,7 +427,7 @@ export class AdminOverview {
     return this.members().filter((m) => {
       if (m.membershipStatus === 'active') return true;
       if (m.membershipStatus === 'trial') {
-        const endsAt = m.trialEndsAt?.toMillis() ?? 0;
+        const endsAt = toMillis(m.trialEndsAt);
         return endsAt > Date.now();
       }
       return false;
@@ -438,7 +438,7 @@ export class AdminOverview {
     return this.members().filter((m) => {
       if (m.membershipStatus === 'expired' || m.membershipStatus === 'cancelled') return true;
       if (m.membershipStatus === 'trial') {
-        const endsAt = m.trialEndsAt?.toMillis() ?? 0;
+        const endsAt = toMillis(m.trialEndsAt);
         return endsAt <= Date.now();
       }
       return false;

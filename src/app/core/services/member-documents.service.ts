@@ -1,19 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import {
-  Firestore,
-  Timestamp,
-  collection,
-  collectionData,
-  deleteDoc,
-  doc,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from '@angular/fire/firestore';
-import { Observable, map, of, switchMap } from 'rxjs';
+import { Observable, Subject, firstValueFrom } from 'rxjs';
+import { DocumentsApi } from '../api/documents.api';
+import { tenantReload } from '../api/unwrap';
 import { AuthService } from '../auth/auth.service';
 import {
   CreateMemberDocumentInput,
@@ -24,108 +13,50 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class MemberDocumentsService {
-  private readonly firestore = inject(Firestore);
+  private readonly api = inject(DocumentsApi);
   private readonly auth = inject(AuthService);
   private readonly profile$ = toObservable(this.auth.profile);
+  private readonly reload$ = new Subject<void>();
 
-  /** Belirli bir üyenin tüm evrak ve lisanslarını dinler */
   watchMemberDocuments(userId: string): Observable<MemberDocument[]> {
-    return this.profile$.pipe(
-      switchMap((profile) => {
-        const tenantId = profile?.tenantId;
-        if (!tenantId || !userId) return of([] as MemberDocument[]);
-        const q = query(
-          collection(this.firestore, 'member_documents'),
-          where('tenantId', '==', tenantId),
-          where('userId', '==', userId),
-        );
-        return (collectionData(q, { idField: 'id' }) as Observable<MemberDocument[]>).pipe(
-          map((list) =>
-            [...list].sort(
-              (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
-            ),
-          ),
-        );
-      }),
-    );
+    return tenantReload(this.profile$, this.reload$, () => this.api.list({ userId }));
   }
 
-  /** Salondaki tüm üyelerin evraklarını (onay bekleyen, süresi dolan vb.) dinler */
   watchAllTenantDocuments(): Observable<MemberDocument[]> {
-    return this.profile$.pipe(
-      switchMap((profile) => {
-        const tenantId = profile?.tenantId;
-        if (!tenantId) return of([] as MemberDocument[]);
-        const q = query(
-          collection(this.firestore, 'member_documents'),
-          where('tenantId', '==', tenantId),
-        );
-        return (collectionData(q, { idField: 'id' }) as Observable<MemberDocument[]>).pipe(
-          map((list) =>
-            [...list].sort(
-              (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
-            ),
-          ),
-        );
-      }),
-    );
+    return tenantReload(this.profile$, this.reload$, () => this.api.list());
   }
 
   async addDocument(input: CreateMemberDocumentInput): Promise<string> {
-    const tenantId = this.auth.profile()?.tenantId;
-    if (!tenantId) throw new Error('Salon bilgisi bulunamadı.');
-
-    const col = collection(this.firestore, 'member_documents');
-    const newDoc = doc(col);
-    const now = serverTimestamp();
-
-    await setDoc(newDoc, {
-      id: newDoc.id,
-      userId: input.userId,
-      tenantId,
-      disciplineId: input.disciplineId || null,
-      documentType: input.documentType,
-      documentName: input.documentName.trim(),
-      fileUrl: input.fileUrl || null,
-      issueDate: Timestamp.fromDate(input.issueDate),
-      expiryDate: input.expiryDate ? Timestamp.fromDate(input.expiryDate) : null,
-      status: input.status || 'approved',
-      notes: input.notes?.trim() || '',
-      verifiedBy: this.auth.profile()?.displayName || 'Yönetici',
-      verifiedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return newDoc.id;
+    const created = await firstValueFrom(
+      this.api.create({
+        ...input,
+        issueDate: input.issueDate.toISOString(),
+        expiryDate: input.expiryDate ? input.expiryDate.toISOString() : null,
+      }),
+    );
+    this.reload$.next();
+    return created.id;
   }
 
   async updateDocument(id: string, input: UpdateMemberDocumentInput): Promise<void> {
-    const payload: Record<string, any> = {
-      ...input,
-      updatedAt: serverTimestamp(),
-    };
-    if (input.issueDate) {
-      payload['issueDate'] = Timestamp.fromDate(input.issueDate);
-    }
-    if (input.expiryDate !== undefined) {
-      payload['expiryDate'] = input.expiryDate ? Timestamp.fromDate(input.expiryDate) : null;
-    }
-
-    await updateDoc(doc(this.firestore, 'member_documents', id), payload);
+    await firstValueFrom(
+      this.api.update(id, {
+        ...input,
+        issueDate: input.issueDate instanceof Date ? input.issueDate.toISOString() : input.issueDate,
+        expiryDate:
+          input.expiryDate instanceof Date ? input.expiryDate.toISOString() : input.expiryDate,
+      }),
+    );
+    this.reload$.next();
   }
 
   async updateDocumentStatus(id: string, status: DocumentStatus, notes?: string): Promise<void> {
-    await updateDoc(doc(this.firestore, 'member_documents', id), {
-      status,
-      ...(notes !== undefined ? { notes } : {}),
-      verifiedBy: this.auth.profile()?.displayName || 'Yönetici',
-      verifiedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await firstValueFrom(this.api.update(id, { status, notes }));
+    this.reload$.next();
   }
 
   async deleteDocument(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'member_documents', id));
+    await firstValueFrom(this.api.remove(id));
+    this.reload$.next();
   }
 }

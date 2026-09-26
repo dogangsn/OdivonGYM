@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, doc, updateDoc, serverTimestamp, Timestamp } from '@angular/fire/firestore';
+import { firstValueFrom } from 'rxjs';
+import { IdentityApi } from '../../core/api/identity.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserProfile, Gender } from '../../core/models/user-profile.model';
 
@@ -15,30 +16,16 @@ export interface UpdateProfileInput {
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
-  private readonly firestore = inject(Firestore);
+  private readonly identity = inject(IdentityApi);
   private readonly auth = inject(AuthService);
 
   async updateProfile(input: UpdateProfileInput): Promise<void> {
-    const uid = this.auth.profile()?.uid;
-    if (!uid) throw new Error('Kullanıcı oturumu bulunamadı');
-
-    const updateData: Partial<UserProfile> = {
-      updatedAt: serverTimestamp() as unknown as Timestamp,
-    };
-
-    if (input.displayName !== undefined) updateData.displayName = input.displayName;
-    if (input.phone !== undefined) updateData.phone = input.phone;
-    if (input.gender !== undefined) updateData.gender = input.gender;
-    if (input.photoURL !== undefined) updateData.photoURL = input.photoURL;
-    if (input.country !== undefined) updateData.country = input.country;
-    if (input.language !== undefined) updateData.language = input.language;
-
-    if (input.birthDate) {
-      updateData.birthDate = Timestamp.fromDate(input.birthDate);
-    } else if (input.birthDate === null) {
-      updateData.birthDate = null;
-    }
-
-    await updateDoc(doc(this.firestore, 'users', uid), updateData);
+    await firstValueFrom(
+      this.identity.updateMe({
+        displayName: input.displayName,
+        phone: input.phone,
+      }),
+    );
+    await this.auth.refreshProfile();
   }
 }

@@ -9,9 +9,13 @@ export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return toObservable(auth.ready).pipe(
-    filter(Boolean),
-    take(1),
-    map(() => auth.isAuthenticated() || router.createUrlTree(['/auth/login'])),
-  );
+  const decide = () => auth.isAuthenticated() || router.createUrlTree(['/auth/login']);
+
+  // Zonesuz uygulamada `toObservable` ilk değeri ancak sonraki değişim algılamasında
+  // yayınlar. Oturum zaten hazırsa yönlendirme bu yüzden askıda kalır; senkron karar ver.
+  if (auth.ready()) {
+    return decide();
+  }
+
+  return toObservable(auth.ready).pipe(filter(Boolean), take(1), map(decide));
 };

@@ -9,9 +9,11 @@ export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return toObservable(auth.ready).pipe(
-    filter(Boolean),
-    take(1),
-    map(() => !auth.isAuthenticated() || router.createUrlTree(['/dashboard'])),
-  );
+  const decide = () => !auth.isAuthenticated() || router.createUrlTree(['/dashboard']);
+
+  if (auth.ready()) {
+    return decide();
+  }
+
+  return toObservable(auth.ready).pipe(filter(Boolean), take(1), map(decide));
 };

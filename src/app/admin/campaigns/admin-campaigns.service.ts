@@ -1,20 +1,10 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import {
-  Firestore,
-  addDoc,
-  collection,
-  collectionData,
-  deleteDoc,
-  doc,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-  writeBatch,
-} from '@angular/fire/firestore';
-import { Observable, catchError, firstValueFrom, map, of, switchMap, take } from 'rxjs';
+import { Observable, Subject, firstValueFrom, map, take } from 'rxjs';
+import { CampaignsApi } from '../../core/api/campaigns.api';
+import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
+import { toMillis } from '../../shared/ui/ui-utils';
 import { SmsGatewayService } from '../../core/services/sms-gateway.service';
 import { UserProfile } from '../../core/models/user-profile.model';
 import {
@@ -162,129 +152,53 @@ const INITIAL_CAMPAIGN_SEEDS: Campaign[] = [
 
 @Injectable({ providedIn: 'root' })
 export class AdminCampaignsService {
-  private readonly firestore = inject(Firestore);
+  private readonly api = inject(CampaignsApi);
   private readonly auth = inject(AuthService);
   private readonly membersService = inject(AdminMembersService);
   private readonly profile$ = toObservable(this.auth.profile);
+  private readonly reload$ = new Subject<void>();
 
-  // Local reactive cache for instant resilience and demo capabilities
   readonly localCampaigns = signal<Campaign[]>(INITIAL_CAMPAIGN_SEEDS);
 
-  private seedingTriggered = false;
-
   watchCampaigns(): Observable<Campaign[]> {
-    return this.profile$.pipe(
-      switchMap((profile) => {
-        const tenantId = profile?.tenantId;
-        if (!tenantId) {
-          return of(this.localCampaigns());
+    return tenantReload(this.profile$, this.reload$, () => this.api.list()).pipe(
+      map((list) => {
+        if (!list.length) {
+          return this.localCampaigns();
         }
-
-        const q = query(
-          collection(this.firestore, 'gym_campaigns'),
-          where('tenantId', '==', tenantId),
-        );
-
-        return (collectionData(q, { idField: 'id' }) as Observable<Campaign[]>).pipe(
-          catchError(() => of([] as Campaign[])),
-          map((list) => {
-            if (list.length === 0) {
-              if (!this.seedingTriggered) {
-                this.seedingTriggered = true;
-                void this.seedInitialCampaigns(tenantId);
-              }
-              return this.localCampaigns();
-            }
-
-            this.localCampaigns.set(list);
-
-            return [...list].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            );
-          }),
-        );
+        this.localCampaigns.set(list);
+        return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }),
     );
   }
 
   async createCampaign(input: CreateCampaignInput): Promise<string> {
-    const profile = this.auth.profile();
-    const tenantId = profile?.tenantId || 'default-tenant';
-
-    const newCamp: Campaign = {
-      id: `camp-${Date.now()}`,
-      tenantId,
-      title: input.title.trim(),
-      description: input.description?.trim() || '',
-      type: input.type,
-      discountType: input.discountType,
-      discountValue: Number(input.discountValue) || 0,
-      giftDescription: input.giftDescription?.trim() || '',
-      promoCode: input.promoCode?.trim().toUpperCase() || '',
-      validFrom: input.validFrom,
-      validUntil: input.validUntil,
-      status: input.status || 'active',
-      targetAudience: input.targetAudience,
-      channels: input.channels,
-      messageTemplate: input.messageTemplate,
-      stats: {
-        targetCount: this.getEstimatedAudienceCount(input.targetAudience),
-        sentCount: 0,
-        openedCount: 0,
-        convertedCount: 0,
-        revenueGenerated: 0,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Update local cache
-    this.localCampaigns.update((curr) => [newCamp, ...curr]);
-
-    // Save to Firestore if tenant exists
-    try {
-      if (tenantId && tenantId !== 'default-tenant') {
-        const docRef = await addDoc(collection(this.firestore, 'gym_campaigns'), {
-          ...newCamp,
-          createdAtTimestamp: serverTimestamp(),
-          updatedAtTimestamp: serverTimestamp(),
-        });
-        return docRef.id;
-      }
-    } catch (err) {
-      console.warn('Firestore kampanya ekleme arka planda ertelendi:', err);
-    }
-
-    return newCamp.id;
+    const created = await firstValueFrom(
+      this.api.create({
+        ...input,
+        title: input.title.trim(),
+        description: input.description?.trim() || '',
+        stats: {
+          targetCount: this.getEstimatedAudienceCount(input.targetAudience),
+          sentCount: 0,
+          openedCount: 0,
+          convertedCount: 0,
+          revenueGenerated: 0,
+        },
+      }),
+    );
+    this.reload$.next();
+    return created.id;
   }
 
   async updateCampaign(id: string, input: Partial<Campaign>): Promise<void> {
-    this.localCampaigns.update((curr) =>
-      curr.map((c) => (c.id === id ? { ...c, ...input, updatedAt: new Date().toISOString() } : c)),
-    );
-
-    try {
-      const docRef = doc(this.firestore, `gym_campaigns/${id}`);
-      const updateData: Record<string, unknown> = {
-        ...input,
-        updatedAt: new Date().toISOString(),
-        updatedAtTimestamp: serverTimestamp(),
-      };
-      delete updateData['id'];
-      await updateDoc(docRef, updateData);
-    } catch (err) {
-      console.warn('Firestore kampanya güncelleme arka planda ertelendi:', err);
-    }
+    await firstValueFrom(this.api.update(id, input));
+    this.reload$.next();
   }
 
   async deleteCampaign(id: string): Promise<void> {
-    this.localCampaigns.update((curr) => curr.filter((c) => c.id !== id));
-
-    try {
-      await deleteDoc(doc(this.firestore, `gym_campaigns/${id}`));
-    } catch (err) {
-      console.warn('Firestore kampanya silme arka planda ertelendi:', err);
-    }
+    await firstValueFrom(this.api.remove(id));
+    this.reload$.next();
   }
 
   async toggleStatus(id: string, currentStatus: CampaignStatus): Promise<void> {
@@ -294,17 +208,12 @@ export class AdminCampaignsService {
 
   private readonly smsGateway = inject(SmsGatewayService);
 
-  /**
-   * Hedef kitleye ait üyelerin listesini gerçek veritabanından çeker.
-   */
   async getTargetMembers(audience: TargetAudience): Promise<UserProfile[]> {
     try {
       const members = await firstValueFrom(this.membersService.watchMembers().pipe(take(1)));
       if (!members || members.length === 0) return [];
-
       const now = Date.now();
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-
       switch (audience) {
         case 'active_members':
           return members.filter((m) => m.membershipStatus === 'active');
@@ -315,7 +224,7 @@ export class AdminCampaignsService {
         case 'expiring_soon':
           return members.filter((m) => {
             if (m.membershipStatus !== 'active' || !m.membershipEndsAt) return false;
-            const diff = m.membershipEndsAt.toMillis() - now;
+            const diff = toMillis(m.membershipEndsAt) - now;
             return diff > 0 && diff <= sevenDaysMs;
           });
         case 'all_members':
@@ -327,92 +236,46 @@ export class AdminCampaignsService {
     }
   }
 
-  /**
-   * Kampanyayı seçilen kanaldan üyelerin ekranlarına veya mesaj kanallarına iletir.
-   * SMS kanalı seçildiğinde SmsGatewayService üzerinden gerçek toplu gönderim yapar.
-   */
-  async dispatchCampaign(
-    campaign: Campaign,
-    channel: CampaignChannel,
-  ): Promise<{ sentCount: number }> {
+  async dispatchCampaign(campaign: Campaign, channel: CampaignChannel): Promise<{ sentCount: number }> {
     const targetMembers = await this.getTargetMembers(campaign.targetAudience);
-    const targetCount = targetMembers.length > 0 ? targetMembers.length : (campaign.stats.targetCount || 50);
-
+    const targetCount = targetMembers.length > 0 ? targetMembers.length : campaign.stats.targetCount || 50;
     if (channel === 'sms') {
-      const phones = targetMembers
-        .map((m) => m.phone)
-        .filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
-
+      const phones = targetMembers.map((m) => m.phone).filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
       const smsText = campaign.messageTemplate?.smsBody || campaign.title;
       if (phones.length > 0) {
-        await this.smsGateway.sendBulkSms({
-          recipients: phones,
-          message: smsText,
-          title: campaign.title,
-        });
+        await this.smsGateway.sendBulkSms({ recipients: phones, message: smsText, title: campaign.title });
       }
     }
-
-    const updatedSentCount = campaign.stats.sentCount + targetCount;
-
     await this.updateCampaign(campaign.id, {
       stats: {
         ...campaign.stats,
-        sentCount: updatedSentCount,
+        sentCount: campaign.stats.sentCount + targetCount,
         openedCount: campaign.stats.openedCount + Math.floor(targetCount * 0.7),
       },
     });
-
     return { sentCount: targetCount };
   }
 
-  /**
-   * Hızlı toplu SMS / WhatsApp / Bildirim gönderimi
-   */
-  async sendQuickBroadcast(
-    input: QuickBroadcastInput,
-  ): Promise<{ recipientCount: number }> {
+  async sendQuickBroadcast(input: QuickBroadcastInput): Promise<{ recipientCount: number }> {
     const targetMembers = await this.getTargetMembers(input.segment);
-    const recipientCount = targetMembers.length > 0 ? targetMembers.length : this.getEstimatedAudienceCount(input.segment);
-
-    // SMS kanalı seçildiyse SMS Gateway üzerinden anında ilet
+    const recipientCount =
+      targetMembers.length > 0 ? targetMembers.length : this.getEstimatedAudienceCount(input.segment);
     if (input.channels.includes('sms')) {
-      const phones = targetMembers
-        .map((m) => m.phone)
-        .filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
-
+      const phones = targetMembers.map((m) => m.phone).filter((p): p is string => !!p && p.replace(/\D/g, '').length >= 10);
       if (phones.length > 0) {
-        await this.smsGateway.sendBulkSms({
-          recipients: phones,
-          message: input.message,
-          title: input.title,
-        });
+        await this.smsGateway.sendBulkSms({ recipients: phones, message: input.message, title: input.title });
       }
     }
-
-    // Otomatik bir kampanya kaydı olarak da kaydeder
-    await this.createCampaign({
-      title: input.title,
-      description: `Hızlı Toplu Gönderim: ${input.title}`,
-      type: 'discount',
-      discountType: 'percentage',
-      discountValue: 10,
-      promoCode: input.promoCode || 'OZEL10',
-      validFrom: new Date().toISOString().slice(0, 10),
-      validUntil: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-      status: 'active',
-      targetAudience: input.segment,
-      channels: input.channels,
-      messageTemplate: {
-        inAppTitle: input.title,
-        inAppBody: input.message,
-        smsBody: input.message,
-        whatsappBody: input.message,
-        emailSubject: input.title,
-        emailBody: input.message,
-      },
-    });
-
+    await firstValueFrom(
+      this.api.broadcast({
+        title: input.title,
+        message: input.message,
+        segment: input.segment,
+        channels: input.channels,
+        promoCode: input.promoCode,
+      }),
+    );
+    this.reload$.next();
     return { recipientCount };
   }
 
@@ -430,29 +293,6 @@ export class AdminCampaignsService {
         return 112;
       default:
         return 50;
-    }
-  }
-
-  private async seedInitialCampaigns(tenantId: string): Promise<void> {
-    try {
-      const batch = writeBatch(this.firestore);
-      const colRef = collection(this.firestore, 'gym_campaigns');
-
-      for (const item of INITIAL_CAMPAIGN_SEEDS) {
-        const newDoc = doc(colRef);
-        batch.set(newDoc, {
-          ...item,
-          id: newDoc.id,
-          tenantId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdAtTimestamp: serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-    } catch (err) {
-      console.warn('Otomatik kampanya tohumlama atlandı:', err);
     }
   }
 }

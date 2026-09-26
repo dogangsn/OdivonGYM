@@ -1,28 +1,26 @@
-import { Timestamp } from '@angular/fire/firestore';
-
 export interface GymPackage {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   name: string;
   category?: string;
   durationDays: number;
   durationType?: 'day' | 'month' | 'year';
   durationValue?: number;
-  price: number; // TL
+  price: number;
   description?: string;
-  features: string[]; // List of included features
-  maxFreeze?: number; // days user can freeze membership
+  features: string[];
+  maxFreeze?: number;
   trialEligible: boolean;
-  allowedDays?: number[]; // [1,2,3,4,5,6,7] (1=Pazartesi)
-  checkInStartTime?: string; // Örn '07:00'
-  checkInEndTime?: string; // Örn '22:00'
-  sessionCount?: number | null; // Toplam seans sayısı
+  allowedDays?: number[];
+  checkInStartTime?: string;
+  checkInEndTime?: string;
+  sessionCount?: number | null;
   isUnlimitedSessions?: boolean;
   barcode?: string;
-  isHidden?: boolean; // Web/mobil satışta gizli paket
+  isHidden?: boolean;
   status: 'active' | 'inactive' | 'archived';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserPackagePurchase {
@@ -31,17 +29,17 @@ export interface UserPackagePurchase {
   tenantId: string;
   packageId: string;
   packageName: string;
-  purchaseDate: Timestamp;
-  startDate: Timestamp;
-  endDate: Timestamp;
+  purchaseDate: string;
+  startDate: string;
+  endDate: string;
   autoRenew: boolean;
-  renewalDate?: Timestamp | null;
+  renewalDate?: string | null;
   paymentMethod: 'cash' | 'card' | 'transfer' | 'wallet';
-  price: number; // what was paid
+  price: number;
   status: 'active' | 'expired' | 'cancelled' | 'on-hold';
   notes?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateGymPackageInput {
