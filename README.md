@@ -29,6 +29,14 @@ Firebase Console'da:
 
 ## 2. Config değerlerini yapıştır
 
+Bu iki dosya Git’e girmez. Şablonları kopyalayıp Firebase config’ini yalnızca
+yerelde doldur:
+
+```bash
+cp src/environments/environment.example.ts src/environments/environment.ts
+cp src/environments/environment.development.example.ts src/environments/environment.development.ts
+```
+
 `src/environments/environment.ts` **ve** `src/environments/environment.development.ts`
 içindeki `firebase` alanını kendi projenin değerleriyle doldur:
 
