@@ -45,6 +45,9 @@ saklanmaz.
 ### `gymDeviceCommands/{gateId}_{memberId}` — istenen yetki durumu
 
 Her (cihaz, üye) çifti için **tek belge**; üzerine yazılır, kuyruk büyümez.
+Aynı koleksiyonda eski otomatik kimlikli komut belgeleri de durduğu için istenen
+durum belgeleri `kind: 'userSync'` ile işaretlenir; `work`/`sync` uçları yalnızca
+bunları okur.
 
 | Alan | Tip | Not |
 | --- | --- | --- |
@@ -69,8 +72,10 @@ Hesaplanan alanlar (`userId`, `name`, `card`, `validEnd`, `enabled`) öncekiyle
 aynıysa hiçbir şey yazmaz; farklıysa `version += 1`, `status = 'pending'`,
 `leaseUntil = null`, `lastError = null`.
 
-- `enabled = true` yalnızca üye aktif (iptal/arşiv/dondurulmuş değil), `memberNumber`
-  dolu ve bitiş tarihi bugün (TR) veya sonrası ise.
+- `enabled = true` yalnızca üye aktif (iptal / arşiv / silinmiş değil), `memberNumber`
+  dolu ve bitiş tarihi bugün (TR) veya sonrası ise. Dondurma bugün yalnızca bitiş
+  tarihini ileri attığından ayrı bir "dondurulmuş" durumu yoktur; yeni `validEnd`
+  cihaza gider.
 - `validEnd`: üyeliğin `endsAt` değeri `Europe/Istanbul` saat dilimine çevrilip
   `YYYYMMDD` biçiminde yazılır.
 - Tarayıcı artık `POST /gym/access/commands` ile senkron komutu **göndermez**.
