@@ -1,4 +1,4 @@
-import { Observable, of, startWith, switchMap } from 'rxjs';
+import { EMPTY, Observable, catchError, interval, merge, of, startWith, switchMap } from 'rxjs';
 import { Subject } from 'rxjs';
 import type { UserProfile } from '../models/user-profile.model';
 
@@ -16,15 +16,31 @@ export function tenantReload<T>(
   profile$: Observable<UserProfile | null | undefined>,
   reload$: Subject<void>,
   load: () => Observable<T[]>,
+  refreshMs?: number,
 ): Observable<T[]> {
+  return tenantReloadValue(profile$, reload$, load, [] as T[], refreshMs);
+}
+
+/**
+ * Tenant hazır olunca yükler; `reload$` ile ve (verilirse) `refreshMs` aralığıyla yeniler.
+ * Periyodik yenilemede bir istek hata verirse akış kopmaz, son değer korunur.
+ */
+export function tenantReloadValue<T>(
+  profile$: Observable<UserProfile | null | undefined>,
+  reload$: Subject<void>,
+  load: () => Observable<T>,
+  empty: T,
+  refreshMs?: number,
+): Observable<T> {
   return profile$.pipe(
     switchMap((profile) => {
       if (!profile?.tenantId) {
-        return of([] as T[]);
+        return of(empty);
       }
-      return reload$.pipe(
+      const triggers = refreshMs ? merge(reload$, interval(refreshMs)) : reload$;
+      return triggers.pipe(
         startWith(null),
-        switchMap(() => load()),
+        switchMap(() => (refreshMs ? load().pipe(catchError(() => EMPTY)) : load())),
       );
     }),
   );

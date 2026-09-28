@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject, firstValueFrom } from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
-import { tenantReload } from '../../core/api/unwrap';
+import { tenantReload, tenantReloadValue } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   AccessDirection,
@@ -13,7 +13,35 @@ import {
 } from '../../core/models/access-log.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 
-export type TurnstileConnectionProtocol = 'reverse_tunnel' | 'mqtt' | 'websocket';
+/** Cihaz protokolü; MainApi `capabilities` ve `adapterStatus` değerlerini buna göre türetir. */
+export type DeviceProtocol = 'yt-http-digest' | 'zk-tcp-4370' | 'vendor-sdk';
+
+export const DEVICE_PROTOCOLS: { value: DeviceProtocol; label: string; hint: string; defaultPort: number }[] = [
+  {
+    value: 'yt-http-digest',
+    label: 'YT HTTP (Digest)',
+    hint: 'Olay okuma ve kart / üye no / bitiş günü senkronu. Canlı kullanım öncesi donanım testi gerekir.',
+    defaultPort: 80,
+  },
+  {
+    value: 'zk-tcp-4370',
+    label: 'ZK TCP / 4370',
+    hint: 'Tanımlı, henüz gerçek cihazla doğrulanmadı. Cihaza hiçbir şey yazılmaz.',
+    defaultPort: 4370,
+  },
+  {
+    value: 'vendor-sdk',
+    label: 'Üretici SDK',
+    hint: 'Tanımlı, adapter henüz eklenmedi.',
+    defaultPort: 0,
+  },
+];
+
+export interface DeviceCapabilities {
+  events: boolean;
+  userSync: boolean;
+  doorOpen: boolean;
+}
 
 export interface TurnstileGate {
   id?: string;
@@ -21,15 +49,58 @@ export interface TurnstileGate {
   name: string;
   location: string;
   direction: AccessDirection | 'both';
-  status: 'online' | 'busy' | 'offline';
   readerType: string;
-  connectionProtocol: TurnstileConnectionProtocol;
-  endpoint: string;
-  topicOrChannel?: string;
+  protocol?: DeviceProtocol;
+  host?: string;
   port?: number | null;
-  secretToken?: string | null;
+  agentId?: string | null;
+  /** Sunucu türetir; istemci yazmaz. */
+  capabilities?: DeviceCapabilities;
+  adapterStatus?: 'ready' | 'hardware_pending' | 'not_validated';
+  /** Agent heartbeat'inden hesaplanır. */
+  online?: boolean;
+  lastSeenAt?: string | null;
+  lastError?: string | null;
   createdAt?: unknown;
+  /** Eski kayıtlar (v1 agent) için. */
+  endpoint?: string;
 }
+
+export type CreateGateInput = Pick<TurnstileGate, 'name' | 'location' | 'direction' | 'readerType' | 'protocol' | 'host' | 'port'>;
+
+export interface AccessAgent {
+  id: string;
+  name: string;
+  hostname?: string;
+  agentVersion?: string;
+  gateIds: string[];
+  lastHeartbeatAt?: string | null;
+  online?: boolean;
+  revokedAt?: string | null;
+}
+
+export type DeviceSyncStatus = 'pending' | 'delivered' | 'applied' | 'error';
+
+export interface DeviceSyncItem {
+  id: string;
+  gateId: string;
+  memberId: string;
+  userId: string;
+  name: string;
+  card?: string | null;
+  validEnd?: string | null;
+  enabled: boolean;
+  version: number;
+  status: DeviceSyncStatus;
+  appliedVersion?: number | null;
+  lastError?: string | null;
+  updatedAt?: string | null;
+}
+
+export type DeviceSyncSummary = Record<string, Partial<Record<DeviceSyncStatus, number>>>;
+
+/** Panel verileri bu aralıkla yenilenir (agent 5 sn'de bir tarar). */
+export const ACCESS_REFRESH_MS = 5000;
 
 export interface GateScanResult {
   allowed: boolean;
@@ -49,10 +120,52 @@ export class AdminAccessControlService {
   private readonly reload$ = new Subject<void>();
 
   watchGates(): Observable<TurnstileGate[]> {
-    return tenantReload(this.profile$, this.reload$, () => this.api.listGates() as Observable<TurnstileGate[]>);
+    return tenantReload(
+      this.profile$,
+      this.reload$,
+      () => this.api.listGates() as Observable<TurnstileGate[]>,
+      ACCESS_REFRESH_MS,
+    );
   }
 
-  async createGate(input: Omit<TurnstileGate, 'id' | 'tenantId' | 'createdAt'>): Promise<string> {
+  watchAgents(): Observable<AccessAgent[]> {
+    return tenantReload(
+      this.profile$,
+      this.reload$,
+      () => this.api.listAgents() as Observable<AccessAgent[]>,
+      ACCESS_REFRESH_MS,
+    );
+  }
+
+  watchSyncSummary(): Observable<DeviceSyncSummary> {
+    return tenantReloadValue(
+      this.profile$,
+      this.reload$,
+      () => this.api.syncSummary() as Observable<DeviceSyncSummary>,
+      {} as DeviceSyncSummary,
+      ACCESS_REFRESH_MS,
+    );
+  }
+
+  async listSync(gateId: string, status?: DeviceSyncStatus): Promise<DeviceSyncItem[]> {
+    return (await firstValueFrom(this.api.listSync({ gateId, status }))) as DeviceSyncItem[];
+  }
+
+  async resync(gateId: string): Promise<void> {
+    await firstValueFrom(this.api.resync(gateId));
+    this.reload$.next();
+  }
+
+  async createPairingCode(gateIds: string[]): Promise<{ code: string; expiresAt: string }> {
+    return firstValueFrom(this.api.createPairingCode(gateIds));
+  }
+
+  async revokeAgent(agentId: string): Promise<void> {
+    await firstValueFrom(this.api.revokeAgent(agentId));
+    this.reload$.next();
+  }
+
+  async createGate(input: CreateGateInput): Promise<string> {
     const created = await firstValueFrom(this.api.createGate(input));
     this.reload$.next();
     return (created as TurnstileGate).id ?? '';
@@ -68,7 +181,7 @@ export class AdminAccessControlService {
   }
 
   watchLogs(): Observable<AccessLog[]> {
-    return tenantReload(this.profile$, this.reload$, () => this.api.listLogs());
+    return tenantReload(this.profile$, this.reload$, () => this.api.listLogs(), ACCESS_REFRESH_MS);
   }
 
   async logAccess(input: CreateAccessLogInput): Promise<string> {
@@ -102,19 +215,6 @@ export class AdminAccessControlService {
       gateName: result.gateName || gateName,
       timestamp: result.timestamp ? new Date(result.timestamp) : new Date(),
     };
-  }
-
-  async manualGateOpen(gateName: string, reason: string): Promise<void> {
-    const admin = this.auth.profile();
-    await this.logAccess({
-      userName: admin?.displayName || 'Resepsiyon Yöneticisi',
-      userPhoto: admin?.photoURL,
-      direction: 'in',
-      method: 'manual',
-      status: 'granted',
-      gateName,
-      notes: `Manuel kapı açma: ${reason}`,
-    });
   }
 
   async validateAndProcessDynamicQrToken(
@@ -170,26 +270,5 @@ export class AdminAccessControlService {
       gateName: result.gateName || gateName,
       timestamp: result.timestamp ? new Date(result.timestamp) : new Date(),
     };
-  }
-
-  async requestDeviceSync(): Promise<void> {
-    await firstValueFrom(this.api.queueCommand({ command: 'PULL_LOGS_NOW', targetDevice: 'ALL_GATES' }));
-  }
-
-  async queueMemberDeviceSync(
-    userId: string,
-    displayName: string,
-    action: 'ENABLE' | 'DISABLE' | 'UPDATE_EXPIRY',
-    endsAt?: Date,
-    cardNo?: string,
-  ): Promise<void> {
-    await firstValueFrom(
-      this.api.queueCommand({
-        command: action,
-        userId,
-        displayName,
-        notes: cardNo || (endsAt ? endsAt.toISOString() : ''),
-      }),
-    );
   }
 }

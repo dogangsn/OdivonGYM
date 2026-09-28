@@ -300,12 +300,16 @@ interface QuickAction {
                     [class.text-emerald-700]="log.status === 'granted'"
                     [class.dark:bg-emerald-950/60]="log.status === 'granted'"
                     [class.dark:text-emerald-400]="log.status === 'granted'"
-                    [class.bg-rose-50]="log.status !== 'granted'"
-                    [class.text-rose-700]="log.status !== 'granted'"
-                    [class.dark:bg-rose-950/60]="log.status !== 'granted'"
-                    [class.dark:text-rose-400]="log.status !== 'granted'"
+                    [class.bg-rose-50]="log.status === 'denied' || log.status === 'anti_passback_warning'"
+                    [class.text-rose-700]="log.status === 'denied' || log.status === 'anti_passback_warning'"
+                    [class.dark:bg-rose-950/60]="log.status === 'denied' || log.status === 'anti_passback_warning'"
+                    [class.dark:text-rose-400]="log.status === 'denied' || log.status === 'anti_passback_warning'"
+                    [class.bg-slate-100]="log.status === 'unknown'"
+                    [class.text-slate-600]="log.status === 'unknown'"
+                    [class.dark:bg-slate-800]="log.status === 'unknown'"
+                    [class.dark:text-slate-300]="log.status === 'unknown'"
                   >
-                    {{ log.direction === 'in' ? 'GİRİŞ' : 'ÇIKIŞ' }} · {{ log.status === 'granted' ? 'İzin' : 'Red' }}
+                    {{ log.direction === 'in' ? 'GİRİŞ' : 'ÇIKIŞ' }} · {{ log.status === 'granted' ? 'İzin' : log.status === 'unknown' ? 'Kayıt' : 'Red' }}
                   </span>
                 </div>
               } @empty {
@@ -458,8 +462,10 @@ export class AdminOverview {
       // Demo ve yeni açılan salonlarda hoş bir başlangıç değeri
       return Math.min(this.activeMembers(), 18);
     }
-    const todayIns = logs.filter((l) => l.direction === 'in' && l.status === 'granted').length;
-    const todayOuts = logs.filter((l) => l.direction === 'out' && l.status === 'granted').length;
+    // Cihazın sonuç bildirmediği (unknown) kayıtlar da cihazda oluşmuş geçiş kaydıdır.
+    const passed = (l: { status: string }) => l.status === 'granted' || l.status === 'unknown';
+    const todayIns = logs.filter((l) => l.direction === 'in' && passed(l)).length;
+    const todayOuts = logs.filter((l) => l.direction === 'out' && passed(l)).length;
     return Math.max(0, todayIns - todayOuts);
   });
 

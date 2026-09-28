@@ -8,14 +8,19 @@ import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { AlertService } from '../../core/services/alert.service';
 import {
+  AccessAgent,
   AdminAccessControlService,
+  DEVICE_PROTOCOLS,
+  DeviceProtocol,
+  DeviceSyncItem,
+  DeviceSyncStatus,
+  DeviceSyncSummary,
   GateScanResult,
   TurnstileGate,
-  TurnstileConnectionProtocol,
 } from './admin-access-control.service';
+import { environment } from '../../../environments/environment';
 import { AdminMembersService } from '../members/admin-members.service';
-import { AccessDirection, AccessLog, AccessMethod, AccessStatus } from '../../core/models/access-log.model';
-import { UserProfile } from '../../core/models/user-profile.model';
+import { AccessDirection, AccessStatus } from '../../core/models/access-log.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { RouterLink } from '@angular/router';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
@@ -31,7 +36,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
       <app-page-header
         title="Turnike & Geçiş Kontrol"
         icon="nfc"
-        description="Fiziksel turnikeleri canlı izle, QR/RFID geçiş kayıtlarını denetle ve uzaktan kapı aç."
+        description="Turnike ve kart okuyucuları izle, geçiş kayıtlarını denetle, üye yetkilerinin cihazlara uygulanmasını takip et."
       >
         <div actions class="flex items-center gap-2">
           <button
@@ -40,13 +45,14 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
             class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <mat-icon class="icon-size-4">hub</mat-icon>
-            <span>Cihaz & Edge Agent Kurulumu</span>
+            <span>Edge Agent</span>
           </button>
 
           <button
             type="button"
-            (click)="triggerEmergencyUnlock()"
-            class="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            disabled
+            matTooltip="Uzaktan kapı açma, cihazda güvenli ve süreli röle komutu doğrulanana kadar kapalı."
+            class="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs opacity-50 cursor-not-allowed"
           >
             <mat-icon class="icon-size-4">warning</mat-icon>
             <span>Acil / Tahliye Açılışı</span>
@@ -58,7 +64,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
             class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <mat-icon class="icon-size-4">add</mat-icon>
-            <span>Yeni Turnike Ekle</span>
+            <span>Yeni Cihaz Ekle</span>
           </button>
         </div>
       </app-page-header>
@@ -84,7 +90,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         </div>
       }
 
-      <!-- 2. Turnstile Hardware Grid -->
+      <!-- 2. Cihaz kartları -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         @for (gate of gates(); track gate.id || gate.name) {
           <div
@@ -105,16 +111,33 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </div>
 
                 <div class="flex items-center gap-1.5">
-                  <span
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
-                  >
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Çevrimiçi
-                  </span>
+                  @if (!gate.agentId) {
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                      matTooltip="Bu cihaz henüz bir Edge Agent ile eşleştirilmedi."
+                    >
+                      Agent yok
+                    </span>
+                  } @else if (gate.online) {
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
+                    >
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Çevrimiçi
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60"
+                      [matTooltip]="gate.lastError || 'Agent veya cihazdan son 30 saniyede haber alınamadı.'"
+                    >
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      Çevrimdışı
+                    </span>
+                  }
                   <button
                     type="button"
                     (click)="deleteGate(gate)"
-                    matTooltip="Turnikeyi Sil"
+                    matTooltip="Cihazı Sil"
                     class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center justify-center transition-all cursor-pointer"
                   >
                     <mat-icon class="icon-size-4">delete</mat-icon>
@@ -122,60 +145,74 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </div>
               </div>
 
-              <!-- Protocols & Badges -->
+              <!-- Protokol ve yön -->
               <div class="flex flex-wrap items-center gap-1.5 mt-3">
-                <!-- Protocol Badge -->
-                @if (gate.connectionProtocol === 'reverse_tunnel') {
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                    <mat-icon class="icon-size-3">vpn_lock</mat-icon>
-                    Ters Tünel (Edge Mesh)
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
+                  <mat-icon class="icon-size-3">settings_ethernet</mat-icon>
+                  {{ protocolLabel(gate.protocol) }}
+                </span>
+                @if (gate.adapterStatus === 'hardware_pending') {
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+                    matTooltip="Cihazın bitiş tarihini gerçekten uyguladığı donanım testinde doğrulanmadan canlı kullanıma alınmamalı."
+                  >
+                    Donanım testi bekliyor
                   </span>
-                } @else if (gate.connectionProtocol === 'mqtt') {
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60">
-                    <mat-icon class="icon-size-3">sensors</mat-icon>
-                    MQTT Broker
-                  </span>
-                } @else {
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                    <mat-icon class="icon-size-3">wifi_tethering</mat-icon>
-                    WebSocket (WSS)
+                } @else if (gate.adapterStatus === 'not_validated') {
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    Hazır değil
                   </span>
                 }
-
-                <!-- Direction Badge -->
                 <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {{ gate.direction === 'in' ? 'Yalnızca Giriş' : gate.direction === 'out' ? 'Yalnızca Çıkış' : 'Çift Yönlü (Giriş/Çıkış)' }}
+                  {{ gate.direction === 'in' ? 'Yalnızca Giriş' : gate.direction === 'out' ? 'Yalnızca Çıkış' : 'Çift Yönlü' }}
                 </span>
               </div>
 
-              <!-- Gate Details -->
+              <!-- Ayrıntılar -->
               <div class="grid grid-cols-2 gap-3 mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
                 <div>
-                  <span class="text-[11px] text-slate-400 block">Okuyucu Donanımı</span>
-                  <span class="font-bold text-slate-800 dark:text-slate-200 truncate block">{{ gate.readerType }}</span>
-                </div>
-                <div>
-                  <span class="text-[11px] text-slate-400 block">Uç Nokta / Port</span>
-                  <span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 truncate block" [title]="gate.endpoint">
-                    {{ gate.endpoint }}{{ gate.port ? ':' + gate.port : '' }}
+                  <span class="text-[11px] text-slate-400 block">Yerel Adres</span>
+                  <span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 truncate block">
+                    {{ gate.host || gate.endpoint || '—' }}{{ gate.port ? ':' + gate.port : '' }}
                   </span>
                 </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 block">Son Görülme</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200 truncate block">{{ formatRelative(gate.lastSeenAt) }}</span>
+                </div>
               </div>
+
+              <!-- Üye senkronu -->
+              @if (gate.capabilities?.userSync) {
+                <button
+                  type="button"
+                  (click)="openSyncDrawer(gate)"
+                  class="w-full mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-300 flex items-center justify-between gap-2 text-[11px] cursor-pointer transition-all"
+                  matTooltip="Üye yetkilerinin bu cihaza uygulanma durumu"
+                >
+                  <span class="font-bold text-slate-600 dark:text-slate-300">Üye senkronu</span>
+                  <span class="flex items-center gap-2">
+                    <span class="text-amber-600 dark:text-amber-400">Bekliyor <b>{{ syncCount(gate, 'pending') }}</b></span>
+                    <span class="text-emerald-600 dark:text-emerald-400">Uygulandı <b>{{ syncCount(gate, 'applied') }}</b></span>
+                    <span class="text-rose-600 dark:text-rose-400">Hata <b>{{ syncCount(gate, 'error') }}</b></span>
+                  </span>
+                </button>
+              }
             </div>
 
-            <!-- Manual Open Trigger Button -->
+            <!-- Kapı açma: yalnızca doğrulanmış yetenek varsa -->
             <div class="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
               <span class="text-xs text-slate-400">
-                Bugün: <strong class="text-slate-700 dark:text-slate-200">{{ getGateTodayPasses(gate.name) }}</strong> Geçiş
+                Bugün: <strong class="text-slate-700 dark:text-slate-200">{{ getGateTodayPasses(gate) }}</strong> Geçiş
               </span>
               <button
                 type="button"
-                (click)="openGateManually(gate)"
-                [disabled]="openingGate() === gate.id"
-                class="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                disabled
+                [matTooltip]="gate.capabilities?.doorOpen ? '' : 'Bu cihazda güvenli, süreli röle komutu henüz doğrulanmadı.'"
+                class="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5 opacity-50 cursor-not-allowed"
               >
-                <mat-icon class="icon-size-3.5">{{ openingGate() === gate.id ? 'sync' : 'lock_open' }}</mat-icon>
-                <span>{{ openingGate() === gate.id ? 'Açılıyor...' : 'Kapıyı Aç' }}</span>
+                <mat-icon class="icon-size-3.5">lock_open</mat-icon>
+                <span>Kapıyı Aç</span>
               </button>
             </div>
           </div>
@@ -184,9 +221,9 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
             <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3.5 shadow-xs">
               <mat-icon class="icon-size-7">nfc</mat-icon>
             </div>
-            <h4 class="text-base font-bold text-slate-800 dark:text-white m-0">Henüz Tanımlı Turnike Bulunmuyor</h4>
+            <h4 class="text-base font-bold text-slate-900 dark:text-white m-0">Henüz Tanımlı Cihaz Bulunmuyor</h4>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 mb-5 max-w-md mx-auto">
-              Salonunuzdaki fiziksel turnike ve kapı kontrol ünitelerini (Ters Tünel, MQTT veya WebSocket) bağlamak için 'Yeni Turnike Ekle' butonunu kullanın.
+              Önce cihazı protokolü ve yerel IP adresiyle ekleyin, sonra salondaki bilgisayarda Edge Agent'ı eşleştirin.
             </p>
             <button
               type="button"
@@ -194,7 +231,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <mat-icon class="icon-size-4">add</mat-icon>
-              <span>Yeni Turnike Ekle</span>
+              <span>Yeni Cihaz Ekle</span>
             </button>
           </div>
         }
@@ -237,25 +274,18 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               </span>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-0">
-              Turnikelerden geçen tüm üyelerin anlık onay ve red kayıtları.
+              Cihazlardan ve resepsiyondan gelen geçiş kayıtları.
             </p>
           </div>
 
           <!-- Quick Metrics Pills -->
           <div class="flex flex-wrap items-center gap-2">
-            <!-- Perkotek YT-32 5s Live Sync Indicator -->
-            <div class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300">
+            <div
+              class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300"
+              matTooltip="Kayıtlar ve cihaz durumu 5 saniyede bir yenilenir."
+            >
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="font-bold">5s Canlı Dinleme</span>
-              <button
-                type="button"
-                (click)="manualSyncFromDevice()"
-                [disabled]="isSyncingDevice()"
-                class="ml-0.5 p-1 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg transition-all cursor-pointer text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
-                matTooltip="Perkotek YT-32 Cihazından Şimdi Veri Çek"
-              >
-                <mat-icon class="icon-size-3.5" [class.animate-spin]="isSyncingDevice()">sync</mat-icon>
-              </button>
+              <span class="font-bold">5 sn otomatik yenileme</span>
             </div>
 
             <div class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 text-xs">
@@ -270,6 +300,15 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
               <span>Red: <strong>{{ todayDeniedCount() }}</strong></span>
             </div>
+            @if (todayUnknownCount() > 0) {
+              <div
+                class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"
+                matTooltip="Cihaz bu kayıtlar için izin / red sonucu bildirmedi."
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span>Sonuçsuz: <strong>{{ todayUnknownCount() }}</strong></span>
+              </div>
+            }
           </div>
         </div>
 
@@ -525,22 +564,11 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                   <td class="py-3 px-5 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <span
-                        class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                        [class.bg-emerald-50]="log.status === 'granted'"
-                        [class.dark:bg-emerald-950/60]="log.status === 'granted'"
-                        [class.text-emerald-700]="log.status === 'granted'"
-                        [class.dark:text-emerald-300]="log.status === 'granted'"
-                        [class.border]="true"
-                        [class.border-emerald-200]="log.status === 'granted'"
-                        [class.dark:border-emerald-800/60]="log.status === 'granted'"
-                        [class.bg-rose-50]="log.status !== 'granted'"
-                        [class.dark:bg-rose-950/60]="log.status !== 'granted'"
-                        [class.text-rose-700]="log.status !== 'granted'"
-                        [class.dark:text-rose-300]="log.status !== 'granted'"
-                        [class.border-rose-200]="log.status !== 'granted'"
-                        [class.dark:border-rose-800/60]="log.status !== 'granted'"
+                        class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                        [ngClass]="statusBadgeClass(log.status)"
+                        [matTooltip]="log.status === 'unknown' ? 'Cihaz bu geçiş için izin / red sonucu bildirmedi.' : ''"
                       >
-                        {{ log.status === 'granted' ? 'İzin Verildi' : 'Reddedildi' }}
+                        {{ statusLabel(log.status) }}
                       </span>
                       @if (log.notes) {
                         <span class="text-xs text-slate-400 max-w-xs truncate" [title]="log.notes">{{ log.notes }}</span>
@@ -668,8 +696,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
       <!-- 5. Yeni Turnike Tanımlama Slide-Over Paneli -->
       <app-slide-over
         [open]="isAddGateOpen()"
-        title="Yeni Turnike / Kapı Tanımla"
-        submitLabel="Turnikeyi Kaydet"
+        title="Yeni Cihaz Tanımla"
+        submitLabel="Cihazı Kaydet"
         [submitting]="savingGate()"
         [errorMessage]="addGateError()"
         (closed)="closeAddGateDrawer()"
@@ -713,7 +741,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
             <div>
               <label class="odv-label required">Okuyucu Donanımı</label>
               <select [(ngModel)]="newGate.readerType" class="odv-input">
-                <option value="Perkotek YT-32 Yüz & Kart">Perkotek YT-32 Yüz & Kart Terminali (TCP 4370)</option>
+                <option value="YT Yüz & Kart Terminali">YT Yüz & Kart Terminali</option>
+                <option value="Perkotek YT-32 Yüz & Kart">Perkotek YT-32 Yüz & Kart Terminali</option>
                 <option value="Dinamik QR + NFC Mifare">Dinamik QR + NFC Mifare</option>
                 <option value="Dinamik QR Okuyucu">Dinamik QR Okuyucu</option>
                 <option value="Dinamik QR + Optik Sensör">Dinamik QR + Optik Sensör</option>
@@ -723,149 +752,118 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
             </div>
           </div>
 
-          <!-- Connection Protocol Selector -->
+          <!-- Protokol -->
           <div class="pt-2">
-            <label class="odv-label required">Bağlantı Altyapısı (Protokol)</label>
+            <label class="odv-label required">Cihaz Protokolü</label>
             <div class="grid grid-cols-1 gap-2.5 mt-1.5">
-              <!-- Reverse Tunnel Option -->
-              <label
-                (click)="setProtocol('reverse_tunnel')"
-                class="p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3"
-                [class.border-indigo-600]="newGate.connectionProtocol === 'reverse_tunnel'"
-                [class.bg-indigo-50/40]="newGate.connectionProtocol === 'reverse_tunnel'"
-                [class.dark:bg-indigo-950/30]="newGate.connectionProtocol === 'reverse_tunnel'"
-                [class.border-slate-200]="newGate.connectionProtocol !== 'reverse_tunnel'"
-                [class.dark:border-slate-800]="newGate.connectionProtocol !== 'reverse_tunnel'"
-              >
-                <input
-                  type="radio"
-                  name="protocol"
-                  value="reverse_tunnel"
-                  [checked]="newGate.connectionProtocol === 'reverse_tunnel'"
-                  class="mt-1 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <div class="flex items-center gap-1.5">
-                    <mat-icon class="icon-size-4 text-purple-600 dark:text-purple-400">vpn_lock</mat-icon>
-                    <span class="text-xs font-bold text-slate-900 dark:text-white">Ters Yönlü Tünel (Reverse Tunnel)</span>
+              @for (proto of deviceProtocols; track proto.value) {
+                <label
+                  (click)="setProtocol(proto.value)"
+                  class="p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3"
+                  [class.border-indigo-600]="newGate.protocol === proto.value"
+                  [class.bg-indigo-50/40]="newGate.protocol === proto.value"
+                  [class.dark:bg-indigo-950/30]="newGate.protocol === proto.value"
+                  [class.border-slate-200]="newGate.protocol !== proto.value"
+                  [class.dark:border-slate-800]="newGate.protocol !== proto.value"
+                >
+                  <input
+                    type="radio"
+                    name="protocol"
+                    [value]="proto.value"
+                    [checked]="newGate.protocol === proto.value"
+                    class="mt-1 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">{{ proto.label }}</span>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-0">{{ proto.hint }}</p>
                   </div>
-                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                    Statik IP gerektirmeden, yerel ağdaki turnikeyi güvenli SSH/TLS ters tüneli ile bulut sunucuya bağlar.
-                  </p>
-                </div>
-              </label>
-
-              <!-- MQTT Option -->
-              <label
-                (click)="setProtocol('mqtt')"
-                class="p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3"
-                [class.border-indigo-600]="newGate.connectionProtocol === 'mqtt'"
-                [class.bg-indigo-50/40]="newGate.connectionProtocol === 'mqtt'"
-                [class.dark:bg-indigo-950/30]="newGate.connectionProtocol === 'mqtt'"
-                [class.border-slate-200]="newGate.connectionProtocol !== 'mqtt'"
-                [class.dark:border-slate-800]="newGate.connectionProtocol !== 'mqtt'"
-              >
-                <input
-                  type="radio"
-                  name="protocol"
-                  value="mqtt"
-                  [checked]="newGate.connectionProtocol === 'mqtt'"
-                  class="mt-1 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <div class="flex items-center gap-1.5">
-                    <mat-icon class="icon-size-4 text-sky-600 dark:text-sky-400">sensors</mat-icon>
-                    <span class="text-xs font-bold text-slate-900 dark:text-white">MQTT IoT Broker</span>
-                  </div>
-                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                    Düşük gecikmeli IoT publish/subscribe mesajlaşma mimarisiyle turnike aç/kapa komutları iletilir.
-                  </p>
-                </div>
-              </label>
-
-              <!-- WebSocket Option -->
-              <label
-                (click)="setProtocol('websocket')"
-                class="p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3"
-                [class.border-indigo-600]="newGate.connectionProtocol === 'websocket'"
-                [class.bg-indigo-50/40]="newGate.connectionProtocol === 'websocket'"
-                [class.dark:bg-indigo-950/30]="newGate.connectionProtocol === 'websocket'"
-                [class.border-slate-200]="newGate.connectionProtocol !== 'websocket'"
-                [class.dark:border-slate-800]="newGate.connectionProtocol !== 'websocket'"
-              >
-                <input
-                  type="radio"
-                  name="protocol"
-                  value="websocket"
-                  [checked]="newGate.connectionProtocol === 'websocket'"
-                  class="mt-1 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <div class="flex items-center gap-1.5">
-                    <mat-icon class="icon-size-4 text-emerald-600 dark:text-emerald-400">wifi_tethering</mat-icon>
-                    <span class="text-xs font-bold text-slate-900 dark:text-white">WebSocket Ters Tünel (WSS Gateway)</span>
-                  </div>
-                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                    Çift yönlü canlı TCP soket hattı ve ters tünel ile turnike tetiklemeleri ve kart okutma anında ekrana düşer.
-                  </p>
-                </div>
-              </label>
+                </label>
+              }
             </div>
           </div>
 
-          <!-- Protocol Specific Inputs -->
-          <div>
-            <label class="odv-label required">
-              {{ newGate.connectionProtocol === 'reverse_tunnel' ? 'Ters Tünel Uç Noktası (Tunnel Host / URI)' : newGate.connectionProtocol === 'mqtt' ? 'MQTT Broker Adresi (Broker Host)' : 'WebSocket Uç Noktası (WSS URL)' }}
-            </label>
-            <input
-              type="text"
-              [(ngModel)]="newGate.endpoint"
-              [placeholder]="newGate.connectionProtocol === 'reverse_tunnel' ? 'edge-tunnel://gate01.internal-mesh:2201' : newGate.connectionProtocol === 'mqtt' ? 'mqtt://broker.odivon.com:1883' : 'wss://turnstile-gateway.odivon.com/ws/gate-01'"
-              class="odv-input font-mono text-xs"
-            />
-          </div>
-
-          @if (newGate.connectionProtocol === 'mqtt') {
-            <div>
-              <label class="odv-label">MQTT Konu / Kanal (Topic)</label>
-              <input
-                type="text"
-                [(ngModel)]="newGate.topicOrChannel"
-                placeholder="Örn: odivon/gates/main-gate/events"
-                class="odv-input font-mono text-xs"
-              />
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-2">
+              <label class="odv-label required">Cihazın Yerel IP Adresi</label>
+              <input type="text" [(ngModel)]="newGate.host" placeholder="192.168.1.201" class="odv-input font-mono text-xs" />
             </div>
-          }
-
-          <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="odv-label">Port</label>
-              <input
-                type="number"
-                [(ngModel)]="newGate.port"
-                [placeholder]="newGate.connectionProtocol === 'mqtt' ? '1883' : '8080'"
-                class="odv-input font-mono text-xs"
-              />
-            </div>
-            <div>
-              <label class="odv-label">Yetki / Gizli Anahtar (Opsiyonel)</label>
-              <input
-                type="password"
-                [(ngModel)]="newGate.secretToken"
-                placeholder="••••••••"
-                class="odv-input font-mono text-xs"
-              />
+              <input type="number" [(ngModel)]="newGate.port" class="odv-input font-mono text-xs" />
             </div>
           </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0">
+            Cihaz kullanıcı adı ve parolası buluta gönderilmez; salondaki bilgisayarda Edge Agent'ın
+            <code>config.json</code> dosyasına yazılır.
+          </p>
         </div>
       </app-slide-over>
 
-      <!-- 6. Edge Agent & Donanım Kurulum Sihirbazı Modalı -->
+      <!-- 6. Üye senkron ayrıntısı -->
+      <app-slide-over
+        [open]="!!syncGate()"
+        [title]="'Üye Senkronu · ' + (syncGate()?.name || '')"
+        submitLabel="Tümünü Yeniden Senkronla"
+        [submitting]="resyncing()"
+        (closed)="closeSyncDrawer()"
+        (close)="closeSyncDrawer()"
+        (submitted)="resyncGate()"
+        (save)="resyncGate()"
+      >
+        <div class="space-y-3">
+          <div class="inline-flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-xl text-xs font-semibold">
+            @for (f of syncFilters; track f.value) {
+              <button
+                type="button"
+                (click)="setSyncFilter(f.value)"
+                class="px-3 py-1 rounded-lg transition-all cursor-pointer"
+                [class.bg-white]="syncFilter() === f.value"
+                [class.dark:bg-slate-700]="syncFilter() === f.value"
+                [class.shadow-2xs]="syncFilter() === f.value"
+                [class.text-slate-500]="syncFilter() !== f.value"
+              >
+                {{ f.label }}
+              </button>
+            }
+          </div>
+
+          @if (syncLoading()) {
+            <p class="text-xs text-slate-400 m-0">Yükleniyor…</p>
+          }
+          <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800">
+            @for (item of syncItems(); track item.id) {
+              <div class="p-3 flex items-start justify-between gap-3 text-xs">
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-900 dark:text-white truncate">{{ item.name || item.userId }}</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                    No {{ item.userId }} · Kart {{ item.card || '—' }} · Bitiş {{ formatDay(item.validEnd) }}
+                    @if (!item.enabled) {
+                      · <span class="text-rose-600 dark:text-rose-400">yetki kapalı</span>
+                    }
+                  </div>
+                  @if (item.status === 'error' && item.lastError) {
+                    <div class="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">{{ item.lastError }}</div>
+                  }
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap" [ngClass]="syncBadgeClass(item.status)">
+                  {{ syncStatusLabel(item.status) }}
+                </span>
+              </div>
+            } @empty {
+              <p class="p-4 text-xs text-slate-400 text-center m-0">Bu filtrede kayıt yok.</p>
+            }
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0">
+            "Uygulandı" yalnızca agent cihazdan geri okuyup doğruladığında gösterilir. Yeniden senkron,
+            bu cihaz için tüm üyelerin yetkisini yeniden hesaplayıp beklemeye alır.
+          </p>
+        </div>
+      </app-slide-over>
+
+      <!-- 7. Edge Agent eşleştirme ve durum -->
       @if (showAgentWizard()) {
         <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 font-sans animate-in fade-in duration-200">
           <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <!-- Modal Header -->
             <div class="p-5 sm:p-6 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between shrink-0">
               <div class="flex items-center gap-3.5">
                 <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
@@ -873,19 +871,14 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </div>
                 <div>
                   <div class="flex items-center gap-2">
-                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white m-0">
-                      Perkotek & Donanım Edge Agent Kurulumu
-                    </h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
-                      v1.0.0
-                    </span>
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white m-0">Edge Agent</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">v2</span>
                   </div>
                   <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                    Yerel ağdaki Perkotek YT-32 turnike cihazınız ile bulut sistemini 5 saniyede bir senkronize edin.
+                    Salondaki bilgisayarda çalışır, cihazlarla yerel ağda konuşur ve MainApi'ye yalnızca giden HTTPS ile bağlanır.
                   </p>
                 </div>
               </div>
-
               <button
                 type="button"
                 (click)="closeAgentWizard()"
@@ -895,314 +888,180 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               </button>
             </div>
 
-            <!-- Tab Navigation Bar -->
             <div class="flex items-center gap-2 px-6 pt-3 border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-              <button
-                type="button"
-                (click)="wizardTab.set('quick')"
-                class="px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [class.border-indigo-600]="wizardTab() === 'quick'"
-                [class.text-indigo-600]="wizardTab() === 'quick'"
-                [class.dark:text-indigo-400]="wizardTab() === 'quick'"
-                [class.border-transparent]="wizardTab() !== 'quick'"
-                [class.text-slate-500]="wizardTab() !== 'quick'"
-                [class.hover:text-slate-800]="wizardTab() !== 'quick'"
-              >
-                <mat-icon class="icon-size-4">rocket_launch</mat-icon>
-                <span>Hızlı Kurulum & config.json</span>
-              </button>
-
-              <button
-                type="button"
-                (click)="wizardTab.set('test')"
-                class="px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [class.border-indigo-600]="wizardTab() === 'test'"
-                [class.text-indigo-600]="wizardTab() === 'test'"
-                [class.dark:text-indigo-400]="wizardTab() === 'test'"
-                [class.border-transparent]="wizardTab() !== 'test'"
-                [class.text-slate-500]="wizardTab() !== 'test'"
-                [class.hover:text-slate-800]="wizardTab() !== 'test'"
-              >
-                <mat-icon class="icon-size-4">bolt</mat-icon>
-                <span>Canlı Donanım & Röle Testi</span>
-              </button>
-
-              <button
-                type="button"
-                (click)="wizardTab.set('guide')"
-                class="px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [class.border-indigo-600]="wizardTab() === 'guide'"
-                [class.text-indigo-600]="wizardTab() === 'guide'"
-                [class.dark:text-indigo-400]="wizardTab() === 'guide'"
-                [class.border-transparent]="wizardTab() !== 'guide'"
-                [class.text-slate-500]="wizardTab() !== 'guide'"
-                [class.hover:text-slate-800]="wizardTab() !== 'guide'"
-              >
-                <mat-icon class="icon-size-4">menu_book</mat-icon>
-                <span>Adım Adım Kılavuz (.md)</span>
-              </button>
+              @for (tab of wizardTabs; track tab.value) {
+                <button
+                  type="button"
+                  (click)="wizardTab.set(tab.value)"
+                  class="px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer"
+                  [class.border-indigo-600]="wizardTab() === tab.value"
+                  [class.text-indigo-600]="wizardTab() === tab.value"
+                  [class.dark:text-indigo-400]="wizardTab() === tab.value"
+                  [class.border-transparent]="wizardTab() !== tab.value"
+                  [class.text-slate-500]="wizardTab() !== tab.value"
+                >
+                  <mat-icon class="icon-size-4">{{ tab.icon }}</mat-icon>
+                  <span>{{ tab.label }}</span>
+                </button>
+              }
             </div>
 
-            <!-- Tab Contents (Scrollable Body) -->
             <div class="p-6 overflow-y-auto space-y-6">
-              @if (wizardTab() === 'quick') {
-                <!-- 1. Ajan Paketini İndir Hero Banner -->
+              @if (wizardTab() === 'pair') {
                 <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                   <div class="flex items-center gap-3.5">
                     <div class="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0">
                       <mat-icon class="text-2xl">folder_zip</mat-icon>
                     </div>
                     <div>
-                      <div class="flex items-center gap-2">
-                        <span class="font-extrabold text-sm sm:text-base block">Odivon Perkotek Edge Agent Paketi (Windows / Linux)</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">.ZIP</span>
-                      </div>
-                      <span class="text-xs text-slate-300 mt-0.5 block">
-                        Kurulum dosyaları, başlatıcı bat dosyası ve hazır köprü kodlarını içeren temiz paket.
-                      </span>
+                      <span class="font-extrabold text-sm sm:text-base block">OdivonGYM Edge Agent (Windows)</span>
+                      <span class="text-xs text-slate-300 mt-0.5 block">Node.js 22.13+ gerekir; ek paket kurulmaz. Firebase anahtarı gerekmez.</span>
                     </div>
                   </div>
-
                   <a
-                    href="/downloads/odivon-perkotek-edge-agent.zip"
-                    download="odivon-perkotek-edge-agent.zip"
+                    href="/downloads/odivon-gym-edge-agent.zip"
+                    download="odivon-gym-edge-agent.zip"
                     class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer no-underline flex items-center gap-2"
                   >
                     <mat-icon class="icon-size-4">download</mat-icon>
-                    <span>Ajan Paketini İndir (.ZIP)</span>
+                    <span>Agent'ı İndir (.ZIP)</span>
                   </a>
                 </div>
 
-                <!-- Salon Kimliği Bilgi Şeridi -->
-                <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 block">
-                      Salonunuza Özel Kimlik (Tenant ID)
-                    </span>
-                    <span class="font-mono text-sm font-black text-slate-900 dark:text-white select-all">
-                      {{ currentTenantId() }}
-                    </span>
+                <!-- Adım 1: cihaz seç ve kod üret -->
+                <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">1. Agent'ın yöneteceği cihazları seçin</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (gate of gates(); track gate.id) {
+                      <label class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs cursor-pointer">
+                        <input type="checkbox" [checked]="pairGateIds().includes(gate.id!)" (change)="togglePairGate(gate.id!)" />
+                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ gate.name }}</span>
+                        <span class="font-mono text-[11px] text-slate-400">{{ gate.host || '—' }}</span>
+                      </label>
+                    } @empty {
+                      <p class="text-xs text-slate-500 m-0">Önce "Yeni Cihaz Ekle" ile cihaz tanımlayın.</p>
+                    }
                   </div>
-                  <span class="text-[11px] text-slate-500 dark:text-slate-400">
-                    Ajan bu kimlik üzerinden salonunuza ait geçiş kuyruğunu eşler.
-                  </span>
-                </div>
-
-                <!-- 3 Adımda Kurulum Akışı -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <!-- Adım 1 -->
-                  <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col justify-between space-y-3">
-                    <div class="space-y-2">
-                      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-wider">
-                        <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-[11px]">1</span>
-                        <span>Cihaz IP'si Verin</span>
-                      </div>
-                      <p class="text-xs text-slate-600 dark:text-slate-300 m-0">
-                        Perkotek YT-32 cihazında <b>M/OK > İletişim > Ağ</b> menüsünden sabit IP atayın.
-                      </p>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 font-mono text-xs text-slate-700 dark:text-slate-200 text-center">
-                      IP: {{ wizardDeviceIp() }} : 4370
-                    </div>
-                  </div>
-
-                  <!-- Adım 2 -->
-                  <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col justify-between space-y-3">
-                    <div class="space-y-2">
-                      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-wider">
-                        <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-[11px]">2</span>
-                        <span>Dosyaları Kopyalayın</span>
-                      </div>
-                      <p class="text-xs text-slate-600 dark:text-slate-300 m-0">
-                        Firebase'den aldığınız <b>serviceAccountKey.json</b> dosyasını <b>edge-agent/</b> klasörüne yapıştırın.
-                      </p>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs text-center flex items-center justify-center gap-1.5">
-                      <mat-icon class="icon-size-4">check_circle</mat-icon>
-                      <span>serviceAccountKey.json Hazır</span>
-                    </div>
-                  </div>
-
-                  <!-- Adım 3 -->
-                  <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col justify-between space-y-3">
-                    <div class="space-y-2">
-                      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-wider">
-                        <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-[11px]">3</span>
-                        <span>Ajanı Başlatın</span>
-                      </div>
-                      <p class="text-xs text-slate-600 dark:text-slate-300 m-0">
-                        Resepsiyon PC'sinde <b>baslat.bat</b> dosyasına çift tıklayın veya terminalden çalıştırın.
-                      </p>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 font-mono text-xs text-slate-700 dark:text-slate-200 text-center">
-                      baslat.bat ➜ Çift Tıkla
-                    </div>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      (click)="generatePairingCode()"
+                      [disabled]="pairGateIds().length === 0 || generatingCode()"
+                      class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                    >
+                      <mat-icon class="icon-size-4">key</mat-icon>
+                      <span>{{ generatingCode() ? 'Oluşturuluyor…' : 'Eşleştirme Kodu Oluştur' }}</span>
+                    </button>
+                    @if (pairingCode(); as pc) {
+                      <span class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-base font-black tracking-widest text-emerald-700 dark:text-emerald-300 select-all">
+                        {{ pc.code }}
+                      </span>
+                      <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                        Tek kullanımlık, {{ formatClock(pc.expiresAt) }} saatine kadar geçerli.
+                      </span>
+                    }
                   </div>
                 </div>
 
-                <!-- config.json Oluşturucu & İndirme Alanı -->
-                <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+                <!-- Adım 2: config.json -->
+                <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0 flex items-center gap-1.5">
-                        <mat-icon class="icon-size-4 text-indigo-600">settings</mat-icon>
-                        <span>Hazır Yapılandırma Dosyası (config.json)</span>
-                      </h4>
+                      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">2. config.json</h4>
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                        Cihazınızın IP adresini girip tek tıkla hazır dosyanızı indirin veya kopyalayın.
+                        Cihaz parolasını salondaki bilgisayarda bu dosyaya yazın; buluta gönderilmez.
                       </p>
                     </div>
-
                     <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        (click)="copyConfigJson()"
-                        class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
+                      <button type="button" (click)="copyConfigJson()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
                         <mat-icon class="icon-size-4">content_copy</mat-icon>
                         <span>Kopyala</span>
                       </button>
-                      <button
-                        type="button"
-                        (click)="downloadConfigFile()"
-                        class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                      >
+                      <button type="button" (click)="downloadConfigFile()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
                         <mat-icon class="icon-size-4">download</mat-icon>
-                        <span>config.json İndir</span>
+                        <span>İndir</span>
                       </button>
                     </div>
                   </div>
-
-                  <!-- Parametre Girişleri -->
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div>
-                      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                        Perkotek Cihaz Yerel IP
-                      </label>
-                      <input
-                        type="text"
-                        [value]="wizardDeviceIp()"
-                        (input)="wizardDeviceIp.set($any($event.target).value)"
-                        placeholder="192.168.1.201"
-                        class="w-full px-3 py-2 rounded-xl text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                        Turnike / Kapı Adı
-                      </label>
-                      <input
-                        type="text"
-                        [value]="wizardGateName()"
-                        (input)="wizardGateName.set($any($event.target).value)"
-                        placeholder="Turnike 1 - Ana Giriş"
-                        class="w-full px-3 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
+                  <div class="rounded-xl bg-slate-950 text-slate-200 p-4 font-mono text-xs border border-slate-800 max-h-48 overflow-y-auto">
+                    <pre class="m-0 leading-relaxed">{{ generatedConfigJson() }}</pre>
                   </div>
+                </div>
 
-                  <!-- JSON Önizleme -->
-                  <div class="relative rounded-xl overflow-hidden bg-slate-950 text-slate-200 p-4 font-mono text-xs border border-slate-800 max-h-48 overflow-y-auto">
-                    <pre class="m-0 leading-relaxed">{{ getGeneratedConfigJson() }}</pre>
+                <!-- Adım 3 -->
+                <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">3. Başlatın</h4>
+                  <p class="m-0"><b>baslat.bat</b> dosyasına çift tıklayın; ilk açılışta eşleştirme kodunu sorar. Komut satırından:</p>
+                  <div class="p-3 rounded-xl bg-slate-950 text-slate-200 font-mono text-[11px] space-y-1">
+                    <div>npm run enroll -- {{ pairingCode()?.code || 'KOD' }}</div>
+                    <div>npm start</div>
                   </div>
                 </div>
               }
 
-              @if (wizardTab() === 'test') {
-                <div class="space-y-4">
-                  <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
-                    <mat-icon class="icon-size-5 shrink-0">info</mat-icon>
-                    <span>
-                      Bu test komutları buluttan <b>device_commands</b> kuyruğuna yazılır. Resepsiyon bilgisayarındaki Edge Agent komutu anında okur ve Perkotek donanımına iletir.
-                    </span>
-                  </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Test 1: Log Senkronizasyonu -->
-                    <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 flex flex-col justify-between">
-                      <div>
+              @if (wizardTab() === 'agents') {
+                <div class="space-y-3">
+                  @for (agent of agents(); track agent.id) {
+                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                          <mat-icon class="text-indigo-600">sync</mat-icon>
-                          <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Canlı Geçişleri Çek</h4>
+                          <span class="font-bold text-sm text-slate-900 dark:text-white">{{ agent.name }}</span>
+                          @if (agent.revokedAt) {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">İptal edildi</span>
+                          } @else if (agent.online) {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">Çevrimiçi</span>
+                          } @else {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">Çevrimdışı</span>
+                          }
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-0">
-                          Perkotek YT-32 cihazında biriken yeni kart/yüz geçişlerini 5 saniyelik periyodu beklemeden hemen OdivonGYM'e çeker.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        (click)="wizardTriggerSync()"
-                        [disabled]="testingSync()"
-                        class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 transition-all"
-                      >
-                        <mat-icon class="icon-size-4" [class.animate-spin]="testingSync()">refresh</mat-icon>
-                        <span>{{ testingSync() ? 'Çekim Emri Gönderiliyor…' : 'Hemen Logları Çek (Sync Now)' }}</span>
-                      </button>
-                    </div>
-
-                    <!-- Test 2: Turnike Röle Açma -->
-                    <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 flex flex-col justify-between">
-                      <div>
-                        <div class="flex items-center gap-2">
-                          <mat-icon class="text-emerald-600">lock_open</mat-icon>
-                          <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Turnikeyi Aç (Röle Testi)</h4>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {{ agent.hostname || '—' }} · v{{ agent.agentVersion || '?' }} · Son heartbeat: {{ formatRelative(agent.lastHeartbeatAt) }}
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-0">
-                          Perkotek cihazının kuru kontak rölesini 4 saniye boyunca tetikleyerek turnikenin serbest dönmesini sağlar.
-                        </p>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">Cihazlar: {{ gateNames(agent.gateIds) }}</div>
                       </div>
-
-                      <button
-                        type="button"
-                        (click)="wizardTriggerUnlock()"
-                        [disabled]="testingUnlock()"
-                        class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 transition-all"
-                      >
-                        <mat-icon class="icon-size-4" [class.animate-spin]="testingUnlock()">lock_open</mat-icon>
-                        <span>{{ testingUnlock() ? 'Kapı Açılıyor…' : 'Turnikeyi Aç (4 sn Serbest Bırak)' }}</span>
-                      </button>
+                      @if (!agent.revokedAt) {
+                        <button
+                          type="button"
+                          (click)="revokeAgent(agent)"
+                          class="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-xs font-bold cursor-pointer self-start sm:self-auto"
+                        >
+                          İptal Et
+                        </button>
+                      }
                     </div>
-                  </div>
+                  } @empty {
+                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0">Henüz eşleştirilmiş agent yok.</p>
+                  }
                 </div>
               }
 
               @if (wizardTab() === 'guide') {
                 <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0 flex items-center gap-1.5">
-                      <mat-icon class="icon-size-4 text-indigo-600">terminal</mat-icon>
-                      <span>7/24 Kesintisiz Windows Servisi Yapma (PM2)</span>
-                    </h4>
+                  <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Canlıya almadan önce donanım testi</h4>
                     <p class="m-0">
-                      Resepsiyon bilgisayarı yeniden başladığında ajan servisi otomatik çalışsın istiyorsanız terminalde şu 3 komutu çalıştırmanız yeterlidir:
+                      Test kartıyla cihazda kullanıcı oluşturma, kart değiştirme, iptal ve bitiş günü sonunda geçişin
+                      gerçekten engellendiğini doğrulayın; cihazı yeniden başlatıp yetkilerin korunduğunu kontrol edin.
+                      Cihaz saatinin Türkiye saatinde olduğundan emin olun.
                     </p>
-                    <div class="p-3 rounded-xl bg-slate-950 text-slate-200 font-mono text-[11px] space-y-1">
-                      <div>npm install -g pm2 pm2-windows-startup</div>
-                      <div>pm2-startup install</div>
-                      <div>pm2 start agent.js --name "odivon-turnike"</div>
-                      <div>pm2 save</div>
-                    </div>
                   </div>
-
                   <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0 flex items-center gap-1.5">
-                      <mat-icon class="icon-size-4 text-indigo-600">security</mat-icon>
-                      <span>Güvenlik Duvarı & Port 4370 İzni</span>
-                    </h4>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Eski agent'tan geçiş</h4>
                     <p class="m-0">
-                      Perkotek ve ZKTeco cihazları varsayılan olarak <b>4370 TCP ve UDP</b> portlarını kullanır. Bilgisayarınızdan cihaza ping atılamıyorsa veya timeout alıyorsanız modemde ve Windows Defender Güvenlik Duvarı'nda Port 4370'e izin verildiğinden emin olun.
+                      Yeni agent'ın olay akışı ve üye senkronu doğrulandıktan sonra Firestore'a doğrudan yazan eski agent'ı
+                      durdurun, bilgisayardaki <code>serviceAccountKey.json</code> dosyasını silin ve Firebase Console'da
+                      ilgili hizmet hesabı anahtarını iptal edin.
                     </p>
+                  </div>
+                  <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Bilgisayar açılınca otomatik başlatma</h4>
+                    <p class="m-0"><code>Windows + R</code> → <code>shell:startup</code> klasörüne <b>baslat.bat</b> kısayolunu koyun.</p>
                   </div>
                 </div>
               }
             </div>
 
-            <!-- Modal Footer -->
-            <div class="p-4 sm:p-5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between gap-3 shrink-0">
-              <span class="text-xs text-slate-500 dark:text-slate-400">
-                Ajan klasörü: <code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[11px] font-mono">edge-agent/</code>
-              </span>
+            <div class="p-4 sm:p-5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 (click)="closeAgentWizard()"
@@ -1224,19 +1083,23 @@ export class AdminAccessControl implements OnInit {
   private readonly auth = inject(AuthService);
   protected readonly saasSub = inject(SaasSubscriptionService);
 
-  protected readonly currentTenantId = computed(
-    () => this.auth.profile()?.tenantId || this.auth.profile()?.uid || 'SZy9Bm141T86bnG6hUn4',
-  );
+  protected readonly deviceProtocols = DEVICE_PROTOCOLS;
 
-  // Agent Wizard State
+  // Edge Agent penceresi
   protected readonly showAgentWizard = signal(false);
-  protected readonly wizardTab = signal<'quick' | 'test' | 'guide'>('quick');
-  protected readonly wizardDeviceIp = signal('192.168.1.201');
-  protected readonly wizardGateName = signal('Turnike 1 - Ana Giriş');
-  protected readonly testingUnlock = signal(false);
-  protected readonly testingSync = signal(false);
+  protected readonly wizardTab = signal<'pair' | 'agents' | 'guide'>('pair');
+  protected readonly wizardTabs = [
+    { value: 'pair' as const, label: 'Eşleştir & Kur', icon: 'link' },
+    { value: 'agents' as const, label: 'Agent Durumu', icon: 'monitor_heart' },
+    { value: 'guide' as const, label: 'Test & Geçiş', icon: 'menu_book' },
+  ];
+  protected readonly pairGateIds = signal<string[]>([]);
+  protected readonly pairingCode = signal<{ code: string; expiresAt: string } | null>(null);
+  protected readonly generatingCode = signal(false);
 
   openAgentWizard(): void {
+    this.pairingCode.set(null);
+    this.pairGateIds.set(this.gates().filter((g) => g.id && !g.agentId).map((g) => g.id!));
     this.showAgentWizard.set(true);
   }
 
@@ -1244,77 +1107,190 @@ export class AdminAccessControl implements OnInit {
     this.showAgentWizard.set(false);
   }
 
-  getGeneratedConfigJson(): string {
+  protected togglePairGate(gateId: string): void {
+    this.pairGateIds.update((ids) => (ids.includes(gateId) ? ids.filter((id) => id !== gateId) : [...ids, gateId]));
+  }
+
+  protected async generatePairingCode(): Promise<void> {
+    this.generatingCode.set(true);
+    try {
+      this.pairingCode.set(await this.accessService.createPairingCode(this.pairGateIds()));
+    } catch (e: any) {
+      this.alertService.toastError(e?.error?.error?.message || e?.message || 'Eşleştirme kodu oluşturulamadı.');
+    } finally {
+      this.generatingCode.set(false);
+    }
+  }
+
+  protected async revokeAgent(agent: AccessAgent): Promise<void> {
+    const ok = await this.alertService.deleteConfirm(
+      agent.name,
+      'Agent kimliği iptal edilir ve cihazlarıyla bağlantısı kesilir. Yeniden kullanmak için yeni eşleştirme kodu gerekir.',
+    );
+    if (!ok) return;
+    await this.accessService.revokeAgent(agent.id);
+    this.alertService.toastSuccess(`${agent.name} iptal edildi.`);
+  }
+
+  protected gateNames(ids: string[] | undefined): string {
+    const names = (ids ?? []).map((id) => this.gates().find((g) => g.id === id)?.name ?? id);
+    return names.length ? names.join(', ') : '—';
+  }
+
+  protected readonly generatedConfigJson = computed(() => {
+    const hosts = this.gates()
+      .filter((g) => g.id && this.pairGateIds().includes(g.id) && g.host)
+      .map((g) => g.host!);
+    const credentials = Object.fromEntries(
+      (hosts.length ? hosts : ['192.168.1.201']).map((host) => [host, { username: 'admin', password: 'CIHAZ_PAROLASI' }]),
+    );
     return JSON.stringify(
       {
-        tenantId: this.currentTenantId(),
-        device: {
-          ip: this.wizardDeviceIp(),
-          port: 4370,
-          timeout: 5000,
-          inMemory: true,
-          gateName: this.wizardGateName(),
-          direction: 'in',
-        },
-        polling: {
-          intervalSeconds: 5,
-          stateFilePath: './state.json',
-        },
-        firebase: {
-          serviceAccountKeyPath: './serviceAccountKey.json',
-        },
+        mainApiUrl: environment.apiBaseUrl.startsWith('http') ? environment.apiBaseUrl : 'https://mainapi.odivon.com/api/v1',
+        agentName: 'Resepsiyon PC',
+        pollIntervalSeconds: 5,
+        heartbeatIntervalSeconds: 15,
+        dataDir: './data',
+        credentials,
       },
       null,
       2,
     );
-  }
+  });
 
   downloadConfigFile(): void {
-    const jsonStr = this.getGeneratedConfigJson();
-    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const blob = new Blob([this.generatedConfigJson()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'config.json';
     a.click();
     URL.revokeObjectURL(url);
-    this.alertService.toastSuccess('config.json dosyanız salon kodunuzla birlikte indirildi.');
+    this.alertService.toastSuccess('config.json indirildi. Cihaz parolasını dosyada düzenleyin.');
   }
 
   copyConfigJson(): void {
-    navigator.clipboard.writeText(this.getGeneratedConfigJson());
+    navigator.clipboard.writeText(this.generatedConfigJson());
     this.alertService.toastSuccess('Yapılandırma panoya kopyalandı.');
   }
 
-  async wizardTriggerSync(): Promise<void> {
-    this.testingSync.set(true);
-    try {
-      await this.accessService.requestDeviceSync();
-      this.alertService.toastSuccess(
-        'Canlı geçişleri çekme emri cihaza iletildi. Birkaç saniye içinde kayıtlar panele yansıyacak.',
-      );
-    } catch {
-      this.alertService.toastError('Senkronizasyon emri iletilemedi.');
-    } finally {
-      setTimeout(() => this.testingSync.set(false), 1500);
-    }
-  }
-
-  async wizardTriggerUnlock(): Promise<void> {
-    this.testingUnlock.set(true);
-    try {
-      await this.accessService.manualGateOpen(this.wizardGateName(), 'Edge Agent Testi (Sihirbaz)');
-      this.alertService.toastSuccess('Röle tetikleme emri gönderildi! Turnike 4 saniye serbest dönecek.');
-    } catch {
-      this.alertService.toastError('Kapı açma emri gönderilemedi.');
-    } finally {
-      setTimeout(() => this.testingUnlock.set(false), 2000);
-    }
-  }
-
   protected readonly gates = toSignal(this.accessService.watchGates(), { initialValue: [] });
+  protected readonly agents = toSignal(this.accessService.watchAgents(), { initialValue: [] });
+  private readonly syncSummary = toSignal(this.accessService.watchSyncSummary(), { initialValue: {} as DeviceSyncSummary });
   protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
   private readonly logs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
+
+  // Üye senkron ayrıntısı
+  protected readonly syncGate = signal<TurnstileGate | null>(null);
+  protected readonly syncItems = signal<DeviceSyncItem[]>([]);
+  protected readonly syncLoading = signal(false);
+  protected readonly resyncing = signal(false);
+  protected readonly syncFilter = signal<DeviceSyncStatus | 'all'>('all');
+  protected readonly syncFilters: { value: DeviceSyncStatus | 'all'; label: string }[] = [
+    { value: 'all', label: 'Tümü' },
+    { value: 'pending', label: 'Bekliyor' },
+    { value: 'applied', label: 'Uygulandı' },
+    { value: 'error', label: 'Hata' },
+  ];
+
+  protected syncCount(gate: TurnstileGate, status: 'pending' | 'applied' | 'error'): number {
+    const counts = gate.id ? this.syncSummary()[gate.id] : undefined;
+    if (!counts) return 0;
+    // "delivered" = agent'a teslim edildi, cihazda henüz doğrulanmadı → bekliyor sayılır.
+    return status === 'pending' ? (counts.pending ?? 0) + (counts.delivered ?? 0) : (counts[status] ?? 0);
+  }
+
+  protected async openSyncDrawer(gate: TurnstileGate): Promise<void> {
+    this.syncGate.set(gate);
+    this.syncFilter.set('all');
+    await this.loadSyncItems();
+  }
+
+  protected closeSyncDrawer(): void {
+    this.syncGate.set(null);
+    this.syncItems.set([]);
+  }
+
+  protected async setSyncFilter(filter: DeviceSyncStatus | 'all'): Promise<void> {
+    this.syncFilter.set(filter);
+    await this.loadSyncItems();
+  }
+
+  private async loadSyncItems(): Promise<void> {
+    const gate = this.syncGate();
+    if (!gate?.id) return;
+    this.syncLoading.set(true);
+    try {
+      const filter = this.syncFilter();
+      const items = await this.accessService.listSync(gate.id, filter === 'all' || filter === 'pending' ? undefined : filter);
+      this.syncItems.set(filter === 'pending' ? items.filter((i) => i.status === 'pending' || i.status === 'delivered') : items);
+    } catch {
+      this.alertService.toastError('Senkron durumu alınamadı.');
+    } finally {
+      this.syncLoading.set(false);
+    }
+  }
+
+  protected async resyncGate(): Promise<void> {
+    const gate = this.syncGate();
+    if (!gate?.id) return;
+    this.resyncing.set(true);
+    try {
+      await this.accessService.resync(gate.id);
+      this.alertService.toastSuccess(`${gate.name} için tüm üye yetkileri yeniden kuyruğa alındı.`);
+      await this.loadSyncItems();
+    } catch {
+      this.alertService.toastError('Yeniden senkron başlatılamadı.');
+    } finally {
+      this.resyncing.set(false);
+    }
+  }
+
+  protected syncStatusLabel(status: DeviceSyncStatus): string {
+    return { pending: 'Bekliyor', delivered: 'Bekliyor', applied: 'Cihaza uygulandı', error: 'Hata' }[status] ?? status;
+  }
+
+  protected syncBadgeClass(status: DeviceSyncStatus): string {
+    if (status === 'applied') return 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60';
+    if (status === 'error') return 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60';
+    return 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60';
+  }
+
+  protected statusLabel(status: AccessStatus): string {
+    if (status === 'granted') return 'İzin Verildi';
+    if (status === 'unknown') return 'Sonuç bildirilmedi';
+    if (status === 'anti_passback_warning') return 'Anti-passback';
+    return 'Reddedildi';
+  }
+
+  protected statusBadgeClass(status: AccessStatus): string {
+    if (status === 'granted') return 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60';
+    if (status === 'unknown') return 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+    return 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60';
+  }
+
+  protected protocolLabel(protocol: DeviceProtocol | undefined): string {
+    return DEVICE_PROTOCOLS.find((p) => p.value === protocol)?.label ?? 'Protokol seçilmedi';
+  }
+
+  protected formatRelative(value: string | null | undefined): string {
+    if (!value) return '—';
+    const ms = new Date(value).getTime();
+    if (Number.isNaN(ms)) return '—';
+    const secs = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (secs < 60) return `${secs} sn önce`;
+    if (secs < 3600) return `${Math.round(secs / 60)} dk önce`;
+    return new Date(ms).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  protected formatClock(value: string): string {
+    return new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  protected formatDay(day: string | null | undefined): string {
+    if (!day || day.length !== 8) return '—';
+    return `${day.slice(6, 8)}.${day.slice(4, 6)}.${day.slice(0, 4)}`;
+  }
 
   // Filtering Signals
   protected readonly searchQuery = signal('');
@@ -1332,19 +1308,6 @@ export class AdminAccessControl implements OnInit {
 
   // Reception Barcode / RFID Reader
   protected barcodeInput = '';
-  protected readonly isSyncingDevice = signal(false);
-
-  protected async manualSyncFromDevice(): Promise<void> {
-    this.isSyncingDevice.set(true);
-    try {
-      await this.accessService.requestDeviceSync();
-      this.alertService.toastSuccess('Perkotek YT-32 cihazı ile canlı senkronizasyon tetiklendi.');
-    } catch {
-      this.alertService.toastError('Cihaz senkronizasyonu başlatılamadı.');
-    } finally {
-      setTimeout(() => this.isSyncingDevice.set(false), 1200);
-    }
-  }
 
   // Add Gate SlideOver state
   protected readonly isAddGateOpen = signal(false);
@@ -1355,22 +1318,22 @@ export class AdminAccessControl implements OnInit {
     location: string;
     direction: AccessDirection | 'both';
     readerType: string;
-    connectionProtocol: TurnstileConnectionProtocol;
-    endpoint: string;
-    topicOrChannel: string;
+    protocol: DeviceProtocol;
+    host: string;
     port: number | null;
-    secretToken: string;
-  } = {
-    name: '',
-    location: '',
-    direction: 'in',
-    readerType: 'Dinamik QR + NFC Mifare',
-    connectionProtocol: 'websocket',
-    endpoint: '',
-    topicOrChannel: '',
-    port: 8080,
-    secretToken: '',
-  };
+  } = this.emptyGate();
+
+  private emptyGate() {
+    return {
+      name: '',
+      location: '',
+      direction: 'in' as AccessDirection | 'both',
+      readerType: 'YT Yüz & Kart Terminali',
+      protocol: 'yt-http-digest' as DeviceProtocol,
+      host: '',
+      port: 80 as number | null,
+    };
+  }
 
   ngOnInit(): void {
     // Sabit / demo veri enjekte edilmez; tüm kayıtlar gerçek veritabanından dinamik gelir.
@@ -1416,7 +1379,13 @@ export class AdminAccessControl implements OnInit {
   protected readonly todayDeniedCount = computed(() => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
-    return this.logs().filter((l) => l.status !== 'granted' && this.getLogMillis(l.timestamp) >= startOfToday).length;
+    return this.logs().filter((l) => l.status === 'denied' && this.getLogMillis(l.timestamp) >= startOfToday).length;
+  });
+
+  protected readonly todayUnknownCount = computed(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+    return this.logs().filter((l) => l.status === 'unknown' && this.getLogMillis(l.timestamp) >= startOfToday).length;
   });
 
   protected readonly filteredLogs = computed(() => {
@@ -1434,7 +1403,7 @@ export class AdminAccessControl implements OnInit {
     if (status === 'granted') {
       list = list.filter((l) => l.status === 'granted');
     } else if (status === 'denied') {
-      list = list.filter((l) => l.status !== 'granted');
+      list = list.filter((l) => l.status === 'denied' || l.status === 'anti_passback_warning');
     }
 
     // 3. Direction filter
@@ -1564,28 +1533,12 @@ export class AdminAccessControl implements OnInit {
     this.logsCurrentPage.set(1);
   }
 
-  protected getGateTodayPasses(gateName: string): number {
+  protected getGateTodayPasses(gate: TurnstileGate): number {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
-    return this.logs().filter((l) => l.gateName === gateName && this.getLogMillis(l.timestamp) >= startOfToday).length;
-  }
-
-  protected async openGateManually(gate: TurnstileGate): Promise<void> {
-    if (this.saasSub.isExpired()) {
-      void this.alertService.error(
-        'SaaS Aboneliği Sona Erdi',
-        'Salonunuzun SaaS lisansı sona erdiği için uzaktan turnike açma komutları kilitlenmiştir. Lütfen SaaS Paket & Lisans menüsünden paketinizi yenileyiniz.',
-      );
-      return;
-    }
-    const gateId = gate.id || gate.name;
-    this.openingGate.set(gateId);
-    try {
-      await this.accessService.manualGateOpen(gate.name, 'Resepsiyon panelinden tek tuşla açıldı');
-      this.alertService.toastSuccess(`${gate.name} kapısı başarıyla açıldı.`);
-    } finally {
-      setTimeout(() => this.openingGate.set(null), 1000);
-    }
+    return this.logs().filter(
+      (l) => (l.gateId ? l.gateId === gate.id : l.gateName === gate.name) && this.getLogMillis(l.timestamp) >= startOfToday,
+    ).length;
   }
 
   protected async deleteGate(gate: TurnstileGate): Promise<void> {
@@ -1597,38 +1550,14 @@ export class AdminAccessControl implements OnInit {
     }
   }
 
-  protected setProtocol(proto: TurnstileConnectionProtocol): void {
-    this.newGate.connectionProtocol = proto;
-    const gateNum = (this.gates().length + 1).toString().padStart(2, '0');
-    if (proto === 'reverse_tunnel') {
-      this.newGate.endpoint = `edge-tunnel://gate${gateNum}.internal-mesh:2201`;
-      this.newGate.port = 2201;
-      this.newGate.topicOrChannel = '';
-    } else if (proto === 'mqtt') {
-      this.newGate.endpoint = 'mqtt://broker.odivon.com:1883';
-      this.newGate.port = 1883;
-      this.newGate.topicOrChannel = `odivon/gates/gate-${gateNum}/events`;
-    } else {
-      this.newGate.endpoint = `wss://turnstile-gateway.odivon.com/ws/gate-${gateNum}`;
-      this.newGate.port = 8080;
-      this.newGate.topicOrChannel = '';
-    }
+  protected setProtocol(proto: DeviceProtocol): void {
+    this.newGate.protocol = proto;
+    this.newGate.port = DEVICE_PROTOCOLS.find((p) => p.value === proto)?.defaultPort || null;
   }
 
   protected openAddGateDrawer(): void {
     this.addGateError.set('');
-    const gateNum = (this.gates().length + 1).toString().padStart(2, '0');
-    this.newGate = {
-      name: '',
-      location: '',
-      direction: 'in',
-      readerType: 'Dinamik QR + NFC Mifare',
-      connectionProtocol: 'websocket',
-      endpoint: `wss://turnstile-gateway.odivon.com/ws/gate-${gateNum}`,
-      topicOrChannel: '',
-      port: 8080,
-      secretToken: '',
-    };
+    this.newGate = this.emptyGate();
     this.isAddGateOpen.set(true);
   }
 
@@ -1640,7 +1569,7 @@ export class AdminAccessControl implements OnInit {
   protected async saveNewGate(): Promise<void> {
     this.addGateError.set('');
     if (!this.newGate.name.trim()) {
-      const msg = 'Lütfen turnike / kapı adını giriniz.';
+      const msg = 'Lütfen cihaz / kapı adını giriniz.';
       this.addGateError.set(msg);
       this.alertService.toastError(msg);
       return;
@@ -1651,8 +1580,8 @@ export class AdminAccessControl implements OnInit {
       this.alertService.toastError(msg);
       return;
     }
-    if (!this.newGate.endpoint.trim()) {
-      const msg = 'Lütfen bağlantı uç noktası (endpoint) adresini giriniz.';
+    if (!/^\d{1,3}(\.\d{1,3}){3}$|^[a-zA-Z0-9.-]+$/.test(this.newGate.host.trim())) {
+      const msg = 'Lütfen cihazın yerel IP adresini giriniz (örn. 192.168.1.201).';
       this.addGateError.set(msg);
       this.alertService.toastError(msg);
       return;
@@ -1664,37 +1593,20 @@ export class AdminAccessControl implements OnInit {
         name: this.newGate.name.trim(),
         location: this.newGate.location.trim(),
         direction: this.newGate.direction,
-        status: 'online',
         readerType: this.newGate.readerType,
-        connectionProtocol: this.newGate.connectionProtocol,
-        endpoint: this.newGate.endpoint.trim(),
-        topicOrChannel: this.newGate.topicOrChannel?.trim() || '',
+        protocol: this.newGate.protocol,
+        host: this.newGate.host.trim(),
         port: this.newGate.port ? Number(this.newGate.port) : null,
-        secretToken: this.newGate.secretToken?.trim() || null,
       });
 
-      this.alertService.toastSuccess('Yeni turnike başarıyla kaydedildi.');
+      this.alertService.toastSuccess('Cihaz kaydedildi. Şimdi Edge Agent ile eşleştirin.');
       this.isAddGateOpen.set(false);
     } catch (e: any) {
-      const msg = e.message || 'Turnike kaydedilirken hata oluştu.';
+      const msg = e?.error?.error?.message || e.message || 'Cihaz kaydedilirken hata oluştu.';
       this.addGateError.set(msg);
       this.alertService.toastError(msg);
     } finally {
       this.savingGate.set(false);
-    }
-  }
-
-  protected async triggerEmergencyUnlock(): Promise<void> {
-    const ok = await this.alertService.actionConfirm(
-      '🚨 Acil Durum / Tahliye Modu',
-      'DİKKAT: Acil durum / tahliye modunda tüm turnikeler açık konuma getirilecek.<br><br>Bu işlemi onaylıyor musunuz?',
-      'Turnikeleri Aç',
-      'warning',
-      true,
-    );
-    if (ok) {
-      await this.accessService.manualGateOpen('Tüm Turnikeler', 'ACİL TAHLİYE / YANGIN ALARMI');
-      this.alertService.toastSuccess('Tüm turnikeler acil durum modunda açıldı.');
     }
   }
 

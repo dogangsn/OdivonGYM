@@ -12,7 +12,9 @@
     "deploy": "npm run build:all && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:functions": "npm run build:functions && firebase deploy --only functions",
-    "deploy:rules": "firebase deploy --only firestore:rules,storage"
+    "deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "pack:agent": "cd edge-agent && rm -f ../public/downloads/odivon-gym-edge-agent.zip && zip -qr ../public/downloads/odivon-gym-edge-agent.zip agent.js package.json README.md baslat.bat config.sample.json src",
+    "test:agent": "npm --prefix edge-agent test"
   },
   "prettier": {
     "printWidth": 100,

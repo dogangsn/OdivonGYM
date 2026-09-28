@@ -256,7 +256,7 @@ export class AdminReports {
   });
 
   protected readonly deniedVisits = computed(() => {
-    return this.turnstileLogs().filter((l) => l.status !== 'granted').length;
+    return this.turnstileLogs().filter((l) => l.status === 'denied' || l.status === 'anti_passback_warning').length;
   });
 
   // Peak Hours Distribution

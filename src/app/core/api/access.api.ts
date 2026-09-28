@@ -40,7 +40,35 @@ export class AccessApi {
     return this.api.post('/gym/access/scan', body).pipe(map((r) => r.data));
   }
 
-  queueCommand(body: unknown) {
-    return this.api.post('/gym/access/commands', body).pipe(map((r) => r.data));
+  listAgents() {
+    return this.api
+      .get<unknown[]>('/gym/access/agents')
+      .pipe(map((r) => unwrapList<unknown>(r.data)));
+  }
+
+  createPairingCode(gateIds: string[]) {
+    return this.api
+      .post<{ code: string; expiresAt: string }>('/gym/access/agents/pairing-codes', { gateIds })
+      .pipe(map((r) => r.data));
+  }
+
+  revokeAgent(id: string) {
+    return this.api.delete<{ id: string }>(`/gym/access/agents/${id}`).pipe(map((r) => r.data));
+  }
+
+  listSync(query: { gateId?: string; status?: string; limit?: number }) {
+    return this.api
+      .get<unknown[]>('/gym/access/sync', { limit: 200, ...query })
+      .pipe(map((r) => unwrapList<unknown>(r.data)));
+  }
+
+  syncSummary() {
+    return this.api
+      .get<Record<string, unknown>>('/gym/access/sync/summary')
+      .pipe(map((r) => (r.data ?? {}) as Record<string, unknown>));
+  }
+
+  resync(gateId: string) {
+    return this.api.post<unknown>('/gym/access/sync/resync', { gateId }).pipe(map((r) => r.data));
   }
 }
