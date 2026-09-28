@@ -11,7 +11,7 @@ const crypto = require('node:crypto');
 const md5 = (v) => crypto.createHash('md5').update(v).digest('hex');
 const REALM = 'yt-device';
 
-function startFakeYtDevice({ username = 'admin', password = 'secret', pageSize = 100 } = {}) {
+function startFakeYtDevice({ username = 'admin', password = 'secret' } = {}) {
   const state = {
     users: new Map(),
     logs: [],
@@ -41,32 +41,32 @@ function startFakeYtDevice({ username = 'admin', password = 'secret', pageSize =
         res.writeHead(401, { 'WWW-Authenticate': `Digest realm="${REALM}", qop="auth", nonce="${state.nonce}"` });
         return res.end();
       }
-      const cmd = JSON.parse(body);
-      state.requests.push(cmd);
-      const reply = (obj) => {
+      const { cmd, data = {} } = JSON.parse(body);
+      state.requests.push({ cmd, data });
+      const reply = (result_code, result_data, result_msg) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(obj));
+        res.end(JSON.stringify({ cmd, result_code, result_msg, result_data }));
       };
-      switch (cmd.cmd) {
+      switch (cmd) {
         case 'GetLogDataPage': {
-          const size = cmd.pageSize ?? pageSize;
-          const start = (cmd.page - 1) * size;
-          return reply({ result: 0, total: state.logs.length, page: cmd.page, data: state.logs.slice(start, start + size) });
+          const inWindow = state.logs.filter((l) => l.time.slice(0, 8) >= data.beginTime && l.time.slice(0, 8) <= data.endTime);
+          const start = data.page * data.pageCount;
+          return reply(0, { allLogCount: inWindow.length, logs: inWindow.slice(start, start + data.pageCount) });
         }
         case 'GetUserInfo': {
-          const user = state.users.get(cmd.userId);
-          return user ? reply({ result: 0, data: user }) : reply({ result: 4, msg: 'user not exist' });
+          const user = state.users.get(data.userId);
+          return user ? reply(0, user) : reply(1, null, 'user not exist');
         }
         case 'SetUserInfo': {
-          const user = { ...cmd.data };
+          const user = { ...data };
           if (state.ignoreVaildEnd) user.vaildEnd = '20991231';
           state.users.set(user.userId, user);
-          return reply({ result: 0 });
+          return reply(0, null);
         }
         case 'DeleteUserInfo':
-          return state.users.delete(cmd.userId) ? reply({ result: 0 }) : reply({ result: 4, msg: 'user not exist' });
+          return state.users.delete(data.userId) ? reply(0, null) : reply(1, null, 'user not exist');
         default:
-          return reply({ result: 1, msg: 'unknown cmd' });
+          return reply(1, null, 'unknown cmd');
       }
     });
   });
@@ -77,10 +77,15 @@ function startFakeYtDevice({ username = 'admin', password = 'secret', pageSize =
         state,
         host: '127.0.0.1',
         port: server.address().port,
-        addLogs(n, from = state.logs.length) {
+        /** n kayıt ekler; her kayıt bir saniye sonra (aynı gün içinde benzersiz zaman). */
+        addLogs(n, day = '20260928') {
           for (let i = 0; i < n; i++) {
-            const id = from + i + 1;
-            state.logs.push({ id, userId: String(1000 + (id % 7)), card: '', time: '2026-09-28 21:14:05', verifyMode: 1 });
+            const seq = state.logs.length;
+            const secs = 8 * 3600 + seq;
+            const hh = String(Math.floor(secs / 3600)).padStart(2, '0');
+            const mm = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+            const ss = String(secs % 60).padStart(2, '0');
+            state.logs.push({ time: `${day}${hh}${mm}${ss}`, userId: String(1000 + (seq % 7)), verifyMode: 'face', ioMode: seq % 2 });
           }
         },
         close: () => new Promise((r) => { server.closeAllConnections(); server.close(r); }),

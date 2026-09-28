@@ -20,4 +20,10 @@ function toIstanbulIso(value) {
   return `${y}-${mo}-${d}T${h}:${mi}:${s}+03:00`;
 }
 
-module.exports = { toIstanbulIso };
+/** Türkiye saatine göre gün, YYYYMMDD. `offsetDays` ile önceki/sonraki gün. */
+function istanbulDay(now = new Date(), offsetDays = 0) {
+  const shifted = new Date(now.getTime() + 3 * 60 * 60 * 1000 + offsetDays * 24 * 60 * 60 * 1000);
+  return shifted.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+module.exports = { toIstanbulIso, istanbulDay };

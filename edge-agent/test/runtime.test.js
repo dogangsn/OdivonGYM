@@ -7,7 +7,10 @@ const { Store } = require('../src/store');
 const { AgentRuntime } = require('../src/runtime');
 const { MainApiError } = require('../src/mainapi-client');
 
+const { istanbulDay } = require('../src/time');
+
 const silent = { info() {}, warn() {}, error() {} };
+const istanbulToday = () => istanbulDay();
 
 /** Bellek içi MainApi taklidi: sözleşmedeki kiralama / ack / olay kurallarını uygular. */
 function fakeMainApi(devices) {
@@ -125,7 +128,7 @@ test('cihaza ulaşılamazsa onay gönderilmez (kiralama dolunca tekrar gelir)', 
 test('internet yokken olaylar yerel kuyrukta bekler, gelince bir kez gönderilir', async (t) => {
   const { dev, store, api, runtime } = await setup(t);
   await runtime.tick(); // cihaz listesini öğren
-  dev.addLogs(30);
+  dev.addLogs(30, istanbulToday());
   api.online = false;
   await runtime.tick();
   await runtime.tick();
@@ -140,8 +143,8 @@ test('internet yokken olaylar yerel kuyrukta bekler, gelince bir kez gönderilir
   // Aynı kayıtlar yeniden okunsa da tekrar gönderilmez.
   await runtime.tick();
   assert.equal(api.logs.size, 30);
-  const first = api.logs.get('g1_yt-1');
-  assert.equal(first.userId, '1001');
+  const first = [...api.logs.values()][0];
+  assert.equal(first.userId, '1000');
   assert.equal(first.result, null);
 });
 

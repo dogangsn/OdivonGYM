@@ -5,12 +5,15 @@ const assert = require('node:assert/strict');
 const { startFakeYtDevice } = require('./fake-yt-device');
 const { createYtHttpDigestAdapter, deviceName } = require('../src/adapters/yt-http-digest');
 
-async function setup(t, opts) {
-  const dev = await startFakeYtDevice(opts);
+const NOW = new Date('2026-09-28T18:30:00Z'); // 21:30 TR
+
+async function setup(t, { now = () => NOW } = {}) {
+  const dev = await startFakeYtDevice();
   t.after(() => dev.close());
   const adapter = createYtHttpDigestAdapter(
     { gateId: 'g1', protocol: 'yt-http-digest', host: dev.host, port: dev.port, direction: 'in' },
     { username: 'admin', password: 'secret' },
+    { now },
   );
   return { dev, adapter };
 }
@@ -25,30 +28,47 @@ test('yanlış parola digest hatası verir', async (t) => {
   await assert.rejects(adapter.ping(), /Digest/);
 });
 
-test('tüm log sayfalarını okur, imleçten devam eder', async (t) => {
+test('ilk çalıştırmada tüm geçmişi okur, sonra dünden başlayan pencereye geçer', async (t) => {
   const { dev, adapter } = await setup(t);
-  dev.addLogs(250);
+  dev.addLogs(700, '20260101');
+  dev.addLogs(600, '20260928');
   const first = await adapter.readEvents(null);
-  assert.equal(first.events.length, 250);
-  assert.deepEqual(first.cursor, { total: 250, page: 3 });
-  assert.equal(first.events[0].eventId, 'yt-1');
-  assert.equal(first.events[0].time, '2026-09-28T21:14:05+03:00');
-  assert.equal(first.events[0].result, null, 'cihaz sonucu bildirmiyorsa tahmin edilmez');
+  assert.equal(first.events.length, 1300);
+  assert.equal(new Set(first.events.map((e) => e.eventId)).size, 1300, 'olay kimlikleri benzersiz');
+  assert.deepEqual(first.cursor, { beginDay: '20260927', page: 0, total: 0 });
+  const e = first.events[700];
+  assert.equal(e.time, '2026-09-28T08:11:40+03:00');
+  assert.equal(e.direction, 'in');
+  assert.equal(e.result, null, 'cihaz sonucu bildirmediği için tahmin edilmez');
+  assert.equal(first.events[701].direction, 'out');
 
-  dev.addLogs(60);
+  // Pencere dünden itibaren: yalnızca bugünün 600 kaydı + yeni 10 kayıt okunur.
+  dev.addLogs(10, '20260928');
   const next = await adapter.readEvents(first.cursor);
-  // Son sayfa (201-300) ve yeni sayfa (301-310) okunur; tekrarlar store'da ayıklanır.
-  assert.deepEqual(next.cursor, { total: 310, page: 4 });
-  assert.ok(next.events.some((e) => e.eventId === 'yt-310'));
-  assert.ok(!next.events.some((e) => e.eventId === 'yt-150'));
+  assert.equal(next.events.length, 610);
+  assert.deepEqual(next.cursor, { beginDay: '20260927', page: 1, total: 610 });
+
+  // Sonraki turda son sayfadan devam eder.
+  dev.addLogs(5, '20260928');
+  const third = await adapter.readEvents(next.cursor);
+  assert.equal(third.events.length, 115);
+  assert.deepEqual(third.cursor, { beginDay: '20260927', page: 1, total: 615 });
+});
+
+test('gün değişince pencere yeni düne kayar', async (t) => {
+  const { adapter, dev } = await setup(t, { now: () => new Date('2026-09-30T08:00:00Z') });
+  dev.addLogs(3, '20260930');
+  const res = await adapter.readEvents({ beginDay: '20260927', page: 4, total: 2400 });
+  assert.equal(res.events.length, 3);
+  assert.deepEqual(res.cursor, { beginDay: '20260929', page: 0, total: 3 });
 });
 
 test('cihaz logu temizlenirse baştan okur', async (t) => {
   const { dev, adapter } = await setup(t);
-  dev.addLogs(5);
-  const res = await adapter.readEvents({ total: 400, page: 4 });
+  dev.addLogs(5, '20260928');
+  const res = await adapter.readEvents({ beginDay: '20260927', page: 3, total: 2000 });
   assert.equal(res.events.length, 5);
-  assert.deepEqual(res.cursor, { total: 5, page: 1 });
+  assert.deepEqual(res.cursor, { beginDay: '20260927', page: 0, total: 5 });
 });
 
 test('yetki verir ve geri okuyarak doğrular', async (t) => {

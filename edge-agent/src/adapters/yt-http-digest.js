@@ -15,9 +15,11 @@ const crypto = require('node:crypto');
 const { DigestClient } = require('../digest');
 const { DeviceError, asDeviceError } = require('./errors');
 const wire = require('./yt-wire');
-const { toIstanbulIso } = require('../time');
+const { toIstanbulIso, istanbulDay } = require('../time');
 
 const MAX_PAGES_PER_POLL = 20;
+/** İlk çalıştırmada cihazdaki tüm geçmiş kayıtlar alınır (tekrar korumalı). */
+const INITIAL_BEGIN_DAY = '20000101';
 const NO_END_DATE = '20991231';
 const MAX_NAME_LENGTH = 24;
 
@@ -38,7 +40,7 @@ function sameCard(a, b) {
   return norm(a) === norm(b);
 }
 
-function createYtHttpDigestAdapter(device, credentials, { fetchImpl } = {}) {
+function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () => new Date() } = {}) {
   if (!credentials?.username) {
     const reason = `config.json içinde "${device.host}" için cihaz kullanıcı adı/parolası yok (credentials).`;
     return {
@@ -83,26 +85,23 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl } = {}) {
   async function getUser(userId) {
     const res = await cmd(wire.requests.getUser(userId));
     if (wire.isNotFound(res)) return null;
-    if (!wire.isOk(res)) throw new DeviceError(`GetUserInfo başarısız: ${JSON.stringify(res).slice(0, 200)}`);
+    if (!wire.isOk(res)) throw new DeviceError(`GetUserInfo başarısız: ${wire.describe(res)}`);
     return wire.readUser(res);
   }
 
   function toEvent(raw) {
     const rec = wire.readLogRecord(raw);
-    const time = toIstanbulIso(rec.time);
-    const eventId =
-      rec.recordId != null
-        ? `yt-${rec.recordId}`
-        : `yt-h-${crypto
-            .createHash('sha1')
-            .update([rec.userId, rec.card, rec.time, rec.verifyMode].join('|'))
-            .digest('hex')
-            .slice(0, 20)}`;
+    // Cihaz kayıtlarında benzersiz kimlik yok: kimlik içerikten türetilir (aynı kayıt → aynı kimlik).
+    const eventId = `yt-${crypto
+      .createHash('sha1')
+      .update([rec.userId, rec.card, rec.time, rec.verifyMode, rec.ioMode].join('|'))
+      .digest('hex')
+      .slice(0, 24)}`;
     return {
       eventId,
       userId: rec.userId,
       card: rec.card,
-      time,
+      time: toIstanbulIso(rec.time),
       direction: rec.direction ?? (device.direction === 'out' ? 'out' : 'in'),
       result: rec.result,
       verifyMode: rec.verifyMode != null ? String(rec.verifyMode) : null,
@@ -114,39 +113,57 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl } = {}) {
     protocol: device.protocol,
 
     async ping() {
-      const res = await cmd(wire.requests.getLogPage(1));
-      if (!wire.isOk(res)) throw new DeviceError('Cihaz GetLogDataPage isteğini reddetti.');
+      const res = await cmd(wire.requests.getLogPage({ beginDay: istanbulDay(now()), page: 0 }));
+      if (!wire.isOk(res)) throw new DeviceError(`GetLogDataPage reddedildi: ${wire.describe(res)}`);
       return {};
     },
 
     /**
-     * Cursor: { total, page }. Son okunan sayfadan başlayıp sona kadar okur
-     * (poll başına en çok MAX_PAGES_PER_POLL sayfa; kalanı sonraki turda).
-     * Toplam azalırsa cihaz logu silinmiştir, baştan okunur. Tekrarlar
-     * yerel `seen` tablosu ve MainApi'deki {gateId}_{eventId} ile ayıklanır.
+     * Cursor: { beginDay, page, total }. Pencere [beginDay, ∞) içinde son okunan sayfadan
+     * başlayıp sona kadar okur (tur başına en çok MAX_PAGES_PER_POLL sayfa).
+     *  - İlk çalıştırma: beginDay = 2000-01-01, cihazdaki tüm kayıtlar alınır.
+     *  - Yetişince pencere dünden (TR) başlar; gün değişince sayfa 0'a döner.
+     *  - Toplam azalırsa cihaz logu silinmiştir; pencere baştan okunur.
+     * Tekrarlar yerel `seen` tablosunda ve MainApi'de {gateId}_{eventId} ile ayıklanır.
      */
     async readEvents(cursor) {
-      let page = cursor?.page ?? 1;
-      const events = [];
+      const yesterday = istanbulDay(now(), -1);
+      let beginDay = cursor?.beginDay ?? INITIAL_BEGIN_DAY;
+      let page = cursor?.page ?? 0;
       let total = cursor?.total ?? 0;
+      let caughtUp = false;
+      if (beginDay !== INITIAL_BEGIN_DAY && beginDay < yesterday) {
+        beginDay = yesterday;
+        page = 0;
+        total = 0;
+      }
 
+      const events = [];
       for (let read = 0; read < MAX_PAGES_PER_POLL; read++) {
-        const res = await cmd(wire.requests.getLogPage(page));
-        if (!wire.isOk(res)) throw new DeviceError(`GetLogDataPage başarısız: ${JSON.stringify(res).slice(0, 200)}`);
+        const res = await cmd(wire.requests.getLogPage({ beginDay, page }));
+        if (!wire.isOk(res)) throw new DeviceError(`GetLogDataPage başarısız: ${wire.describe(res)}`);
         const parsed = wire.parseLogPage(res);
-        if (read === 0 && cursor && parsed.total < cursor.total) {
-          // Cihaz logu temizlenmiş veya başa sarmış.
-          page = 1;
+        if (read === 0 && parsed.total < total) {
+          // Cihaz logu temizlenmiş: pencereyi baştan oku.
+          page = 0;
           total = 0;
           continue;
         }
         total = parsed.total;
         for (const raw of parsed.records) events.push(toEvent(raw));
-        const lastPage = Math.max(1, Math.ceil(total / wire.LOG_PAGE_SIZE));
-        if (page >= lastPage || parsed.records.length === 0) break;
+        const lastPage = Math.max(0, Math.ceil(total / wire.LOG_PAGE_SIZE) - 1);
+        if (page >= lastPage || parsed.records.length === 0) {
+          caughtUp = true;
+          break;
+        }
         page += 1;
       }
-      return { events, cursor: { total, page } };
+
+      if (caughtUp && beginDay === INITIAL_BEGIN_DAY) {
+        // Geçmiş aktarıldı; bundan sonra yalnızca dünden bugüne pencere okunur.
+        return { events, cursor: { beginDay: yesterday, page: 0, total: 0 } };
+      }
+      return { events, cursor: { beginDay, page, total } };
     },
 
     async applyUser(item) {
@@ -155,7 +172,7 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl } = {}) {
       if (!item.enabled) {
         const res = await cmd(wire.requests.deleteUser(item.userId));
         if (!wire.isOk(res) && !wire.isNotFound(res)) {
-          throw new DeviceError(`DeleteUserInfo başarısız: ${JSON.stringify(res).slice(0, 200)}`);
+          throw new DeviceError(`DeleteUserInfo başarısız: ${wire.describe(res)}`);
         }
         const after = await getUser(item.userId);
         return { verified: after === null };
@@ -168,7 +185,7 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl } = {}) {
         vaildEnd: item.validEnd ?? NO_END_DATE,
       };
       const res = await cmd(wire.requests.setUser(desired));
-      if (!wire.isOk(res)) throw new DeviceError(`SetUserInfo başarısız: ${JSON.stringify(res).slice(0, 200)}`);
+      if (!wire.isOk(res)) throw new DeviceError(`SetUserInfo başarısız: ${wire.describe(res)}`);
 
       const after = await getUser(item.userId);
       const verified =
