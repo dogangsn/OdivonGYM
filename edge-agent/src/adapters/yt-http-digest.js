@@ -169,6 +169,15 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
     async applyUser(item) {
       if (!item.userId) throw new DeviceError('Üyenin üye numarası yok; cihaz kullanıcı kimliği oluşturulamaz.');
 
+      // Üye numarası değiştiyse eski cihaz kullanıcısı önce silinir (yoksa eski kimlikle geçiş sürer).
+      if (item.replacesUserId && item.replacesUserId !== item.userId) {
+        const del = await cmd(wire.requests.deleteUser(item.replacesUserId));
+        if (!wire.isOk(del) && !wire.isNotFound(del)) {
+          throw new DeviceError(`Eski kullanıcı silinemedi (${item.replacesUserId}): ${wire.describe(del)}`);
+        }
+        if ((await getUser(item.replacesUserId)) !== null) return { verified: false };
+      }
+
       if (!item.enabled) {
         const res = await cmd(wire.requests.deleteUser(item.userId));
         if (!wire.isOk(res) && !wire.isNotFound(res)) {

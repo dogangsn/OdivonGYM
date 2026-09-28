@@ -57,6 +57,8 @@ bunları okur.
 | `card` | string \| null | RFID kart no (`rfidCardNumber`). |
 | `validEnd` | `'YYYYMMDD'` \| null | Üyelik bitiş günü, **Türkiye saatiyle** o günün sonuna kadar geçerli. |
 | `enabled` | boolean | `false` ⇒ cihazdan yetki derhal kaldırılır. |
+| `replacesUserId` | string \| null | Üye numarası değiştiyse eski cihaz kullanıcısı; agent önce onu siler. `applied` onayında temizlenir. |
+| `kind` | `'userSync'` | Eski komut belgelerinden ayırmak için. |
 | `version` | integer | Her değişiklikte +1. |
 | `status` | `'pending' \| 'delivered' \| 'applied' \| 'error'` | |
 | `deliveredVersion`, `appliedVersion` | integer \| null | |
@@ -72,8 +74,10 @@ Hesaplanan alanlar (`userId`, `name`, `card`, `validEnd`, `enabled`) öncekiyle
 aynıysa hiçbir şey yazmaz; farklıysa `version += 1`, `status = 'pending'`,
 `leaseUntil = null`, `lastError = null`.
 
-- `enabled = true` yalnızca üye aktif (iptal / arşiv / silinmiş değil), `memberNumber`
-  dolu ve bitiş tarihi bugün (TR) veya sonrası ise. Dondurma bugün yalnızca bitiş
+- `enabled = true` yalnızca üyelik durumu `active` veya `trial`, arşivlenmemiş/silinmemiş,
+  `memberNumber` dolu ve `validEnd` bugün (TR) veya sonrası ise. Bitiş tarihi olmayan deneme
+  üyeliği kapalıdır.
+- Dondurma bugün yalnızca bitiş
   tarihini ileri attığından ayrı bir "dondurulmuş" durumu yoktur; yeni `validEnd`
   cihaza gider.
 - `validEnd`: üyeliğin `endsAt` değeri `Europe/Istanbul` saat dilimine çevrilip
@@ -99,7 +103,7 @@ yazılır; tekrar gelen olay ikinci belge oluşturmaz. Ek alanlar: `gateId`,
 | POST/PATCH | `/gym/access/gates[/:id]` | `protocol`, `host`, `port` kabul eder; `capabilities`/`adapterStatus` istemciden kabul edilmez |
 | GET | `/gym/access/sync` | `?gateId=&status=&limit=` → `gymDeviceCommands` listesi (panelde bekliyor / uygulandı / hata) |
 | GET | `/gym/access/sync/summary` | `{ [gateId]: { pending, delivered, applied, error } }` |
-| POST | `/gym/access/sync/resync` | `{ gateId }` → tenant'taki tüm üyeler için belgeleri yeniden hesaplar ve `pending` yapar (ilk kurulum) |
+| POST | `/gym/access/sync/resync` | `{ gateId }` → tüm belgelerin sürümünü artırıp `pending` yapar; üye numarası olan iptal/bitmiş/silinmiş üyeler için `enabled: false` belge de açar (cihazdan silinsinler) |
 
 ## 3. Agent uçları (agent kimliğiyle)
 
@@ -109,7 +113,12 @@ karşılaştırılır, `revokedAt` boş olmalı; `TenantContext` agent'ın tenan
 kurulur. Agent yalnızca `gateIds` listesindeki cihazlara dokunabilir; listede
 olmayan `gateId` ⇒ `403`.
 
-### `POST /gym/access/agents/enroll` (kimliksiz, IP başına sıkı rate-limit)
+Agent uçları yalnızca agent'ın `gateIds` listesinde olan **ve** `agentId` alanı agent'ı
+gösteren cihazlarda çalışır. Eşleştirme bir cihazı önceki agent'tan alır. Liste uçları
+standart sayfalı biçimi döner (`{ items, limit, nextCursor }`, `limit ≤ 100`).
+Kod başına en çok 30 cihaz.
+
+### `POST /gym/access/agents/enroll` (kimliksiz, IP başına dakikada 5, isolate başına)
 
 İstek: `{ code, name, hostname, agentVersion }`
 Yanıt: `{ agentId, token, tenantId, gateIds }`
@@ -136,6 +145,9 @@ Yanıt:
   "pollAfterMs": 5000
 }
 ```
+```
+
+`limit` 1–200 (varsayılan 50). Tam sayfa dönerse `pollAfterMs` 0'dır. Öğelerde `replacesUserId` de bulunur.
 
 **Atomik teslim:** Transaction içinde agent'ın cihazlarına ait
 `status == 'pending'` **veya** (`status == 'delivered'` ve `leaseUntil < now`)
@@ -147,6 +159,7 @@ agent'a / iki isteğe teslim edilmez.
 
 İstek: `{ version, result: 'applied' | 'error', verified: boolean, error?: string }`
 
+- `version > belge.version` ⇒ `400 GYM_SYNC_ACK_INVALID`.
 - `version < belge.version` ⇒ eski sürümün sonucu; belge **değişmez**
   (yeni sürüm zaten `pending`). Yanıt `{ status: 'superseded' }`.
 - `result = 'applied'` yalnızca `verified === true` ise kabul edilir
@@ -170,6 +183,9 @@ agent'a / iki isteğe teslim edilmez.
 ] }
 ```
 Yanıt: `{ accepted, duplicates, rejected: [{ eventId, reason }] }`.
+Agent'a atanmamış cihazın olayı bütün partiyi 403 yapmaz; `rejected` içinde
+`gate_forbidden` olarak döner (kuyruğu kilitlemesin diye). Diğer nedenler:
+`invalid_event_id`, `invalid_time`, `write_failed`.
 `userId` → `memberNumber` ile, o yoksa `card` → `rfidCardNumber` ile üye eşlenir.
 `result` `null` ise log `status = 'unknown'`.
 

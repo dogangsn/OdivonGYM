@@ -101,6 +101,15 @@ test('erişilemeyen cihaz geçici hata verir', async (t) => {
   await assert.rejects(adapter.applyUser({ userId: '1', enabled: true, validEnd: '20261231' }), (err) => err.transient === true);
 });
 
+test('üye numarası değişince eski cihaz kullanıcısı silinir', async (t) => {
+  const { dev, adapter } = await setup(t);
+  dev.state.users.set('500', { userId: '500', name: 'A', card: '1', vaildEnd: '20261231' });
+  const res = await adapter.applyUser({ userId: '501', replacesUserId: '500', name: 'A', card: '1', validEnd: '20261231', enabled: true });
+  assert.deepEqual(res, { verified: true });
+  assert.equal(dev.state.users.has('500'), false);
+  assert.equal(dev.state.users.get('501').vaildEnd, '20261231');
+});
+
 test('cihaz adı ASCII ve kısa', () => {
   assert.equal(deviceName('Çağrı Şükrü Öğüt İnce'), 'Cagri Sukru Ogut Ince');
   assert.equal(deviceName('x'.repeat(40)).length, 24);

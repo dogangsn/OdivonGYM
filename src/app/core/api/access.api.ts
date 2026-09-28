@@ -58,7 +58,7 @@ export class AccessApi {
 
   listSync(query: { gateId?: string; status?: string; limit?: number }) {
     return this.api
-      .get<unknown[]>('/gym/access/sync', { limit: 200, ...query })
+      .get<unknown[]>('/gym/access/sync', { limit: 100, ...query })
       .pipe(map((r) => unwrapList<unknown>(r.data)));
   }
 
