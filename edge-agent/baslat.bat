@@ -1,39 +1,34 @@
 @echo off
 chcp 65001 > nul
-title OdivonGYM - Perkotek YT-32 Turnike Ajanı
+title OdivonGYM Edge Agent
 
 echo ========================================================
-echo   OdivonGYM - Perkotek YT-32 Turnike Köprüsü (Edge Agent)
+echo   OdivonGYM Edge Agent (MainApi ^<-^> Gecis Cihazlari)
 echo ========================================================
 echo.
-
-if not exist "node_modules\" (
-    echo [BILGI] Gerekli paketler yukleniyor (npm install)...
-    call npm install
-    echo.
-)
 
 if not exist "config.json" (
-    echo [UYARI] config.json bulunamadi! config.sample.json dosyasindan olusturuluyor...
+    echo [UYARI] config.json bulunamadi, config.sample.json kopyalaniyor...
     copy config.sample.json config.json
     echo.
-    echo [DIKKAT] Lutfen config.json dosyasini acip salon Tenant ID ve Cihaz IP bilgilerinizi girin.
+    echo [DIKKAT] config.json dosyasina cihaz IP'si, kullanici adi ve parolasini girin.
     pause
     exit /b
 )
 
-if not exist "serviceAccountKey.json" (
-    echo [HATA] serviceAccountKey.json bulunamadi!
-    echo Lutfen Firebase Console'dan indirdiginiz Service Account anahtarini
-    echo bu klasore 'serviceAccountKey.json' olarak kopyalayin.
+if exist "data\identity.json" goto run
+echo [BILGI] Agent henuz eslestirilmemis.
+set /p KOD="Admin panelindeki eslestirme kodunu girin: "
+call npm run enroll -- %KOD%
+if not exist "data\identity.json" (
     pause
     exit /b
 )
-
-echo [BILGI] Edge Agent baslatiliyor...
-echo Pencereyi acik birakin veya kucultun.
 echo.
 
-node agent.js
+:run
 
+echo [BILGI] Edge Agent baslatiliyor. Pencereyi acik birakin veya kucultun.
+echo.
+call npm start
 pause

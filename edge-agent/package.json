@@ -1,25 +1,16 @@
 {
-  "name": "odivon-perkotek-edge-agent",
-  "version": "1.0.0",
-  "description": "OdivonGYM Perkotek YT-32 Turnike ve Geçiş Kontrol Yerel Köprü Servisi (Edge Agent)",
+  "name": "odivon-gym-edge-agent",
+  "version": "2.0.0",
+  "private": true,
+  "description": "OdivonGYM geçiş cihazları için yerel köprü (MainApi ↔ cihaz). Firebase'e bağlanmaz.",
   "main": "agent.js",
-  "scripts": {
-    "start": "node agent.js",
-    "dev": "node --watch agent.js"
+  "engines": {
+    "node": ">=22.13"
   },
-  "keywords": [
-    "odivon",
-    "perkotek",
-    "zkteco",
-    "turnstile",
-    "access-control",
-    "edge-agent"
-  ],
-  "author": "Odivon Software",
-  "license": "ISC",
-  "dependencies": {
-    "dotenv": "^16.4.7",
-    "firebase-admin": "^13.0.2",
-    "node-zklib": "^1.3.0"
-  }
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning agent.js",
+    "enroll": "node --disable-warning=ExperimentalWarning agent.js enroll",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\""
+  },
+  "license": "UNLICENSED"
 }

@@ -1,131 +1,81 @@
-# OdivonGYM — Perkotek YT-32 Turnike Edge Agent (Yerel Köprü)
+# OdivonGYM Edge Agent v2
 
-Bu servis, spor salonunuzun resepsiyon veya sunucu bilgisayarında (Windows / Linux / Raspberry Pi) çalışan, **Perkotek YT-32** cihazı ile **OdivonGYM Bulut Sistemi (Firebase)** arasında 7/24 çift yönlü köprü kuran resmi yerel ajandır.
+Salondaki geçiş cihazlarıyla (turnike, kart okuyucu) **yerel ağda** konuşan, MainApi'ye
+yalnızca **giden HTTPS** isteğiyle bağlanan köprü servisi. Firebase'e bağlanmaz;
+Firebase Admin anahtarına ihtiyaç duymaz.
 
----
-
-## 🎯 Ne İşe Yarar?
-
-1. **5 Saniyede Bir Canlı Geçiş Çekme:** Perkotek YT-32 turnikesinden geçen üyelerin kart/yüz/parmak izi okuma kayıtlarını her 5 saniyede bir otomatik çeker ve OdivonGYM `admin/access-control` ekranındaki **Canlı Geçiş Kayıtları** tablosuna anında yansıtır.
-2. **Otomatik Geçiş Engelleme & Yetki Senkronizasyonu:** Bir üyenin aboneliği bittiğinde veya dondurulduğunda, buluttan gelen sinyalle Perkotek cihazındaki yetkisi kapatılır; abonelik yenilendiğinde ise geçişi anında tekrar açılır.
-3. **Buluttan Manuel Kapı Açma:** Resepsiyon panelindeki *"Manuel Kapı Aç"* butonuna basıldığında turnikenin rölesini tetikler (4 saniye serbest geçiş verir).
-
----
-
-## 📋 Gereksinimler
-
-1. Salon ağında Perkotek YT-32 ile aynı yerel ağa (aynı modem / switch) bağlı bir bilgisayar (Windows 10/11 önerilir).
-2. Bilgisayarda **Node.js** (v18, v20 veya üzeri) kurulu olmalıdır. (İndir: [nodejs.org](https://nodejs.org))
-3. Perkotek YT-32 cihazının Ethernet kablosu modeme/switch'e takılı olmalıdır.
-
----
-
-## 🚀 Adım Adım Kurulum Kılavuzu
-
-### 1. Adım: Perkotek YT-32 Cihaz IP Ayarı
-1. Perkotek YT-32 menüsüne girin (`M/OK` tuşuna basılı tutun > Yönetici girişi).
-2. **İletişim (Comm.) > Ağ (Ethernet)** sekmesine gidin.
-3. Cihaza salon ağınızda boşta olan bir statik IP verin:
-   - **IP Adresi:** `192.168.1.201` *(veya ağınıza uygun IP)*
-   - **Alt Ağ Maskesi:** `255.255.255.0`
-   - **Ağ Geçidi:** `192.168.1.1` *(Modem IP'si)*
-   - **Port:** `4370` *(Varsayılan)*
-4. Bilgisayarınızdan komut satırını açıp cihazı test edin:
-   ```cmd
-   ping 192.168.1.201
-   ```
-   *(Cevap geliyorsa ağ bağlantısı tamamdır.)*
-
----
-
-### 2. Adım: Firebase Yetki Anahtarını (Service Account) Alma
-1. [Firebase Console](https://console.firebase.google.com/) adresine girin ve OdivonGYM projenizi seçin.
-2. Sol üstteki dişli simgesine ⚙️ tıklayıp **Project Settings (Proje Ayarları)** sayfasına gidin.
-3. **Service Accounts (Hizmet Hesapları)** sekmesine tıklayın.
-4. **"Generate new private key" (Yeni özel anahtar oluştur)** butonuna basın.
-5. İndirilen `.json` dosyasının adını `serviceAccountKey.json` olarak değiştirin ve bu `edge-agent/` klasörünün içine yapıştırın.
-
----
-
-### 3. Adım: Ayar Dosyasını (config.json) Hazırlama
-Klasördeki `config.sample.json` dosyasını kopyalayıp aynı yerde adını `config.json` yapın:
-```json
-{
-  "tenantId": "SENIN_SALON_KODUN",
-  "device": {
-    "ip": "192.168.1.201",
-    "port": 4370,
-    "timeout": 5000,
-    "gateName": "Turnike 1 - Ana Giriş",
-    "direction": "in"
-  },
-  "polling": {
-    "intervalSeconds": 5,
-    "stateFilePath": "./state.json"
-  },
-  "firebase": {
-    "serviceAccountKeyPath": "./serviceAccountKey.json"
-  }
-}
 ```
-* **tenantId:** OdivonGYM'deki işletmenizin kimlik kodu. (Admin panelinde sol alttaki profilinizden veya veritabanından alabilirsiniz.)
-* **ip:** Perkotek cihazının 1. adımda belirlediğiniz IP adresi.
+GYM admin paneli ─► MainApi ◄──HTTPS── Edge Agent ──LAN──► YT cihazı
+```
 
----
+Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agent-contract.md)
 
-### 4. Adım: Başlatma & Test
+## Ne yapar?
 
-#### A. Çift Tıklayarak Başlatma (Windows için En Kolayı):
-Klasördeki **`baslat.bat`** dosyasına çift tıklayın!
-* Gerekli npm paketlerini kendisi yükler,
-* Ayarları kontrol eder,
-* Cihaza bağlanıp dinlemeye başlar.
+- Her cihazı **5 saniyede bir** tarar, tüm log sayfalarını okur, yeni kayıtları yerel
+  SQLite kuyruğuna (`data/agent.db`) alır ve MainApi'ye toplu gönderir. İnternet
+  kesilirse kayıtlar kuyrukta bekler, bağlantı gelince gönderilir; tekrarlar hem
+  yerelde hem MainApi'de ayıklanır.
+- MainApi'deki **istenen yetki durumunu** (üye numarası, kart, bitiş günü, açık/kapalı)
+  cihaza uygular, cihazdan **geri okuyup doğrular**; doğrulanmadan "uygulandı" demez.
+- 15 saniyede bir heartbeat gönderir; paneldeki "çevrimiçi" bilgisi buradan gelir.
+- Cihazın bildirmediği "izin verildi / reddedildi" sonucunu tahmin etmez.
+- Uzaktan kapı açma YT için kapalıdır (`SetDoorStatus=open` kalıcı açık kalabilir).
 
-#### B. Komut Satırından Başlatma:
+## Desteklenen protokoller
+
+| Protokol | Durum |
+| --- | --- |
+| `yt-http-digest` | Olay okuma + kart/üye no/bitiş günü senkronu. **Donanım testi gerekli.** |
+| `zk-tcp-4370` | Tanımlı, henüz doğrulanmadı (cihaza hiçbir şey yazmaz). |
+| `vendor-sdk` | Tanımlı, henüz eklenmedi. |
+
+## Kurulum (Windows)
+
+1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)). Ek paket gerekmez.
+2. Bu klasörü salon bilgisayarına kopyalayın.
+3. `config.sample.json` dosyasını `config.json` olarak kopyalayın ve cihaz bilgilerini girin:
+   ```json
+   {
+     "mainApiUrl": "https://mainapi.odivon.com/api/v1",
+     "agentName": "Resepsiyon PC",
+     "credentials": {
+       "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" }
+     }
+   }
+   ```
+   Cihaz parolası yalnızca bu bilgisayarda durur; MainApi'ye gönderilmez.
+4. Admin panelinde **Geçiş Kontrol → Cihazlar**'da cihazı ekleyin (protokol: YT HTTP Digest,
+   IP adresi), ardından **Agent eşleştir** ile tek kullanımlık kodu alın (10 dk geçerli).
+5. `baslat.bat` dosyasına çift tıklayın; ilk açılışta kodu sorar. Komut satırından:
+   ```cmd
+   npm run enroll -- KOD
+   npm start
+   ```
+
+Agent kimliği `data/identity.json` dosyasındadır; bu dosyayı paylaşmayın. Agent panelden
+iptal edilirse çalışmayı durdurur, yeni kodla yeniden eşleştirilmesi gerekir.
+
+### Otomatik başlatma
+
+`Windows + R` → `shell:startup` → `baslat.bat` kısayolunu bu klasöre koyun, ya da
+PM2 kullanın: `pm2 start agent.js --name odivon-agent --node-args="--disable-warning=ExperimentalWarning"`.
+
+## Eski agent'tan geçiş
+
+Eski sürüm Firestore'a doğrudan yazıyordu. Yeni agent doğrulandıktan sonra:
+
+1. Eski agent'ı durdurun ve başlangıç kısayolunu/PM2 kaydını kaldırın.
+2. Bilgisayardaki `serviceAccountKey.json` dosyasını silin.
+3. Firebase Console → Project settings → Service accounts → ilgili anahtarı **iptal edin**.
+
+## Geliştirme
+
 ```bash
-cd edge-agent
-npm install
-npm start
+npm test
 ```
 
-Ekranda şu çıktıyı gördüğünüzde sistem hazırdır:
-```
-====================================================
-   ODIVON GYM - PERKOTEK YT-32 EDGE AGENT v1.0.0    
-====================================================
-🏢 Salon (Tenant ID) : salon_123
-🚪 Kapı / Turnike Adı: Turnike 1 - Ana Giriş
-🌐 Cihaz IP Adresi   : 192.168.1.201:4370
-⏱️ Log Çekme Aralığı : Her 5 saniyede bir
-----------------------------------------------------
-📡 Cihaz senkronizasyon kuyruğu dinleniyor (device_sync_queue)...
-📡 Anlık komut kuyruğu dinleniyor (device_commands)...
-🔌 Perkotek YT-32 cihazına bağlanılıyor: 192.168.1.201:4370...
-✨ [BAĞLANDI] Perkotek YT-32 cihazı aktif.
-```
-
----
-
-## 🔄 Bilgisayar Açıldığında Otomatik Başlamasını Sağlama (7/24 Çalışma)
-
-Resepsiyon bilgisayarı her açıldığında veya yeniden başladığında servisin arka planda otomatik çalışması için:
-
-### Yöntem 1: PM2 ile Servis Yapma (Tavsiye Edilen)
-1. Komut satırında PM2 yükleyin:
-   ```cmd
-   npm install -g pm2
-   npm install -g pm2-windows-startup
-   pm2-startup install
-   ```
-2. Edge agent klasöründe servisi başlatın:
-   ```cmd
-   cd edge-agent
-   pm2 start agent.js --name "odivon-turnike"
-   pm2 save
-   ```
-Artık bilgisayar yeniden başlasa bile servis arka planda sessizce çalışmaya devam eder.
-
-### Yöntem 2: Windows Başlangıç Klasörü (Kolay Alternatif)
-1. Klavyeden `Windows + R` tuşlarına basın.
-2. `shell:startup` yazıp Enter'a basın (Başlangıç klasörü açılır).
-3. `baslat.bat` dosyasına sağ tıklayıp **"Kısayol Oluştur"** deyin ve oluşan kısayolu bu Başlangıç klasörüne atın.
+Testler sahte bir YT cihazı (HTTP Digest + `/bin/cmd`) ve bellek içi MainApi ile
+sayfalama, geri okuma doğrulaması, çevrimdışı kuyruk, tekrar ayıklama ve iptal
+senaryolarını çalıştırır. YT tel biçimi `src/adapters/yt-wire.js` dosyasında tek yerde
+tanımlıdır.

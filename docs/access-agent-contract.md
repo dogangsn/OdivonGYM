@@ -149,8 +149,10 @@ agent'a / iki isteğe teslim edilmez.
 - `applied` ⇒ `status = 'applied'`, `appliedVersion = version`, `leaseUntil = null`, `lastError = null`.
 - `error` ⇒ `status = 'error'`, `lastError = error`, `leaseUntil = null`.
   Hata durumundaki belge bir sonraki üye değişikliğinde ya da `resync` ile
-  yeniden `pending` olur; agent ayrıca kendi içinde üstel geri çekilmeyle yeniden dener
-  (bkz. §4).
+  yeniden `pending` olur.
+- Cihaza **ulaşılamadığında** (ağ hatası, zaman aşımı) agent onay göndermez;
+  kiralama 60 sn sonra dolar ve öğe yeniden teslim edilir. Böylece geçici
+  hatalar kendiliğinden tekrar denenir, kalıcı hatalar panelde görünür.
 
 ### `POST /gym/access/agents/events/batch`
 
@@ -177,7 +179,7 @@ Etki: `gymAccessAgents.lastHeartbeatAt = now`; her cihaz için `reachable` ise
 - Her cihaz 5 sn'de bir taranır; tüm log sayfaları okunur, yeni kayıtlar yerel
   SQLite (`agent.db`) kuyruğuna alınır, sonra MainApi'ye toplu gönderilir.
   İnternet yoksa kuyruk diskte kalır; gönderim başarılı olunca silinir.
-- Her iş öğesi cihaza uygulanır, cihazdan `GetUserInfo` ile geri okunur; alanlar
+- Her iş öğesi cihaza uygulanır (aynı cihaza istekler sıralı gider), cihazdan `GetUserInfo` ile geri okunur; alanlar
   eşleşirse `verified: true` ile `applied` onayı gönderilir. Eşleşmezse `error`.
 - `enabled: false` ⇒ `DeleteUserInfo`; geri okumada kullanıcı yoksa doğrulanmış sayılır.
 - Kapı açma (`doorOpen`) YT için **kapalıdır**; `SetDoorStatus=open` kalıcı açık

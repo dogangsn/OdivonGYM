@@ -60,3 +60,4 @@ functions/lib
 edge-agent/node_modules/
 edge-agent/config.json
 edge-agent/state.json
+edge-agent/data/
