@@ -58,8 +58,15 @@ iptal edilirse çalışmayı durdurur, yeni kodla yeniden eşleştirilmesi gerek
 
 ### Otomatik başlatma
 
-`Windows + R` → `shell:startup` → `baslat.bat` kısayolunu bu klasöre koyun, ya da
-PM2 kullanın: `pm2 start agent.js --name odivon-agent --node-args="--disable-warning=ExperimentalWarning"`.
+`baslat.bat` eşleştirmeden sonra `servis-kur.bat` dosyasını kendisi çalıştırır (yönetici izni ister).
+Bu, Windows Görev Zamanlayıcı'da **"Odivon Edge Agent"** görevini kurar:
+
+- Bilgisayar açılınca, kimse oturum açmasa bile agent arka planda başlar.
+- Agent kapanırsa 1 dakika içinde yeniden başlatılır.
+- Prizdeyken uyku / hazırda bekleme kapatılır.
+
+Kurulumdan sonra `baslat.bat` yalnızca görevi çalıştırır; pencere açık kalmak zorunda değildir.
+Yönetici izni verilmezse agent eskisi gibi pencerede çalışır. Kaldırmak için: `servis-kur.bat kaldir`.
 
 ## Eski agent'tan geçiş
 

@@ -3,21 +3,29 @@
 /**
  * YT cihazının `/bin/cmd` tel biçimi (istek gövdeleri ve yanıt alanları).
  *
- * Bilinen (salondaki önceki agent sürümünden):
+ * Salondaki cihazda doğrulandı (firmware K4E_2Y1Kbc011_2.9, HTTP Digest MD5 qop=auth):
  *   - Her çağrı: POST /bin/cmd, gövde {"cmd": <ad>, "data": {...}}
- *   - Yanıt:     {"cmd", "result_code": 0 (başarılı), "result_msg", "result_data": {...}}
+ *   - Yanıt:     {"cmd", "result_code": 0 (başarılı), "result_msg"?, "result_data"?}
+ *     Ardışık isteklerde bazen geçici olarak result_code -2 döner; kısa beklemeyle tekrar denenir.
  *   - GetLogDataPage data: {beginTime: "YYYYMMDD", endTime: "YYYYMMDD", page (0'dan), pageCount}
+ *     Cihaz sayfa başına en çok 30 kayıt döndürür (pageCount daha büyük verilse de).
  *     result_data: {allLogCount, logs: [{time: "YYYYMMDDHHMMSS", userId, verifyMode, ioMode}]}
- *     ioMode 0 = giriş, 1 = çıkış, 10 = kapı. Kayıtlarda benzersiz kimlik ve izin/red alanı yok.
- *
- * ⚠️ DOĞRULANACAK: GetUserInfo / SetUserInfo / DeleteUserInfo gövdeleri ve kullanıcı alan
- * adları (`userId`, `name`, `card`, `vaildEnd`) plandan alındı; gerçek cihazdan örnek
- * istek/yanıtla karşılaştırılmalı. Biçim farklıysa yalnızca bu dosya ve
- * test/fake-yt-device.js güncellenir.
+ *     ioMode 0 = giriş, 1 = çıkış, 10 = kapı. Kayıtlarda benzersiz kimlik, kart no ve izin/red yok.
+ *   - GetUserInfo data: {packageId: 0, usersId: ["1042"]}
+ *     result_data: {packageId, usersCount, users: [{userId, name, card?, privilege, vaildStart, vaildEnd}] | null}
+ *     Kullanıcı yoksa result_code 0 ve users null. vaildEnd "00000000" = süresiz.
+ *   - SetUserInfo data: {users: [{userId, name, card, vaildStart, vaildEnd, update: 1}]}
+ *     Başarısız kullanıcılar result_data.usersId içinde döner. Ad en çok 9 karakter saklanır;
+ *     Latin-1 dışı harfler (ör. İ, Ş, Ğ) adı keser, bu yüzden ad ASCII'ye indirgenir.
+ *   - DeleteUserInfo data: {usersCount: 1, usersId: ["1042"]}
+ *     Olmayan kullanıcı için de result_code 0 döner; kimlik result_data.userId içinde gelir.
  */
 
 const CMD_PATH = '/bin/cmd';
-const LOG_PAGE_SIZE = 500;
+const LOG_PAGE_SIZE = 30;
+/** Geçici "meşgul" yanıtı. */
+const BUSY_CODE = -2;
+const NO_START_DAY = '20000101';
 const FAR_FUTURE_DAY = '20991231';
 
 function isOk(res) {
@@ -31,6 +39,16 @@ function isNotFound(res) {
   return text.includes('not exist') || text.includes('not found') || text.includes('no user');
 }
 
+function isBusy(res) {
+  return !!res && Number(res.result_code) === BUSY_CODE;
+}
+
+/** SetUserInfo yanıtında kullanıcı başarısızlar listesinde mi? */
+function userRejected(res, userId) {
+  const failed = res?.result_data?.usersId;
+  return Array.isArray(failed) && failed.map(String).includes(String(userId));
+}
+
 function describe(res) {
   return `result_code=${res?.result_code} ${res?.result_msg ?? ''}`.trim();
 }
@@ -40,9 +58,12 @@ const requests = {
     cmd: 'GetLogDataPage',
     data: { beginTime: beginDay, endTime: FAR_FUTURE_DAY, page, pageCount: LOG_PAGE_SIZE },
   }),
-  getUser: (userId) => ({ cmd: 'GetUserInfo', data: { userId } }),
-  setUser: (user) => ({ cmd: 'SetUserInfo', data: user }),
-  deleteUser: (userId) => ({ cmd: 'DeleteUserInfo', data: { userId } }),
+  getUser: (userId) => ({ cmd: 'GetUserInfo', data: { packageId: 0, usersId: [String(userId)] } }),
+  setUser: (user) => ({
+    cmd: 'SetUserInfo',
+    data: { users: [{ vaildStart: NO_START_DAY, ...user, userId: String(user.userId), update: 1 }] },
+  }),
+  deleteUser: (userId) => ({ cmd: 'DeleteUserInfo', data: { usersCount: 1, usersId: [String(userId)] } }),
 };
 
 /** GetLogDataPage yanıtı → { total, records[] } */
@@ -86,6 +107,8 @@ module.exports = {
   LOG_PAGE_SIZE,
   isOk,
   isNotFound,
+  isBusy,
+  userRejected,
   describe,
   requests,
   parseLogPage,

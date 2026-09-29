@@ -991,11 +991,12 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <!-- Adım 3 -->
                 <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2 text-xs text-slate-600 dark:text-slate-300">
                   <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">3. Başlatın</h4>
-                  <p class="m-0"><b>baslat.bat</b> dosyasına çift tıklayın; ilk açılışta eşleştirme kodunu sorar. Komut satırından:</p>
-                  <div class="p-3 rounded-xl bg-slate-950 text-slate-200 font-mono text-[11px] space-y-1">
-                    <div>npm run enroll -- {{ pairingCode()?.code || 'KOD' }}</div>
-                    <div>npm start</div>
-                  </div>
+                  <p class="m-0">
+                    <b>baslat.bat</b> dosyasına çift tıklayın; ilk açılışta eşleştirme kodunu sorar. Ardından yönetici izni
+                    isteyip agent'ı Windows açılışında otomatik başlayacak şekilde kurar (kimse oturum açmasa bile çalışır,
+                    kapanırsa 1 dakikada yeniden başlar). Pencereyi kapatabilirsiniz.
+                  </p>
+                  <p class="m-0">Otomatik başlatmayı kaldırmak için: <code>servis-kur.bat kaldir</code></p>
                 </div>
               }
 
@@ -1055,7 +1056,11 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                   </div>
                   <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
                     <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Bilgisayar açılınca otomatik başlatma</h4>
-                    <p class="m-0"><code>Windows + R</code> → <code>shell:startup</code> klasörüne <b>baslat.bat</b> kısayolunu koyun.</p>
+                    <p class="m-0">
+                      <b>baslat.bat</b> eşleştirmeden sonra bunu kendisi kurar (Windows Görev Zamanlayıcı, "Odivon Edge Agent").
+                      Elle kurmak için <b>servis-kur.bat</b>, kaldırmak için <code>servis-kur.bat kaldir</code>. BIOS'ta
+                      "elektrik gelince otomatik aç" seçeneğini açmanız önerilir.
+                    </p>
                   </div>
                 </div>
               }

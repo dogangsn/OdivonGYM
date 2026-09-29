@@ -2,7 +2,7 @@
 
 /**
  * Test için sahte YT cihazı: HTTP Digest (MD5, qop=auth) + /bin/cmd.
- * Tel biçimi src/adapters/yt-wire.js ile aynı varsayımları kullanır.
+ * Salondaki gerçek cihazda gözlenen davranışı taklit eder (bkz. src/adapters/yt-wire.js).
  */
 
 const http = require('node:http');
@@ -10,6 +10,7 @@ const crypto = require('node:crypto');
 
 const md5 = (v) => crypto.createHash('md5').update(v).digest('hex');
 const REALM = 'yt-device';
+const MAX_LOG_PAGE = 30;
 
 function startFakeYtDevice({ username = 'admin', password = 'secret' } = {}) {
   const state = {
@@ -17,6 +18,7 @@ function startFakeYtDevice({ username = 'admin', password = 'secret' } = {}) {
     logs: [],
     requests: [],
     ignoreVaildEnd: false,
+    busyOnce: false,
     down: false,
     nonce: crypto.randomBytes(8).toString('hex'),
   };
@@ -49,22 +51,32 @@ function startFakeYtDevice({ username = 'admin', password = 'secret' } = {}) {
       };
       switch (cmd) {
         case 'GetLogDataPage': {
+          // Gerçek cihaz gibi: sayfa başına en çok 30 kayıt.
+          const size = Math.min(Number(data.pageCount) || 0, MAX_LOG_PAGE);
           const inWindow = state.logs.filter((l) => l.time.slice(0, 8) >= data.beginTime && l.time.slice(0, 8) <= data.endTime);
-          const start = data.page * data.pageCount;
-          return reply(0, { allLogCount: inWindow.length, logs: inWindow.slice(start, start + data.pageCount) });
+          const start = data.page * size;
+          return reply(0, { allLogCount: inWindow.length, logs: inWindow.slice(start, start + size) });
         }
         case 'GetUserInfo': {
-          const user = state.users.get(data.userId);
-          return user ? reply(0, user) : reply(1, null, 'user not exist');
+          if (state.busyOnce) {
+            state.busyOnce = false;
+            return reply(-2);
+          }
+          const users = (data.usersId ?? []).map((id) => state.users.get(String(id))).filter(Boolean);
+          return reply(0, { packageId: 0, users: users.length ? users : null, usersCount: users.length });
         }
         case 'SetUserInfo': {
-          const user = { ...data };
-          if (state.ignoreVaildEnd) user.vaildEnd = '20991231';
-          state.users.set(user.userId, user);
-          return reply(0, null);
+          for (const { update, ...user } of data.users ?? []) {
+            if (state.ignoreVaildEnd) user.vaildEnd = '20991231';
+            state.users.set(String(user.userId), { privilege: 0, ...user, name: String(user.name ?? '').slice(0, 9) });
+          }
+          return reply(0);
         }
-        case 'DeleteUserInfo':
-          return state.users.delete(data.userId) ? reply(0, null) : reply(1, null, 'user not exist');
+        case 'DeleteUserInfo': {
+          // Gerçek cihaz olmayan kullanıcı için de 0 döner ve kimliği result_data.userId içinde verir.
+          const missing = (data.usersId ?? []).filter((id) => !state.users.delete(String(id)));
+          return missing.length ? reply(0, { userId: missing }) : reply(0);
+        }
         default:
           return reply(1, null, 'unknown cmd');
       }

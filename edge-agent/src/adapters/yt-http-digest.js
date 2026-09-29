@@ -17,11 +17,15 @@ const { DeviceError, asDeviceError } = require('./errors');
 const wire = require('./yt-wire');
 const { toIstanbulIso, istanbulDay } = require('../time');
 
-const MAX_PAGES_PER_POLL = 20;
+/** Cihaz sayfası 30 kayıt: tur başına en çok 3000 kayıt okunur, kalanı sonraki turda. */
+const MAX_PAGES_PER_POLL = 100;
 /** İlk çalıştırmada cihazdaki tüm geçmiş kayıtlar alınır (tekrar korumalı). */
 const INITIAL_BEGIN_DAY = '20000101';
 const NO_END_DATE = '20991231';
-const MAX_NAME_LENGTH = 24;
+/** Cihaz adı en çok 9 karakter saklıyor (salondaki cihazda doğrulandı). */
+const MAX_NAME_LENGTH = 9;
+const BUSY_RETRIES = 3;
+const BUSY_DELAY_MS = 1000;
 
 /** Cihaz ekranı için ad: Türkçe karakterler ASCII'ye indirgenir, uzunluk sınırlanır. */
 function deviceName(name) {
@@ -61,7 +65,16 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
     fetchImpl,
   });
 
+  /** Cihaz ardışık isteklerde geçici -2 (meşgul) dönebiliyor: kısa beklemeyle tekrar dene. */
   async function cmd(body) {
+    for (let attempt = 0; ; attempt++) {
+      const res = await send(body);
+      if (!wire.isBusy(res) || attempt >= BUSY_RETRIES) return res;
+      await new Promise((resolve) => setTimeout(resolve, BUSY_DELAY_MS * (attempt + 1)));
+    }
+  }
+
+  async function send(body) {
     let res;
     try {
       res = await http.request('POST', wire.CMD_PATH, {
@@ -172,18 +185,18 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
       // Üye numarası değiştiyse eski cihaz kullanıcısı önce silinir (yoksa eski kimlikle geçiş sürer).
       if (item.replacesUserId && item.replacesUserId !== item.userId) {
         const del = await cmd(wire.requests.deleteUser(item.replacesUserId));
-        if (!wire.isOk(del) && !wire.isNotFound(del)) {
+        if ((await getUser(item.replacesUserId)) !== null) {
           throw new DeviceError(`Eski kullanıcı silinemedi (${item.replacesUserId}): ${wire.describe(del)}`);
         }
-        if ((await getUser(item.replacesUserId)) !== null) return { verified: false };
       }
 
       if (!item.enabled) {
+        // Olmayan kullanıcıyı silmek de result_code 0 döner; sonuç geri okumayla doğrulanır.
         const res = await cmd(wire.requests.deleteUser(item.userId));
-        if (!wire.isOk(res) && !wire.isNotFound(res)) {
+        const after = await getUser(item.userId);
+        if (after !== null && !wire.isOk(res)) {
           throw new DeviceError(`DeleteUserInfo başarısız: ${wire.describe(res)}`);
         }
-        const after = await getUser(item.userId);
         return { verified: after === null };
       }
 
@@ -194,7 +207,9 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
         vaildEnd: item.validEnd ?? NO_END_DATE,
       };
       const res = await cmd(wire.requests.setUser(desired));
-      if (!wire.isOk(res)) throw new DeviceError(`SetUserInfo başarısız: ${wire.describe(res)}`);
+      if (!wire.isOk(res) || wire.userRejected(res, desired.userId)) {
+        throw new DeviceError(`SetUserInfo başarısız: ${wire.describe(res)}`);
+      }
 
       const after = await getUser(item.userId);
       const verified =

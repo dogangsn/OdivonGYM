@@ -1,6 +1,7 @@
 @echo off
 chcp 65001 > nul
 title OdivonGYM Edge Agent
+cd /d "%~dp0"
 
 echo ========================================================
 echo   OdivonGYM Edge Agent (MainApi ^<-^> Gecis Cihazlari)
@@ -28,6 +29,26 @@ echo.
 
 :run
 
+rem Otomatik baslatma kuruluysa agent arka planda calisir; pencere gerekmez.
+schtasks /Query /TN "Odivon Edge Agent" >nul 2>&1
+if %errorlevel% equ 0 (
+    schtasks /Run /TN "Odivon Edge Agent" >nul 2>&1
+    echo [TAMAM] Edge Agent arka planda calisiyor ^(Windows acilisinda otomatik baslar^).
+    echo         Durumu admin panelindeki "cevrimici" bilgisinden takip edin.
+    timeout /t 8 >nul
+    exit /b
+)
+
+echo [BILGI] Otomatik baslatma kuruluyor ^(yonetici izni istenecek^)...
+call "%~dp0servis-kur.bat" otomatik
+schtasks /Query /TN "Odivon Edge Agent" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [TAMAM] Kurulum tamamlandi. Bu pencereyi kapatabilirsiniz.
+    timeout /t 8 >nul
+    exit /b
+)
+
+echo [UYARI] Otomatik baslatma kurulamadi; agent bu pencerede calisacak.
 echo [BILGI] Edge Agent baslatiliyor. Pencereyi acik birakin veya kucultun.
 echo.
 call npm start

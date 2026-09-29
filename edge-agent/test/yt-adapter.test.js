@@ -46,13 +46,13 @@ test('ilk çalıştırmada tüm geçmişi okur, sonra dünden başlayan pencerey
   dev.addLogs(10, '20260928');
   const next = await adapter.readEvents(first.cursor);
   assert.equal(next.events.length, 610);
-  assert.deepEqual(next.cursor, { beginDay: '20260927', page: 1, total: 610 });
+  assert.deepEqual(next.cursor, { beginDay: '20260927', page: 20, total: 610 });
 
-  // Sonraki turda son sayfadan devam eder.
+  // Sonraki turda son sayfadan (30'luk sayfalar) devam eder.
   dev.addLogs(5, '20260928');
   const third = await adapter.readEvents(next.cursor);
-  assert.equal(third.events.length, 115);
-  assert.deepEqual(third.cursor, { beginDay: '20260927', page: 1, total: 615 });
+  assert.equal(third.events.length, 15);
+  assert.deepEqual(third.cursor, { beginDay: '20260927', page: 20, total: 615 });
 });
 
 test('gün değişince pencere yeni düne kayar', async (t) => {
@@ -75,9 +75,30 @@ test('yetki verir ve geri okuyarak doğrular', async (t) => {
   const { dev, adapter } = await setup(t);
   const item = { userId: '1042', name: 'Ayşe Yılmaz', card: '0012345', validEnd: '20261031', enabled: true };
   assert.deepEqual(await adapter.applyUser(item), { verified: true });
-  assert.deepEqual(dev.state.users.get('1042'), { userId: '1042', name: 'Ayse Yilmaz', card: '0012345', vaildEnd: '20261031' });
+  assert.deepEqual(dev.state.users.get('1042'), {
+    privilege: 0,
+    vaildStart: '20000101',
+    userId: '1042',
+    name: 'Ayse Yilm',
+    card: '0012345',
+    vaildEnd: '20261031',
+  });
+  assert.deepEqual(dev.state.requests.at(-2), {
+    cmd: 'SetUserInfo',
+    data: {
+      users: [{ vaildStart: '20000101', userId: '1042', name: 'Ayse Yilm', card: '0012345', vaildEnd: '20261031', update: 1 }],
+    },
+  });
   // Tekrar uygulamak idempotent.
   assert.deepEqual(await adapter.applyUser(item), { verified: true });
+});
+
+test('cihaz geçici -2 (meşgul) dönerse tekrar dener', async (t) => {
+  const { dev, adapter } = await setup(t);
+  dev.state.busyOnce = true;
+  assert.deepEqual(await adapter.applyUser({ userId: '8', name: 'Z', card: null, validEnd: '20261031', enabled: true }), {
+    verified: true,
+  });
 });
 
 test('cihaz bitiş tarihini uygulamazsa doğrulanmış sayılmaz', async (t) => {
@@ -110,7 +131,7 @@ test('üye numarası değişince eski cihaz kullanıcısı silinir', async (t) =
   assert.equal(dev.state.users.get('501').vaildEnd, '20261231');
 });
 
-test('cihaz adı ASCII ve kısa', () => {
-  assert.equal(deviceName('Çağrı Şükrü Öğüt İnce'), 'Cagri Sukru Ogut Ince');
-  assert.equal(deviceName('x'.repeat(40)).length, 24);
+test('cihaz adı ASCII ve en çok 9 karakter', () => {
+  assert.equal(deviceName('Çağrı Şükrü Öğüt İnce'), 'Cagri Suk');
+  assert.equal(deviceName('x'.repeat(40)).length, 9);
 });
