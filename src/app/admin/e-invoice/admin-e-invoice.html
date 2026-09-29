@@ -390,7 +390,7 @@
 <!-- ========================================== -->
 <app-slide-over [open]="createDrawerOpen()" title="Genel Fatura Girişi (Satış / Alış / E-Fatura)"
   submitLabel="Faturayı Kaydet" [submitting]="submittingInvoice()" [errorMessage]="invoiceError()"
-  (closed)="closeCreateDrawer()" (close)="closeCreateDrawer()" (submitted)="submitInvoice()" (save)="submitInvoice()">
+  (closed)="closeCreateDrawer()" (submitted)="submitInvoice()">
   <div [formGroup]="invoiceForm" class="space-y-4">
     <!-- Fatura Yönü (Satış / Alış) -->
     <div>

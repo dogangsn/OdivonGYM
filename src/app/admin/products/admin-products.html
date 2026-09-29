@@ -243,9 +243,7 @@
     [submitting]="submitting()"
     [submitLabel]="editingProduct() ? 'Güncelle' : 'Kaydet'"
     (closed)="drawerOpen.set(false)"
-    (close)="drawerOpen.set(false)"
     (submitted)="saveProduct()"
-    (save)="saveProduct()"
   >
     <div [formGroup]="form" class="space-y-4">
       @if (errorMessage()) {

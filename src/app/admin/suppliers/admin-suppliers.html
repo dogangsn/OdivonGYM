@@ -170,8 +170,7 @@
 
 <!-- 5. Slide-Over Drawer (Tedarikçi Ekle / Düzenle) -->
 <app-slide-over [open]="drawerOpen()" [title]="editingSupplier() ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi Tanımla'"
-  submitLabel="Kaydet" [submitting]="submitting()" [errorMessage]="errorMessage()" (closed)="closeDrawer()"
-  (close)="closeDrawer()" (submitted)="submit()" (save)="submit()">
+  submitLabel="Kaydet" [submitting]="submitting()" [errorMessage]="errorMessage()" (closed)="closeDrawer()" (submitted)="submit()">
   <div [formGroup]="form" class="space-y-4">
     <app-field label="Firma / Tedarikçi Adı" [required]="true"
       [error]="fieldErr('name', { required: 'Firma adı zorunludur' })">
@@ -236,8 +235,8 @@
 
 <!-- 6. Slide-Over Drawer (Tedarikçi Kategorileri Yönetimi) -->
 <app-slide-over [open]="categoryModalOpen()" title="Tedarikçi Kategorileri Yönetimi" submitLabel="Kategoriyi Kaydet"
-  [submitting]="savingCategory()" (closed)="closeCategoryModal()" (close)="closeCategoryModal()"
-  (submitted)="saveNewCategory()" (save)="saveNewCategory()">
+  [submitting]="savingCategory()" (closed)="closeCategoryModal()"
+  (submitted)="saveNewCategory()">
   <div class="space-y-5">
     <!-- Yeni Kategori Ekleme Kartı -->
     <div

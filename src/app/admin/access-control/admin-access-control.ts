@@ -701,9 +701,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         [submitting]="savingGate()"
         [errorMessage]="addGateError()"
         (closed)="closeAddGateDrawer()"
-        (close)="closeAddGateDrawer()"
         (submitted)="saveNewGate()"
-        (save)="saveNewGate()"
       >
         <div class="space-y-4">
           <!-- Gate Name -->
@@ -806,9 +804,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         submitLabel="Tümünü Yeniden Senkronla"
         [submitting]="resyncing()"
         (closed)="closeSyncDrawer()"
-        (close)="closeSyncDrawer()"
         (submitted)="resyncGate()"
-        (save)="resyncGate()"
       >
         <div class="space-y-3">
           <div class="inline-flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-xl text-xs font-semibold">
@@ -1572,6 +1568,7 @@ export class AdminAccessControl implements OnInit {
   }
 
   protected async saveNewGate(): Promise<void> {
+    if (this.savingGate()) return;
     this.addGateError.set('');
     if (!this.newGate.name.trim()) {
       const msg = 'Lütfen cihaz / kapı adını giriniz.';
