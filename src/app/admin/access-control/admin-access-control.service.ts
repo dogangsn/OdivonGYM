@@ -99,8 +99,11 @@ export interface DeviceSyncItem {
 
 export type DeviceSyncSummary = Record<string, Partial<Record<DeviceSyncStatus, number>>>;
 
-/** Panel verileri bu aralıkla yenilenir (agent 5 sn'de bir tarar). */
-export const ACCESS_REFRESH_MS = 5000;
+/**
+ * Panel verileri bu aralıkla yenilenir (yalnızca sekme görünürken). Agent 5 sn'de bir tarar;
+ * 10 sn, istek sayısını ve Firestore okumalarını yarıya indirir.
+ */
+export const ACCESS_REFRESH_MS = 10000;
 
 export interface GateScanResult {
   allowed: boolean;
