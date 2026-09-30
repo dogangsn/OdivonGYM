@@ -220,7 +220,8 @@
           </button>
         </mat-menu>
 
-        <!-- AI Asistan Butonu -->
+        <!-- AI Asistan Butonu (simüle cevaplar; gerçek servis bağlanana kadar gizli) -->
+        @if (features.aiAssistant) {
         <button
           type="button"
           (click)="aiService.open()"
@@ -231,6 +232,7 @@
           <span>{{ 'shell.aiAssistant' | transloco }}</span>
           <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>
         </button>
+        }
 
         <!-- Canlı Çevrimiçi Rozeti -->
         <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
@@ -457,6 +459,8 @@
     <app-training-wizard-modal />
 
     <!-- ODIVON AI SALON ASİSTANI MODALI -->
-    <app-ai-assistant-modal />
+    @if (features.aiAssistant) {
+      <app-ai-assistant-modal />
+    }
   </div>
 </div>

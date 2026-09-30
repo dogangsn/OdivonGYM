@@ -10,6 +10,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { SupportedLanguage } from '../../../core/data/countries';
 import { BranchContextService } from '../../../core/services/branch-context.service';
+import { FEATURES } from '../../../core/config/features';
 import { TrainingWizardService } from '../../../core/services/training-wizard.service';
 import { AiAssistantService } from '../../../core/services/ai-assistant.service';
 import { Sidebar } from '../sidebar/sidebar';
@@ -105,6 +106,7 @@ export class Shell {
   protected readonly branchContext = inject(BranchContextService);
   protected readonly wizard = inject(TrainingWizardService);
   protected readonly aiService = inject(AiAssistantService);
+  protected readonly features = FEATURES;
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
   private readonly router = inject(Router);

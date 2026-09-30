@@ -7,6 +7,7 @@ import * as QRCode from 'qrcode';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AdminAccessControlService } from '../../../admin/access-control/admin-access-control.service';
 import { MemberQrService } from './member-qr.service';
+import { FEATURES } from '../../../core/config/features';
 
 @Component({
   selector: 'app-member-qr-modal',
@@ -103,6 +104,7 @@ import { MemberQrService } from './member-qr.service';
               </p>
 
               <!-- Turnike Simülasyon Butonu -->
+              @if (features.simulations) {
               <button type="button"
                       class="odv-btn-primary w-full mt-5 !py-3 flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
                       [disabled]="scanning()"
@@ -115,6 +117,7 @@ import { MemberQrService } from './member-qr.service';
                   <span>{{ 'turnstileModal.simulateBtn' | transloco }}</span>
                 }
               </button>
+              }
             }
           </div>
 
@@ -133,6 +136,7 @@ import { MemberQrService } from './member-qr.service';
 })
 export class MemberQrModal {
   protected readonly qrService = inject(MemberQrService);
+  protected readonly features = FEATURES;
   private readonly auth = inject(AuthService);
   private readonly accessService = inject(AdminAccessControlService);
   private readonly snackBar = inject(MatSnackBar);

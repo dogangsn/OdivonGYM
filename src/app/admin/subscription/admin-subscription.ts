@@ -10,6 +10,7 @@ import {
   SaasPlanId,
 } from '../../core/models/saas-plan.model';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { FEATURES } from '../../core/config/features';
 
 interface FaqItem {
   questionKey: string;
@@ -26,6 +27,7 @@ interface FaqItem {
 })
 export class AdminSubscription {
   protected readonly subService = inject(SaasSubscriptionService);
+  protected readonly features = FEATURES;
   private readonly transloco = inject(TranslocoService);
 
   // Fatura Döngüsü (Aylık / Yıllık)

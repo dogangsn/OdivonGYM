@@ -16,6 +16,7 @@ import { AdminAccountingService } from '../accounting/admin-accounting.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { BranchContextService } from '../../core/services/branch-context.service';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { FEATURES } from '../../core/config/features';
 
 type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator' | 'payroll';
 
@@ -35,6 +36,7 @@ export class AdminStaff {
   private readonly router = inject(Router);
   private readonly saasSub = inject(SaasSubscriptionService);
   protected readonly permissions = inject(PermissionService);
+  protected readonly features = FEATURES;
   protected readonly branchContext = inject(BranchContextService);
 
   readonly staffList = toSignal(this.staffService.watchStaff(), { initialValue: [] });

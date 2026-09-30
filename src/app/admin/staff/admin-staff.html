@@ -118,6 +118,7 @@
       <span>Yetki & Rol Matrisi</span>
     </button>
 
+    @if (features.simulations) {
     <button
       type="button"
       (click)="activeTab.set('roleSimulator')"
@@ -128,6 +129,7 @@
       <span>Canlı Rol Simülatörü</span>
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
     </button>
+    }
 
     <button
       type="button"
@@ -473,7 +475,7 @@
   }
 
   <!-- SEKME 3: CANLI ROL SİMÜLATÖRÜ -->
-  @if (activeTab() === 'roleSimulator') {
+  @if (features.simulations && activeTab() === 'roleSimulator') {
     <div class="space-y-6">
       <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-900 to-purple-900 text-white shadow-md">
         <div class="max-w-2xl">
