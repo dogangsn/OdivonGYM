@@ -221,6 +221,7 @@
       "adminAccounting": "Cash & Accounting",
       "adminEInvoice": "Invoicing & E-Invoice",
       "adminReports": "Sales & Cash Reports",
+      "adminAuditLog": "Audit Log",
       "adminAccessControl": "Turnstiles & Access",
       "adminDisciplines": "Disciplines & Equipment",
       "adminDefinitions": "Muscle Groups & Exercises",

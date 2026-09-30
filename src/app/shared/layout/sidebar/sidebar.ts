@@ -86,6 +86,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
     titleKey: 'sidebar.groups.reports',
     items: [
       { icon: 'analytics', labelKey: 'sidebar.items.adminReports', link: '/admin/reports' },
+      { icon: 'history', labelKey: 'sidebar.items.adminAuditLog', link: '/admin/audit-log' },
     ],
   },
   {

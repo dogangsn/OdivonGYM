@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { map } from 'rxjs';
+import { EMPTY, expand, map, reduce } from 'rxjs';
 import { ApiClient } from '../http/api-client';
 import {
   DebtorRow,
@@ -15,10 +15,16 @@ import { unwrapList } from './unwrap';
 export class ReceivablesApi {
   private readonly api = inject(ApiClient);
 
+  /** Tüm planlar: API sayfa başına en fazla 100 kayıt döndürür, `nextCursor` bitene kadar okunur. */
   list(query: { userId?: string; status?: ReceivableStatus } = {}) {
-    return this.api
-      .get<Receivable[]>('/gym/receivables', { limit: 500, ...query })
-      .pipe(map((r) => unwrapList<Receivable>(r.data)));
+    const page = (cursor?: string) =>
+      this.api
+        .get<{ items: Receivable[]; nextCursor: string | null }>('/gym/receivables', { limit: 100, ...query, cursor })
+        .pipe(map((r) => ({ items: unwrapList<Receivable>(r.data), nextCursor: r.data?.nextCursor ?? null })));
+    return page().pipe(
+      expand((result) => (result.nextCursor ? page(result.nextCursor) : EMPTY)),
+      reduce((all, result) => [...all, ...result.items], [] as Receivable[]),
+    );
   }
 
   get(id: string) {
