@@ -1,17 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { GymLoader } from '../gym-loader/gym-loader';
 
 @Component({
   selector: 'app-loading-spinner',
   standalone: true,
-  imports: [MatProgressSpinnerModule],
+  imports: [GymLoader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <mat-spinner [diameter]="40" color="primary" />
-      @if (label()) {
-        <p class="text-sm text-[var(--mat-sys-on-surface-variant)]">{{ label() }}</p>
-      }
+    <div class="flex flex-col items-center justify-center py-4 text-center w-full">
+      <app-gym-loader [inline]="true" [message]="label() || 'Veriler Yükleniyor…'" size="sm" />
     </div>
   `,
 })

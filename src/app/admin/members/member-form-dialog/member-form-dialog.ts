@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, DestroyRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
@@ -89,15 +89,18 @@ export class MemberFormDialog {
     { initialValue: [] },
   );
 
+  protected readonly activeSafetyTab = signal<'emergency' | 'health'>('emergency');
+
   readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2)]],
+    nationalId: ['', [Validators.pattern(/^[1-9]\d{10}$/)]],
     memberNumber: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9+()\s-]{7,20}$/)]],
     password: [''],
     branchId: [''],
     gender: ['unspecified' as Gender],
-    birthDate: [''],
+    birthDate: [todayInputValue()],
     trainerId: ['', [Validators.required]],
     membershipStatus: ['active' as MembershipStatus],
     packageDays: [30 as PackageOption],
@@ -116,6 +119,18 @@ export class MemberFormDialog {
     cardDepositFee: [150],
     cardDepositPaid: [false],
     notes: [''],
+  });
+
+  private readonly formValues = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  protected readonly hasEmergencyContact = computed(() => {
+    const v = this.formValues();
+    return !!(v.emergencyContactName?.trim() || v.emergencyContactPhone?.trim() || v.emergencyContactRelation?.trim());
+  });
+
+  protected readonly hasHealthInfo = computed(() => {
+    const v = this.formValues();
+    return !!(v.allergies?.trim() || v.chronicDiseases?.trim() || v.specialInfo?.trim());
   });
 
   constructor() {
@@ -138,16 +153,18 @@ export class MemberFormDialog {
 
       const initialPassword = editMode ? '' : generatePassword();
       const memberNumber = m?.memberNumber || generate5DigitNumber();
+      const birthDate = m?.birthDate ? toDateInputValue(m.birthDate) : todayInputValue();
 
       this.form.reset({
         displayName: m?.displayName ?? '',
+        nationalId: m?.nationalId ?? '',
         memberNumber,
         email: m?.email ?? '',
         phone: m?.phone ?? '',
         password: initialPassword,
         branchId: m?.branchId ?? this.branchContext.activeBranch()?.id ?? '',
         gender: m?.gender ?? 'unspecified',
-        birthDate: toDateInputValue(m?.birthDate),
+        birthDate,
         trainerId: m?.trainerId ?? '',
         membershipStatus: m?.membershipStatus ?? 'active',
         packageDays,
@@ -229,6 +246,15 @@ export class MemberFormDialog {
   generateAndFillPassword(): void {
     this.form.controls.password.setValue(generatePassword());
     this.hidePassword.set(false);
+  }
+
+  onNationalIdInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const clean = input.value.replace(/\D/g, '').slice(0, 11);
+    if (input.value !== clean) {
+      input.value = clean;
+    }
+    this.form.controls.nationalId.setValue(clean);
   }
 
   onPhotoFileSelected(event: Event): void {
@@ -332,6 +358,7 @@ export class MemberFormDialog {
       this.form.markAllAsTouched();
       const invalidFields: string[] = [];
       if (this.form.controls.displayName.invalid) invalidFields.push('Ad Soyad');
+      if (this.form.controls.nationalId.invalid) invalidFields.push('T.C. Kimlik No (11 Haneli)');
       if (this.form.controls.trainerId.invalid) invalidFields.push('Sorumlu Antrenör (Zorunlu)');
       if (this.form.controls.memberNumber.invalid) invalidFields.push('5 Haneli Üye No');
       if (this.form.controls.email.invalid) invalidFields.push('E-posta');
@@ -363,6 +390,7 @@ export class MemberFormDialog {
 
       const membershipInput = {
         displayName: value.displayName.trim(),
+        nationalId: value.nationalId?.trim() || null,
         memberNumber: value.memberNumber.trim(),
         phone: value.phone.trim(),
         gender: value.gender,

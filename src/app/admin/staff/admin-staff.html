@@ -284,8 +284,9 @@
                         <span>{{ staff.phone }}</span>
                       </div>
                     }
-                    <div class="text-[10px] font-semibold text-indigo-600">
-                      {{ staff.branchName || 'Kadıköy Merkez Şube' }}
+                    <div class="text-[10px] font-semibold text-indigo-600 flex items-center gap-1 flex-wrap">
+                      <mat-icon class="text-[12px] w-3 h-3 text-indigo-500 shrink-0">storefront</mat-icon>
+                      <span>{{ getStaffBranchesDisplay(staff) }}</span>
                     </div>
                   </div>
                 </td>
@@ -851,19 +852,26 @@
         <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
           <!-- Rol Seçici Kartları -->
           <div>
-            <label class="block font-bold text-slate-700 mb-1.5">Sistem Rolü & Yetki Düzeyi *</label>
-            <div class="grid grid-cols-2 gap-2">
-              @for (rk of roleKeys; track rk) {
+            <label class="block font-bold text-slate-700 mb-1.5 text-xs">Sistem Rolü & Yetki Düzeyi *</label>
+            <div class="grid grid-cols-2 gap-2.5">
+              @for (r of rolesList; track r.role) {
                 <button
                   type="button"
-                  (click)="onRoleChange(rk)"
-                  class="p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2"
-                  [ngClass]="formData.role === rk ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600 font-bold text-indigo-950' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+                  (click)="onRoleChange(r.role)"
+                  class="p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5"
+                  [class]="formData.role === r.role
+                    ? 'border-indigo-600 bg-indigo-50/80 ring-2 ring-indigo-500/30 text-indigo-950 font-bold shadow-2xs'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800 hover:border-slate-300'"
                 >
-                  <mat-icon class="text-[18px] w-4.5 h-4.5 text-indigo-600">{{ roleDefinitions[rk]?.icon }}</mat-icon>
-                  <div>
-                    <p class="m-0 leading-tight">{{ roleDefinitions[rk]?.badge }}</p>
-                    <span class="text-[9px] text-slate-400 font-normal">Seviye {{ roleDefinitions[rk]?.level }}</span>
+                  <div
+                    class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                    [class]="formData.role === r.role ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'"
+                  >
+                    <mat-icon class="icon-size-4">{{ r.icon }}</mat-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="m-0 text-xs font-bold leading-tight truncate text-slate-900">{{ r.badge }}</p>
+                    <span class="text-[10px] text-slate-500 font-medium">Seviye {{ r.level }}</span>
                   </div>
                 </button>
               }
@@ -914,42 +922,135 @@
             </div>
           </div>
 
-          <!-- Şube & Durum -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Bağlı Olduğu Şube</label>
-              <select
-                [(ngModel)]="formData.branchId"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
-              >
-                <option value="">{{ branchContext.activeBranchName() }}</option>
-                @for (br of branchContext.branches(); track br.id) {
-                  <option [value]="br.id">{{ br.name }}</option>
-                }
-              </select>
+          <!-- 1. Bağlı Olduğu Şube(ler) (Çoklu Seçim & Mükerrersiz) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block font-bold text-slate-700 m-0 text-xs">
+                Bağlı Olduğu Şube(ler) *
+                <span class="text-[10px] font-normal text-slate-500">({{ selectedBranchIds().length }} şube seçili)</span>
+              </label>
+              @if (uniqueBranches().length > 1) {
+                <button
+                  type="button"
+                  (click)="toggleAllBranches()"
+                  class="text-indigo-600 hover:text-indigo-800 text-[11px] font-bold cursor-pointer"
+                >
+                  {{ selectedBranchIds().length === uniqueBranches().length ? 'Seçimi Sıfırla' : 'Tüm Şubeleri Seç' }}
+                </button>
+              }
             </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Çalışma Durumu</label>
-              <select
-                [(ngModel)]="formData.status"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
-              >
-                <option value="active">Aktif Çalışıyor</option>
-                <option value="leave">İzinli</option>
-                <option value="inactive">Ayrıldı / Pasif</option>
-              </select>
+
+            <div class="flex flex-wrap gap-2">
+              @for (br of uniqueBranches(); track br.id) {
+                <button
+                  type="button"
+                  (click)="toggleBranch(br.id)"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer select-none text-left"
+                  [class]="isBranchSelected(br.id)
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-950 ring-1 ring-indigo-500/20 font-bold shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'"
+                >
+                  <span
+                    class="w-4 h-4 rounded-md flex items-center justify-center border transition-colors shrink-0"
+                    [class]="isBranchSelected(br.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'"
+                  >
+                    @if (isBranchSelected(br.id)) {
+                      <mat-icon class="icon-size-3">check</mat-icon>
+                    }
+                  </span>
+                  <span class="text-slate-900 font-bold leading-tight">{{ br.name }}</span>
+                  @if (br.city) {
+                    <span class="text-[10px] text-slate-400 font-normal">({{ br.city }})</span>
+                  }
+                </button>
+              }
             </div>
+            @if (selectedBranchIds().length === 0) {
+              <p class="text-[11px] text-amber-600 font-medium mt-1 mb-0 flex items-center gap-1">
+                <mat-icon class="text-[14px] w-3.5 h-3.5">warning</mat-icon>
+                <span>En az bir şube seçmelisiniz.</span>
+              </p>
+            }
           </div>
 
-          <!-- Uzmanlık Alanları -->
+          <!-- 2. Çalışma Durumu -->
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Uzmanlık Alanları & Branşlar (Virgülle ayırın)</label>
-            <input
-              type="text"
-              [(ngModel)]="formData.specialtiesText"
-              placeholder="Fitness, Kickbox, Reformer Pilates, Fonksiyonel"
-              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-            />
+            <label class="block font-bold text-slate-700 mb-1 text-xs">Çalışma Durumu</label>
+            <select
+              [(ngModel)]="formData.status"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
+            >
+              <option value="active">🟢 Aktif Çalışıyor</option>
+              <option value="leave">🔵 İzinli</option>
+              <option value="inactive">⚪ Ayrıldı / Pasif</option>
+            </select>
+          </div>
+
+          <!-- 3. Uzmanlık Alanları & Branşlar (Tanımlı Branşlardan Çoklu Seçim) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block font-bold text-slate-700 m-0 text-xs">
+                Uzmanlık Alanları & Branşlar *
+                <span class="text-[10px] font-normal text-slate-500">({{ selectedSpecialties().length }} branş seçili)</span>
+              </label>
+              <span class="text-[10px] text-slate-400">Çoklu seçim</span>
+            </div>
+
+            <!-- Tanımlı Branş Etiketleri (İnteraktif Çipler) -->
+            <div class="flex flex-wrap gap-1.5">
+              @for (disc of sportsDisciplinesList(); track disc.name) {
+                <button
+                  type="button"
+                  (click)="toggleDiscipline(disc.name)"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer select-none"
+                  [class]="isDisciplineSelected(disc.name)
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs font-bold'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'"
+                >
+                  <mat-icon class="icon-size-3.5" [class.text-white]="isDisciplineSelected(disc.name)" [class.text-indigo-600]="!isDisciplineSelected(disc.name)">
+                    {{ isDisciplineSelected(disc.name) ? 'check' : disc.icon }}
+                  </mat-icon>
+                  <span>{{ disc.name }}</span>
+                </button>
+              }
+            </div>
+
+            <!-- Ekstra Özel Uzmanlık Alanı Ekleme Girişi -->
+            <div class="mt-2.5 flex items-center gap-2">
+              <input
+                type="text"
+                #customSpecInput
+                placeholder="Listede olmayan branş veya uzmanlık yazın..."
+                (keydown.enter)="$event.preventDefault(); addCustomDiscipline(customSpecInput.value); customSpecInput.value = ''"
+                class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-indigo-600 bg-white placeholder-slate-400"
+              />
+              <button
+                type="button"
+                (click)="addCustomDiscipline(customSpecInput.value); customSpecInput.value = ''"
+                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer shrink-0 border border-slate-200"
+              >
+                + Ekle
+              </button>
+            </div>
+
+            <!-- Özel Eklenen Branşlar Varsa Rozetleri -->
+            @if (extraCustomSpecialties().length > 0) {
+              <div class="flex flex-wrap gap-1 mt-2">
+                @for (spec of extraCustomSpecialties(); track spec) {
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <span>{{ spec }}</span>
+                    <button
+                      type="button"
+                      (click)="removeDiscipline(spec)"
+                      class="hover:text-rose-600 text-indigo-400 cursor-pointer ml-0.5"
+                      title="Kaldır"
+                    >
+                      <mat-icon class="icon-size-3">close</mat-icon>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
           </div>
 
           <!-- Maaş & PT Komisyonu -->

@@ -110,6 +110,7 @@ export class AdminMembers {
         m.displayName?.toLowerCase().includes(term) ||
         m.email?.toLowerCase().includes(term) ||
         m.phone?.toLowerCase().includes(term) ||
+        m.nationalId?.includes(term) ||
         m.memberNumber?.toLowerCase().includes(term) ||
         m.rfidCardNumber?.toLowerCase().includes(term) ||
         m.branchName?.toLowerCase().includes(term),

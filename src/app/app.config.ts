@@ -16,6 +16,7 @@ import { TranslocoHttpLoader } from './core/i18n/transloco-loader';
 import { authInterceptor } from './core/http/auth.interceptor';
 import { errorInterceptor } from './core/http/error.interceptor';
 import { requestIdInterceptor } from './core/http/request-id.interceptor';
+import { loadingInterceptor } from './core/http/loading.interceptor';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -26,7 +27,9 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([authInterceptor, requestIdInterceptor, errorInterceptor])),
+    provideHttpClient(
+      withInterceptors([authInterceptor, requestIdInterceptor, loadingInterceptor, errorInterceptor]),
+    ),
     provideHeroIcons(),
     provideTransloco({
       config: {

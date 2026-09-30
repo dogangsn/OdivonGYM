@@ -18,6 +18,7 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
   phone?: string;
+  nationalId?: string;
   gender?: Gender;
   birthDate?: string | null;
   membershipStartsAt?: string | null;

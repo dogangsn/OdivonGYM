@@ -25,6 +25,7 @@ export interface NewMemberInput {
   email: string;
   phone: string;
   password: string;
+  nationalId?: string | null;
   gender: Gender;
   birthDate: Date | null;
   membershipStatus: MembershipStatus;
@@ -326,6 +327,7 @@ export class AdminMembersService {
   private toPayload(input: UpdateMemberInput | NewMemberInput) {
     return {
       displayName: input.displayName,
+      nationalId: input.nationalId ?? null,
       phone: input.phone,
       gender: input.gender,
       birthDate: input.birthDate ? input.birthDate.toISOString() : null,

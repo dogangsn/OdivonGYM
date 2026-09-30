@@ -1,0 +1,203 @@
+:host {
+  display: block;
+}
+
+// 1. Barbell (Halter) Bench / Overhead Press Animasyonu
+.animated-barbell {
+  transform-origin: 160px 80px;
+  animation: barbellPress 1.9s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  will-change: transform;
+}
+
+@keyframes barbellPress {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  24% {
+    transform: translateY(-24px) rotate(-1deg);
+  }
+  42% {
+    transform: translateY(-27px) rotate(1deg); // Zirvede kas kasılması ve titreme
+  }
+  48% {
+    transform: translateY(-26px) rotate(0deg);
+  }
+  72% {
+    transform: translateY(-2px) rotate(0deg);
+  }
+  80% {
+    transform: translateY(2px) rotate(0deg); // Hafif esneme ve darbe
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+// Halter Taban Gölgesi
+.barbell-shadow {
+  transform-origin: 160px 154px;
+  animation: barbellShadow 1.9s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+@keyframes barbellShadow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  42% {
+    transform: scale(0.68);
+    opacity: 0.25;
+  }
+  80% {
+    transform: scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+// 2. Sol Dambıl (Biceps Curl Hareketi)
+.animated-dumbbell {
+  transform-origin: 56px 99px;
+  animation: dumbbellCurl 1.9s infinite ease-in-out;
+  animation-delay: 0.2s; // Senkron kırıcı doğal gecikme
+  will-change: transform;
+}
+
+@keyframes dumbbellCurl {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  45% {
+    transform: translateY(-16px) rotate(-18deg);
+  }
+  55% {
+    transform: translateY(-15px) rotate(-16deg);
+  }
+}
+
+.dumbbell-shadow {
+  transform-origin: 56px 148px;
+  animation: dumbbellShadow 1.9s infinite ease-in-out;
+  animation-delay: 0.2s;
+}
+
+@keyframes dumbbellShadow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  45% {
+    transform: scale(0.75);
+    opacity: 0.3;
+  }
+}
+
+// 3. Sağ Girya (Kettlebell Swing Hareketi)
+.animated-kettlebell {
+  transform-origin: 264px 80px;
+  animation: kettlebellSwing 1.9s infinite ease-in-out;
+  will-change: transform;
+}
+
+@keyframes kettlebellSwing {
+  0% {
+    transform: rotate(-18deg) translateY(0);
+  }
+  50% {
+    transform: rotate(18deg) translateY(-8px);
+  }
+  100% {
+    transform: rotate(-18deg) translateY(0);
+  }
+}
+
+.kettlebell-shadow {
+  transform-origin: 264px 148px;
+  animation: kettlebellShadow 1.9s infinite ease-in-out;
+}
+
+@keyframes kettlebellShadow {
+  0% {
+    transform: translateX(-10px) scale(0.85);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateX(10px) scale(0.85);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateX(-10px) scale(0.85);
+    opacity: 0.45;
+  }
+}
+
+// 4. Halter Zirve Kıvılcımları (Enerji Patlaması)
+.spark {
+  opacity: 0;
+  animation: sparkBurst 1.9s infinite ease-out;
+}
+
+.spark-1 {
+  animation-delay: 0.4s;
+}
+
+.spark-2 {
+  animation-delay: 0.45s;
+}
+
+.spark-3 {
+  animation-delay: 0.42s;
+}
+
+@keyframes sparkBurst {
+  0%, 35% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(1.6);
+  }
+  55%, 100% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+// 5. EKG Nabız Çizgisi
+.ekg-line {
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: ekgPulse 3.8s linear infinite;
+}
+
+@keyframes ekgPulse {
+  0% {
+    stroke-dashoffset: 260;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -260;
+  }
+}
+
+// 6. Akıcı İlerleme Çubuğu (Shimmer)
+.animate-gym-progress {
+  animation: gymProgress 1.6s infinite cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes gymProgress {
+  0% {
+    left: -35%;
+    width: 30%;
+  }
+  50% {
+    left: 25%;
+    width: 60%;
+  }
+  100% {
+    left: 100%;
+    width: 30%;
+  }
+}

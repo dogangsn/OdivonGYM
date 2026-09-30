@@ -13,6 +13,8 @@ export interface StaffMember {
   title: string; // Örn: 'Salon Sahibi', 'Kulüp Müdürü', 'Baş Antrenör (PT)', 'Müşteri İlişkileri & Kasa'
   branchId?: string | null;
   branchName?: string | null;
+  branchIds?: string[];
+  branchNames?: string[];
   specialties?: string[]; // Örn: ['Fitness', 'Kickbox', 'Reformer Pilates', 'Fonksiyonel']
   customPermissions?: Permission[];
   status: StaffStatus;

@@ -17,6 +17,9 @@ import { PermissionService } from '../../core/services/permission.service';
 import { BranchContextService } from '../../core/services/branch-context.service';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 import { FEATURES } from '../../core/config/features';
+import { AdminDisciplinesService } from '../disciplines/admin-disciplines.service';
+import { DEFAULT_DISCIPLINES_PRESETS } from '../../core/models/sports-discipline.model';
+import { GymBranch } from '../../core/models/gym-branch.model';
 
 type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator' | 'payroll';
 
@@ -38,8 +41,138 @@ export class AdminStaff {
   protected readonly permissions = inject(PermissionService);
   protected readonly features = FEATURES;
   protected readonly branchContext = inject(BranchContextService);
+  private readonly disciplinesService = inject(AdminDisciplinesService);
 
   readonly staffList = toSignal(this.staffService.watchStaff(), { initialValue: [] });
+  readonly dbDisciplines = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] });
+
+  // Sistem rolleri (Statik, güvenilir ve net tanımlı)
+  readonly rolesList = [
+    {
+      role: 'owner' as UserRole,
+      title: 'Salon Sahibi / Ortak',
+      badge: 'Patron',
+      icon: 'workspace_premium',
+      level: 5,
+    },
+    {
+      role: 'admin' as UserRole,
+      title: 'Genel Yönetici / Müdür',
+      badge: 'Yönetici',
+      icon: 'manage_accounts',
+      level: 4,
+    },
+    {
+      role: 'trainer' as UserRole,
+      title: 'Antrenör (PT)',
+      badge: 'Antrenör',
+      icon: 'fitness_center',
+      level: 3,
+    },
+    {
+      role: 'receptionist' as UserRole,
+      title: 'Müşteri Hizmetleri & Kasa',
+      badge: 'Resepsiyon',
+      icon: 'support_agent',
+      level: 2,
+    },
+  ];
+
+  // Hazır temel spor branşları listesi
+  readonly defaultDisciplines = [
+    { name: 'Fitness & Vücut Geliştirme', icon: 'fitness_center' },
+    { name: 'Kickboks', icon: 'sports_martial_arts' },
+    { name: 'Klasik Boks', icon: 'sports_kabaddi' },
+    { name: 'Reformer Pilates', icon: 'self_improvement' },
+    { name: 'Yüzme', icon: 'pool' },
+    { name: 'CrossFit & Fonksiyonel', icon: 'bolt' },
+    { name: 'Yoga & Esneklik', icon: 'spa' },
+    { name: 'Kuvvet & Kondisyon', icon: 'timer' },
+  ];
+
+  // Tanımlı spor branşları (Veritabanı + Hazır şablonlar, sıfır boşluk)
+  readonly sportsDisciplinesList = computed(() => {
+    const map = new Map<string, { name: string; icon: string }>();
+
+    for (const d of this.defaultDisciplines) {
+      map.set(d.name.trim().toLocaleLowerCase('tr'), d);
+    }
+
+    const db = this.dbDisciplines() || [];
+    for (const d of db) {
+      if (d?.name?.trim()) {
+        map.set(d.name.trim().toLocaleLowerCase('tr'), {
+          name: d.name.trim(),
+          icon: d.icon || 'sports_score',
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  });
+
+  // Mükerrer kayıtları tamamen eleyen, her zaman geçerli ismi olan tekil şube listesi
+  readonly uniqueBranches = computed<GymBranch[]>(() => {
+    const list = this.branchContext.branches() || [];
+    const active = this.branchContext.activeBranch();
+    const seen = new Set<string>();
+    const result: GymBranch[] = [];
+
+    for (const b of list) {
+      if (!b) continue;
+      const id = (b.id || '').trim();
+      const rawName = (b.name || (b as any).branchName || '').trim();
+      const norm = rawName.toLocaleLowerCase('tr');
+
+      if ((id && seen.has(id)) || (norm && seen.has(norm))) {
+        continue;
+      }
+      if (id) seen.add(id);
+      if (norm) seen.add(norm);
+
+      result.push({
+        ...b,
+        id: id || `br-${result.length + 1}`,
+        name: rawName || 'Merkez Şube',
+        city: b.city || 'İstanbul',
+        status: b.status || 'active',
+      });
+    }
+
+    if (result.length === 0) {
+      const activeName = active?.name || this.branchContext.activeBranchName() || 'Merkez Şube';
+      result.push({
+        id: active?.id || 'branch-default',
+        tenantId: '',
+        name: activeName,
+        city: active?.city || 'İstanbul',
+        status: 'active',
+        phone: '',
+        address: '',
+        email: '',
+        managerName: '',
+        capacity: 100,
+        currentOccupancy: 0,
+        openingHours: [],
+        features: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return result;
+  });
+
+  // Çoklu seçim sinyalleri
+  readonly selectedBranchIds = signal<string[]>([]);
+  readonly selectedSpecialties = signal<string[]>([]);
+
+  // Özel eklenen ekstra branşlar (varsayılan listede olmayanlar)
+  readonly extraCustomSpecialties = computed(() => {
+    const current = this.selectedSpecialties();
+    const definedNames = new Set(this.sportsDisciplinesList().map((d) => d.name.toLocaleLowerCase('tr')));
+    return current.filter((s) => !definedNames.has(s.toLocaleLowerCase('tr')));
+  });
 
   readonly activeTab = signal<ActiveTab>('staffList');
   readonly paidStaffIds = signal<Set<string>>(new Set());
@@ -180,14 +313,18 @@ export class AdminStaff {
     }
     this.editingStaff.set(null);
     const activeBranch = this.branchContext.activeBranch();
+    const defaultBranchId = activeBranch?.id || (this.uniqueBranches()[0]?.id ?? '');
+    this.selectedBranchIds.set(defaultBranchId ? [defaultBranchId] : []);
+    this.selectedSpecialties.set(['Fitness & Vücut Geliştirme']);
+
     this.formData = {
       displayName: '',
       email: '',
       phone: '',
       role: 'trainer',
       title: 'Antrenör (PT)',
-      branchId: activeBranch?.id || '',
-      specialtiesText: 'Fitness, Kuvvet Antrenmanı',
+      branchId: defaultBranchId,
+      specialtiesText: 'Fitness & Vücut Geliştirme',
       status: 'active',
       monthlySalary: 40000,
       commissionRate: 20,
@@ -200,6 +337,22 @@ export class AdminStaff {
 
   editStaff(staff: StaffMember): void {
     this.editingStaff.set(staff);
+
+    // Başlangıç şube seçimleri
+    let initialBranchIds: string[] = [];
+    if (staff.branchIds && staff.branchIds.length > 0) {
+      initialBranchIds = [...staff.branchIds];
+    } else if (staff.branchId) {
+      initialBranchIds = [staff.branchId];
+    } else {
+      const active = this.branchContext.activeBranch();
+      if (active?.id) initialBranchIds = [active.id];
+    }
+    this.selectedBranchIds.set(initialBranchIds);
+
+    // Başlangıç uzmanlık alanı / branş seçimleri
+    this.selectedSpecialties.set(staff.specialties ? [...staff.specialties] : []);
+
     this.formData = {
       displayName: staff.displayName,
       email: staff.email,
@@ -228,17 +381,93 @@ export class AdminStaff {
     if (!this.editingStaff()) {
       if (role === 'owner') {
         this.formData.title = 'Salon Sahibi / Ortak';
-        this.formData.specialtiesText = 'İşletme Yönetimi';
+        this.selectedSpecialties.set(['İşletme Yönetimi', 'Fitness & Vücut Geliştirme']);
       } else if (role === 'admin') {
         this.formData.title = 'Genel Yönetici / Müdür';
-        this.formData.specialtiesText = 'Operasyon, Personel';
+        this.selectedSpecialties.set(['Operasyon', 'Personel Yönetimi']);
       } else if (role === 'trainer') {
         this.formData.title = 'Antrenör (PT)';
-        this.formData.specialtiesText = 'Fitness, Kickbox, Pilates';
+        this.selectedSpecialties.set(['Fitness & Vücut Geliştirme', 'Kickboks']);
       } else if (role === 'receptionist') {
         this.formData.title = 'Müşteri Hizmetleri & Kasa';
-        this.formData.specialtiesText = 'Karşılama, Market Satışı';
+        this.selectedSpecialties.set(['Karşılama & Müşteri İlişkileri', 'Kasa & Ön Muhasebe']);
       }
+    }
+  }
+
+  // --- Şube Çoklu Seçim Metodları ---
+  isBranchSelected(branchId: string): boolean {
+    return this.selectedBranchIds().includes(branchId);
+  }
+
+  toggleBranch(branchId: string): void {
+    const current = this.selectedBranchIds();
+    if (current.includes(branchId)) {
+      this.selectedBranchIds.set(current.filter((id) => id !== branchId));
+    } else {
+      this.selectedBranchIds.set([...current, branchId]);
+    }
+  }
+
+  selectAllBranches(): void {
+    const allIds = this.uniqueBranches().map((b) => b.id);
+    this.selectedBranchIds.set(allIds);
+  }
+
+  toggleAllBranches(): void {
+    const allIds = this.uniqueBranches().map((b) => b.id);
+    if (this.selectedBranchIds().length === allIds.length) {
+      const active = this.branchContext.activeBranch();
+      const defaultId = active?.id || allIds[0];
+      this.selectedBranchIds.set(defaultId ? [defaultId] : []);
+    } else {
+      this.selectedBranchIds.set(allIds);
+    }
+  }
+
+  clearBranchSelection(): void {
+    const active = this.branchContext.activeBranch();
+    const defaultId = active?.id || this.uniqueBranches()[0]?.id;
+    this.selectedBranchIds.set(defaultId ? [defaultId] : []);
+  }
+
+  getStaffBranchesDisplay(staff: StaffMember): string {
+    if (staff.branchNames && staff.branchNames.length > 0) {
+      return staff.branchNames.join(', ');
+    }
+    return staff.branchName || this.branchContext.activeBranchName() || 'Merkez Şube';
+  }
+
+  // --- Branş & Uzmanlık Çoklu Seçim Metodları ---
+  isDisciplineSelected(disciplineName: string): boolean {
+    const target = disciplineName.trim().toLocaleLowerCase('tr');
+    return this.selectedSpecialties().some((s) => s.trim().toLocaleLowerCase('tr') === target);
+  }
+
+  toggleDiscipline(disciplineName: string): void {
+    const current = this.selectedSpecialties();
+    const target = disciplineName.trim();
+    const lower = target.toLocaleLowerCase('tr');
+    if (current.some((s) => s.trim().toLocaleLowerCase('tr') === lower)) {
+      this.selectedSpecialties.set(current.filter((s) => s.trim().toLocaleLowerCase('tr') !== lower));
+    } else {
+      this.selectedSpecialties.set([...current, target]);
+    }
+  }
+
+  removeDiscipline(disciplineName: string): void {
+    const lower = disciplineName.trim().toLocaleLowerCase('tr');
+    this.selectedSpecialties.set(
+      this.selectedSpecialties().filter((s) => s.trim().toLocaleLowerCase('tr') !== lower),
+    );
+  }
+
+  addCustomDiscipline(customName: string): void {
+    const trimmed = customName.trim();
+    if (!trimmed) return;
+    const lower = trimmed.toLocaleLowerCase('tr');
+    if (!this.selectedSpecialties().some((s) => s.trim().toLocaleLowerCase('tr') === lower)) {
+      this.selectedSpecialties.set([...this.selectedSpecialties(), trimmed]);
     }
   }
 
@@ -249,11 +478,20 @@ export class AdminStaff {
 
     this.isSaving.set(true);
     try {
-      const activeBranch = this.branchContext.activeBranch();
-      const specialties = this.formData.specialtiesText
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const branchIds = this.selectedBranchIds();
+      const allBranches = this.uniqueBranches();
+      const selectedBranches = allBranches.filter((b) => branchIds.includes(b.id));
+      const branchNames = selectedBranches.map((b) => b.name);
+      const primaryBranch = selectedBranches[0] || this.branchContext.activeBranch();
+
+      const finalBranchIds = branchIds.length > 0
+        ? branchIds
+        : (primaryBranch?.id ? [primaryBranch.id] : []);
+      const finalBranchNames = branchNames.length > 0
+        ? branchNames
+        : (primaryBranch?.name ? [primaryBranch.name] : []);
+
+      const specialties = this.selectedSpecialties();
 
       const payload: Partial<StaffMember> = {
         displayName: this.formData.displayName.trim(),
@@ -261,8 +499,10 @@ export class AdminStaff {
         phone: this.formData.phone.trim(),
         role: this.formData.role,
         title: this.formData.title.trim(),
-        branchId: this.formData.branchId || activeBranch?.id || null,
-        branchName: activeBranch?.name || null,
+        branchId: primaryBranch?.id || null,
+        branchName: primaryBranch?.name || null,
+        branchIds: finalBranchIds,
+        branchNames: finalBranchNames,
         specialties,
         status: this.formData.status,
         monthlySalary: Number(this.formData.monthlySalary) || 0,
@@ -280,8 +520,10 @@ export class AdminStaff {
       }
 
       this.closeDrawer();
+      this.alertService.toastSuccess(current ? 'Personel güncellendi.' : 'Yeni personel başarıyla kaydedildi.');
     } catch (err) {
       console.error('Personel kaydedilirken hata oluştu:', err);
+      this.alertService.toastError('Personel kaydedilirken bir hata oluştu.');
     } finally {
       this.isSaving.set(false);
     }

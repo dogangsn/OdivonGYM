@@ -151,10 +151,34 @@
                 formControlName="displayName"
                 autocomplete="off"
                 placeholder="Örn: Ahmet Yılmaz"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
               />
               @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
                 <p class="text-xs text-rose-500 mt-1 mb-0">Ad soyad gerekli (en az 2 karakter).</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>T.C. Kimlik No</span>
+                <span class="text-[10px] text-slate-400 font-normal">11 Haneli</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  maxlength="11"
+                  inputmode="numeric"
+                  formControlName="nationalId"
+                  (input)="onNationalIdInput($event)"
+                  placeholder="11 haneli T.C. Kimlik No"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm font-mono bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
+                />
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <mat-icon class="icon-size-4">badge</mat-icon>
+                </div>
+              </div>
+              @if (form.controls.nationalId.invalid && form.controls.nationalId.touched) {
+                <p class="text-xs text-rose-500 mt-1 mb-0">T.C. Kimlik No 11 haneli rakamlardan oluşmalıdır.</p>
               }
             </div>
 
@@ -180,7 +204,7 @@
                 formControlName="phone"
                 placeholder="05xx xxx xx xx"
                 autocomplete="off"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
               />
             </div>
 
@@ -192,59 +216,14 @@
                 formControlName="trainerId"
                 class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
               >
-                <option value="">-- Antrenör Seçin --</option>
+                <option value="" disabled selected class="text-slate-400">🏋️ -- Sorumlu Antrenör Seçin --</option>
                 @for (t of trainers(); track t.id) {
-                  <option [value]="t.id">{{ t.displayName }} ({{ t.title || 'Antrenör' }})</option>
+                  <option [value]="t.id">🏋️ {{ t.displayName }} ({{ t.title || 'Antrenör' }})</option>
                 }
               </select>
               @if (form.controls.trainerId.invalid && form.controls.trainerId.touched) {
                 <p class="text-xs text-rose-500 mt-1 mb-0">Lütfen sorumlu antrenör seçin.</p>
               }
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Cinsiyet
-              </label>
-              <select
-                formControlName="gender"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              >
-                <option value="unspecified">Belirtilmek istemiyor</option>
-                <option value="female">Kadın</option>
-                <option value="male">Erkek</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Doğum Tarihi
-              </label>
-              <input
-                type="date"
-                formControlName="birthDate"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Kan Grubu
-              </label>
-              <select
-                formControlName="bloodGroup"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              >
-                <option value="">Bilinmiyor / Belirtilmedi</option>
-                <option value="A+">A Rh(+)</option>
-                <option value="A-">A Rh(-)</option>
-                <option value="B+">B Rh(+)</option>
-                <option value="B-">B Rh(-)</option>
-                <option value="AB+">AB Rh(+)</option>
-                <option value="AB-">AB Rh(-)</option>
-                <option value="0+">0 Rh(+)</option>
-                <option value="0-">0 Rh(-)</option>
-              </select>
             </div>
 
             <div>
@@ -255,98 +234,277 @@
                 formControlName="branchId"
                 class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
               >
-                <option value="">-- Şube Seçin (Varsayılan: {{ branchContext.activeBranchName() }}) --</option>
+                <option value="">🏢 Şube Seçin (Varsayılan: {{ branchContext.activeBranchName() }})</option>
                 @for (b of branches(); track b.id) {
-                  <option [value]="b.id">{{ b.name }} ({{ b.city }})</option>
+                  <option [value]="b.id">📍 {{ b.name }} ({{ b.city }})</option>
                 }
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Doğum Tarihi
+              </label>
+              <input
+                type="date"
+                formControlName="birthDate"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Kan Grubu
+              </label>
+              <select
+                formControlName="bloodGroup"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
+              >
+                <option value="">⚪ Bilinmiyor / Belirtilmedi</option>
+                <option value="A+">🩸 A Rh(+)</option>
+                <option value="A-">🩸 A Rh(-)</option>
+                <option value="B+">🩸 B Rh(+)</option>
+                <option value="B-">🩸 B Rh(-)</option>
+                <option value="AB+">🩸 AB Rh(+)</option>
+                <option value="AB-">🩸 AB Rh(-)</option>
+                <option value="0+">🩸 0 Rh(+)</option>
+                <option value="0-">🩸 0 Rh(-)</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Cinsiyet
+              </label>
+              <select
+                formControlName="gender"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
+              >
+                <option value="unspecified">⚪ Belirtilmek İstemiyor</option>
+                <option value="male">👨 Erkek</option>
+                <option value="female">👩 Kadın</option>
               </select>
             </div>
           </div>
         </div>
 
-        <!-- 2. ACİL DURUM YAKINI BİLGİLERİ -->
-        <div class="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 m-0 mb-3 flex items-center gap-1.5">
-            <mat-icon class="icon-size-4 text-amber-600">contact_emergency</mat-icon>
-            <span>Acil Durum İletişim Bilgileri</span>
+        <!-- 2. ÜYELİK VE PAKET BİLGİLERİ (CİNSİYETİN HEMEN ALTINDA) -->
+        <div class="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400 m-0 mb-3 flex items-center gap-1.5">
+            <mat-icon class="icon-size-4 text-indigo-600">card_membership</mat-icon>
+            <span>Üyelik & Paket Bilgileri</span>
           </p>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Yakının Adı Soyadı
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Üyelik Durumu
               </label>
-              <input
-                type="text"
-                formControlName="emergencyContactName"
-                placeholder="Örn: Mehmet Yılmaz"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-              />
+              <select
+                formControlName="membershipStatus"
+                class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
+              >
+                <option value="active">🟢 Aktif Üye (Tam Erişim)</option>
+                <option value="trial">⚡ Ücretsiz Deneme (Trial)</option>
+                <option value="expired">⏳ Süresi Bitti (Erişim Kapalı)</option>
+                <option value="cancelled">🚫 İptal Edildi</option>
+              </select>
             </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Yakının Telefonu
-              </label>
-              <input
-                type="tel"
-                formControlName="emergencyContactPhone"
-                placeholder="05xx xxx xx xx"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-              />
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Yakınlık Derecesi
-              </label>
-              <input
-                type="text"
-                formControlName="emergencyContactRelation"
-                placeholder="Örn: Eşi / Annesi / Kardeşi"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-              />
-            </div>
+
+            @if (form.controls.membershipStatus.value === 'active') {
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Paket
+                </label>
+                <select
+                  formControlName="packageDays"
+                  (change)="onPackageChange($any($event.target).value)"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
+                >
+                  @for (pkg of packages; track pkg.label) {
+                    <option [value]="pkg.days">
+                      {{ pkg.days === 30 ? '⭐' : pkg.days === 90 ? '🔥' : pkg.days === 180 ? '💎' : pkg.days === 365 ? '👑' : '⚙️' }} {{ pkg.label }} {{ pkg.defaultPrice ? '(' + pkg.defaultPrice + ' ₺)' : '' }}
+                    </option>
+                  }
+                </select>
+                @if (form.controls.packageDays.value === 'custom') {
+                  <p class="text-[11px] text-slate-400 mt-1 mb-0">
+                    Paket dışı — süreyi aşağıdaki başlangıç/bitiş tarihinden belirle.
+                  </p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Paket Satış Bedeli (₺ - Kasaya İşlenir)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  formControlName="packagePrice"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Başlangıç Tarihi <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  formControlName="startDate"
+                  (change)="onStartDateChange($any($event.target).value)"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Bitiş Tarihi <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  formControlName="endDate"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-medium"
+                />
+                <p class="text-[11px] text-slate-400 mt-1 mb-0">
+                  Hazır paket seçsen bile bu tarihi elle değiştirebilirsin.
+                </p>
+              </div>
+            }
           </div>
         </div>
 
-        <!-- 3. SAĞLIK, ALERJEN & KRONİK RAHATSIZLIKLAR -->
-        <div class="p-4 rounded-2xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/40">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-400 m-0 mb-3 flex items-center gap-1.5">
-            <mat-icon class="icon-size-4 text-rose-600">health_and_safety</mat-icon>
-            <span>Sağlık, Alerjen ve Kronik Hastalıklar</span>
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Alerjiler
-              </label>
-              <input
-                type="text"
-                formControlName="allergies"
-                placeholder="Örn: Polen, yer fıstığı, penisilin"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-              />
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Kronik Hastalıklar
-              </label>
-              <input
-                type="text"
-                formControlName="chronicDiseases"
-                placeholder="Örn: Astım, yüksek tansiyon, bel fıtığı"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-              />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Özel Bilgi / Sağlık Uyarısı
-              </label>
-              <input
-                type="text"
-                formControlName="specialInfo"
-                placeholder="Antrenörün bilmesi gereken özel bir fiziksel durum"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-              />
-            </div>
+        <!-- 3. GÜVENLİK & SAĞLIK BİLGİLERİ (TABLI PANEL) -->
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 shadow-xs overflow-hidden">
+          <!-- Tab Bar -->
+          <div class="p-1.5 bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5">
+            <button
+              type="button"
+              (click)="activeSafetyTab.set('emergency')"
+              [class]="activeSafetyTab() === 'emergency'
+                ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold shadow-xs border-amber-200/90 dark:border-amber-900/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'"
+              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer select-none"
+            >
+              <mat-icon class="icon-size-4" [class.text-amber-600]="activeSafetyTab() === 'emergency'">contact_emergency</mat-icon>
+              <span>Acil Durum İletişim Bilgileri</span>
+              @if (hasEmergencyContact()) {
+                <span class="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-100 dark:ring-amber-900" title="Kayıtlı veri var"></span>
+              }
+            </button>
+
+            <button
+              type="button"
+              (click)="activeSafetyTab.set('health')"
+              [class]="activeSafetyTab() === 'health'
+                ? 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-400 font-bold shadow-xs border-rose-200/90 dark:border-rose-900/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'"
+              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer select-none"
+            >
+              <mat-icon class="icon-size-4" [class.text-rose-600]="activeSafetyTab() === 'health'">health_and_safety</mat-icon>
+              <span>Sağlık, Alerjen ve Kronik Hastalıklar</span>
+              @if (hasHealthInfo()) {
+                <span class="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-100 dark:ring-rose-900" title="Kayıtlı veri var"></span>
+              }
+            </button>
+          </div>
+
+          <!-- Tab Content Panel -->
+          <div class="p-4 sm:p-5">
+            @if (activeSafetyTab() === 'emergency') {
+              <div class="space-y-3.5">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <p class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 m-0 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-amber-600">emergency_share</mat-icon>
+                    <span>Acil Durumda İletişime Geçilecek Kişi</span>
+                  </p>
+                  <span class="text-[11px] text-slate-400 font-medium hidden sm:inline">Kaza veya sağlık durumunda aranır</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Yakının Adı Soyadı
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="emergencyContactName"
+                      placeholder="Örn: Mehmet Yılmaz"
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Yakının Telefonu
+                    </label>
+                    <input
+                      type="tel"
+                      formControlName="emergencyContactPhone"
+                      placeholder="05xx xxx xx xx"
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Yakınlık Derecesi
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="emergencyContactRelation"
+                      placeholder="Örn: Eşi / Annesi / Kardeşi"
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (activeSafetyTab() === 'health') {
+              <div class="space-y-3.5">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <p class="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-400 m-0 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-rose-600">medical_services</mat-icon>
+                    <span>Medikal Geçmiş & Fiziksel Durum</span>
+                  </p>
+                  <span class="text-[11px] text-slate-400 font-medium hidden sm:inline">Antrenörün bilmesi gereken durumlar</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Alerjiler
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="allergies"
+                      placeholder="Örn: Polen, yer fıstığı, penisilin vb."
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Kronik Hastalıklar
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="chronicDiseases"
+                      placeholder="Örn: Astım, yüksek tansiyon, bel fıtığı"
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                      Özel Bilgi / Sağlık Uyarısı
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="specialInfo"
+                      placeholder="Antrenörün dikkat etmesi gereken özel bir fiziksel durum, ameliyat veya hareket kısıtlaması"
+                      class="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         </div>
 
@@ -448,87 +606,7 @@
           </button>
         }
 
-        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 m-0 pt-2">
-          Üyelik
-        </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-              Üyelik Durumu
-            </label>
-            <select
-              formControlName="membershipStatus"
-              class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-            >
-              <option value="active">Aktif Üye</option>
-              <option value="trial">Ücretsiz Deneme</option>
-              <option value="expired">Süresi Bitti</option>
-              <option value="cancelled">İptal Edildi</option>
-            </select>
-          </div>
 
-          @if (form.controls.membershipStatus.value === 'active') {
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Paket
-              </label>
-              <select
-                formControlName="packageDays"
-                (change)="onPackageChange($any($event.target).value)"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              >
-                @for (pkg of packages; track pkg.label) {
-                  <option [value]="pkg.days">{{ pkg.label }}</option>
-                }
-              </select>
-              @if (form.controls.packageDays.value === 'custom') {
-                <p class="text-[11px] text-slate-400 mt-1 mb-0">
-                  Paket dışı — süreyi aşağıdaki başlangıç/bitiş tarihinden belirle.
-                </p>
-              }
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Paket Satış Bedeli (₺ - Kasaya İşlenir)
-              </label>
-              <input
-                type="number"
-                min="0"
-                formControlName="packagePrice"
-                class="w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              />
-            </div>
-          }
-
-          @if (form.controls.membershipStatus.value === 'active') {
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Başlangıç Tarihi <span class="text-rose-500">*</span>
-              </label>
-              <input
-                type="date"
-                formControlName="startDate"
-                (change)="onStartDateChange($any($event.target).value)"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Bitiş Tarihi <span class="text-rose-500">*</span>
-              </label>
-              <input
-                type="date"
-                formControlName="endDate"
-                class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-              />
-              <p class="text-[11px] text-slate-400 mt-1 mb-0">
-                Hazır paket seçsen bile bu tarihi elle değiştirebilirsin.
-              </p>
-            </div>
-          }
-        </div>
 
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">

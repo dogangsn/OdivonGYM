@@ -3,18 +3,20 @@ import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { ThemeService } from './core/services/theme.service';
 import { LanguageService } from './core/i18n/language.service';
-import { LoadingSpinner } from './shared/components/loading-spinner/loading-spinner';
+import { HttpLoadingService } from './core/services/http-loading.service';
+import { GymLoader } from './shared/components/gym-loader/gym-loader';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoadingSpinner],
+  imports: [RouterOutlet, GymLoader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
   protected readonly auth = inject(AuthService);
+  protected readonly httpLoading = inject(HttpLoadingService);
 
   // `providedIn: 'root'` servisleri Angular'da LAZY kurulur — sadece bir yer
   // onu `inject()` ederse yaşar. ThemeService'i sadece Shell/Sidebar

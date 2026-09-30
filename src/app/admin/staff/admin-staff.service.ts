@@ -39,6 +39,8 @@ export class AdminStaffService {
         ...input,
         branchId: input.branchId || activeBranch?.id || null,
         branchName: input.branchName || activeBranch?.name || null,
+        branchIds: input.branchIds || (input.branchId ? [input.branchId] : activeBranch?.id ? [activeBranch.id] : []),
+        branchNames: input.branchNames || (input.branchName ? [input.branchName] : activeBranch?.name ? [activeBranch.name] : []),
       }),
     );
     this.reload$.next();

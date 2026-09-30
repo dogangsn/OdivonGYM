@@ -87,6 +87,10 @@
               <span>{{ member()?.gender === 'female' ? 'Kadın' : member()?.gender === 'male' ? 'Erkek' : 'Belirtilmemiş'
                 }}</span>
               }
+              @if (member()?.nationalId) {
+              <span>•</span>
+              <span class="font-mono font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">TC: {{ member()?.nationalId }}</span>
+              }
               <span>•</span>
               <span
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">

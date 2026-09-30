@@ -1,3 +1,125 @@
 :host {
   display: contents;
 }
+
+// -------------------------------------------------------------
+// SELECT & OPTION STYLING
+// -------------------------------------------------------------
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.15rem;
+  padding-right: 2.75rem !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    border-color: #a5b4fc;
+  }
+
+  &:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  }
+}
+
+:host-context(.dark) select,
+.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23818cf8' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+
+  &:hover {
+    border-color: #6366f1;
+  }
+
+  &:focus {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  }
+}
+
+option {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  color: #0f172a;
+  line-height: 1.6;
+
+  &:checked {
+    background-color: #eef2ff !important;
+    color: #4338ca !important;
+    font-weight: 600;
+  }
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &:disabled {
+    color: #94a3b8;
+    background-color: #f8fafc;
+  }
+}
+
+:host-context(.dark) option,
+.dark option {
+  background-color: #0f172a;
+  color: #f1f5f9;
+
+  &:checked {
+    background-color: #1e1b4b !important;
+    color: #a5b4fc !important;
+  }
+
+  &:hover {
+    background-color: #1e293b;
+  }
+
+  &:disabled {
+    color: #64748b;
+    background-color: #090d16;
+  }
+}
+
+// -------------------------------------------------------------
+// CUSTOM SCROLLBAR
+// -------------------------------------------------------------
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+
+    &:hover {
+      background: rgba(148, 163, 184, 0.55);
+    }
+  }
+}
+
+:host-context(.dark) .custom-scroll,
+.dark .custom-scroll {
+  scrollbar-color: rgba(71, 85, 105, 0.45) transparent;
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.45);
+
+    &:hover {
+      background: rgba(71, 85, 105, 0.7);
+    }
+  }
+}
