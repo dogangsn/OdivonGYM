@@ -161,13 +161,38 @@ export class AuthService {
   }
 }
 
-function mapCurrentUser(me: {
+export interface MeRoleSource {
+  role: UserProfile['role'];
+  accountType?: 'gym_member' | 'staff' | null;
+  roleIds?: string[];
+  permissions?: Record<string, string[]>;
+}
+
+/**
+ * MainApi'de yalnız owner / admin / user rolü vardır; resepsiyon ve antrenör `role: 'user'` +
+ * `roleIds` (gym-reception, gym-trainer, gym-manager) ile tanımlanır. Panel ise menü ve rota
+ * yetkisini trainer / receptionist rolleriyle kurduğu için bu personel üye gibi görünüyordu.
+ */
+export function effectiveRole(me: MeRoleSource): UserProfile['role'] {
+  if (me.role === 'owner' || me.role === 'admin') return me.role;
+  if (me.accountType === 'gym_member') return 'user';
+  const roleIds = me.roleIds ?? [];
+  if (roleIds.includes('gym-manager')) return 'admin';
+  if (roleIds.includes('gym-reception')) return 'receptionist';
+  if (roleIds.includes('gym-trainer')) return 'trainer';
+  // Salonun kendi tanımladığı bir rolle gym izni verilmiş personel: en dar personel görünümü.
+  const hasGymPermission = Object.entries(me.permissions ?? {}).some(
+    ([resource, actions]) => resource !== 'users' && resource !== 'roles' && actions.length > 0,
+  );
+  return hasGymPermission ? 'receptionist' : 'user';
+}
+
+function mapCurrentUser(me: MeRoleSource & {
   uid: string;
   email: string;
   displayName: string | null;
   phone?: string | null;
   tenantId: string;
-  role: UserProfile['role'];
   membershipStatus: MembershipStatus;
   trialEndsAt: string | null;
   onboardingCompleted: boolean;
@@ -178,7 +203,7 @@ function mapCurrentUser(me: {
     email: me.email,
     displayName: me.displayName ?? '',
     photoURL: null,
-    role: me.role,
+    role: effectiveRole(me),
     membershipStatus: me.membershipStatus,
     trialStartedAt: me.trialEndsAt ?? '',
     trialEndsAt: me.trialEndsAt ?? '',

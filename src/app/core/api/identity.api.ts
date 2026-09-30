@@ -9,6 +9,7 @@ export interface CurrentUser {
   phone: string | null;
   tenantId: string;
   role: 'owner' | 'admin' | 'user';
+  accountType?: 'gym_member' | 'staff' | null;
   modules: string[];
   roleIds: string[];
   membershipStatus: 'trial' | 'active' | 'expired' | 'cancelled';

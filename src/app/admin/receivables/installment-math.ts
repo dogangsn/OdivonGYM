@@ -57,6 +57,8 @@ const MESSAGES: [RegExp, string][] = [
   [/Discount must be lower/i, 'İndirim paket fiyatından düşük olmalı.'],
   [/firstDueDate/i, 'İlk vade bugünden önce olamaz.'],
   [/Insufficient wallet balance/i, 'Üyenin e-cüzdan bakiyesi yetersiz.'],
+  [/already on the wallet/i, 'Bu borç zaten cüzdanda eksi bakiye olarak görünüyor; nakit, kart ya da havale ile tahsil edin.'],
+  [/paidAmount must be between/i, 'Tahsil edilen tutar 0 ile paket fiyatı arasında olmalı.'],
   [/Receivable is (paid|cancelled)/i, 'Bu plan kapanmış; tahsilat alınamaz.'],
   [/archived/i, 'Arşivlenmiş üyeye satış yapılamaz.'],
   [/not available for sale/i, 'Bu paket satışa kapalı.'],
