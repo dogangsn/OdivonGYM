@@ -84,6 +84,11 @@ export const adminRoutes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'receivables',
+    loadComponent: () => import('./receivables/admin-receivables').then((m) => m.AdminReceivables),
+    title: 'Taksit & Borç Takibi · OdivonGYM',
+  },
+  {
     path: 'accounting',
     loadComponent: () => import('./accounting/admin-accounting').then((m) => m.AdminAccounting),
     title: 'Muhasebe · OdivonGYM',

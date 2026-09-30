@@ -15,6 +15,8 @@ import { ShopProduct } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 import { GymPackage } from '../../core/models/gym-package.model';
 import { StockCategoryItem } from '../../core/models/stock-category.model';
+import { Receivable } from '../../core/models/receivable.model';
+import { InstallmentSaleDialog } from '../../shared/components/installment-sale-dialog/installment-sale-dialog';
 
 export interface SalesCartItem {
   type: 'product' | 'package';
@@ -30,7 +32,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
 @Component({
   selector: 'app-admin-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, RouterLink],
+  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, RouterLink, InstallmentSaleDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-sales.html',
   styleUrl: './admin-sales.scss',
@@ -139,6 +141,15 @@ export class AdminSales {
   // Cart State
   protected readonly cart = signal<SalesCartItem[]>([]);
   protected readonly isPaying = signal(false);
+  protected readonly installmentOpen = signal(false);
+
+  /** Taksitli satış: seçili üye + sepette tek adet, tek paket (market ürünü yok). */
+  protected readonly installmentPackage = computed(() => {
+    const items = this.cart();
+    if (!this.selectedMember() || items.length !== 1) return null;
+    const [item] = items;
+    return item.type === 'package' && item.quantity === 1 && !item.isPackageIncluded ? (item.gymPackage ?? null) : null;
+  });
 
   // Cart Computations
   protected readonly cartCount = computed(() =>
@@ -317,6 +328,25 @@ export class AdminSales {
         }
         return item;
       }),
+    );
+  }
+
+  openInstallmentSale(): void {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için paket satışı yapılamaz.',
+      );
+      return;
+    }
+    if (this.installmentPackage()) this.installmentOpen.set(true);
+  }
+
+  onInstallmentSold(plan: Receivable): void {
+    this.installmentOpen.set(false);
+    this.clearCart();
+    this.alertService.toastSuccess(
+      `${plan.packageName} ${plan.installmentCount} taksitle satıldı. Peşinat ${this.money(plan.downPayment)}, kalan ${this.money(plan.remainingAmount)}.`,
     );
   }
 

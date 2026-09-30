@@ -426,6 +426,20 @@
                 <span>Havale/EFT</span>
               </button>
             </div>
+
+            <button
+              type="button"
+              [disabled]="isPaying() || !installmentPackage()"
+              (click)="openInstallmentSale()"
+              class="w-full p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Peşinat + aylık taksit; kalan borç Taksit & Borç Takibi ekranından izlenir"
+            >
+              <mat-icon class="icon-size-4">event_repeat</mat-icon>
+              <span>Taksitli / Kısmi Ödemeli Sat</span>
+            </button>
+            @if (!installmentPackage()) {
+              <p class="m-0 text-[10px] text-slate-400 text-center">Taksitli satış için bir üye seçin ve sepette yalnızca 1 paket bırakın.</p>
+            }
           </div>
         }
 
@@ -434,3 +448,11 @@
 
   </div>
 </div>
+
+<app-installment-sale-dialog
+  [open]="installmentOpen()"
+  [member]="selectedMember()"
+  [gymPackage]="installmentPackage()"
+  (closed)="installmentOpen.set(false)"
+  (completed)="onInstallmentSold($event)"
+/>

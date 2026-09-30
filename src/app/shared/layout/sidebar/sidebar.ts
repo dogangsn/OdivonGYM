@@ -77,6 +77,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
   {
     titleKey: 'sidebar.groups.finance',
     items: [
+      { icon: 'event_repeat', labelKey: 'sidebar.items.adminReceivables', link: '/admin/receivables' },
       { icon: 'account_balance', labelKey: 'sidebar.items.adminAccounting', link: '/admin/accounting' },
       { icon: 'receipt_long', labelKey: 'sidebar.items.adminEInvoice', link: '/admin/e-invoice', badgeKey: 'sidebar.badges.gib', badgeClass: 'badge-teal', requiresActiveSaas: true },
     ],
