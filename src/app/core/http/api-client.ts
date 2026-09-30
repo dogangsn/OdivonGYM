@@ -35,6 +35,10 @@ export class ApiClient {
     return this.http.post<ApiSuccess<T>>(this.url(path), body, this.options(options?.query, options));
   }
 
+  put<T>(path: string, body: unknown, options?: RequestOptions): Observable<ApiSuccess<T>> {
+    return this.http.put<ApiSuccess<T>>(this.url(path), body, this.options(options?.query, options));
+  }
+
   patch<T>(path: string, body: unknown, query?: QueryParams, options?: RequestOptions): Observable<ApiSuccess<T>> {
     return this.http.patch<ApiSuccess<T>>(this.url(path), body, this.options(query, options));
   }

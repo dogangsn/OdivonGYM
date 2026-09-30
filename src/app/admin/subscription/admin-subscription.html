@@ -74,6 +74,37 @@
     </div>
   </div>
 
+  <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2 text-sm font-bold text-indigo-900 dark:text-indigo-200">
+        <mat-icon class="icon-size-5">verified_user</mat-icon>
+        iyzico Sandbox Ödeme
+      </div>
+      <p class="m-0 mt-1 text-xs text-indigo-700 dark:text-indigo-300">
+        Paket seçimiyle iyzico test ödeme sayfası açılır. Test işlemi gerçek lisansı veya fatura kaydını değiştirmez.
+      </p>
+    </div>
+    @if (paymentProviders()?.selected === 'iyzico' && paymentProviders()?.available?.[0]?.configured) {
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Etkin · Test ortamı</span>
+    } @else if (paymentProviders()?.available?.[0]?.configured) {
+      <button type="button" class="odv-btn-primary text-xs" [disabled]="providerBusy() || auth.profile()?.role !== 'owner'" (click)="enableSandbox()">
+        iyzico Sandbox'ı Etkinleştir
+      </button>
+    } @else {
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+        {{ paymentError() || 'MainApi sandbox anahtarları bekleniyor' }}
+      </span>
+    }
+  </div>
+
+  @if (paymentResult(); as result) {
+    <div class="p-4 rounded-2xl border text-sm font-semibold"
+      [ngClass]="result.status === 'succeeded' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'">
+      Sandbox ödeme sonucu: {{ result.status === 'succeeded' ? 'Test başarılı' : result.status === 'failed' ? 'Test başarısız' : 'Sonuç bekleniyor' }}
+      <span class="block text-xs mt-1">İşlem {{ result.id }} · Gerçek lisans değişmedi.</span>
+    </div>
+  }
+
   <!-- 2. Kota & Kullanım Göstergeleri (3 Sade Metrik) -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <!-- Üye Kotası -->
@@ -235,11 +266,11 @@
           @if (isCurrent) {
             <button
               type="button"
-              disabled
-              class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs cursor-default flex items-center justify-center gap-1.5"
+              (click)="openUpgradeModal(plan)"
+              class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5"
             >
-              <mat-icon class="icon-size-4 text-emerald-500">check</mat-icon>
-              <span>{{ 'saasSubscription.currentPlanBtn' | transloco }}</span>
+              <mat-icon class="icon-size-4 text-indigo-500">restart_alt</mat-icon>
+              <span>Mevcut Planı Test Et</span>
             </button>
           } @else {
             <button
@@ -256,7 +287,7 @@
               [class.dark:hover:bg-slate-600]="!isPro"
               [class.text-white]="!isPro"
             >
-              <span>{{ 'saasSubscription.upgradeBtn' | transloco }}</span>
+              <span>Ödeme Testi Aç</span>
               <mat-icon class="icon-size-4">arrow_forward</mat-icon>
             </button>
           }
@@ -304,8 +335,8 @@
             <mat-icon class="icon-size-5">upgrade</mat-icon>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">{{ 'saasSubscription.confirmUpgradeTitle' | transloco }}</h3>
-            <p class="text-xs text-slate-500 m-0">{{ 'saasSubscription.confirmUpgradeSubtitle' | transloco: { plan: target.name } }}</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">iyzico Sandbox Ödeme Testi</h3>
+            <p class="text-xs text-slate-500 m-0">{{ target.name }} planı için test ödeme oturumu açılacak. Lisans değişmeyecek.</p>
           </div>
         </div>
 
@@ -324,6 +355,21 @@
           </div>
         </div>
 
+        <div class="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/30 p-3 space-y-3">
+          <p class="m-0 text-xs font-bold text-indigo-800 dark:text-indigo-300">iyzico Sandbox test ödemesi · Kart bilgileri Odivon'a girilmez. Lisans bu testle aktifleşmez.</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="space-y-1">T.C. Kimlik No<input class="odv-input" inputmode="numeric" maxlength="11" [ngModel]="buyerIdentity()" (ngModelChange)="buyerIdentity.set($event)" /></label>
+            <label class="space-y-1">Telefon<input class="odv-input" type="tel" [ngModel]="buyerPhone()" (ngModelChange)="buyerPhone.set($event)" /></label>
+            <label class="space-y-1 col-span-2">E-posta<input class="odv-input" type="email" [ngModel]="buyerEmail()" (ngModelChange)="buyerEmail.set($event)" /></label>
+            <label class="space-y-1 col-span-2">Fatura adresi<input class="odv-input" [ngModel]="buyerAddress()" (ngModelChange)="buyerAddress.set($event)" /></label>
+            <label class="space-y-1">Şehir<input class="odv-input" [ngModel]="buyerCity()" (ngModelChange)="buyerCity.set($event)" /></label>
+          </div>
+        </div>
+
+        @if (paymentError()) {
+          <div role="alert" class="rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 p-3 text-xs font-semibold">{{ paymentError() }}</div>
+        }
+
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" (click)="closeUpgradeModal()" class="odv-btn-ghost text-xs">{{ 'common.cancel' | transloco }}</button>
           <button
@@ -332,7 +378,7 @@
             [disabled]="upgrading()"
             class="odv-btn-primary text-xs disabled:opacity-50"
           >
-            {{ upgrading() ? ('saasSubscription.upgrading' | transloco) : ('saasSubscription.confirmUpgradeAction' | transloco) }}
+            {{ upgrading() ? 'Ödeme sayfası açılıyor…' : 'iyzico Test Ödemesine Git' }}
           </button>
         </div>
       </div>
