@@ -282,11 +282,21 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
           <div class="flex flex-wrap items-center gap-2">
             <div
               class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300"
-              matTooltip="Kayıtlar ve cihaz durumu 5 saniyede bir yenilenir."
+              matTooltip="Kayıtlar ve cihaz durumu arka planda kesintisiz yenilenir."
             >
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="font-bold">5 sn otomatik yenileme</span>
+              <span class="font-bold">Canlı Akış (Arka Plan)</span>
             </div>
+
+            <button
+              type="button"
+              (click)="refreshData()"
+              matTooltip="Kayıtları ve cihaz durumlarını hemen yenile"
+              class="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all shadow-2xs"
+            >
+              <mat-icon class="icon-size-3.5">refresh</mat-icon>
+              <span>Yenile</span>
+            </button>
 
             <div class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 text-xs">
               <span class="text-slate-500 dark:text-slate-400 font-medium">Bugün Toplam:</span>
@@ -1230,6 +1240,11 @@ export class AdminAccessControl implements OnInit {
     } finally {
       this.syncLoading.set(false);
     }
+  }
+
+  protected refreshData(): void {
+    this.accessService.refresh();
+    this.alertService.toastSuccess('Kayıtlar ve durumlar arka planda güncellendi.');
   }
 
   protected async resyncGate(): Promise<void> {

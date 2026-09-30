@@ -122,6 +122,10 @@ export class AdminAccessControlService {
   private readonly profile$ = toObservable(this.auth.profile);
   private readonly reload$ = new Subject<void>();
 
+  refresh(): void {
+    this.reload$.next();
+  }
+
   watchGates(): Observable<TurnstileGate[]> {
     return tenantReload(
       this.profile$,

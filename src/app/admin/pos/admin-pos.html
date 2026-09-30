@@ -60,48 +60,23 @@
           />
         </div>
 
-        <!-- Hızlı Kategori Seçimi -->
+        <!-- Hızlı Kategori Seçimi (Stok & Ürün Kategorilerinden Dinamik) -->
         <div class="flex items-center gap-2 overflow-x-auto custom-scroll pb-1">
-          <button
-            type="button"
-            (click)="selectedCategory.set('all')"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            [class]="selectedCategory() === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-          >
-            Tümü
-          </button>
-          <button
-            type="button"
-            (click)="selectedCategory.set('drink')"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            [class]="selectedCategory() === 'drink' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-          >
-            💧 Su & İçecek
-          </button>
-          <button
-            type="button"
-            (click)="selectedCategory.set('protein')"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            [class]="selectedCategory() === 'protein' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-          >
-            🥛 Protein
-          </button>
-          <button
-            type="button"
-            (click)="selectedCategory.set('bar')"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            [class]="selectedCategory() === 'bar' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-          >
-            🍫 Barlar
-          </button>
-          <button
-            type="button"
-            (click)="selectedCategory.set('accessory')"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            [class]="selectedCategory() === 'accessory' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-          >
-            🎒 Aksesuar
-          </button>
+          @for (cat of categories(); track cat.id) {
+            <button
+              type="button"
+              (click)="selectedCategory.set(cat.id)"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0"
+              [class]="selectedCategory() === cat.id
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'"
+            >
+              @if (cat.icon) {
+                <span>{{ cat.icon }}</span>
+              }
+              <span>{{ cat.label }}</span>
+            </button>
+          }
         </div>
       </div>
 

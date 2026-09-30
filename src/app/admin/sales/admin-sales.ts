@@ -380,11 +380,15 @@ export class AdminSales {
         }));
 
       if (productItems.length > 0) {
+        const itemsSummary = productItems
+          .map((i) => `${i.quantity}x ${i.product.name} (₺${this.money(i.product.price)})`)
+          .join(', ');
+
         await this.shopService.checkout({
           items: productItems,
           paymentMethod,
           member,
-          notes: member ? `Üye: ${member.displayName} (#${member.memberNumber || member.uid.slice(0, 5)})` : 'Misafir Satışı',
+          notes: `${member ? `Üye: ${member.displayName} (#${member.memberNumber || member.uid.slice(0, 5)})` : 'Misafir Satışı'} · Ürünler: ${itemsSummary}`,
         });
       }
 

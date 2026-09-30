@@ -252,15 +252,22 @@
       <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cüzdan</span>
-          <mat-icon class="icon-size-3.5 text-emerald-500">account_balance_wallet</mat-icon>
+          <mat-icon class="icon-size-3.5" [class]="(member()?.walletBalance ?? 0) < 0 ? 'text-rose-500' : 'text-emerald-500'">account_balance_wallet</mat-icon>
         </div>
-        <div class="text-base sm:text-lg font-black text-slate-900 mt-1">
+        <div class="text-base sm:text-lg font-black mt-1" [class]="(member()?.walletBalance ?? 0) < 0 ? 'text-rose-600' : 'text-slate-900'">
           {{ money(member()?.walletBalance) }}
         </div>
-        <div class="text-[10px] font-semibold text-emerald-600 mt-0.5 flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          Kullanıma Hazır
-        </div>
+        @if ((member()?.walletBalance ?? 0) < 0) {
+          <div class="text-[10px] font-semibold text-rose-600 mt-0.5 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Borçlu Bakiye
+          </div>
+        } @else {
+          <div class="text-[10px] font-semibold text-emerald-600 mt-0.5 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Kullanıma Hazır
+          </div>
+        }
       </div>
 
       <!-- Metric 6: Üyelik / Kalan Gün -->

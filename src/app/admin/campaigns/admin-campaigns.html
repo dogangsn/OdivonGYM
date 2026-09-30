@@ -832,7 +832,7 @@
   <!-- YENİ / DÜZENLE KAMPANYA SLIDE-OVER DRAWER -->
   @if (isDrawerOpen()) {
     <div class="fixed inset-0 z-50 flex justify-end">
-      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="closeDrawer()"></div>
+      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" (click)="onBackdropClick()"></div>
 
       <div class="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-hidden z-10 animate-slide-in">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between">

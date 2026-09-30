@@ -14,6 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { TrainingWizardService, WizardMode } from '../../../core/services/training-wizard.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
 import { AdminDisciplinesService } from '../../../admin/disciplines/admin-disciplines.service';
 import { WorkoutService } from '../../../features/workout/workout.service';
@@ -56,6 +57,7 @@ export class TrainingWizardModal {
   protected readonly branchContext = inject(BranchContextService);
   private readonly classesService = inject(ClassesService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly alertService = inject(AlertService);
 
   // Veri Sinyalleri
   readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
@@ -394,5 +396,19 @@ export class TrainingWizardModal {
     this.createdDisciplineId.set(null);
     this.createdFacilityId.set(null);
     this.createdEquipmentId.set(null);
+  }
+
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Sihirbazdaki ilerlemeniz kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.close();
+    }
   }
 }

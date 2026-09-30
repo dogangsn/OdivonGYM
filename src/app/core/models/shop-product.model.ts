@@ -31,6 +31,13 @@ export interface ShopSale {
   notes?: string;
   saleDate: Timestamp;
   status: 'completed' | 'refunded' | 'pending';
+  items?: Array<{
+    productId?: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalAmount?: number;
+  }>;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

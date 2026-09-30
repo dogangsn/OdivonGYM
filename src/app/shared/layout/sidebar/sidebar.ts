@@ -53,8 +53,6 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
         icon: 'point_of_sale',
         labelKey: 'sidebar.items.adminPos',
         link: '/admin/pos',
-        badgeKey: 'sidebar.badges.live',
-        badgeClass: 'badge-emerald',
         requiresActiveSaas: true,
       },
     ],
@@ -62,7 +60,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
   {
     titleKey: 'sidebar.groups.sales',
     items: [
-      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages', badgeKey: 'sidebar.badges.new', badgeClass: 'badge-rose' },
+      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages', },
       { icon: 'shopping_bag', labelKey: 'sidebar.items.adminSales', link: '/admin/sales', requiresActiveSaas: true },
       { icon: 'campaign', labelKey: 'sidebar.items.adminCampaigns', link: '/admin/campaigns', requiresActiveSaas: true },
     ],

@@ -7,10 +7,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
-import { formatMoney, formatDateTime } from '../../shared/ui/ui-utils';
+import { formatMoney, formatDateTime, toMillis } from '../../shared/ui/ui-utils';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { ShopProduct, ShopSale } from '../../core/models/shop-product.model';
+import { DEFAULT_STOCK_CATEGORIES, StockCategoryItem } from '../../core/models/stock-category.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -50,6 +51,47 @@ export class AdminPos {
   private readonly productData = toSignal(this.shopService.watchProducts(), { initialValue: null });
   private readonly salesData = toSignal(this.shopService.watchSales(), { initialValue: null });
   private readonly membersData = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
+  private readonly rawCategories = toSignal(this.shopService.watchCategories(), {
+    initialValue: [] as StockCategoryItem[],
+  });
+
+  protected readonly categories = computed(() => {
+    const list = this.rawCategories() ?? [];
+    const baseList: Array<{ id: string; label: string; icon?: string }> = [
+      { id: 'all', label: 'Tümü', icon: '⚡' },
+    ];
+
+    const sourceCategories = list.length > 0 ? list : DEFAULT_STOCK_CATEGORIES;
+    const seen = new Set<string>();
+
+    for (const c of sourceCategories) {
+      const key = (c.key || c.name).toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        seen.add(c.name.toLowerCase());
+        baseList.push({
+          id: c.key,
+          label: c.name,
+          icon: c.icon || '📦',
+        });
+      }
+    }
+
+    // Ek olarak aktif ürünlerde tanımlı ama kategorilerde yer almayan başlıkları da ekle
+    for (const p of this.products()) {
+      const pCat = p.category?.trim();
+      if (pCat && !seen.has(pCat.toLowerCase())) {
+        seen.add(pCat.toLowerCase());
+        baseList.push({
+          id: pCat,
+          label: pCat,
+          icon: '🏷️',
+        });
+      }
+    }
+
+    return baseList;
+  });
 
   protected readonly products = computed(() => {
     const list = this.productData() ?? [];
@@ -59,7 +101,7 @@ export class AdminPos {
   protected readonly sales = computed(() => this.salesData() ?? []);
   protected readonly members = computed(() => this.membersData() ?? []);
 
-  // Today's POS Total
+  // Today's POS Total (toMillis safe check)
   protected readonly todaySalesTotal = computed(() => {
     const list = this.sales();
     const today = new Date();
@@ -67,7 +109,7 @@ export class AdminPos {
     const todayMs = today.getTime();
 
     return list
-      .filter((s) => s.status === 'completed' && (s.saleDate?.toMillis() ?? 0) >= todayMs)
+      .filter((s) => s.status === 'completed' && toMillis(s.saleDate) >= todayMs)
       .reduce((sum, s) => sum + s.totalAmount, 0);
   });
 
@@ -77,7 +119,7 @@ export class AdminPos {
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
 
-    return list.filter((s) => s.status === 'completed' && (s.saleDate?.toMillis() ?? 0) >= todayMs).length;
+    return list.filter((s) => s.status === 'completed' && toMillis(s.saleDate) >= todayMs).length;
   });
 
   // Filtered Products
@@ -85,14 +127,24 @@ export class AdminPos {
     const list = this.products();
     const cat = this.selectedCategory();
     const q = this.search().trim().toLowerCase();
+    const catItem = cat === 'all' ? null : this.categories().find((c) => c.id === cat);
 
     return list.filter((p) => {
-      const matchCat = cat === 'all' || p.category?.toLowerCase() === cat.toLowerCase();
+      let matchCat = cat === 'all';
+      if (!matchCat) {
+        const prodCat = (p.category ?? '').trim().toLowerCase();
+        const selectedId = cat.toLowerCase();
+        const selectedLabel = catItem?.label.toLowerCase();
+
+        matchCat = prodCat === selectedId || (!!selectedLabel && prodCat === selectedLabel);
+      }
+
       const matchQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q);
+        (p.category && p.category.toLowerCase().includes(q));
+
       return matchCat && matchQuery;
     });
   });
@@ -206,11 +258,15 @@ export class AdminPos {
 
     this.isPaying.set(true);
     try {
+      const itemsSummary = items
+        .map((i) => `${i.quantity}x ${i.product.name} (₺${this.money(i.product.price)})`)
+        .join(', ');
+
       await this.shopService.checkout({
         items,
         paymentMethod,
         member,
-        notes: `Hızlı Kasa (POS) ${member ? `[Üye: ${member.displayName}]` : '[Misafir]'}`,
+        notes: `Hızlı Kasa (POS) ${member ? `[Üye: ${member.displayName}]` : '[Misafir]'} · Ürünler: ${itemsSummary}`,
       });
 
       const total = this.cartTotal();

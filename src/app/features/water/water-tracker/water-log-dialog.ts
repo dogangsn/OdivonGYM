@@ -12,7 +12,7 @@ import { WaterLog, CreateWaterLogInput } from '../../../core/models/water-log.mo
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity" (click)="cancel()"></div>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity" (click)="onBackdropClick()"></div>
 
       <div class="font-sans fixed inset-y-0 right-0 max-w-lg w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800">
         <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -171,5 +171,19 @@ export class WaterLogDialog {
 
   cancel(): void {
     this.closed.emit(false);
+  }
+
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Girdiğiniz su tüketim bilgileri kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.cancel();
+    }
   }
 }

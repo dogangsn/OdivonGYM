@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { ReceivablesApi } from '../../core/api/receivables.api';
+import { WalletApi } from '../../core/api/wallet.api';
 import {
   DebtorRow,
   OverdueInstallmentRow,
@@ -373,6 +374,7 @@ const STATUS_LABEL: Record<ReceivableStatus, string> = { open: 'Açık', paid: '
 })
 export class AdminReceivables {
   private readonly api = inject(ReceivablesApi);
+  private readonly walletApi = inject(WalletApi);
   private readonly alert = inject(AlertService);
   protected readonly permissions = inject(PermissionService);
 
@@ -524,6 +526,25 @@ export class AdminReceivables {
       const saved = await firstValueFrom(
         this.api.pay(plan.id, { amount, paymentMethod: this.payMethod(), note: this.payNote().trim() || undefined }),
       );
+
+      // Tahsilat cüzdan dışı yöntemle (nakit, kart, havale) alındıysa,
+      // üyenin taksitli satıştan oluşan eksi cüzdan bakiyesini de tahsilat oranında kapat
+      if (this.payMethod() !== 'wallet') {
+        try {
+          await firstValueFrom(
+            this.walletApi.adjust({
+              userId: plan.userId,
+              walletType: 'deposit',
+              amount,
+              description: `Taksit tahsilatı: ${plan.packageName} (${this.methodLabels[this.payMethod()]})`,
+              paymentMethod: this.payMethod(),
+            }),
+          );
+        } catch (walletErr) {
+          console.warn('Tahsilat cüzdana yansıtılırken hata:', walletErr);
+        }
+      }
+
       this.alert.toastSuccess(
         saved.status === 'paid'
           ? `${this.money(amount)} tahsil edildi, plan kapandı. 🎉`
@@ -550,6 +571,23 @@ export class AdminReceivables {
     this.busy.set(true);
     try {
       await firstValueFrom(this.api.cancel(plan.id));
+
+      // Kalan borç silindiğinde cüzdandaki eksi bakiyeyi de telafi et
+      if (plan.remainingAmount > 0) {
+        try {
+          await firstValueFrom(
+            this.walletApi.adjust({
+              userId: plan.userId,
+              walletType: 'deposit',
+              amount: plan.remainingAmount,
+              description: `İptal edilen taksit planı borç kapatma: ${plan.packageName}`,
+            }),
+          );
+        } catch (walletErr) {
+          console.warn('İptal borç düzeltmesi cüzdana yansıtılırken hata:', walletErr);
+        }
+      }
+
       this.alert.toastSuccess('Plan iptal edildi.');
       await this.reload();
     } catch (err) {

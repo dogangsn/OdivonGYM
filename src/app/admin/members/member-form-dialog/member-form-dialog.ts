@@ -11,6 +11,7 @@ import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { Gender, MembershipStatus, UserProfile } from '../../../core/models/user-profile.model';
 import { formatMoney, toDateInput, todayInput } from '../../../shared/ui/ui-utils';
 import { AdminPackagesService } from '../../packages/admin-packages.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { GymPackage } from '../../../core/models/gym-package.model';
 import { addMonths, gymToday } from '../../receivables/installment-math';
 
@@ -66,6 +67,7 @@ export class MemberFormDialog {
   protected readonly branchContext = inject(BranchContextService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly alertService = inject(AlertService);
 
   readonly open = input(false);
   readonly member = input<UserProfile | null>(null);
@@ -157,12 +159,11 @@ export class MemberFormDialog {
     return key && key !== CUSTOM ? (this.packages().find((p) => p.id === key) ?? null) : null;
   });
 
-  /** Yeni kayıtta paket satışı: liste fiyatı, kasaya giren ve kalan borç (kuruş hassasiyetinde). */
+  /** Yeni kayıtta paket satışı: girilen/liste paket bedeli, kasaya giren ve kalan borç (kuruş hassasiyetinde). */
   protected readonly sale = computed(() => {
     const v = this.formValues();
-    const pkg = this.selectedPackage();
-    const price = pkg ? toKurus(pkg.price) : toKurus(v.packagePrice);
-    const paid = pkg ? toKurus(v.paidAmount) : price;
+    const price = toKurus(v.packagePrice);
+    const paid = toKurus(v.paidAmount);
     return {
       price: price / 100,
       paid: paid / 100,
@@ -273,6 +274,17 @@ export class MemberFormDialog {
       this.form.controls.packagePrice.setValue(pkg.price);
       this.form.controls.paidAmount.setValue(pkg.price);
       this.form.controls.endDate.setValue(addDays(this.form.controls.startDate.value, pkg.durationDays));
+    }
+  }
+
+  /** Paket bedeli kullanıcı tarafından elle değiştirilince çalışır. */
+  onPackagePriceChange(val: unknown): void {
+    const price = Number(val) || 0;
+    this.form.controls.packagePrice.setValue(price);
+    const currentPaid = this.form.controls.paidAmount.value;
+    // Eğer tahsilat tutarı yeni fiyattan büyükse veya kullanıcı henüz tahsilata elle dokunmadıysa fiyatla senkronize et
+    if (currentPaid > price || this.form.controls.paidAmount.pristine) {
+      this.form.controls.paidAmount.setValue(price);
     }
   }
 
@@ -453,7 +465,7 @@ export class MemberFormDialog {
         trainerId: value.trainerId || null,
         trainerName,
         packageLabel: isActive ? (selectedPackage?.name ?? CUSTOM_LABEL) : null,
-        packagePrice: isActive ? (selectedPackage ? selectedPackage.price : Number(value.packagePrice) || 0) : 0,
+        packagePrice: isActive ? (Number(value.packagePrice) || 0) : 0,
         membershipStartDate: isActive ? new Date(value.startDate) : null,
         membershipEndDate: isActive ? new Date(value.endDate) : null,
         emergencyContactName: value.emergencyContactName.trim(),
@@ -477,11 +489,12 @@ export class MemberFormDialog {
           ...membershipInput,
           email: value.email.trim(),
           password: value.password,
-          // Paket satışı: MainApi fiyatı paket kaydından alır, eksik ödemeyi borç + (-) cüzdan yapar.
+          // Paket satışı: eksik ödemeyi borç + (-) cüzdan yapar.
           sale: isActive
             ? {
                 packageId: selectedPackage?.id ?? null,
-                paidAmount: selectedPackage ? sale.paid : undefined,
+                paidAmount: sale.paid,
+                discount: selectedPackage ? Math.max(0, selectedPackage.price - (Number(value.packagePrice) || 0)) : undefined,
                 paymentMethod: value.paymentMethod,
                 debtDueDate: sale.debt > 0 ? value.debtDueDate : undefined,
                 debtInstallments: sale.debt > 0 ? Number(value.debtInstallments) || 1 : undefined,
@@ -500,5 +513,19 @@ export class MemberFormDialog {
 
   cancel(): void {
     this.closed.emit(false);
+  }
+
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Girdiğiniz bilgiler kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.cancel();
+    }
   }
 }

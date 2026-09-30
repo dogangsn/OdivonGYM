@@ -20,12 +20,17 @@ import { WorkoutPlan, CreateWorkoutPlanInput } from '../../core/models/workout-p
 import { MemberDocument, CreateMemberDocumentInput } from '../../core/models/member-document.model';
 import { ClassSchedule } from '../../core/models/class-schedule.model';
 
+import { ReceivablesApi } from '../../core/api/receivables.api';
+import { ReceivablePaymentMethod } from '../../core/models/receivable.model';
+import { addMonths, gymToday, receivableErrorMessage } from '../receivables/installment-math';
+
 /** Kayıtla birlikte satılan paket (yalnız yeni üye); MainApi fiyatı paket kaydından alır. */
 export interface NewMemberSaleInput {
   /** Salon paketi; `null` = özel süre (girilen bedel gelir olarak işlenir, borç oluşmaz). */
   packageId: string | null;
   /** Kasaya giren tutar; paket fiyatından azsa fark borç + (-) cüzdan olur. */
   paidAmount?: number;
+  discount?: number;
   paymentMethod?: 'cash' | 'card' | 'transfer';
   /** Kalan borcun ilk vadesi, YYYY-MM-DD. */
   debtDueDate?: string;
@@ -71,6 +76,7 @@ export type UpdateMemberInput = Omit<NewMemberInput, 'email' | 'password'>;
 export class AdminMembersService {
   private readonly api = inject(GymApi);
   private readonly wallet = inject(WalletApi);
+  private readonly receivablesApi = inject(ReceivablesApi);
   private readonly access = inject(AccessApi);
   private readonly health = inject(HealthApi);
   private readonly workouts = inject(WorkoutsApi);
@@ -115,6 +121,55 @@ export class AdminMembersService {
           : {}),
       }),
     );
+
+    // Paket satışı ve eksik ödeme (borç) takibi:
+    // Eğer paket fiyatından daha az ücret alındıysa:
+    // 1) Fark üyenin cüzdanına borç (- bakiye) olarak yansıtılır
+    // 2) Taksit & Borç Takibi ekranına borçlu üye ve taksit planı olarak eklenir
+    if (input.sale) {
+      const paidAmount = Number(input.sale.paidAmount) || 0;
+      const packagePrice = Number(input.packagePrice) || 0;
+      const debt = Math.max(0, packagePrice - paidAmount);
+
+      if (debt > 0) {
+        // 1. Taksit & Borç Takibi'ne borç kaydı olarak ekle (eğer salon paketi seçildiyse)
+        if (input.sale.packageId) {
+          try {
+            await firstValueFrom(
+              this.receivablesApi.createSale({
+                userId: created.uid,
+                packageId: input.sale.packageId,
+                downPayment: paidAmount,
+                installmentCount: Number(input.sale.debtInstallments) || 1,
+                firstDueDate: input.sale.debtDueDate || addMonths(gymToday(), 1),
+                discount: input.sale.discount,
+                paymentMethod: (input.sale.paymentMethod as ReceivablePaymentMethod) || 'cash',
+                notes: input.notes ? `Yeni Üye Kaydı - ${input.notes}` : 'Yeni üye kaydı taksitli paket satışı',
+              }),
+            );
+          } catch (err) {
+            console.error('Taksit & Borç kaydı oluşturulurken hata:', err);
+            throw new Error(receivableErrorMessage(err, 'Üye oluşturuldu fakat borç takibi kaydı eklenemedi.'));
+          }
+        }
+
+        // 2. Paket - alınan ücret farkını üyenin cüzdanına borç (- bakiye) olarak yansıt
+        try {
+          await firstValueFrom(
+            this.wallet.adjust({
+              userId: created.uid,
+              walletType: 'debit',
+              amount: debt,
+              description: `Paket satışından kalan borç (${input.packageLabel || 'Paket'})`,
+              paymentMethod: input.sale.paymentMethod || 'cash',
+            }),
+          );
+        } catch (err) {
+          console.error('Cüzdana borç yansıtılırken hata:', err);
+        }
+      }
+    }
+
     this.refresh();
     return created.uid;
   }

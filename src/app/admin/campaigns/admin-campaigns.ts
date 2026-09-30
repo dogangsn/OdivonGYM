@@ -208,6 +208,20 @@ export class AdminCampaigns {
     this.editingCampaign.set(null);
   }
 
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Girdiğiniz kampanya bilgileri kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.closeDrawer();
+    }
+  }
+
   toggleChannel(ch: CampaignChannel): void {
     const idx = this.formData.channels.indexOf(ch);
     if (idx >= 0) {

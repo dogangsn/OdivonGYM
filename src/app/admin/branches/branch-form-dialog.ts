@@ -12,6 +12,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AdminBranchesService } from './admin-branches.service';
+import { AlertService } from '../../core/services/alert.service';
 import { GymBranch, OpeningHours, DAYS_OF_WEEK } from '../../core/models/gym-branch.model';
 
 const INPUT_CLASS =
@@ -25,7 +26,7 @@ const LABEL_CLASS = 'block text-xs font-bold uppercase tracking-wider text-slate
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="cancel()"></div>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="onBackdropClick()"></div>
       <div
         class="font-sans fixed inset-y-0 right-0 max-w-lg w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800"
       >
@@ -280,6 +281,7 @@ const LABEL_CLASS = 'block text-xs font-bold uppercase tracking-wider text-slate
 export class BranchFormDialog {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(AdminBranchesService);
+  private readonly alertService = inject(AlertService);
 
   readonly open = input(false);
   readonly branch = input<GymBranch | null>(null);
@@ -514,5 +516,19 @@ export class BranchFormDialog {
 
   cancel(): void {
     this.closed.emit(false);
+  }
+
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Girdiğiniz şube bilgileri kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.cancel();
+    }
   }
 }

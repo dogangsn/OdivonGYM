@@ -24,17 +24,6 @@ const STATUS_CLASS: Record<GymPackage['status'], string> = {
   archived: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
 };
 
-const CATEGORIES = [
-  'Genel Fitness & Gym',
-  'Pilates & Reformer',
-  'Özel Ders (PT)',
-  'VIP & Full Erişim',
-  'Havuz & Spa',
-  'Grup Seansları',
-  'Boks & Dövüş Sporları',
-  'Öğrenci & İndirimli',
-];
-
 const DAYS_OF_WEEK = [
   { id: 1, label: 'Pazartesi', short: 'Pzt' },
   { id: 2, label: 'Salı', short: 'Sal' },
@@ -99,7 +88,7 @@ const DAYS_OF_WEEK = [
                       </div>
                       <div class="flex items-center gap-2 mt-0.5">
                         <span class="inline-flex items-center text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                          {{ p.category || 'Genel Fitness' }}
+                          {{ p.category || 'Genel' }}
                         </span>
                         @if (p.features.length) {
                           <span class="text-[11px] text-slate-400 truncate max-w-xs">{{ p.features.join(' · ') }}</span>
@@ -164,11 +153,37 @@ const DAYS_OF_WEEK = [
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <app-field label="Kategori / Spor Branşı">
-            <select formControlName="category" class="odv-input">
-              @for (cat of categories(); track cat) {
-                <option [value]="cat">{{ cat }}</option>
+            <div class="space-y-1.5">
+              <input
+                type="text"
+                formControlName="category"
+                list="package-categories"
+                class="odv-input"
+                placeholder="Kategori seçin veya yeni yazın…"
+              />
+              <datalist id="package-categories">
+                @for (cat of categories(); track cat) {
+                  <option [value]="cat"></option>
+                }
+              </datalist>
+              @if (categories().length > 0) {
+                <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span class="text-[10px] text-slate-400 font-medium">Kayıtlı:</span>
+                  @for (cat of categories(); track cat) {
+                    <button
+                      type="button"
+                      (click)="form.controls.category.setValue(cat)"
+                      class="text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer"
+                      [class]="form.controls.category.value === cat
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800 font-bold'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'"
+                    >
+                      {{ cat }}
+                    </button>
+                  }
+                </div>
               }
-            </select>
+            </div>
           </app-field>
 
           <app-field label="Barkod / Paket Kodu">
@@ -370,8 +385,10 @@ export class AdminPackages {
   protected readonly statusClass = STATUS_CLASS;
   private readonly disciplinesList = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] });
   protected readonly categories = computed(() => {
-    const branchNames = (this.disciplinesList() ?? []).map((d) => d.name);
-    return Array.from(new Set([...branchNames, ...CATEGORIES]));
+    const fromDisciplines = (this.disciplinesList() ?? []).map((d) => d.name.trim()).filter(Boolean);
+    const fromPackages = (this.data() ?? []).map((p) => p.category?.trim()).filter((c): c is string => !!c);
+    const combined = Array.from(new Set([...fromDisciplines, ...fromPackages]));
+    return combined.sort((a, b) => a.localeCompare(b, 'tr'));
   });
   protected readonly daysOfWeek = DAYS_OF_WEEK;
   protected readonly money = formatMoney;
@@ -387,7 +404,7 @@ export class AdminPackages {
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
-    category: ['Genel Fitness & Gym'],
+    category: [''],
     barcode: [''],
     durationType: ['month' as 'day' | 'month' | 'year'],
     durationValue: [1, [Validators.required, Validators.min(1)]],
@@ -501,7 +518,7 @@ export class AdminPackages {
 
     this.form.reset({
       name: pkg?.name ?? '',
-      category: pkg?.category ?? 'Genel Fitness & Gym',
+      category: pkg?.category ?? (this.categories()[0] || ''),
       barcode: pkg?.barcode ?? '',
       durationType: type,
       durationValue: val,

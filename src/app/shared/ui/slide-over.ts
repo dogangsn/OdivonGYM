@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { AlertService } from '../../core/services/alert.service';
 
 /**
  * CRUD ekranlarının ortak "slide-over" paneli. İçerik (alanlar) `ng-content`
@@ -13,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="onCancel()"></div>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="onBackdropClick()"></div>
       <div
         class="font-sans fixed inset-y-0 right-0 max-w-lg w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800"
       >
@@ -51,11 +52,14 @@ import { MatIconModule } from '@angular/material/icon';
   `,
 })
 export class SlideOver {
+  private readonly alertService = inject(AlertService);
+
   readonly open = input(false);
   readonly title = input.required<string>();
   readonly submitLabel = input('Kaydet');
   readonly submitting = input(false);
   readonly errorMessage = input('');
+  readonly confirmOnBackdrop = input(true);
 
   // Support both closed/close and submitted/save outputs
   readonly closed = output<void>();
@@ -72,5 +76,22 @@ export class SlideOver {
   protected onCancel(): void {
     this.closed.emit();
     this.close.emit();
+  }
+
+  protected async onBackdropClick(): Promise<void> {
+    if (this.confirmOnBackdrop()) {
+      const confirmed = await this.alertService.confirm({
+        title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+        message: 'Girdiğiniz bilgiler kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+        icon: 'warning',
+        confirmText: 'Evet, Çık',
+        cancelText: 'Vazgeç',
+        isDestructive: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+    this.onCancel();
   }
 }

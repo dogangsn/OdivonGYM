@@ -15,7 +15,9 @@ import {
   toTl,
 } from '../../../admin/receivables/installment-math';
 import { ReceivablesApi } from '../../../core/api/receivables.api';
+import { WalletApi } from '../../../core/api/wallet.api';
 import { GymPackage } from '../../../core/models/gym-package.model';
+import { AlertService } from '../../../core/services/alert.service';
 import {
   Receivable,
   RECEIVABLE_PAYMENT_LABELS,
@@ -37,7 +39,7 @@ const COUNT_PRESETS = [2, 3, 4, 6, 9, 12];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="close()"></div>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="onBackdropClick()"></div>
       <div class="font-sans fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           class="pointer-events-auto w-full max-w-3xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800"
@@ -205,8 +207,10 @@ const COUNT_PRESETS = [2, 3, 4, 6, 9, 12];
 })
 export class InstallmentSaleDialog {
   private readonly api = inject(ReceivablesApi);
+  private readonly walletApi = inject(WalletApi);
   private readonly membersService = inject(AdminMembersService);
   private readonly packagesService = inject(AdminPackagesService);
+  private readonly alertService = inject(AlertService);
 
   /** Dışarıdan sabitlenen üye / paket; verilmezse diyalog içinde seçilir. */
   readonly open = input(false);
@@ -308,11 +312,44 @@ export class InstallmentSaleDialog {
           notes: this.notes().trim() || undefined,
         }),
       );
+
+      // Kalan borcu üyenin cüzdanına yansıt
+      const financedAmount = this.financed();
+      if (financedAmount > 0) {
+        try {
+          await firstValueFrom(
+            this.walletApi.adjust({
+              userId,
+              walletType: 'debit',
+              amount: financedAmount,
+              description: `Taksitli paket satışı kalan borcu: ${pkg.name}`,
+              paymentMethod: this.paymentMethod(),
+            }),
+          );
+        } catch (walletErr) {
+          console.warn('Cüzdan borç kaydı oluşturulurken hata:', walletErr);
+        }
+      }
+
       this.completed.emit(plan);
     } catch (err) {
       this.error.set(receivableErrorMessage(err, 'Taksitli satış kaydedilemedi.'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  async onBackdropClick(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      message: 'Girdiğiniz satış ve taksit bilgileri kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
+      icon: 'warning',
+      confirmText: 'Evet, Çık',
+      cancelText: 'Vazgeç',
+      isDestructive: true,
+    });
+    if (confirmed) {
+      this.close();
     }
   }
 }

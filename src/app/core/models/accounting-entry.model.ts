@@ -1,5 +1,13 @@
 import { Timestamp } from '@angular/fire/firestore';
 
+export interface AccountingItemDetail {
+  productId?: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount?: number;
+}
+
 export interface AccountingEntry {
   id: string;
   tenantId: string;
@@ -11,6 +19,7 @@ export interface AccountingEntry {
   referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'other';
   paymentMethod?: 'cash' | 'card' | 'transfer' | 'wallet';
   notes?: string;
+  items?: AccountingItemDetail[];
   entryDate: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -25,6 +34,7 @@ export interface CreateAccountingEntryInput {
   referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'other';
   paymentMethod?: 'cash' | 'card' | 'transfer' | 'wallet';
   notes?: string;
+  items?: AccountingItemDetail[];
   entryDate: Date;
 }
 

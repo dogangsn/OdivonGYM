@@ -190,7 +190,12 @@
                     @if (member.role === 'admin') {
                       <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Admin</span>
                     }
-                    <span class="text-[11px] text-slate-400">Bakiye: {{ money(member.walletBalance) }}</span>
+                    <span
+                      class="text-[11px] font-medium"
+                      [class]="(member.walletBalance ?? 0) < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'"
+                    >
+                      Bakiye: {{ money(member.walletBalance) }}
+                    </span>
                     @if (member.rfidCardNumber) {
                       <span class="text-[10px] font-mono text-slate-400 flex items-center gap-0.5" title="RFID Kart Numarası">
                         <mat-icon class="icon-size-3">credit_card</mat-icon>
