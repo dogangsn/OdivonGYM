@@ -20,7 +20,20 @@ import { WorkoutPlan, CreateWorkoutPlanInput } from '../../core/models/workout-p
 import { MemberDocument, CreateMemberDocumentInput } from '../../core/models/member-document.model';
 import { ClassSchedule } from '../../core/models/class-schedule.model';
 
+/** Kayıtla birlikte satılan paket (yalnız yeni üye); MainApi fiyatı paket kaydından alır. */
+export interface NewMemberSaleInput {
+  /** Salon paketi; `null` = özel süre (girilen bedel gelir olarak işlenir, borç oluşmaz). */
+  packageId: string | null;
+  /** Kasaya giren tutar; paket fiyatından azsa fark borç + (-) cüzdan olur. */
+  paidAmount?: number;
+  paymentMethod?: 'cash' | 'card' | 'transfer';
+  /** Kalan borcun ilk vadesi, YYYY-MM-DD. */
+  debtDueDate?: string;
+  debtInstallments?: number;
+}
+
 export interface NewMemberInput {
+  sale?: NewMemberSaleInput | null;
   displayName: string;
   email: string;
   phone: string;
@@ -91,6 +104,15 @@ export class AdminMembersService {
         ...this.toPayload(input),
         email: input.email,
         password: input.password,
+        ...(input.sale
+          ? {
+              packageId: input.sale.packageId ?? undefined,
+              paidAmount: input.sale.paidAmount,
+              paymentMethod: input.sale.paymentMethod,
+              debtDueDate: input.sale.debtDueDate,
+              debtInstallments: input.sale.debtInstallments,
+            }
+          : {}),
       }),
     );
     this.refresh();

@@ -24,6 +24,8 @@ export interface UserProfile {
   membershipStartsAt?: string | null;
   membershipEndsAt?: string | null;
   packageLabel?: string | null;
+  /** Paketin satış bedeli (liste fiyatı); ödenmeyen kısım taksit planında izlenir. */
+  packagePrice?: number | null;
   notes?: string;
   country?: string;
   language?: string;

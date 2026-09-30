@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked, DestroyRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,18 +9,18 @@ import { AdminStaffService } from '../../staff/admin-staff.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { Gender, MembershipStatus, UserProfile } from '../../../core/models/user-profile.model';
-import { toDateInput, todayInput } from '../../../shared/ui/ui-utils';
+import { formatMoney, toDateInput, todayInput } from '../../../shared/ui/ui-utils';
+import { AdminPackagesService } from '../../packages/admin-packages.service';
+import { GymPackage } from '../../../core/models/gym-package.model';
+import { addMonths, gymToday } from '../../receivables/installment-math';
 
-/** `custom`: paket dışı, süresi admin tarafından elle (başlangıç/bitiş tarihiyle) belirlenen üyelik. */
-type PackageOption = 30 | 90 | 180 | 365 | 'custom';
+/** Salonun paket kaydı (id) ya da `custom`: süresi başlangıç/bitiş tarihiyle elle belirlenen, paket dışı üyelik. */
+const CUSTOM = 'custom';
+const CUSTOM_LABEL = 'Özel Süre';
 
-const PACKAGES: { label: string; days: PackageOption; defaultPrice: number }[] = [
-  { label: 'Aylık Standart', days: 30, defaultPrice: 1250 },
-  { label: '3 Aylık Avantaj', days: 90, defaultPrice: 3200 },
-  { label: '6 Aylık Pro', days: 180, defaultPrice: 5800 },
-  { label: 'Yıllık VIP', days: 365, defaultPrice: 9900 },
-  { label: 'Özel Süre', days: 'custom', defaultPrice: 0 },
-];
+const toKurus = (value: unknown): number => Math.round((Number(value) || 0) * 100);
+
+const DEBT_INSTALLMENT_OPTIONS = [1, 2, 3, 4, 6, 9, 12];
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -62,6 +62,7 @@ export class MemberFormDialog {
   private readonly fb = inject(FormBuilder);
   private readonly membersService = inject(AdminMembersService);
   private readonly staffService = inject(AdminStaffService);
+  private readonly packagesService = inject(AdminPackagesService);
   protected readonly branchContext = inject(BranchContextService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
@@ -70,7 +71,18 @@ export class MemberFormDialog {
   readonly member = input<UserProfile | null>(null);
   readonly closed = output<boolean>();
 
-  protected readonly packages = PACKAGES;
+  protected readonly custom = CUSTOM;
+  protected readonly customLabel = CUSTOM_LABEL;
+  protected readonly money = formatMoney;
+  protected readonly debtInstallmentOptions = DEBT_INSTALLMENT_OPTIONS;
+  protected readonly paymentMethods = [
+    { id: 'cash', label: 'Nakit' },
+    { id: 'card', label: 'Kredi Kartı' },
+    { id: 'transfer', label: 'Havale/EFT' },
+  ] as const;
+  /** Salonun satıştaki paketleri (Paketler ekranında tanımlanan). */
+  private readonly allPackages = toSignal(this.packagesService.watchPackages(), { initialValue: [] as GymPackage[] });
+  protected readonly packages = computed(() => this.allPackages().filter((p) => p.status === 'active'));
   protected readonly branches = this.branchContext.branches;
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -103,8 +115,15 @@ export class MemberFormDialog {
     birthDate: [todayInputValue()],
     trainerId: ['', [Validators.required]],
     membershipStatus: ['active' as MembershipStatus],
-    packageDays: [30 as PackageOption],
-    packagePrice: [1250],
+    /** Paket kaydının id'si ya da `custom`. */
+    packageKey: [CUSTOM as string],
+    /** Paketin liste fiyatı; özel sürede elle girilen satış bedeli. */
+    packagePrice: [0, [Validators.min(0)]],
+    /** Kasaya giren tutar (yalnız yeni kayıtta); paket fiyatından azsa fark borç olur. */
+    paidAmount: [0, [Validators.min(0)]],
+    paymentMethod: ['cash' as 'cash' | 'card' | 'transfer'],
+    debtDueDate: [''],
+    debtInstallments: [1],
     startDate: [todayInputValue(), [Validators.required]],
     endDate: ['', [Validators.required]],
     emergencyContactName: [''],
@@ -133,6 +152,25 @@ export class MemberFormDialog {
     return !!(v.allergies?.trim() || v.chronicDiseases?.trim() || v.specialInfo?.trim());
   });
 
+  protected readonly selectedPackage = computed(() => {
+    const key = this.formValues().packageKey;
+    return key && key !== CUSTOM ? (this.packages().find((p) => p.id === key) ?? null) : null;
+  });
+
+  /** Yeni kayıtta paket satışı: liste fiyatı, kasaya giren ve kalan borç (kuruş hassasiyetinde). */
+  protected readonly sale = computed(() => {
+    const v = this.formValues();
+    const pkg = this.selectedPackage();
+    const price = pkg ? toKurus(pkg.price) : toKurus(v.packagePrice);
+    const paid = pkg ? toKurus(v.paidAmount) : price;
+    return {
+      price: price / 100,
+      paid: paid / 100,
+      debt: Math.max(0, price - paid) / 100,
+      overpaid: paid > price,
+    };
+  });
+
   constructor() {
     // `member()` her açılışta değişir (yeni üye → null, düzenleme → kayıt)
     effect(() => {
@@ -146,10 +184,16 @@ export class MemberFormDialog {
       this.hidePassword.set(editMode);
 
       const startDate = m?.membershipStartsAt ? toDateInputValue(m.membershipStartsAt) : todayInputValue();
-      const packageDays = this.packageDaysFor(m?.packageLabel) ?? 30;
+      // untracked: paket listesi sonradan yüklenince form sıfırlanmasın.
+      const catalogue = untracked(() => this.packages());
+      const pkg = editMode
+        ? catalogue.find((p) => p.name === m?.packageLabel)
+        : catalogue[0];
       const endDate = m?.membershipEndsAt
         ? toDateInputValue(m.membershipEndsAt)
-        : addDays(startDate, packageDays === 'custom' ? 30 : packageDays);
+        : addDays(startDate, pkg?.durationDays ?? 30);
+      // Düzenlemede kayıtlı bedel gösterilir (eskiden her açılışta 1250'ye dönüyordu).
+      const packagePrice = editMode ? (m?.packagePrice ?? pkg?.price ?? 0) : (pkg?.price ?? 0);
 
       const initialPassword = editMode ? '' : generatePassword();
       const memberNumber = m?.memberNumber || generate5DigitNumber();
@@ -167,8 +211,12 @@ export class MemberFormDialog {
         birthDate,
         trainerId: m?.trainerId ?? '',
         membershipStatus: m?.membershipStatus ?? 'active',
-        packageDays,
-        packagePrice: 1250,
+        packageKey: pkg?.id ?? CUSTOM,
+        packagePrice,
+        paidAmount: packagePrice,
+        paymentMethod: 'cash',
+        debtDueDate: addMonths(gymToday(), 1),
+        debtInstallments: 1,
         startDate,
         endDate,
         emergencyContactName: m?.emergencyContactName ?? '',
@@ -217,29 +265,23 @@ export class MemberFormDialog {
     this.form.controls.endDate.updateValueAndValidity();
   }
 
-  private packageDaysFor(label: string | null | undefined): PackageOption | undefined {
-    return this.packages.find((p) => p.label === label)?.days;
-  }
-
-  /** Hazır bir paket seçilince bitiş tarihini ve varsayılan fiyatı hesaplar. */
-  onPackageChange(value: string): void {
-    const days = value === 'custom' ? 'custom' : (Number(value) as PackageOption);
-    this.form.controls.packageDays.setValue(days);
-    const selectedPkg = this.packages.find((p) => p.days === days);
-    if (selectedPkg && selectedPkg.defaultPrice) {
-      this.form.controls.packagePrice.setValue(selectedPkg.defaultPrice);
-    }
-    if (days !== 'custom') {
-      this.form.controls.endDate.setValue(addDays(this.form.controls.startDate.value, days));
+  /** Paket seçilince fiyatı, tahsil edilecek tutarı ve bitiş tarihini paketten doldurur. */
+  onPackageChange(key: string): void {
+    this.form.controls.packageKey.setValue(key);
+    const pkg = this.packages().find((p) => p.id === key);
+    if (pkg) {
+      this.form.controls.packagePrice.setValue(pkg.price);
+      this.form.controls.paidAmount.setValue(pkg.price);
+      this.form.controls.endDate.setValue(addDays(this.form.controls.startDate.value, pkg.durationDays));
     }
   }
 
-  /** Başlangıç tarihi değişince bitiş tarihini de kaydırır. */
+  /** Başlangıç tarihi değişince bitiş tarihini de kaydırır (özel sürede elle belirlenir). */
   onStartDateChange(value: string): void {
     this.form.controls.startDate.setValue(value);
-    const days = this.form.controls.packageDays.value;
-    if (days !== 'custom') {
-      this.form.controls.endDate.setValue(addDays(value, days));
+    const pkg = this.selectedPackage();
+    if (pkg) {
+      this.form.controls.endDate.setValue(addDays(value, pkg.durationDays));
     }
   }
 
@@ -373,12 +415,22 @@ export class MemberFormDialog {
       );
       return;
     }
+    const sale = this.sale();
+    const selling = !this.isEditMode() && this.form.controls.membershipStatus.value === 'active';
+    if (selling && sale.overpaid) {
+      this.errorMessage.set(`Tahsil edilen tutar paket fiyatından (${this.money(sale.price)}) fazla olamaz.`);
+      return;
+    }
+    if (selling && sale.debt > 0 && !this.form.controls.debtDueDate.value) {
+      this.errorMessage.set('Kalan borç için bir vade tarihi seçin.');
+      return;
+    }
     this.errorMessage.set('');
     this.submitting.set(true);
     try {
       const value = this.form.getRawValue();
       const isActive = value.membershipStatus === 'active';
-      const selectedPackage = this.packages.find((p) => p.days === value.packageDays);
+      const selectedPackage = this.selectedPackage();
       const currentMember = this.member();
 
       const branchId = value.branchId || this.branchContext.activeBranch()?.id || null;
@@ -400,8 +452,8 @@ export class MemberFormDialog {
         branchName,
         trainerId: value.trainerId || null,
         trainerName,
-        packageLabel: isActive ? selectedPackage?.label ?? null : null,
-        packagePrice: isActive ? value.packagePrice : 0,
+        packageLabel: isActive ? (selectedPackage?.name ?? CUSTOM_LABEL) : null,
+        packagePrice: isActive ? (selectedPackage ? selectedPackage.price : Number(value.packagePrice) || 0) : 0,
         membershipStartDate: isActive ? new Date(value.startDate) : null,
         membershipEndDate: isActive ? new Date(value.endDate) : null,
         emergencyContactName: value.emergencyContactName.trim(),
@@ -425,6 +477,16 @@ export class MemberFormDialog {
           ...membershipInput,
           email: value.email.trim(),
           password: value.password,
+          // Paket satışı: MainApi fiyatı paket kaydından alır, eksik ödemeyi borç + (-) cüzdan yapar.
+          sale: isActive
+            ? {
+                packageId: selectedPackage?.id ?? null,
+                paidAmount: selectedPackage ? sale.paid : undefined,
+                paymentMethod: value.paymentMethod,
+                debtDueDate: sale.debt > 0 ? value.debtDueDate : undefined,
+                debtInstallments: sale.debt > 0 ? Number(value.debtInstallments) || 1 : undefined,
+              }
+            : null,
         });
       }
 
