@@ -109,6 +109,7 @@ export class PermissionService {
         '/admin/subscriptions',
         '/admin/access-control',
         '/admin/shop',
+        '/admin/sales',
         '/admin/packages',
         '/admin/receivables',
         '/classes',
