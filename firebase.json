@@ -7,7 +7,13 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
     }
   ],
   "storage": {
@@ -15,7 +21,11 @@
   },
   "hosting": {
     "public": "dist/odivongym/browser",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "headers": [
       {
         "source": "/i18n/**",
@@ -34,6 +44,24 @@
             "value": "no-cache, no-store, must-revalidate"
           }
         ]
+      },
+      {
+        "source": "/@(ngsw-worker.js|ngsw.json|safety-worker.js|worker-basic.min.js|version.json|manifest.webmanifest)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/@(main|polyfills|chunk|styles)-*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
       }
     ],
     "rewrites": [
@@ -44,11 +72,21 @@
     ]
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8080 },
-    "storage": { "port": 9199 },
-    "functions": { "port": 5001 },
-    "ui": { "enabled": true },
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true
+    },
     "singleProject": true
   }
 }

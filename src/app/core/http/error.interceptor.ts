@@ -5,11 +5,13 @@ import { catchError, throwError } from 'rxjs';
 import { toAppError } from '../../shared/models/app-error.model';
 import { ErrorCode } from '../../shared/models/error-code.model';
 import { AuthService } from '../auth/auth.service';
+import { VersionService } from '../version/version.service';
 import { API_SKIP_AUTH, AUTH_RETRY_DONE } from './http-context';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const snackBar = inject(MatSnackBar);
   const auth = inject(AuthService);
+  const version = inject(VersionService);
 
   return next(req).pipe(
     catchError((error: unknown) => {
@@ -17,6 +19,18 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (appError.code === ErrorCode.FORBIDDEN_PERMISSION) {
         snackBar.open('Bu işlem için yetkiniz yok', 'Kapat', { duration: 5000 });
+        return throwError(() => appError);
+      }
+
+      if (appError.code === ErrorCode.SESSION_EXPIRED) {
+        snackBar.open('Oturum süreniz doldu, lütfen yeniden giriş yapın', 'Kapat', { duration: 6000 });
+        void auth.expireSession();
+        return throwError(() => appError);
+      }
+
+      if (appError.code === ErrorCode.CLIENT_UPGRADE_REQUIRED) {
+        // Sunucu bu panel sürümünü artık kabul etmiyor: zorunlu güncelleme.
+        version.forceUpdate();
         return throwError(() => appError);
       }
 

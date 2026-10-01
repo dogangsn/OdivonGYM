@@ -11,9 +11,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from '@angular/fire/auth';
-import { firstValueFrom, of, switchMap, tap } from 'rxjs';
+import { firstValueFrom, from, of, switchMap, tap } from 'rxjs';
 import { IdentityApi } from '../api/identity.api';
 import { MembershipStatus, UserProfile } from '../models/user-profile.model';
+import { isSessionTooOld } from './session-policy';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,6 +26,8 @@ export class AuthService {
   private readonly readyWaiters: Array<() => void> = [];
 
   readonly ready = signal(false);
+  /** Set when the last sign-out was forced because the session was too old (login page message). */
+  readonly sessionExpired = signal(false);
   readonly isAuthenticated = computed(() => this.firebaseUser() !== null);
   readonly profile = computed(() => this.userProfile());
   readonly membershipStatus = computed<MembershipStatus | null>(
@@ -61,6 +64,7 @@ export class AuthService {
           this.ready.set(false);
           this.firebaseUser.set(user);
         }),
+        switchMap((user) => (user ? from(this.withinSessionLimit(user)) : of(null))),
         switchMap((user) => (user ? this.identity.me() : of(null))),
         takeUntilDestroyed(),
       )
@@ -140,6 +144,26 @@ export class AuthService {
 
   async sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(this.auth, email);
+  }
+
+  /** Signs out a sign-in older than the session limit; returns the user if it may continue. */
+  private async withinSessionLimit(user: User): Promise<User | null> {
+    try {
+      const token = await user.getIdTokenResult();
+      if (isSessionTooOld(token.authTime)) {
+        await this.expireSession();
+        return null;
+      }
+    } catch {
+      // token unavailable offline: let the API decide
+    }
+    return user;
+  }
+
+  /** Forced sign-out after SESSION_EXPIRED; the login page explains why. */
+  async expireSession(): Promise<void> {
+    this.sessionExpired.set(true);
+    await this.logOut();
   }
 
   async logOut(): Promise<void> {

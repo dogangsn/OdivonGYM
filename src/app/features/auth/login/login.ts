@@ -88,6 +88,14 @@ export class Login {
   readonly submitting = signal(false);
   readonly resettingPassword = signal(false);
   readonly errorMessage = signal('');
+  /** Neden yeniden giriş istendiğini anlatır: sürüm güncellemesi ya da süresi dolan oturum. */
+  readonly infoMessage = signal(
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('updated')
+      ? 'Panel yeni sürüme güncellendi. Güvenliğiniz için lütfen yeniden giriş yapın.'
+      : this.auth.sessionExpired()
+        ? 'Oturum süreniz (30 gün) doldu. Lütfen yeniden giriş yapın.'
+        : '',
+  );
   readonly hidePassword = signal(true);
   readonly activeDemoKey = signal<'active' | 'expired' | null>(null);
 

@@ -5,11 +5,13 @@ import { ThemeService } from './core/services/theme.service';
 import { LanguageService } from './core/i18n/language.service';
 import { HttpLoadingService } from './core/services/http-loading.service';
 import { GymLoader } from './shared/components/gym-loader/gym-loader';
+import { UpdateBanner } from './shared/components/update-banner/update-banner';
+import { VersionService } from './core/version/version.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GymLoader],
+  imports: [RouterOutlet, GymLoader, UpdateBanner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -31,4 +33,10 @@ export class App {
   // edilmezse, henüz hiçbir Shell/auth sayfası onu kullanmadan Transloco
   // aktif dili hiç set etmemiş olur.
   private readonly language = inject(LanguageService);
+  // Yeni sürüm yayınlandığında açık sekmeleri uyarır (service worker + /version.json).
+  private readonly version = inject(VersionService);
+
+  constructor() {
+    this.version.start();
+  }
 }

@@ -269,6 +269,13 @@
         </p>
       </div>
 
+      @if (infoMessage() && !errorMessage()) {
+        <div class="mb-5 p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center gap-2.5">
+          <mat-icon class="icon-size-4.5 text-indigo-500 flex-shrink-0">info</mat-icon>
+          <p class="m-0 leading-relaxed">{{ infoMessage() }}</p>
+        </div>
+      }
+
       <!-- Error Message Banner -->
       @if (errorMessage()) {
         <div class="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200">
