@@ -84,6 +84,11 @@ export const adminRoutes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'reminders',
+    loadComponent: () => import('./reminders/admin-reminders').then((m) => m.AdminReminders),
+    title: 'Hatırlatmalar · OdivonGYM',
+  },
+  {
     path: 'audit-log',
     loadComponent: () => import('./audit-log/admin-audit-log').then((m) => m.AdminAuditLog),
     title: 'İşlem Kaydı · OdivonGYM',

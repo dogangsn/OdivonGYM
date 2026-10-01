@@ -112,6 +112,7 @@ export class PermissionService {
         '/admin/sales',
         '/admin/packages',
         '/admin/receivables',
+        '/admin/reminders',
         '/classes',
         '/appointments',
         '/dashboard',

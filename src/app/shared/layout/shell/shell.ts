@@ -41,6 +41,7 @@ const SEARCHABLE_ROUTES: RouteSearchResult[] = [
   { titleKey: 'sidebar.items.adminPos', categoryKey: 'sidebar.groups.pos', icon: 'shopping_cart_checkout', link: '/admin/shop', keywords: ['kasa', 'pos', 'market', 'satış', 'shop'] },
   { titleKey: 'sidebar.items.adminProducts', categoryKey: 'sidebar.groups.stock', icon: 'inventory_2', link: '/admin/products', keywords: ['ürün', 'stok', 'envanter', 'products'] },
   { titleKey: 'sidebar.items.adminSuppliers', categoryKey: 'sidebar.groups.stock', icon: 'local_shipping', link: '/admin/suppliers', keywords: ['tedarikçi', 'suppliers'] },
+  { titleKey: 'sidebar.items.adminReminders', categoryKey: 'sidebar.groups.finance', icon: 'notifications_active', link: '/admin/reminders', keywords: ['hatırlatma', 'bildirim', 'vade', 'gecikme', 'gelmeyen', 'reminder'] },
   { titleKey: 'sidebar.items.adminAuditLog', categoryKey: 'sidebar.groups.reports', icon: 'history', link: '/admin/audit-log', keywords: ['işlem kaydı', 'log', 'audit', 'geçmiş', 'kim değiştirdi', 'denetim'] },
   { titleKey: 'sidebar.items.adminReceivables', categoryKey: 'sidebar.groups.finance', icon: 'event_repeat', link: '/admin/receivables', keywords: ['taksit', 'borç', 'vade', 'gecikme', 'tahsilat', 'alacak', 'installment', 'debt'] },
   { titleKey: 'sidebar.items.adminAccounting', categoryKey: 'sidebar.groups.finance', icon: 'account_balance', link: '/admin/accounting', keywords: ['muhasebe', 'kasa', 'gelir', 'accounting'] },
