@@ -1355,6 +1355,7 @@ export class AdminAccessControl implements OnInit {
   // Reception Barcode / RFID Reader
   protected barcodeInput = '';
 
+
   // Add Gate SlideOver state
   protected readonly isAddGateOpen = signal(false);
   protected readonly savingGate = signal(false);
