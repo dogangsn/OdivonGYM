@@ -1344,7 +1344,7 @@ export class AdminAccessControl implements OnInit {
   protected readonly datePreset = signal<'all' | 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'custom'>('all');
   protected readonly customStartDate = signal('');
   protected readonly customEndDate = signal('');
-  protected readonly selectedMemberFilter = signal('all');
+  protected readonly selectedMemberFilter = signal('today');
   protected readonly gateFilter = signal('all');
   protected readonly directionFilter = signal<'all' | 'in' | 'out'>('all');
 
