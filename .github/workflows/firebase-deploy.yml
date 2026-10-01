@@ -1,9 +1,8 @@
 name: Deploy panel to live Hosting on push
 
+# Manual only: deploys are run by hand (npm run deploy:hosting) until the panel moves to
+# Cloudflare next to MainApi. The service account below has no rights on the live project yet.
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
