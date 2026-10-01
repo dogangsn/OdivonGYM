@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { AlertService } from '../../../core/services/alert.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ClassBooking, ClassSchedule as ScheduleModel } from '../../../core/models/class-schedule.model';
+import { ClassRosterPanel } from '../class-roster/class-roster';
 import { SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { GymFacility } from '../../../core/models/gym-equipment.model';
 import { MemberDocument } from '../../../core/models/member-document.model';
@@ -47,7 +48,7 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
 @Component({
   selector: 'app-class-schedule',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field],
+  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, ClassRosterPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6 pb-20">
@@ -218,6 +219,15 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                           >
                             <mat-icon class="icon-size-3.5">group_add</mat-icon>
                             <span>Öğrenci Yönetimi ({{ enrolledCount }}/{{ c.capacity }})</span>
+                          </button>
+                          <button
+                            type="button"
+                            (click)="rosterClass.set(c)"
+                            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                            title="Seans yoklaması ve bekleme listesi"
+                          >
+                            <mat-icon class="icon-size-3.5">fact_check</mat-icon>
+                            <span>Yoklama</span>
                           </button>
                         } @else {
                           <span class="text-xs text-slate-500 font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">
@@ -502,6 +512,8 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
         </div>
       </div>
     }
+
+    <app-class-roster [schedule]="rosterClass()" [members]="allMembers()" (closed)="rosterClass.set(null)" />
   `,
 })
 export class ClassSchedule {
@@ -531,6 +543,8 @@ export class ClassSchedule {
   protected readonly schedules = toSignal(this.service.watchSchedules(), { initialValue: null });
   protected readonly disciplines = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] as SportsDiscipline[] });
   protected readonly facilities = toSignal(this.disciplinesService.watchFacilities(), { initialValue: [] as GymFacility[] });
+  /** Yoklama paneli açık olan ders (seans bazında kayıt, yoklama, bekleme listesi). */
+  protected readonly rosterClass = signal<ScheduleModel | null>(null);
   protected readonly allMembers = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
 
   // Antrenör görünümünde yalnızca kendi derslerini filtreleme

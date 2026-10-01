@@ -16,6 +16,8 @@ export interface GymPackage {
   checkInEndTime?: string;
   sessionCount?: number | null;
   isUnlimitedSessions?: boolean;
+  /** Grup dersi hakkı (üyelik dönemi başına); boş = sınırsız. */
+  classCredits?: number | null;
   barcode?: string;
   isHidden?: boolean;
   status: 'active' | 'inactive' | 'archived';
@@ -58,6 +60,8 @@ export interface CreateGymPackageInput {
   checkInEndTime?: string;
   sessionCount?: number | null;
   isUnlimitedSessions?: boolean;
+  /** Grup dersi hakkı (üyelik dönemi başına); boş = sınırsız. */
+  classCredits?: number | null;
   barcode?: string;
   isHidden?: boolean;
 }

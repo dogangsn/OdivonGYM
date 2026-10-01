@@ -256,6 +256,12 @@ const DAYS_OF_WEEK = [
               </div>
             }
           </div>
+
+          <div class="flex items-center gap-3 pt-1">
+            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap" for="pkg-class-credits">Grup dersi hakkı</label>
+            <input id="pkg-class-credits" type="number" min="0" formControlName="classCredits" placeholder="Sınırsız" class="odv-input py-1.5 text-xs font-bold max-w-[120px]" />
+            <span class="text-[11px] text-slate-400">Dönem başına; boş = sınırsız. Rezervasyonda 1 hak düşer, 2 saat öncesine kadar iptalde iade edilir.</span>
+          </div>
         </div>
 
         <!-- GEÇERLİ GÜNLER (HAFTANIN GÜNLERİ) KISITLAMASI -->
@@ -414,6 +420,7 @@ export class AdminPackages {
     allowedDays: [[1, 2, 3, 4, 5, 6, 7] as number[]],
     isUnlimitedSessions: [true],
     sessionCount: [null as number | null],
+    classCredits: [null as number | null],
     checkInStartTime: ['06:00'],
     checkInEndTime: ['23:00'],
     isHidden: [false],
@@ -528,6 +535,7 @@ export class AdminPackages {
       allowedDays: pkg?.allowedDays && pkg.allowedDays.length > 0 ? pkg.allowedDays : [1, 2, 3, 4, 5, 6, 7],
       isUnlimitedSessions: pkg?.isUnlimitedSessions ?? true,
       sessionCount: pkg?.sessionCount ?? null,
+      classCredits: pkg?.classCredits ?? null,
       checkInStartTime: pkg?.checkInStartTime ?? '06:00',
       checkInEndTime: pkg?.checkInEndTime ?? '23:00',
       isHidden: pkg?.isHidden ?? false,
@@ -565,6 +573,7 @@ export class AdminPackages {
         allowedDays: v.allowedDays.length > 0 ? v.allowedDays : [1, 2, 3, 4, 5, 6, 7],
         isUnlimitedSessions: v.isUnlimitedSessions,
         sessionCount: v.isUnlimitedSessions ? null : v.sessionCount,
+        classCredits: v.classCredits === null || (v.classCredits as unknown) === '' ? null : Number(v.classCredits),
         checkInStartTime: v.checkInStartTime,
         checkInEndTime: v.checkInEndTime,
         isHidden: v.isHidden,
