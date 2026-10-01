@@ -1,4 +1,4 @@
-name: Deploy to Firebase on Push
+name: Deploy panel to live Hosting on push
 
 on:
   push:
@@ -21,7 +21,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          project_id: odivongym
+          # Service account lives in the old odivongym project; it needs Hosting rights on the live project.
+          project_id: odivon-main-api-a2095
           workload_identity_provider: projects/560162164944/locations/global/workloadIdentityPools/github-odivongym/providers/github-master
           service_account: github-firebase-deploy@odivongym.iam.gserviceaccount.com
           token_format: access_token
@@ -35,8 +36,9 @@ jobs:
       - name: Install Frontend Dependencies
         run: npm ci
 
+      # Same build as `npm run deploy:hosting` (prebuild writes version.json and the build identity).
       - name: Build Frontend Application
         run: npm run build
 
       - name: Deploy to Firebase
-        run: npx --yes firebase-tools@latest deploy --only hosting,firestore --non-interactive --project odivongym
+        run: npx --yes firebase-tools@latest deploy --only hosting --non-interactive --project odivon-main-api-a2095
