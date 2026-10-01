@@ -44,6 +44,17 @@ export interface MemberPaymentSession {
   reviewPending?: boolean;
 }
 
+/** Üyenin kendi taksit planı (`GET /gym/mobile/debts`). */
+export interface MemberDebt {
+  id: string;
+  packageName: string;
+  status: 'open' | 'paid' | 'cancelled';
+  remainingAmount: number;
+  overdueAmount: number;
+  nextDueDate: string | null;
+  nextDueAmount: number;
+}
+
 export interface MobilePackage {
   id: string;
   name: string;
@@ -79,6 +90,10 @@ export class MobileApi {
    */
   cardCheckout(body: CardCheckoutRequest) {
     return this.api.post<MemberPaymentSession>('/gym/mobile/payments/checkout', body).pipe(map((r) => r.data));
+  }
+
+  debts() {
+    return this.api.get<MemberDebt[]>('/gym/mobile/debts').pipe(map((r) => unwrapList<MemberDebt>(r.data)));
   }
 
   payment(id: string) {

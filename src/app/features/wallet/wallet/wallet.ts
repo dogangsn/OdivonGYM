@@ -8,6 +8,7 @@ import { WalletTransaction } from '../../../core/models/wallet-transaction.model
 import { AlertService } from '../../../core/services/alert.service';
 import { MemberAccountService } from '../../../core/services/member-account.service';
 import { CheckoutModal } from '../../../shared/components/checkout-modal/checkout-modal';
+import { MemberDebts } from '../../payments/member-debts';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { formatDateTime, formatMoney, sortDesc } from '../../../shared/ui/ui-utils';
 import { WalletService } from '../wallet.service';
@@ -28,7 +29,7 @@ const STATUS_LABEL: Record<WalletTransaction['status'], string> = {
 @Component({
   selector: 'app-wallet',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, CheckoutModal],
+  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, CheckoutModal, MemberDebts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './wallet.html',
   styleUrl: './wallet.scss',

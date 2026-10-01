@@ -12,6 +12,7 @@ import {
   SaasPlanId,
 } from '../../../core/models/saas-plan.model';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
+import { PermissionService } from '../../../core/services/permission.service';
 
 @Component({
   selector: 'app-trial-expired',
@@ -26,6 +27,8 @@ export class TrialExpired {
   private readonly router = inject(Router);
   protected readonly subService = inject(SaasSubscriptionService);
   private readonly transloco = inject(TranslocoService);
+  /** Salon aboneliği (SaaS) bittiğinde üyeler de buraya gelir; plan seçimi yalnız personel içindir. */
+  protected readonly isStaff = inject(PermissionService).isStaff;
 
   readonly selectedCycle = signal<SaasBillingCycle>('monthly');
   readonly activating = signal<string | null>(null);
