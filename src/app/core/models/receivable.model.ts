@@ -47,6 +47,8 @@ export interface Receivable {
   notes: string | null;
   cancelledAt: string | null;
   cancelReason: string | null;
+  /** Kalan borç üyenin cüzdanında (-) bakiye olarak da görünür; e-cüzdandan tahsil edilemez. */
+  walletLinked?: boolean;
   overdueAmount: number;
   overdueCount: number;
   maxDaysLate: number;

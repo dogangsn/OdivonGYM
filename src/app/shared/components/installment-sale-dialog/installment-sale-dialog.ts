@@ -15,7 +15,6 @@ import {
   toTl,
 } from '../../../admin/receivables/installment-math';
 import { ReceivablesApi } from '../../../core/api/receivables.api';
-import { WalletApi } from '../../../core/api/wallet.api';
 import { GymPackage } from '../../../core/models/gym-package.model';
 import { AlertService } from '../../../core/services/alert.service';
 import {
@@ -207,7 +206,6 @@ const COUNT_PRESETS = [2, 3, 4, 6, 9, 12];
 })
 export class InstallmentSaleDialog {
   private readonly api = inject(ReceivablesApi);
-  private readonly walletApi = inject(WalletApi);
   private readonly membersService = inject(AdminMembersService);
   private readonly packagesService = inject(AdminPackagesService);
   private readonly alertService = inject(AlertService);
@@ -312,25 +310,7 @@ export class InstallmentSaleDialog {
           notes: this.notes().trim() || undefined,
         }),
       );
-
-      // Kalan borcu üyenin cüzdanına yansıt
-      const financedAmount = this.financed();
-      if (financedAmount > 0) {
-        try {
-          await firstValueFrom(
-            this.walletApi.adjust({
-              userId,
-              walletType: 'debit',
-              amount: financedAmount,
-              description: `Taksitli paket satışı kalan borcu: ${pkg.name}`,
-              paymentMethod: this.paymentMethod(),
-            }),
-          );
-        } catch (walletErr) {
-          console.warn('Cüzdan borç kaydı oluşturulurken hata:', walletErr);
-        }
-      }
-
+      // Kalan borç MainApi'de plana bağlı olarak cüzdana (-) yazılır; burada ayrıca cüzdan hareketi yapılmaz.
       this.completed.emit(plan);
     } catch (err) {
       this.error.set(receivableErrorMessage(err, 'Taksitli satış kaydedilemedi.'));

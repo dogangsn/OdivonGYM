@@ -4,7 +4,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { ReceivablesApi } from '../../core/api/receivables.api';
-import { WalletApi } from '../../core/api/wallet.api';
 import {
   DebtorRow,
   OverdueInstallmentRow,
@@ -328,7 +327,7 @@ const STATUS_LABEL: Record<ReceivableStatus, string> = { open: 'Açık', paid: '
                   <label class="block">
                     <span class="text-[11px] font-bold text-slate-500">Yöntem</span>
                     <select class="odv-input mt-1" [ngModel]="payMethod()" (ngModelChange)="payMethod.set($event)">
-                      @for (m of methods; track m) { <option [value]="m">{{ methodLabels[m] }}</option> }
+                      @for (m of methodsFor(plan); track m) { <option [value]="m">{{ methodLabels[m] }}</option> }
                     </select>
                   </label>
                   <label class="block flex-1 min-w-[140px]">
@@ -374,7 +373,6 @@ const STATUS_LABEL: Record<ReceivableStatus, string> = { open: 'Açık', paid: '
 })
 export class AdminReceivables {
   private readonly api = inject(ReceivablesApi);
-  private readonly walletApi = inject(WalletApi);
   private readonly alert = inject(AlertService);
   protected readonly permissions = inject(PermissionService);
 
@@ -383,6 +381,11 @@ export class AdminReceivables {
   protected readonly day = formatDay;
   protected readonly methodLabels = RECEIVABLE_PAYMENT_LABELS;
   protected readonly methods: ReceivablePaymentMethod[] = ['cash', 'card', 'transfer', 'wallet'];
+
+  /** Cüzdana bağlı borç zaten cüzdanda (-) görünür; e-cüzdandan tahsil etmek parayı iki kez sayar. */
+  protected methodsFor(plan: Receivable): ReceivablePaymentMethod[] {
+    return plan.walletLinked ? this.methods.filter((m) => m !== 'wallet') : this.methods;
+  }
   protected readonly tabs: { id: Tab; label: string }[] = [
     { id: 'debtors', label: 'Borçlu Üyeler' },
     { id: 'overdue', label: 'Geciken Taksitler' },
@@ -526,25 +529,7 @@ export class AdminReceivables {
       const saved = await firstValueFrom(
         this.api.pay(plan.id, { amount, paymentMethod: this.payMethod(), note: this.payNote().trim() || undefined }),
       );
-
-      // Tahsilat cüzdan dışı yöntemle (nakit, kart, havale) alındıysa,
-      // üyenin taksitli satıştan oluşan eksi cüzdan bakiyesini de tahsilat oranında kapat
-      if (this.payMethod() !== 'wallet') {
-        try {
-          await firstValueFrom(
-            this.walletApi.adjust({
-              userId: plan.userId,
-              walletType: 'deposit',
-              amount,
-              description: `Taksit tahsilatı: ${plan.packageName} (${this.methodLabels[this.payMethod()]})`,
-              paymentMethod: this.payMethod(),
-            }),
-          );
-        } catch (walletErr) {
-          console.warn('Tahsilat cüzdana yansıtılırken hata:', walletErr);
-        }
-      }
-
+      // Cüzdana bağlı planlarda MainApi tahsilatı cüzdana da yazar; panel ayrıca cüzdan hareketi yapmaz.
       this.alert.toastSuccess(
         saved.status === 'paid'
           ? `${this.money(amount)} tahsil edildi, plan kapandı. 🎉`
@@ -570,24 +555,8 @@ export class AdminReceivables {
     if (!ok) return;
     this.busy.set(true);
     try {
+      // İptalde kalan borcu cüzdandan MainApi siler (cüzdana bağlı planlar).
       await firstValueFrom(this.api.cancel(plan.id));
-
-      // Kalan borç silindiğinde cüzdandaki eksi bakiyeyi de telafi et
-      if (plan.remainingAmount > 0) {
-        try {
-          await firstValueFrom(
-            this.walletApi.adjust({
-              userId: plan.userId,
-              walletType: 'deposit',
-              amount: plan.remainingAmount,
-              description: `İptal edilen taksit planı borç kapatma: ${plan.packageName}`,
-            }),
-          );
-        } catch (walletErr) {
-          console.warn('İptal borç düzeltmesi cüzdana yansıtılırken hata:', walletErr);
-        }
-      }
-
       this.alert.toastSuccess('Plan iptal edildi.');
       await this.reload();
     } catch (err) {
