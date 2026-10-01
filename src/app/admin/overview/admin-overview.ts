@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { GymReportsApi, OccupancyNow } from '../../core/api/gym-reports.api';
+import { tenantReloadValue } from '../../core/api/unwrap';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -103,7 +106,7 @@ interface QuickAction {
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">{{ 'overview.occupancyRadar' | transloco }}</span>
-                <span class="text-[11px] px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-medium">{{ 'overview.capacityLabel' | transloco: { count: maxCapacity } }}</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-medium">{{ 'overview.capacityLabel' | transloco: { count: maxCapacity() ?? '—' } }}</span>
               </div>
               <div class="flex items-baseline gap-2 mt-0.5">
                 <span class="text-3xl font-black text-white tracking-tight leading-none">{{ currentOccupancy() }}</span>
@@ -417,9 +420,17 @@ export class AdminOverview {
   private readonly membersService = inject(AdminMembersService);
   private readonly accountingService = inject(AdminAccountingService);
   private readonly accessService = inject(AdminAccessControlService);
+  private readonly reportsApi = inject(GymReportsApi);
 
   protected readonly accentClasses = ACCENT_CLASSES;
-  protected readonly maxCapacity = 80;
+
+  /** Anlık doluluk MainApi'den (bugünün turnike kayıtları); dakikada bir, sekme görünürken yenilenir. */
+  private readonly occupancy = toSignal(
+    tenantReloadValue(toObservable(this.auth.profile), new Subject<void>(), () => this.reportsApi.occupancyNow(), null as OccupancyNow | null, 60_000),
+    { initialValue: null },
+  );
+  /** Aktif şubelerin toplam kapasitesi; şube kapasitesi girilmemişse bilinmiyor. */
+  protected readonly maxCapacity = computed(() => this.occupancy()?.capacity ?? null);
 
   private readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
   private readonly accountingEntries = toSignal(this.accountingService.watchEntries(), { initialValue: [] });
@@ -455,29 +466,16 @@ export class AdminOverview {
     return Math.round((this.activeMembers() / total) * 100);
   });
 
-  // Salondaki anlık kişi sayısı: bugün giriş yapanlar eksi çıkış yapanlar (min 0)
-  protected readonly currentOccupancy = computed(() => {
-    const logs = this.accessLogs();
-    if (logs.length === 0) {
-      // Demo ve yeni açılan salonlarda hoş bir başlangıç değeri
-      return Math.min(this.activeMembers(), 18);
-    }
-    // Cihazın sonuç bildirmediği (unknown) kayıtlar da cihazda oluşmuş geçiş kaydıdır.
-    const passed = (l: { status: string }) => l.status === 'granted' || l.status === 'unknown';
-    const todayIns = logs.filter((l) => l.direction === 'in' && passed(l)).length;
-    const todayOuts = logs.filter((l) => l.direction === 'out' && passed(l)).length;
-    return Math.max(0, todayIns - todayOuts);
-  });
+  // Salondaki anlık kişi sayısı: sunucu bugünün giriş/çıkış kayıtlarından hesaplar (örnek değer yok).
+  protected readonly currentOccupancy = computed(() => this.occupancy()?.inside ?? 0);
 
   protected readonly occupancyPercentage = computed(() => {
-    return Math.min(100, Math.round((this.currentOccupancy() / this.maxCapacity) * 100));
+    const capacity = this.maxCapacity();
+    if (!capacity) return 0;
+    return Math.min(100, Math.round((this.currentOccupancy() / capacity) * 100));
   });
 
-  protected readonly todayTotalEntries = computed(() => {
-    const logs = this.accessLogs();
-    if (logs.length === 0) return this.activeMembers();
-    return logs.filter((l) => l.direction === 'in' && l.status === 'granted').length;
-  });
+  protected readonly todayTotalEntries = computed(() => this.occupancy()?.todayEntries ?? 0);
 
   protected readonly recentLogs = computed(() => {
     const list = [...this.accessLogs()];
