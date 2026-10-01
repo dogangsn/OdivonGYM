@@ -11,8 +11,8 @@ import { formatMoney } from '../../ui/ui-utils';
 export type CheckoutMode = 'package' | 'wallet_topup';
 
 /**
- * Üye paket alımı. Gerçek kart ödemesi (sanal POS) bağlı olmadığı için ödeme yalnız e-cüzdan
- * bakiyesinden yapılır; bakiye yüklemesi resepsiyonda yapılır. Kart formu / 3D Secure ekranı yoktur.
+ * Üye paket alımı ve bakiye yükleme. Paket cüzdandan ya da kartla alınır; bakiye kartla yüklenir.
+ * Kart bilgisi bu uygulamada girilmez: iyzico'nun ödeme sayfası (3D Secure dahil) açılır.
  */
 @Component({
   selector: 'app-checkout-modal',
@@ -39,6 +39,7 @@ export class CheckoutModal {
   readonly step = signal<'form' | 'success'>('form');
   readonly errorMessage = signal<string | null>(null);
   readonly lastResult = signal<PaymentResult | null>(null);
+  readonly cardAmount = signal(500);
 
   readonly walletBalance = computed(() => this.account.me()?.walletBalance ?? null);
   readonly price = computed(() => this.selectedPackage()?.price ?? 0);
@@ -52,6 +53,7 @@ export class CheckoutModal {
       this.step.set('form');
       this.errorMessage.set(null);
       this.lastResult.set(null);
+      this.cardAmount.set(this.topUpAmount());
       void this.account.reload();
     });
   }
@@ -73,6 +75,26 @@ export class CheckoutModal {
     } catch (err) {
       this.errorMessage.set(err instanceof Error ? err.message : 'Paket satın alınamadı.');
     } finally {
+      this.isProcessing.set(false);
+    }
+  }
+
+  /** iyzico ödeme sayfasına geçer; dönüşte /payment-result sonucu gösterir. */
+  async payByCard(): Promise<void> {
+    if (this.isProcessing()) return;
+    const pkg = this.selectedPackage();
+    if (this.mode() === 'package' && !pkg) return;
+    this.isProcessing.set(true);
+    this.errorMessage.set(null);
+    try {
+      const url = await this.paymentService.startCardPayment(
+        this.mode() === 'package'
+          ? { purpose: 'package', packageId: pkg!.id }
+          : { purpose: 'wallet_topup', amount: Number(this.cardAmount()) },
+      );
+      window.location.assign(url);
+    } catch (err) {
+      this.errorMessage.set(err instanceof Error ? err.message : 'Kartla ödeme başlatılamadı.');
       this.isProcessing.set(false);
     }
   }

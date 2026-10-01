@@ -12,7 +12,7 @@ describe('OnlinePaymentService', () => {
   let service: OnlinePaymentService;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<MobileApi>('MobileApi', ['renew']);
+    api = jasmine.createSpyObj<MobileApi>('MobileApi', ['renew', 'cardCheckout']);
     account = { reload: jasmine.createSpy('reload').and.resolveTo({ walletBalance: 2000 }) };
     const injector = Injector.create({
       providers: [
@@ -40,5 +40,15 @@ describe('OnlinePaymentService', () => {
     await expectAsync(service.purchasePackage(pkg)).toBeRejectedWithError(/bakiyeniz bu paket için yetersiz/);
     api.renew.and.returnValue(fail('GYM_PACKAGE_NOT_FOUND'));
     await expectAsync(service.purchasePackage(pkg)).toBeRejectedWithError(/artık satışta değil/);
+  });
+
+  it('starts a card payment and returns the iyzico page; explains a gym without card payments', async () => {
+    api.cardCheckout.and.returnValue(of({ id: 's1', source: 'gym_wallet_topup', amountKurus: 50000, status: 'pending', paymentPageUrl: 'https://sandbox-cpp.iyzipay.com/x' }));
+    await expectAsync(service.startCardPayment({ purpose: 'wallet_topup', amount: 500 })).toBeResolvedTo('https://sandbox-cpp.iyzipay.com/x');
+    expect(api.cardCheckout).toHaveBeenCalledWith({ purpose: 'wallet_topup', amount: 500 });
+    api.cardCheckout.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { success: false, error: { code: 'INVALID_STATUS', message: 'x' } } })),
+    );
+    await expectAsync(service.startCardPayment({ purpose: 'package', packageId: 'p1' })).toBeRejectedWithError(/kartla ödeme şu an açık değil/);
   });
 });

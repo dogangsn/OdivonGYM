@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { MobileApi } from '../api/mobile.api';
+import { CardCheckoutRequest, MobileApi } from '../api/mobile.api';
 import { toAppError } from '../../shared/models/app-error.model';
 import { MemberAccountService } from './member-account.service';
 
@@ -26,17 +26,35 @@ const ERROR_MESSAGES: Record<string, string> = {
   GYM_WALLET_INSUFFICIENT: 'E-cüzdan bakiyeniz bu paket için yetersiz. Bakiye yüklemesi için resepsiyona başvurabilirsiniz.',
   GYM_PACKAGE_NOT_FOUND: 'Bu paket artık satışta değil. Lütfen listeyi yenileyip başka bir paket seçin.',
   GYM_MEMBER_FORBIDDEN: 'Paket satın alma yalnız üye hesaplarıyla yapılabilir.',
+  INVALID_STATUS: 'Bu salonda kartla ödeme şu an açık değil. Lütfen resepsiyona başvurun.',
+  FINANCE_INVALID: 'Ödeme sayfası açılamadı. Lütfen biraz sonra tekrar deneyin.',
+  VALIDATION_ERROR: 'Tutar 50 TL ile 20.000 TL arasında olmalı.',
 };
 
 /**
- * Üye paket alımı. Gerçek bir kart/sanal POS entegrasyonu olmadığı için ödeme yalnız e-cüzdan
- * bakiyesinden yapılır: `POST /gym/mobile/membership/renew` bakiyeyi düşer, üyeliği uzatır ve
- * kasaya gelir kaydı yazar. Bakiye yetersizse sunucu satışı reddeder.
+ * Üye ödemeleri. Cüzdandan: `POST /gym/mobile/membership/renew` bakiyeyi düşer, üyeliği uzatır ve
+ * kasaya gelir kaydı yazar. Kartla: iyzico ödeme sayfasına yönlendirilir (`startCardPayment`),
+ * sonuç sunucuda doğrulanıp işlenir ve /payment-result sayfasına dönülür.
  */
 @Injectable({ providedIn: 'root' })
 export class OnlinePaymentService {
   private readonly api = inject(MobileApi);
   private readonly account = inject(MemberAccountService);
+
+  /**
+   * Kartla ödemeyi başlatır ve iyzico ödeme sayfasının adresini döner (çağıran yönlendirir).
+   * Tutar sunucuda belirlenir: paket fiyatı, açık borç; bakiye yüklemede seçilen tutar.
+   */
+  async startCardPayment(request: CardCheckoutRequest): Promise<string> {
+    try {
+      const session = await firstValueFrom(this.api.cardCheckout(request));
+      if (!session.paymentPageUrl) throw new Error('Ödeme sayfası oluşturulamadı.');
+      return session.paymentPageUrl;
+    } catch (error) {
+      const appError = toAppError(error);
+      throw new Error(ERROR_MESSAGES[appError.code] ?? (appError.message || 'Kartla ödeme başlatılamadı.'));
+    }
+  }
 
   async purchasePackage(pkg: PurchasablePackage): Promise<PaymentResult> {
     try {

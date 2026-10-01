@@ -22,6 +22,13 @@ export const routes: Routes = [
     title: 'Paket Satın Al · OdivonGYM',
   },
   {
+    // iyzico ödeme sayfasından dönüş (üyelik süresi dolmuş üyeler de görebilsin diye shell dışında).
+    path: 'payment-result',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/payments/payment-result').then((m) => m.PaymentResultPage),
+    title: 'Ödeme Sonucu · OdivonGYM',
+  },
+  {
     path: 'onboarding/wizard',
     canActivate: [authGuard],
     loadComponent: () =>

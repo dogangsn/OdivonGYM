@@ -20,7 +20,7 @@
           </span>
           <div>
             <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">
-              {{ mode() === 'package' ? 'E-CÜZDAN İLE PAKET ALIMI' : 'E-CÜZDAN BAKİYE YÜKLEME' }}
+              {{ mode() === 'package' ? 'PAKET SATIN ALMA' : 'E-CÜZDAN BAKİYE YÜKLEME' }}
             </span>
             <h3 class="m-0 text-lg font-bold leading-tight">
               {{ mode() === 'package' ? (selectedPackage()?.name || 'Üyelik Paketi') : 'Bakiye Yükleme' }}
@@ -45,18 +45,32 @@
 
       <div class="p-6 space-y-4">
         @if (mode() === 'wallet_topup') {
-          <!-- Online yükleme yok: gerçek ödeme altyapısı bağlanana kadar bakiye salonda yüklenir -->
-          <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-sm text-slate-700 dark:text-slate-200 flex gap-3">
-            <mat-icon class="icon-size-5 text-indigo-600 shrink-0">storefront</mat-icon>
-            <div class="space-y-1">
-              <p class="m-0 font-bold">Bakiye yükleme salonda yapılır</p>
-              <p class="m-0 text-xs text-slate-500 dark:text-slate-400">
-                Online kartla yükleme henüz açık değil. {{ money(topUpAmount()) }} yüklemek için resepsiyona başvurun;
-                nakit, kart veya havale ile yüklenen tutar cüzdanınızda hemen görünür.
-              </p>
+          @if (errorMessage()) {
+            <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+              <mat-icon class="icon-size-4 shrink-0">error_outline</mat-icon>
+              <span>{{ errorMessage() }}</span>
             </div>
+          }
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300">
+            Yüklenecek tutar (TL)
+            <input type="number" min="50" max="20000" step="1" class="odv-input mt-1"
+                   [value]="cardAmount()" (input)="cardAmount.set(+$any($event.target).value)" />
+          </label>
+          <div class="flex flex-wrap gap-2">
+            @for (preset of [250, 500, 1000, 2000]; track preset) {
+              <button type="button" class="odv-btn-soft !py-1.5 !px-3 text-xs" (click)="cardAmount.set(preset)">{{ money(preset) }}</button>
+            }
           </div>
-          <button type="button" class="odv-btn-primary w-full !py-3" (click)="closeModal()">Tamam</button>
+          <button type="button"
+                  class="odv-btn-primary w-full !py-3 font-bold flex items-center justify-center gap-2"
+                  [disabled]="isProcessing() || cardAmount() < 50 || cardAmount() > 20000"
+                  (click)="payByCard()">
+            <mat-icon class="icon-size-4.5">{{ isProcessing() ? 'hourglass_top' : 'credit_card' }}</mat-icon>
+            <span>{{ isProcessing() ? 'Ödeme sayfası açılıyor…' : 'Kartla Yükle' }}</span>
+          </button>
+          <p class="m-0 text-[11px] text-slate-400 text-center">
+            Kart bilgileriniz iyzico'nun güvenli ödeme sayfasında (3D Secure) girilir. Resepsiyonda nakit veya kartla da yükleyebilirsiniz.
+          </p>
         } @else if (step() === 'success') {
           <div class="text-center space-y-3 py-2">
             <span class="mx-auto w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
@@ -96,9 +110,17 @@
 
           @if (walletBalance() !== null && !isWalletSufficient()) {
             <p class="m-0 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-              Bakiyeniz bu paket için yeterli değil. Bakiye yüklemesini resepsiyonda yaptırabilir ya da paketi kasada satın alabilirsiniz.
+              Bakiyeniz bu paket için yeterli değil. Paketi kartla ödeyebilir ya da resepsiyonda satın alabilirsiniz.
             </p>
           }
+
+          <button type="button"
+                  class="w-full !py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border-none cursor-pointer disabled:opacity-60"
+                  [disabled]="isProcessing()"
+                  (click)="payByCard()">
+            <mat-icon class="icon-size-4.5">credit_card</mat-icon>
+            <span>Kartla Öde (3D Secure)</span>
+          </button>
 
           <button type="button"
                   class="odv-btn-primary w-full !py-3 font-bold flex items-center justify-center gap-2"
@@ -108,7 +130,7 @@
             <span>{{ isProcessing() ? 'İşleniyor…' : 'Cüzdandan Öde ve Paketi Al' }}</span>
           </button>
           <p class="m-0 text-[11px] text-slate-400 text-center">
-            Ödeme e-cüzdan bakiyenizden düşülür; üyeliğiniz mevcut bitiş tarihinden itibaren uzatılır.
+            Cüzdanla ödemede tutar bakiyenizden düşülür; kartla ödemede iyzico'nun güvenli sayfası açılır. Üyeliğiniz mevcut bitiş tarihinden itibaren uzatılır.
           </p>
         }
       </div>

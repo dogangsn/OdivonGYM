@@ -30,6 +30,20 @@ export interface MobileMembership extends MembershipSummary {
 }
 
 /** `/gym/mobile/packages` — üyeye açık (aktif, gizli olmayan) paketler. */
+export type CardCheckoutRequest =
+  | { purpose: 'package'; packageId: string }
+  | { purpose: 'wallet_topup'; amount: number }
+  | { purpose: 'receivable'; receivableId: string };
+
+export interface MemberPaymentSession {
+  id: string;
+  source: 'gym_member_package' | 'gym_wallet_topup' | 'gym_receivable';
+  amountKurus: number;
+  status: 'initializing' | 'pending' | 'succeeded' | 'failed' | 'abandoned';
+  paymentPageUrl: string | null;
+  reviewPending?: boolean;
+}
+
 export interface MobilePackage {
   id: string;
   name: string;
@@ -57,6 +71,24 @@ export class MobileApi {
 
   packages() {
     return this.api.get<MobilePackage[]>('/gym/mobile/packages').pipe(map((r) => unwrapList<MobilePackage>(r.data)));
+  }
+
+  /**
+   * Kartla ödeme (iyzico ödeme sayfası, 3D Secure iyzico'da): paket, bakiye yükleme veya kendi borcu.
+   * Dönen `paymentPageUrl`'e yönlendirilir; sonuç sunucuda işlenir ve /payment-result'a dönülür.
+   */
+  cardCheckout(body: CardCheckoutRequest) {
+    return this.api.post<MemberPaymentSession>('/gym/mobile/payments/checkout', body).pipe(map((r) => r.data));
+  }
+
+  payment(id: string) {
+    return this.api.get<MemberPaymentSession>(`/gym/mobile/payments/${encodeURIComponent(id)}`).pipe(map((r) => r.data));
+  }
+
+  reconcilePayment(id: string) {
+    return this.api
+      .post<MemberPaymentSession>(`/gym/mobile/payments/${encodeURIComponent(id)}/reconcile`, {})
+      .pipe(map((r) => r.data));
   }
 
   /** Paketi e-cüzdan bakiyesinden öder ve üyeliği uzatır; güncel üyelik özetini döner. */
