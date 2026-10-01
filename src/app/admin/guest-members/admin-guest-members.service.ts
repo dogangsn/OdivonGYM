@@ -39,6 +39,10 @@ export class AdminGuestMembersService {
     this.reload$.next();
   }
 
+  reload(): void {
+    this.reload$.next();
+  }
+
   async deleteGuestMember(id: string): Promise<void> {
     await firstValueFrom(this.api.remove(id));
     this.reload$.next();

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -8,24 +8,21 @@ import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
-import { firstError } from '../../shared/ui/ui-utils';
+import { firstError, formatDate, toDateInput, toMillis } from '../../shared/ui/ui-utils';
+import { firstValueFrom } from 'rxjs';
+import { LeadsApi } from '../../core/api/leads.api';
+import { PermissionService } from '../../core/services/permission.service';
+import { toAppError } from '../../shared/models/app-error.model';
+import { AdminMembersService } from '../members/admin-members.service';
+import { UserProfile } from '../../core/models/user-profile.model';
+import { LeadFunnelReport } from './lead-funnel';
+import { ReferralProgram } from './referral-program';
+import { SOURCES, sourceLabel, STAGE_CLASS, STAGE_LABEL } from './lead-labels';
 import { AdminGuestMembersService } from './admin-guest-members.service';
-import { GuestMember } from '../../core/models/guest-member.model';
+import { GuestMember, LeadSource, LeadStage } from '../../core/models/guest-member.model';
 import { BranchContextService } from '../../core/services/branch-context.service';
 
-const STATUS_LABEL: Record<GuestMember['status'], string> = {
-  visited: 'Ziyaret Etti',
-  called: 'Telefonla Görüşüldü',
-  converted: 'Üyeye Dönüştü',
-  lost: 'İlgilenmiyor / İptal',
-};
-
-const STATUS_CLASS: Record<GuestMember['status'], string> = {
-  visited: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
-  called: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-  converted: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-  lost: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-};
+type Tab = 'list' | 'funnel' | 'referrals';
 
 const INTEREST_CATEGORIES = [
   'Genel Fitness & Gym',
@@ -49,7 +46,7 @@ const VISIT_REASONS = [
 @Component({
   selector: 'app-admin-guest-members',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field],
+  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, LeadFunnelReport, ReferralProgram],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans">
@@ -64,8 +61,21 @@ const VISIT_REASONS = [
         </button>
       </app-page-header>
 
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer" [class]="tabClass('list')" (click)="tab.set('list')">Adaylar</button>
+        <button type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer" [class]="tabClass('funnel')" (click)="tab.set('funnel')">Huni Raporu</button>
+        @if (permissions.isAdmin()) {
+          <button type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer" [class]="tabClass('referrals')" (click)="tab.set('referrals')">Tavsiye Programı</button>
+        }
+      </div>
+
+      @if (tab() === 'funnel') {
+        <app-lead-funnel />
+      } @else if (tab() === 'referrals') {
+        <app-referral-program [allMembers]="members()" />
+      } @else {
       <!-- KPI ÖZET KARTLARI -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <div class="odv-card p-4">
           <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 m-0">Toplam Ziyaretçi</p>
           <h3 class="text-xl font-black text-slate-900 dark:text-white mt-1 mb-0">{{ guestList().length }}</h3>
@@ -77,6 +87,10 @@ const VISIT_REASONS = [
         <div class="odv-card p-4">
           <p class="text-[11px] font-bold uppercase tracking-wider text-amber-500 m-0">Görüşülen / Aranacak</p>
           <h3 class="text-xl font-black text-amber-600 mt-1 mb-0">{{ countByStatus('called') }}</h3>
+        </div>
+        <div class="odv-card p-4">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-sky-500 m-0">Deneme Antrenmanı</p>
+          <h3 class="text-xl font-black text-sky-600 mt-1 mb-0">{{ countByStatus('trial') }}</h3>
         </div>
         <div class="odv-card p-4">
           <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-500 m-0">Üyeye Dönüşen</p>
@@ -120,6 +134,11 @@ const VISIT_REASONS = [
                           <span>{{ g.email }}</span>
                         }
                       </p>
+                      @if (g.source || g.referrerName) {
+                        <p class="text-[10px] text-slate-400 m-0 mt-0.5">
+                          {{ source(g.source) }}@if (g.referrerName) { · Tavsiye: {{ g.referrerName }} }
+                        </p>
+                      }
                     </td>
                     <td class="odv-td">
                       <span class="inline-flex items-center text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
@@ -139,9 +158,12 @@ const VISIT_REASONS = [
                       {{ formatDate(g.followUpDate) }}
                     </td>
                     <td class="odv-td whitespace-nowrap">
-                      <span class="odv-badge" [class]="statusClass[g.status]">
-                        {{ statusLabel[g.status] }}
+                      <span class="odv-badge" [class]="statusClassOf(g.status)">
+                        {{ statusLabelOf(g.status) }}
                       </span>
+                      @if (g.status === 'lost' && g.lostReason) {
+                        <p class="text-[10px] text-slate-400 m-0 mt-0.5">{{ g.lostReason }}</p>
+                      }
                     </td>
                     <td class="odv-td text-right whitespace-nowrap">
                       @if (g.status !== 'converted') {
@@ -168,7 +190,43 @@ const VISIT_REASONS = [
           </div>
         }
       </div>
+      }
     </div>
+
+    <!-- ÜYEYE DÖNÜŞTÜRME -->
+    <app-slide-over
+      [open]="!!converting()"
+      title="Üyeye Dönüştür"
+      submitLabel="Üyeye Bağla"
+      [submitting]="submitting()"
+      [errorMessage]="convertError()"
+      [confirmOnBackdrop]="false"
+      (closed)="converting.set(null)"
+      (submitted)="confirmConvert()"
+    >
+      @if (converting(); as c) {
+        <div class="space-y-4 font-sans">
+          <p class="m-0 text-sm text-slate-600 dark:text-slate-300">
+            <b>{{ c.fullName }}</b> adayını kayıtlı bir üyeye bağlayın. Önce üye kaydını oluşturduysanız listeden seçin.
+            @if (c.referrerName) {
+              Tavsiye eden <b>{{ c.referrerName }}</b>; tavsiye programı açıksa ödülü otomatik tanımlanır.
+            }
+          </p>
+          <app-field label="Üye" [required]="true">
+            <select class="odv-input" [ngModel]="convertMemberId()" (ngModelChange)="convertMemberId.set($event)">
+              <option value="">Üye seçin</option>
+              @for (m of members(); track m.uid) {
+                <option [value]="m.uid">{{ m.displayName }}{{ m.phone ? ' · ' + m.phone : '' }}</option>
+              }
+            </select>
+          </app-field>
+          <button type="button" class="odv-btn-soft" (click)="goCreateMember()">
+            <mat-icon class="icon-size-4">person_add</mat-icon>
+            Yeni üye kaydı oluştur
+          </button>
+        </div>
+      }
+    </app-slide-over>
 
     <!-- KAYIT / DÜZENLEME SLIDE-OVER -->
     <app-slide-over
@@ -236,11 +294,44 @@ const VISIT_REASONS = [
             <select formControlName="status" class="odv-input font-bold">
               <option value="visited">Ziyaret Etti</option>
               <option value="called">Telefonla Görüşüldü</option>
-              <option value="converted">Üyeye Dönüştü</option>
+              <option value="trial">Deneme Antrenmanı</option>
+              @if (editing()?.status === 'converted') {
+                <option value="converted">Üyeye Dönüştü</option>
+              }
               <option value="lost">İlgilenmiyor / İptal</option>
             </select>
           </app-field>
         </div>
+
+        @if (form.controls.status.value === 'lost') {
+          <app-field label="Kaybedilme nedeni">
+            <input type="text" formControlName="lostReason" class="odv-input" placeholder="Örn: Fiyat yüksek, uzak, başka salona gitti" />
+          </app-field>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <app-field label="Kaynak">
+            <select formControlName="source" class="odv-input">
+              <option value="">Belirtilmedi</option>
+              @for (s of sources; track s) {
+                <option [value]="s">{{ source(s) }}</option>
+              }
+            </select>
+          </app-field>
+
+          <app-field label="Tavsiye eden üye" hint="Tavsiye programı için">
+            <select formControlName="referrerMemberId" class="odv-input">
+              <option value="">Yok</option>
+              @for (m of members(); track m.uid) {
+                <option [value]="m.uid">{{ m.displayName }}</option>
+              }
+            </select>
+          </app-field>
+        </div>
+
+        <app-field label="Takip eden personel">
+          <input type="text" formControlName="assignedStaffName" class="odv-input" placeholder="Örn: Ayşe (satış)" />
+        </app-field>
 
         <app-field label="Anket, İlgi & Görüşme Notları" hint="Hedefleri, spor geçmişi ve görüşülen konuları yazın.">
           <textarea formControlName="surveyNotes" rows="3" class="odv-input resize-none" placeholder="Daha önce fitness yaptı, haftada 3 gün gelebilir, kilo vermek istiyor."></textarea>
@@ -256,15 +347,23 @@ export class AdminGuestMembers {
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
   protected readonly branchContext = inject(BranchContextService);
+  protected readonly permissions = inject(PermissionService);
+  private readonly leadsApi = inject(LeadsApi);
+  private readonly membersService = inject(AdminMembersService);
 
-  protected readonly statusLabel = STATUS_LABEL;
-  protected readonly statusClass = STATUS_CLASS;
+  protected readonly sources = SOURCES;
+  protected readonly source = sourceLabel;
+  protected readonly tab = signal<Tab>('list');
+  protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
+  protected readonly converting = signal<GuestMember | null>(null);
+  protected readonly convertMemberId = signal('');
+  protected readonly convertError = signal('');
   protected readonly categories = INTEREST_CATEGORIES;
   protected readonly visitReasons = VISIT_REASONS;
 
   private readonly data = toSignal(this.service.watchGuestMembers(), { initialValue: null });
   protected readonly loading = computed(() => this.data() === null);
-  protected readonly guestList = computed(() => [...(this.data() ?? [])].sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)));
+  protected readonly guestList = computed(() => [...(this.data() ?? [])].sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt)));
 
   protected readonly drawerOpen = signal(false);
   protected readonly editing = signal<GuestMember | null>(null);
@@ -280,9 +379,28 @@ export class AdminGuestMembers {
     visitReason: ['Salonu Gezme / Bilgi Alma'],
     budgetRange: [''],
     followUpDate: [''],
-    status: ['visited' as GuestMember['status']],
+    status: ['visited' as LeadStage],
     surveyNotes: [''],
+    source: ['' as LeadSource | ''],
+    referrerMemberId: [''],
+    assignedStaffName: [''],
+    lostReason: [''],
   });
+
+  /** Eski veya bilinmeyen durumlar için de güvenli etiket. */
+  protected statusLabelOf(status: string): string {
+    return (STAGE_LABEL as Record<string, string>)[status] ?? status;
+  }
+
+  protected statusClassOf(status: string): string {
+    return (STAGE_CLASS as Record<string, string>)[status] ?? STAGE_CLASS.visited;
+  }
+
+  protected tabClass(tab: Tab): string {
+    return this.tab() === tab
+      ? 'bg-indigo-600 text-white'
+      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800';
+  }
 
   protected err(name: keyof typeof this.form.controls, messages: Record<string, string>): string {
     return firstError(this.form.controls[name], messages);
@@ -292,23 +410,15 @@ export class AdminGuestMembers {
     return this.guestList().filter((g) => g.status === status).length;
   }
 
-  protected formatDate(ts?: any): string {
-    if (!ts) return '—';
-    if (ts.toDate) {
-      return ts.toDate().toLocaleDateString('tr-TR');
-    }
-    return new Date(ts).toLocaleDateString('tr-TR');
+  protected formatDate(ts?: string | null): string {
+    return formatDate(ts);
   }
 
   protected openForm(guest: GuestMember | null = null): void {
     this.editing.set(guest);
     this.errorMessage.set('');
 
-    let followUp = '';
-    if (guest?.followUpDate) {
-      const d = guest.followUpDate.toDate();
-      followUp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
+    const followUp = toDateInput(guest?.followUpDate ?? null);
 
     this.form.reset({
       fullName: guest?.fullName ?? '',
@@ -321,6 +431,10 @@ export class AdminGuestMembers {
       followUpDate: followUp,
       status: guest?.status ?? 'visited',
       surveyNotes: guest?.surveyNotes ?? '',
+      source: guest?.source ?? '',
+      referrerMemberId: guest?.referrerMemberId ?? '',
+      assignedStaffName: guest?.assignedStaffName ?? '',
+      lostReason: guest?.lostReason ?? '',
     });
     this.drawerOpen.set(true);
   }
@@ -350,6 +464,11 @@ export class AdminGuestMembers {
         followUpDate: v.followUpDate ? new Date(v.followUpDate) : null,
         status: v.status,
         surveyNotes: v.surveyNotes.trim(),
+        source: v.source || (v.referrerMemberId ? 'referral' : null),
+        referrerMemberId: v.referrerMemberId || null,
+        referrerName: this.members().find((m) => m.uid === v.referrerMemberId)?.displayName ?? null,
+        assignedStaffName: v.assignedStaffName.trim(),
+        lostReason: v.status === 'lost' ? v.lostReason.trim() || null : null,
       };
       const current = this.editing();
       if (current) {
@@ -366,24 +485,38 @@ export class AdminGuestMembers {
     }
   }
 
-  protected async convertToMember(guest: GuestMember): Promise<void> {
-    if (
-      !(await this.alertService.actionConfirm(
-        'Üyeye Dönüştür',
-        `"${guest.fullName}" misafiri üye olarak sisteme aktarılsın ve durumu 'Üyeye Dönüştü' yapılsın mı?`,
-        'Evet, Üye Yap',
-      ))
-    ) {
+  /** Adayı kayıtlı bir üyeye bağlar; sunucu aşamayı "Üyeye Dönüştü" yapar ve tavsiye ödülünü (açıksa) verir. */
+  protected convertToMember(guest: GuestMember): void {
+    const phone = guest.phone?.replace(/\D/g, '').slice(-10);
+    const match = phone ? this.members().find((m) => m.phone?.replace(/\D/g, '').slice(-10) === phone) : undefined;
+    this.convertMemberId.set(match?.uid ?? '');
+    this.convertError.set('');
+    this.converting.set(guest);
+  }
+
+  protected async confirmConvert(): Promise<void> {
+    const guest = this.converting();
+    if (!guest || this.submitting()) return;
+    if (!this.convertMemberId()) {
+      this.convertError.set('Bir üye seçin.');
       return;
     }
-
+    this.submitting.set(true);
     try {
-      await this.service.updateGuestMember(guest.id, { status: 'converted' });
-      this.alertService.toastSuccess('Misafir durumu güncellendi. Üye kayıt ekranına yönlendiriliyorsunuz.');
-      void this.router.navigate(['/admin/members']);
-    } catch {
-      this.alertService.toastError('İşlem tamamlanamadı.');
+      const result = await firstValueFrom(this.leadsApi.convert(guest.id, this.convertMemberId()));
+      this.alertService.toastSuccess(result.reward ? 'Aday üyeye bağlandı, tavsiye ödülü tanımlandı.' : 'Aday üyeye bağlandı.');
+      this.converting.set(null);
+      this.service.reload();
+    } catch (err) {
+      this.convertError.set(toAppError(err).message || 'İşlem tamamlanamadı.');
+    } finally {
+      this.submitting.set(false);
     }
+  }
+
+  protected goCreateMember(): void {
+    this.converting.set(null);
+    void this.router.navigate(['/admin/members']);
   }
 
   protected async remove(guest: GuestMember): Promise<void> {

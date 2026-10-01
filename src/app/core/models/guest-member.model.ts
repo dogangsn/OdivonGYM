@@ -1,5 +1,14 @@
-import { Timestamp } from '@angular/fire/firestore';
+export type LeadStage = 'visited' | 'called' | 'trial' | 'converted' | 'lost';
 
+export type LeadSource = 'walk_in' | 'instagram' | 'google' | 'website' | 'phone' | 'referral' | 'campaign' | 'other';
+
+export interface StageEvent {
+  stage: LeadStage;
+  at: string;
+  by: string;
+}
+
+/** Potansiyel üye (aday). Tarihler API'den ISO metin olarak gelir. */
 export interface GuestMember {
   id: string;
   tenantId: string;
@@ -11,13 +20,20 @@ export interface GuestMember {
   visitReason: string; // Örn: 'Salonu Gezme / Bilgi Alma', 'Fiyat Teklifi', 'Deneme Antrenmanı'
   surveyNotes?: string; // Anket ve ilgi notları
   budgetRange?: string; // Bütçe beklentisi
-  status: 'visited' | 'called' | 'converted' | 'lost';
-  followUpDate?: Timestamp | null;
+  status: LeadStage;
+  source?: LeadSource | null;
+  referrerMemberId?: string | null;
+  referrerName?: string | null;
+  lostReason?: string | null;
+  stageHistory?: StageEvent[];
+  convertedMemberId?: string | null;
+  convertedAt?: string | null;
+  followUpDate?: string | null;
   assignedStaffName?: string;
   branchId?: string | null;
   branchName?: string | null;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateGuestMemberInput {
@@ -29,7 +45,11 @@ export interface CreateGuestMemberInput {
   visitReason: string;
   surveyNotes?: string;
   budgetRange?: string;
-  status: 'visited' | 'called' | 'converted' | 'lost';
+  status: LeadStage;
+  source?: LeadSource | null;
+  referrerMemberId?: string | null;
+  referrerName?: string | null;
+  lostReason?: string | null;
   followUpDate?: Date | null;
   assignedStaffName?: string;
   branchId?: string | null;
