@@ -5,8 +5,6 @@ import { BUILD_INFO, BuildInfo } from './build-info';
 import { compareVersions, PRESERVED_STORAGE_KEYS } from './version-compare';
 
 const CHECK_INTERVAL_MS = 5 * 60_000;
-const POSTPONE_MS = 30 * 60_000;
-const POSTPONE_KEY = 'odivongym-update-postponed';
 
 /**
  * Tells the user when a new panel release is deployed and applies it cleanly.
@@ -15,10 +13,11 @@ const POSTPONE_KEY = 'odivongym-update-postponed';
  * no-cache and compared with the build id compiled into this bundle. Checked on start, every
  * 5 minutes and whenever the tab becomes visible, so open tabs notice a deploy without a reload.
  *
- * Applying: clears Cache Storage and local/session storage (except theme and language), signs out
- * (Firebase keeps its session in IndexedDB), activates the new service-worker version and reloads
- * to the login page. A release marked critical (`forceLogout`, or this build below `minVersion`)
- * cannot be postponed.
+ * Every new release is mandatory (product decision): a blocking dialog with a single "update"
+ * action that signs out (Firebase keeps its session in IndexedDB), clears Cache Storage and
+ * local/session storage (except theme and language), activates the new service-worker version and
+ * reloads to the login page. `forceLogout` / `minVersion` in release.json and a 426 from the API
+ * lead to the same dialog.
  */
 @Injectable({ providedIn: 'root' })
 export class VersionService {
@@ -30,19 +29,17 @@ export class VersionService {
   readonly current: BuildInfo = BUILD_INFO;
   readonly available = signal<BuildInfo | null>(null);
   readonly applying = signal(false);
-  private readonly postponedUntil = signal(readPostponed());
   private readonly forced = signal(false);
 
-  readonly mandatory = computed(() => {
+  /** A newer release is deployed (or the API refused this build): the update dialog is shown. */
+  readonly updateRequired = computed(() => this.forced() || this.available() !== null);
+
+  /** Release marked critical in release.json (only changes the wording of the dialog). */
+  readonly critical = computed(() => {
     const next = this.available();
     if (this.forced()) return true;
     if (!next) return false;
     return next.forceLogout || (!!next.minVersion && compareVersions(this.current.version, next.minVersion) < 0);
-  });
-
-  readonly showBanner = computed(() => {
-    if (!this.available() && !this.forced()) return false;
-    return this.mandatory() || Date.now() >= this.postponedUntil();
   });
 
   private started = false;
@@ -72,17 +69,6 @@ export class VersionService {
   forceUpdate(): void {
     this.forced.set(true);
     void this.checkRemote();
-  }
-
-  postpone(): void {
-    if (this.mandatory()) return;
-    const until = Date.now() + POSTPONE_MS;
-    this.postponedUntil.set(until);
-    try {
-      sessionStorage.setItem(POSTPONE_KEY, String(until));
-    } catch {
-      // storage unavailable: postpone only for this page
-    }
   }
 
   async applyUpdate(): Promise<void> {
@@ -135,13 +121,5 @@ function clearStorage(): void {
     sessionStorage.clear();
   } catch {
     // private mode / blocked storage: nothing to clear
-  }
-}
-
-function readPostponed(): number {
-  try {
-    return Number(sessionStorage.getItem(POSTPONE_KEY)) || 0;
-  } catch {
-    return 0;
   }
 }
