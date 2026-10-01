@@ -1,6 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom, of, startWith, Subject, switchMap } from 'rxjs';
 import { GymApi } from '../api/gym.api';
 import { SaasApi } from '../api/saas.api';
@@ -21,7 +20,6 @@ export class SaasSubscriptionService {
   private readonly gym = inject(GymApi);
   private readonly auth = inject(AuthService);
   private readonly branchContext = inject(BranchContextService);
-  private readonly snackBar = inject(MatSnackBar);
   private readonly reload$ = new Subject<void>();
 
   readonly subscription$ = toObservable(this.auth.profile).pipe(
@@ -149,27 +147,5 @@ export class SaasSubscriptionService {
 
   hasFeature(featureKey: keyof SaasPlanFeatureKeys): boolean {
     return !!this.activePlan().featureKeys[featureKey];
-  }
-
-  async selectPlan(planId: SaasPlanId, billingCycle: SaasBillingCycle = 'monthly'): Promise<void> {
-    const plan = SAAS_PLANS_CONFIG[planId];
-    if (!plan) return;
-    const now = new Date();
-    const periodDays = billingCycle === 'yearly' ? 365 : 30;
-    await firstValueFrom(
-      this.api.save({
-        planId,
-        billingCycle,
-        status: 'active',
-        currentPeriodStartsAt: now.toISOString(),
-        currentPeriodEndsAt: new Date(now.getTime() + periodDays * 86400000).toISOString(),
-      }),
-    );
-    this.reload$.next();
-    this.snackBar.open(
-      `Tebrikler! ${plan.name} (${billingCycle === 'yearly' ? 'Yıllık' : 'Aylık'}) paketi başarıyla aktif edildi!`,
-      'Tamam',
-      { duration: 5000, panelClass: ['snack-success'] },
-    );
   }
 }

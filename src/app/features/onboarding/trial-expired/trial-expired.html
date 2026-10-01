@@ -91,19 +91,19 @@
           <button
             type="button"
             (click)="activatePlan(plan.id)"
-            [disabled]="activating() !== null"
             class="w-full py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-98"
             [ngClass]="plan.highlighted ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30' : 'bg-slate-900 hover:bg-slate-800 text-white'"
           >
-            @if (activating() === plan.id) {
-              <span>{{ 'trialExpired.activating' | transloco }}</span>
-            } @else {
-              <span>{{ plan.ctaText }}</span>
-            }
+            <span>{{ activating() === plan.id ? 'Seçildi · aşağıdan ödeyin' : plan.ctaText }}</span>
           </button>
         </div>
       }
     </div>
+    @if (activating(); as planId) {
+      <div class="mt-6 w-full max-w-md mx-auto">
+        <app-saas-checkout [planId]="planId" [cycle]="selectedCycle()" />
+      </div>
+    }
     }
 
     <!-- Güvenlik & Çıkış -->

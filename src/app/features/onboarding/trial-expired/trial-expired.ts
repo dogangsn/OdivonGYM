@@ -12,12 +12,13 @@ import {
   SaasPlanId,
 } from '../../../core/models/saas-plan.model';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
+import { SaasCheckout } from '../../../shared/components/saas-checkout/saas-checkout';
 import { PermissionService } from '../../../core/services/permission.service';
 
 @Component({
   selector: 'app-trial-expired',
   standalone: true,
-  imports: [CommonModule, LogoMark, MatIconModule, TranslocoPipe],
+  imports: [CommonModule, LogoMark, MatIconModule, TranslocoPipe, SaasCheckout],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './trial-expired.html',
   styleUrl: './trial-expired.scss',
@@ -31,7 +32,7 @@ export class TrialExpired {
   protected readonly isStaff = inject(PermissionService).isStaff;
 
   readonly selectedCycle = signal<SaasBillingCycle>('monthly');
-  readonly activating = signal<string | null>(null);
+  readonly activating = signal<SaasPlanId | null>(null);
 
   protected readonly cancelled = computed(() => this.auth.membershipStatus() === 'cancelled');
 
@@ -55,15 +56,9 @@ export class TrialExpired {
       : this.transloco.translate('trialExpired.perMonth');
   }
 
-  async activatePlan(planId: SaasPlanId): Promise<void> {
+  /** Seçilen planın ödeme formunu açar; abonelik yalnızca doğrulanmış kart ödemesiyle açılır. */
+  activatePlan(planId: SaasPlanId): void {
     this.activating.set(planId);
-    try {
-      await this.subService.selectPlan(planId, this.selectedCycle());
-      // Başarılı abonelik sonrası hemen admin paneline yönlendir
-      await this.router.navigateByUrl('/admin/overview');
-    } finally {
-      this.activating.set(null);
-    }
   }
 
   async logOut(): Promise<void> {
