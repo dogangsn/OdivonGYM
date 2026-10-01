@@ -1,207 +1,84 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService } from '../../../core/auth/auth.service';
-import { GymPackage } from '../../../core/models/gym-package.model';
+import { MemberAccountService } from '../../../core/services/member-account.service';
 import {
-  CardBrand,
   OnlinePaymentService,
   PaymentResult,
+  PurchasablePackage,
 } from '../../../core/services/online-payment.service';
+import { formatMoney } from '../../ui/ui-utils';
 
 export type CheckoutMode = 'package' | 'wallet_topup';
 
+/**
+ * Üye paket alımı. Gerçek kart ödemesi (sanal POS) bağlı olmadığı için ödeme yalnız e-cüzdan
+ * bakiyesinden yapılır; bakiye yüklemesi resepsiyonda yapılır. Kart formu / 3D Secure ekranı yoktur.
+ */
 @Component({
   selector: 'app-checkout-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './checkout-modal.html',
   styleUrl: './checkout-modal.scss',
 })
 export class CheckoutModal {
-  protected readonly auth = inject(AuthService);
   private readonly paymentService = inject(OnlinePaymentService);
+  protected readonly account = inject(MemberAccountService);
 
-  // Inputs
   readonly open = input<boolean>(false);
   readonly mode = input<CheckoutMode>('package');
-  readonly selectedPackage = input<GymPackage | null>(null);
+  readonly selectedPackage = input<PurchasablePackage | null>(null);
   readonly topUpAmount = input<number>(500);
 
-  // Outputs
   readonly closed = output<void>();
   readonly paymentSuccess = output<PaymentResult>();
 
-  // State
-  readonly paymentMethod = signal<'card' | 'wallet' | 'transfer'>('card');
-  readonly isProcessing = signal<boolean>(false);
-  readonly step = signal<'form' | '3ds_simulation' | 'success'>('form');
+  protected readonly money = formatMoney;
+  readonly isProcessing = signal(false);
+  readonly step = signal<'form' | 'success'>('form');
   readonly errorMessage = signal<string | null>(null);
   readonly lastResult = signal<PaymentResult | null>(null);
 
-  // Form Fields
-  readonly cardHolder = signal<string>('');
-  readonly cardNumber = signal<string>('');
-  readonly expiryMonth = signal<string>('12');
-  readonly expiryYear = signal<string>('28');
-  readonly cvv = signal<string>('');
-  readonly saveCard = signal<boolean>(true);
+  readonly walletBalance = computed(() => this.account.me()?.walletBalance ?? null);
+  readonly price = computed(() => this.selectedPackage()?.price ?? 0);
+  readonly remainingAfter = computed(() => (this.walletBalance() ?? 0) - this.price());
+  readonly isWalletSufficient = computed(() => (this.walletBalance() ?? 0) >= this.price());
 
-  // 3D Secure SMS code simulation
-  readonly smsCode = signal<string>('784920');
-  readonly inputSmsCode = signal<string>('');
-  readonly timerSeconds = signal<number>(59);
-
-  // Computed values
-  readonly profile = this.auth.profile;
-  readonly walletBalance = computed(() => this.profile()?.walletBalance ?? 0);
-
-  readonly totalAmount = computed(() => {
-    if (this.mode() === 'package') {
-      return this.selectedPackage()?.price ?? 0;
-    }
-    return this.topUpAmount();
-  });
-
-  readonly isWalletSufficient = computed(() => {
-    return this.walletBalance() >= this.totalAmount();
-  });
-
-  readonly cardBrand = computed<CardBrand>(() => {
-    return this.paymentService.detectCardBrand(this.cardNumber());
-  });
-
-  readonly formattedCardNumber = computed(() => {
-    const raw = this.cardNumber().replace(/\s+/g, '');
-    if (!raw) return '•••• •••• •••• ••••';
-    let formatted = this.paymentService.formatCardNumber(raw);
-    const missing = 19 - formatted.length;
-    if (missing > 0) {
-      formatted += '•'.repeat(Math.min(missing, 19));
-    }
-    return formatted;
-  });
-
-  // Actions
-  onCardNumberInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const formatted = this.paymentService.formatCardNumber(input.value);
-    this.cardNumber.set(formatted);
+  constructor() {
+    // Her açılışta güncel bakiyeyi çek ve ekranı sıfırla.
+    effect(() => {
+      if (!this.open()) return;
+      this.step.set('form');
+      this.errorMessage.set(null);
+      this.lastResult.set(null);
+      void this.account.reload();
+    });
   }
 
-  onCvvInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.cvv.set(input.value.replace(/\D/g, '').slice(0, 4));
-  }
-
-  setMethod(method: 'card' | 'wallet' | 'transfer'): void {
-    this.errorMessage.set(null);
-    this.paymentMethod.set(method);
-  }
-
-  async startPayment(): Promise<void> {
-    this.errorMessage.set(null);
-
-    // Validations
-    if (this.paymentMethod() === 'wallet' && !this.isWalletSufficient()) {
-      this.errorMessage.set('Cüzdan bakiyeniz yetersiz. Lütfen kart ile ödeyin veya bakiye yükleyin.');
+  async confirmPurchase(): Promise<void> {
+    const pkg = this.selectedPackage();
+    if (!pkg || this.isProcessing()) return;
+    if (!this.isWalletSufficient()) {
+      this.errorMessage.set('E-cüzdan bakiyeniz bu paket için yetersiz. Bakiye yüklemesi için resepsiyona başvurabilirsiniz.');
       return;
     }
-
-    if (this.paymentMethod() === 'card') {
-      const cleanNum = this.cardNumber().replace(/\s+/g, '');
-      if (cleanNum.length < 15) {
-        this.errorMessage.set('Lütfen geçerli 16 haneli bir kart numarası giriniz.');
-        return;
-      }
-      if (!this.cardHolder().trim()) {
-        this.errorMessage.set('Lütfen kart üzerindeki ad soyadı giriniz.');
-        return;
-      }
-      if (this.cvv().length < 3) {
-        this.errorMessage.set('Lütfen 3 haneli güvenlik kodunu (CVV) giriniz.');
-        return;
-      }
-
-      // 3D Secure ekranına geç
-      this.inputSmsCode.set('');
-      this.step.set('3ds_simulation');
-      return;
-    }
-
-    // Doğrudan cüzdan veya havale ile tamamlama
-    await this.executeFinalTransaction();
-  }
-
-  async verifySmsAndComplete(): Promise<void> {
-    // 3D Secure doğrula
-    if (this.inputSmsCode().trim().length < 6) {
-      this.errorMessage.set('Lütfen telefonunuza gelen 6 haneli doğrulama kodunu giriniz.');
-      return;
-    }
-
-    await this.executeFinalTransaction();
-  }
-
-  private async executeFinalTransaction(): Promise<void> {
     this.isProcessing.set(true);
     this.errorMessage.set(null);
-
     try {
-      let result: PaymentResult;
-
-      const cardPayload = {
-        cardHolder: this.cardHolder(),
-        cardNumber: this.cardNumber(),
-        expiryMonth: this.expiryMonth(),
-        expiryYear: this.expiryYear(),
-        cvv: this.cvv(),
-      };
-
-      if (this.mode() === 'package') {
-        const pkg = this.selectedPackage();
-        if (!pkg) throw new Error('Paket seçilmedi.');
-        result = await this.paymentService.purchaseGymPackage(
-          pkg,
-          this.paymentMethod(),
-          this.paymentMethod() === 'card' ? cardPayload : undefined,
-        );
-      } else {
-        result = await this.paymentService.topUpWallet(this.topUpAmount(), cardPayload);
-      }
-
+      const result = await this.paymentService.purchasePackage(pkg);
       this.lastResult.set(result);
       this.step.set('success');
       this.paymentSuccess.emit(result);
-    } catch (err: any) {
-      this.errorMessage.set(err.message || 'Ödeme gerçekleştirilemedi.');
-      if (this.step() === '3ds_simulation') {
-        this.step.set('form');
-      }
+    } catch (err) {
+      this.errorMessage.set(err instanceof Error ? err.message : 'Paket satın alınamadı.');
     } finally {
       this.isProcessing.set(false);
     }
   }
 
-  fillQuickSms(): void {
-    this.inputSmsCode.set(this.smsCode());
-  }
-
   closeModal(): void {
     if (this.isProcessing()) return;
-    this.step.set('form');
-    this.errorMessage.set(null);
-    this.lastResult.set(null);
     this.closed.emit();
   }
 }

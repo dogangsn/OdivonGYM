@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/auth/auth.service';
-import { GymPackage } from '../../../core/models/gym-package.model';
+import { MobilePackage } from '../../../core/api/mobile.api';
+import { MemberAccountService } from '../../../core/services/member-account.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { CheckoutModal } from '../../../shared/components/checkout-modal/checkout-modal';
+import { PaymentResult } from '../../../core/services/online-payment.service';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { formatDate, formatMoney } from '../../../shared/ui/ui-utils';
 import { UserPackagesService } from '../user-packages.service';
@@ -19,11 +21,11 @@ import { UserPackagesService } from '../user-packages.service';
       <app-page-header
         title="Paketler & Üyelik Yenileme"
         icon="card_membership"
-        description="Salonumuzun sunduğu avantajlı üyelik paketleri. Dilediğiniz paketi kredi kartı veya e-cüzdan bakiyenizle online satın alabilirsiniz."
+        description="Salonumuzun üyelik paketleri. Dilediğiniz paketi e-cüzdan bakiyenizle satın alabilirsiniz; bakiye yüklemesi resepsiyonda yapılır."
       />
 
       <!-- Mevcut Üyelik Bilgi Bandı -->
-      @if (auth.profile()?.packageLabel) {
+      @if (account.me()?.membership?.type) {
         <div class="odv-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 mb-6 border-l-4 border-l-indigo-600">
           <div class="flex items-center gap-4">
             <span class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -32,7 +34,7 @@ import { UserPackagesService } from '../user-packages.service';
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">AKTİF ÜYELİK</span>
-                @if (auth.profile()?.membershipStatus === 'active') {
+                @if (account.me()?.membership?.status === 'active') {
                   <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Geçerli
@@ -40,11 +42,11 @@ import { UserPackagesService } from '../user-packages.service';
                 }
               </div>
               <h3 class="m-0 text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                {{ auth.profile()?.packageLabel }}
+                {{ account.me()?.membership?.type }}
               </h3>
-              @if (auth.profile()?.membershipEndsAt) {
+              @if (account.me()?.membership?.endsAt) {
                 <p class="m-0 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Bitiş Tarihi: <b>{{ date(auth.profile()?.membershipEndsAt) }}</b>
+                  Bitiş Tarihi: <b>{{ date(account.me()?.membership?.endsAt) }}</b>
                 </p>
               }
             </div>
@@ -54,7 +56,7 @@ import { UserPackagesService } from '../user-packages.service';
             <div class="text-right hidden sm:block">
               <span class="text-xs text-slate-500 dark:text-slate-400 block">Cüzdan Bakiyeniz</span>
               <span class="text-sm font-bold text-slate-900 dark:text-white">
-                ₺{{ (auth.profile()?.walletBalance ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) }}
+                {{ money(account.me()?.walletBalance ?? 0) }}
               </span>
             </div>
           </div>
@@ -157,13 +159,14 @@ import { UserPackagesService } from '../user-packages.service';
 })
 export class Packages {
   protected readonly auth = inject(AuthService);
+  protected readonly account = inject(MemberAccountService);
   private readonly service = inject(UserPackagesService);
   private readonly alert = inject(AlertService);
 
   protected readonly money = formatMoney;
   protected readonly date = formatDate;
 
-  protected readonly selectedPackage = signal<GymPackage | null>(null);
+  protected readonly selectedPackage = signal<MobilePackage | null>(null);
   protected readonly checkoutOpen = signal<boolean>(false);
 
   private readonly data = toSignal(this.service.watchAvailablePackages(), { initialValue: null });
@@ -172,21 +175,21 @@ export class Packages {
     return list && [...list].sort((a, b) => a.durationDays - b.durationDays);
   });
 
-  isPopular(pkg: GymPackage): boolean {
+  isPopular(pkg: MobilePackage): boolean {
     return pkg.durationDays === 365 || pkg.durationDays === 180 || pkg.price >= 8000;
   }
 
-  dailyCost(pkg: GymPackage): number {
+  dailyCost(pkg: MobilePackage): number {
     if (!pkg.durationDays || pkg.durationDays <= 0) return 0;
     return Math.round(pkg.price / pkg.durationDays);
   }
 
-  openCheckout(pkg: GymPackage): void {
+  openCheckout(pkg: MobilePackage): void {
     this.selectedPackage.set(pkg);
     this.checkoutOpen.set(true);
   }
 
-  onPaymentSuccess(result: any): void {
-    this.alert.success(result.message || 'Paket satın alma işlemi başarıyla tamamlandı!');
+  onPaymentSuccess(result: PaymentResult): void {
+    this.alert.toastSuccess(result.message || 'Paket satın alma işlemi tamamlandı.');
   }
 }

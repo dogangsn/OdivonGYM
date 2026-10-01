@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/auth/auth.service';
 import { WalletTransaction } from '../../../core/models/wallet-transaction.model';
 import { AlertService } from '../../../core/services/alert.service';
+import { MemberAccountService } from '../../../core/services/member-account.service';
 import { CheckoutModal } from '../../../shared/components/checkout-modal/checkout-modal';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { formatDateTime, formatMoney, sortDesc } from '../../../shared/ui/ui-utils';
@@ -34,6 +35,8 @@ const STATUS_LABEL: Record<WalletTransaction['status'], string> = {
 })
 export class Wallet {
   protected readonly auth = inject(AuthService);
+  // Bakiye /identity/me'de yok; üyenin kendi hesabından (/gym/mobile/me) okunur.
+  private readonly account = inject(MemberAccountService);
   private readonly service = inject(WalletService);
   private readonly alert = inject(AlertService);
 
@@ -56,7 +59,7 @@ export class Wallet {
   });
 
   protected readonly balanceLabel = computed(() => {
-    const balance = this.auth.profile()?.walletBalance ?? 0;
+    const balance = this.account.me()?.walletBalance ?? 0;
     return balance.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   });
 
