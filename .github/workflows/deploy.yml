@@ -33,8 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Through npm so the "pretest" hook writes the (git-ignored) build identity first.
       - name: Unit tests
-        run: npx ng test --watch=false --browsers=ChromeHeadless
+        run: npm test -- --watch=false --browsers=ChromeHeadless
 
       # Same build as `npm run deploy:cf` (prebuild writes version.json and the build identity).
       - name: Build
