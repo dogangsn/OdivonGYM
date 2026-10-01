@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
   // Panel on Cloudflare Workers static assets (next to MainApi). Firebase Hosting
   // (firebase.json, npm run deploy:hosting) keeps working until the switch.
-  "name": "odivon-panel",
+  "name": "odivon-gym-client",
   "account_id": "3c85686b125d141ad80870db15cabded",
   "compatibility_date": "2026-09-21",
   "workers_dev": true,
