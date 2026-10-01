@@ -4,7 +4,7 @@ import { ApiClient } from '../http/api-client';
 import { SaasBillingCycle, SaasPlanId } from '../models/saas-plan.model';
 
 export interface PaymentProviders {
-  available: Array<{ id: 'iyzico'; mode: 'sandbox'; configured: boolean }>;
+  available: Array<{ id: 'iyzico'; mode: 'sandbox' | 'live'; configured: boolean }>;
   selected: 'iyzico' | 'none';
 }
 
@@ -12,8 +12,9 @@ export interface PaymentSession {
   id: string;
   source: 'saas_subscription' | 'vet_sale' | 'gym_receivable';
   amountKurus: number;
-  status: 'initializing' | 'pending' | 'succeeded' | 'failed';
+  status: 'initializing' | 'pending' | 'succeeded' | 'failed' | 'abandoned';
   paymentPageUrl: string | null;
+  mode?: 'sandbox' | 'live';
 }
 
 export interface CheckoutBuyer {

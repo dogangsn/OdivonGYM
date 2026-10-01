@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { SaasBillingApi } from '../../../core/api/saas-billing.api';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -68,6 +70,9 @@ export interface ShellNotification {
   id: string;
   titleKey: string;
   messageKey: string;
+  /** Sunucudan gelen düz metin (çeviri anahtarı yerine). */
+  title?: string;
+  message?: string;
   time: string;
   type: 'warning' | 'info' | 'success';
   icon: string;
@@ -162,49 +167,39 @@ export class Shell {
     }
   }
 
-  protected readonly notifications = signal<ShellNotification[]>([
-    {
-      id: 'notif-1',
-      titleKey: 'shell.notif1Title',
-      messageKey: 'shell.notif1Msg',
-      time: '5m',
-      type: 'warning',
-      icon: 'notifications_active',
-      read: false,
-    },
-    {
-      id: 'notif-2',
-      titleKey: 'shell.notif2Title',
-      messageKey: 'shell.notif2Msg',
-      time: '14:32',
-      type: 'info',
-      icon: 'door_sliding',
-      read: false,
-    },
-    {
-      id: 'notif-3',
-      titleKey: 'shell.notif3Title',
-      messageKey: 'shell.notif3Msg',
-      time: '1h',
-      type: 'warning',
-      icon: 'inventory_2',
-      read: false,
-    },
-    {
-      id: 'notif-4',
-      titleKey: 'shell.notif4Title',
-      messageKey: 'shell.notif4Msg',
-      time: '2h',
-      type: 'success',
-      icon: 'receipt_long',
-      read: true,
-    },
-  ]);
+  private readonly saasBilling = inject(SaasBillingApi);
+  /** Gerçek bildirimler: yöneticiye Odivon abonelik hatırlatmaları (günlük iş üretir). */
+  protected readonly notifications = signal<ShellNotification[]>([]);
+  private readonly loadNotices = effect(() => {
+    if (!this.permissions.isAdmin() || !this.auth.profile()?.tenantId) {
+      this.notifications.set([]);
+      return;
+    }
+    firstValueFrom(this.saasBilling.notices()).then(
+      (notices) =>
+        this.notifications.set(
+          notices.map((n) => ({
+            id: n.id,
+            titleKey: '',
+            messageKey: '',
+            title: n.title,
+            message: n.body,
+            time: new Date(n.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
+            type: n.type === 'saas_grace' || n.daysLeft <= 1 ? 'warning' : 'info',
+            icon: 'event_busy',
+            read: Boolean(n.readAt),
+            link: '/admin/subscription',
+          })),
+        ),
+      () => this.notifications.set([]),
+    );
+  });
 
   protected readonly unreadCount = computed(() => this.notifications().filter((n) => !n.read).length);
 
   markAllNotificationsAsRead(): void {
     this.notifications.update((list) => list.map((n) => ({ ...n, read: true })));
+    void firstValueFrom(this.saasBilling.readNotices()).catch(() => undefined);
   }
 
   markNotificationAsRead(id: string): void {

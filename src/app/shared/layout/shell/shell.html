@@ -311,15 +311,17 @@
                 <div class="flex-1 min-w-0 text-left">
                   <div class="flex items-center justify-between gap-1 mb-0.5">
                     <p class="text-xs font-semibold text-slate-800 m-0 truncate" [class.font-bold]="!item.read">
-                      {{ item.titleKey | transloco }}
+                      {{ item.title ?? (item.titleKey | transloco) }}
                     </p>
                     <span class="text-[10px] text-slate-400 shrink-0">{{ item.time }}</span>
                   </div>
                   <p class="text-[11px] text-slate-500 m-0 line-clamp-2 leading-relaxed">
-                    {{ item.messageKey | transloco }}
+                    {{ item.message ?? (item.messageKey | transloco) }}
                   </p>
                 </div>
               </div>
+            } @empty {
+              <p class="px-4 py-6 text-center text-xs text-slate-400 m-0">Bildirim yok</p>
             }
           </div>
           <div class="p-2 border-t border-slate-100 text-center">

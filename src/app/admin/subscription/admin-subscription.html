@@ -74,36 +74,59 @@
     </div>
   </div>
 
-  <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <div>
-      <div class="flex items-center gap-2 text-sm font-bold text-indigo-900 dark:text-indigo-200">
-        <mat-icon class="icon-size-5">verified_user</mat-icon>
-        iyzico Sandbox Ödeme
+  <!-- Abonelik durumu (sunucu) ve ödeme geçmişi -->
+  <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+        <mat-icon class="icon-size-5 text-indigo-600">verified_user</mat-icon>
+        Odivon aboneliği
       </div>
-      <p class="m-0 mt-1 text-xs text-indigo-700 dark:text-indigo-300">
-        Paket seçimiyle iyzico test ödeme sayfası açılır. Test işlemi gerçek lisansı veya fatura kaydını değiştirmez.
-      </p>
+      @if (paymentProviders()?.available?.[0]; as p) {
+        <span class="px-3 py-1 rounded-full text-xs font-bold" [ngClass]="p.mode === 'live' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+          {{ p.configured ? (p.mode === 'live' ? 'Kartla ödeme açık' : 'Test ortamı · ödemeler aboneliği değiştirmez') : 'Online ödeme henüz açık değil' }}
+        </span>
+      }
     </div>
-    @if (paymentProviders()?.selected === 'iyzico' && paymentProviders()?.available?.[0]?.configured) {
-      <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Etkin · Test ortamı</span>
-    } @else if (paymentProviders()?.available?.[0]?.configured) {
-      <button type="button" class="odv-btn-primary text-xs" [disabled]="providerBusy() || auth.profile()?.role !== 'owner'" (click)="enableSandbox()">
-        iyzico Sandbox'ı Etkinleştir
-      </button>
-    } @else {
-      <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-        {{ paymentError() || 'MainApi sandbox anahtarları bekleniyor' }}
-      </span>
+    @if (billing(); as b) {
+      @if (b.subscriptionEndsAt) {
+        <p class="m-0 text-sm" [ngClass]="b.inGrace ? 'text-rose-700 font-bold' : 'text-slate-600 dark:text-slate-300'">
+          @if (b.inGrace) {
+            Aboneliğiniz {{ date(b.subscriptionEndsAt) }} tarihinde bitti. {{ date(b.graceEndsAt) }} tarihine kadar ek süredesiniz; yenilemezseniz panel erişimi kapanır.
+          } @else {
+            Aboneliğiniz {{ date(b.subscriptionEndsAt) }} tarihine kadar geçerli{{ b.daysLeft !== null && b.daysLeft <= 7 ? ' (' + b.daysLeft + ' gün kaldı)' : '' }}. Erken yenilemede yeni dönem mevcut bitişten başlar.
+          }
+        </p>
+      } @else {
+        <p class="m-0 text-xs text-slate-500">Henüz ücretli dönem yok. Plan seçip kartla ödediğinizde aboneliğiniz hemen açılır.</p>
+      }
+    }
+    @if (paymentError()) {
+      <p class="m-0 text-xs text-rose-600">{{ paymentError() }}</p>
+    }
+    @if (receipts().length) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-left text-slate-500">
+              <th class="py-1.5 pr-3">Makbuz</th><th class="py-1.5 pr-3">Tarih</th><th class="py-1.5 pr-3">Plan</th>
+              <th class="py-1.5 pr-3">Dönem</th><th class="py-1.5 pr-3 text-right">Tutar</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of receipts(); track r.id) {
+              <tr class="border-t border-slate-100 dark:border-slate-800">
+                <td class="py-1.5 pr-3 font-mono">{{ r.receiptNo }}@if (r.mode !== 'live') { <span class="text-amber-600"> (test)</span> }</td>
+                <td class="py-1.5 pr-3">{{ date(r.paidAt) }}</td>
+                <td class="py-1.5 pr-3">{{ r.planId }} · {{ r.billingCycle === 'yearly' ? 'Yıllık' : 'Aylık' }}</td>
+                <td class="py-1.5 pr-3">{{ date(r.periodStartsAt) }} – {{ date(r.periodEndsAt) }}</td>
+                <td class="py-1.5 pr-3 text-right font-bold">{{ money(r.amountKurus / 100) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </div>
-
-  @if (paymentResult(); as result) {
-    <div class="p-4 rounded-2xl border text-sm font-semibold"
-      [ngClass]="result.status === 'succeeded' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'">
-      Sandbox ödeme sonucu: {{ result.status === 'succeeded' ? 'Test başarılı' : result.status === 'failed' ? 'Test başarısız' : 'Sonuç bekleniyor' }}
-      <span class="block text-xs mt-1">İşlem {{ result.id }} · Gerçek lisans değişmedi.</span>
-    </div>
-  }
 
   <!-- 2. Kota & Kullanım Göstergeleri (3 Sade Metrik) -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -335,8 +358,8 @@
             <mat-icon class="icon-size-5">upgrade</mat-icon>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">iyzico Sandbox Ödeme Testi</h3>
-            <p class="text-xs text-slate-500 m-0">{{ target.name }} planı için test ödeme oturumu açılacak. Lisans değişmeyecek.</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">{{ target.name }} planı</h3>
+            <p class="text-xs text-slate-500 m-0">Ödeme onaylanınca abonelik açılır; mevcut dönem varsa sonuna eklenir.</p>
           </div>
         </div>
 
@@ -355,31 +378,10 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/30 p-3 space-y-3">
-          <p class="m-0 text-xs font-bold text-indigo-800 dark:text-indigo-300">iyzico Sandbox test ödemesi · Kart bilgileri Odivon'a girilmez. Lisans bu testle aktifleşmez.</p>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <label class="space-y-1">T.C. Kimlik No<input class="odv-input" inputmode="numeric" maxlength="11" [ngModel]="buyerIdentity()" (ngModelChange)="buyerIdentity.set($event)" /></label>
-            <label class="space-y-1">Telefon<input class="odv-input" type="tel" [ngModel]="buyerPhone()" (ngModelChange)="buyerPhone.set($event)" /></label>
-            <label class="space-y-1 col-span-2">E-posta<input class="odv-input" type="email" [ngModel]="buyerEmail()" (ngModelChange)="buyerEmail.set($event)" /></label>
-            <label class="space-y-1 col-span-2">Fatura adresi<input class="odv-input" [ngModel]="buyerAddress()" (ngModelChange)="buyerAddress.set($event)" /></label>
-            <label class="space-y-1">Şehir<input class="odv-input" [ngModel]="buyerCity()" (ngModelChange)="buyerCity.set($event)" /></label>
-          </div>
-        </div>
+        <app-saas-checkout [planId]="target.id" [cycle]="selectedCycle()" />
 
-        @if (paymentError()) {
-          <div role="alert" class="rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 p-3 text-xs font-semibold">{{ paymentError() }}</div>
-        }
-
-        <div class="flex justify-end gap-2 pt-2">
+        <div class="flex justify-end pt-1">
           <button type="button" (click)="closeUpgradeModal()" class="odv-btn-ghost text-xs">{{ 'common.cancel' | transloco }}</button>
-          <button
-            type="button"
-            (click)="confirmUpgrade()"
-            [disabled]="upgrading()"
-            class="odv-btn-primary text-xs disabled:opacity-50"
-          >
-            {{ upgrading() ? 'Ödeme sayfası açılıyor…' : 'iyzico Test Ödemesine Git' }}
-          </button>
         </div>
       </div>
     </div>
