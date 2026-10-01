@@ -219,6 +219,7 @@
       "adminSuppliers": "Suppliers",
       "adminReceivables": "Installments & Debts",
       "adminReminders": "Reminders",
+      "adminPaymentSettings": "Online payments (iyzico)",
       "adminAccounting": "Cash & Accounting",
       "adminEInvoice": "Invoicing & E-Invoice",
       "adminReports": "Sales & Cash Reports",

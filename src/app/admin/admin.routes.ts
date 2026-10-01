@@ -84,6 +84,11 @@ export const adminRoutes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'payment-settings',
+    loadComponent: () => import('./payment-settings/admin-payment-settings').then((m) => m.AdminPaymentSettings),
+    title: 'Online Ödeme · OdivonGYM',
+  },
+  {
     path: 'reminders',
     loadComponent: () => import('./reminders/admin-reminders').then((m) => m.AdminReminders),
     title: 'Hatırlatmalar · OdivonGYM',

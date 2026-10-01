@@ -34,6 +34,7 @@ import { formatDate, formatMoney } from '../../shared/ui/ui-utils';
                 }
               </p>
             </div>
+            @if (cardAvailable()) {
             <button type="button"
                     class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 border-none cursor-pointer disabled:opacity-60"
                     [disabled]="paying() !== null"
@@ -41,9 +42,16 @@ import { formatDate, formatMoney } from '../../shared/ui/ui-utils';
               <mat-icon class="icon-size-4">credit_card</mat-icon>
               {{ paying() === d.id ? 'Ödeme sayfası açılıyor…' : 'Kartla öde' }}
             </button>
+            }
           </div>
         }
-        <p class="m-0 text-[11px] text-slate-400">Kalan borcun tamamı ödenir; kart bilgileri iyzico'nun güvenli sayfasında girilir.</p>
+        <p class="m-0 text-[11px] text-slate-400">
+          @if (cardAvailable()) {
+            Kalan borcun tamamı ödenir; kart bilgileri iyzico'nun güvenli sayfasında girilir.
+          } @else {
+            Ödemeyi resepsiyonda yapabilirsiniz.
+          }
+        </p>
       </section>
     }
   `,
@@ -57,11 +65,13 @@ export class MemberDebts {
   private readonly debts = signal<MemberDebt[]>([]);
   protected readonly open = computed(() => this.debts().filter((d) => d.status === 'open' && d.remainingAmount > 0));
   protected readonly paying = signal<string | null>(null);
+  protected readonly cardAvailable = this.payments.cardAvailable;
   protected readonly error = signal('');
 
   constructor() {
     // Personel hesapları bu uca erişemez; hata olursa kart hiç görünmez.
     firstValueFrom(this.api.debts()).then((list) => this.debts.set(list), () => this.debts.set([]));
+    void this.payments.loadCardAvailability();
   }
 
   protected async pay(debt: MemberDebt): Promise<void> {

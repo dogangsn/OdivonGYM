@@ -40,6 +40,7 @@ export class CheckoutModal {
   readonly errorMessage = signal<string | null>(null);
   readonly lastResult = signal<PaymentResult | null>(null);
   readonly cardAmount = signal(500);
+  readonly cardAvailable = this.paymentService.cardAvailable;
 
   readonly walletBalance = computed(() => this.account.me()?.walletBalance ?? null);
   readonly price = computed(() => this.selectedPackage()?.price ?? 0);
@@ -54,6 +55,7 @@ export class CheckoutModal {
       this.errorMessage.set(null);
       this.lastResult.set(null);
       this.cardAmount.set(this.topUpAmount());
+      void this.paymentService.loadCardAvailability();
       void this.account.reload();
     });
   }

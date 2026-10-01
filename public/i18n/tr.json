@@ -219,6 +219,7 @@
       "adminSuppliers": "Tedarikçiler",
       "adminReceivables": "Taksit & Borç Takibi",
       "adminReminders": "Hatırlatmalar",
+      "adminPaymentSettings": "Online Ödeme (iyzico)",
       "adminAccounting": "Kasa & Muhasebe",
       "adminEInvoice": "Fatura & E-Fatura",
       "adminReports": "Satış & Kasa Raporları",

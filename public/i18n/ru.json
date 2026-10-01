@@ -219,6 +219,7 @@
       "adminSuppliers": "Поставщики",
       "adminReceivables": "Рассрочки и долги",
       "adminReminders": "Напоминания",
+      "adminPaymentSettings": "Онлайн-оплата (iyzico)",
       "adminAccounting": "Касса и бухгалтерия",
       "adminEInvoice": "Счета и фактуры",
       "adminReports": "Отчёты по продажам",

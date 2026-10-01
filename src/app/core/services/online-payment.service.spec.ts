@@ -12,7 +12,7 @@ describe('OnlinePaymentService', () => {
   let service: OnlinePaymentService;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<MobileApi>('MobileApi', ['renew', 'cardCheckout']);
+    api = jasmine.createSpyObj<MobileApi>('MobileApi', ['renew', 'cardCheckout', 'paymentAvailability']);
     account = { reload: jasmine.createSpy('reload').and.resolveTo({ walletBalance: 2000 }) };
     const injector = Injector.create({
       providers: [
@@ -40,6 +40,14 @@ describe('OnlinePaymentService', () => {
     await expectAsync(service.purchasePackage(pkg)).toBeRejectedWithError(/bakiyeniz bu paket için yetersiz/);
     api.renew.and.returnValue(fail('GYM_PACKAGE_NOT_FOUND'));
     await expectAsync(service.purchasePackage(pkg)).toBeRejectedWithError(/artık satışta değil/);
+  });
+
+  it('asks once whether the gym takes cards and hides the option on error', async () => {
+    api.paymentAvailability.and.returnValue(of({ card: true }));
+    expect(await service.loadCardAvailability()).toBeTrue();
+    expect(await service.loadCardAvailability()).toBeTrue();
+    expect(api.paymentAvailability).toHaveBeenCalledTimes(1);
+    expect(service.cardAvailable()).toBeTrue();
   });
 
   it('starts a card payment and returns the iyzico page; explains a gym without card payments', async () => {

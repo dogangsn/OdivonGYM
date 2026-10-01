@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CardCheckoutRequest, MobileApi } from '../api/mobile.api';
 import { toAppError } from '../../shared/models/app-error.model';
@@ -40,6 +40,21 @@ const ERROR_MESSAGES: Record<string, string> = {
 export class OnlinePaymentService {
   private readonly api = inject(MobileApi);
   private readonly account = inject(MemberAccountService);
+
+  /** null: henüz bilinmiyor. Salonun iyzico anahtarı yoksa kart seçeneği gizlenir. */
+  readonly cardAvailable = signal<boolean | null>(null);
+  private availabilityRequest: Promise<boolean> | null = null;
+
+  loadCardAvailability(): Promise<boolean> {
+    this.availabilityRequest ??= firstValueFrom(this.api.paymentAvailability()).then(
+      (r) => r.card,
+      () => false,
+    ).then((card) => {
+      this.cardAvailable.set(card);
+      return card;
+    });
+    return this.availabilityRequest;
+  }
 
   /**
    * Kartla ödemeyi başlatır ve iyzico ödeme sayfasının adresini döner (çağıran yönlendirir).

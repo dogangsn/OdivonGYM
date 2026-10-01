@@ -51,6 +51,13 @@
               <span>{{ errorMessage() }}</span>
             </div>
           }
+          @if (cardAvailable() === false) {
+          <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-sm text-slate-700 dark:text-slate-200 flex gap-3">
+            <mat-icon class="icon-size-5 text-indigo-600 shrink-0">storefront</mat-icon>
+            <p class="m-0 text-xs">Salonunuz online kartla ödemeyi henüz açmadı. Bakiye yüklemesini resepsiyonda nakit veya kartla yapabilirsiniz.</p>
+          </div>
+          <button type="button" class="odv-btn-primary w-full !py-3" (click)="closeModal()">Tamam</button>
+          } @else {
           <label class="block text-xs font-bold text-slate-600 dark:text-slate-300">
             Yüklenecek tutar (TL)
             <input type="number" min="50" max="20000" step="1" class="odv-input mt-1"
@@ -71,6 +78,7 @@
           <p class="m-0 text-[11px] text-slate-400 text-center">
             Kart bilgileriniz iyzico'nun güvenli ödeme sayfasında (3D Secure) girilir. Resepsiyonda nakit veya kartla da yükleyebilirsiniz.
           </p>
+          }
         } @else if (step() === 'success') {
           <div class="text-center space-y-3 py-2">
             <span class="mx-auto w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
@@ -114,6 +122,7 @@
             </p>
           }
 
+          @if (cardAvailable()) {
           <button type="button"
                   class="w-full !py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border-none cursor-pointer disabled:opacity-60"
                   [disabled]="isProcessing()"
@@ -121,6 +130,7 @@
             <mat-icon class="icon-size-4.5">credit_card</mat-icon>
             <span>Kartla Öde (3D Secure)</span>
           </button>
+          }
 
           <button type="button"
                   class="odv-btn-primary w-full !py-3 font-bold flex items-center justify-center gap-2"

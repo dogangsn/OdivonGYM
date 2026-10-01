@@ -219,6 +219,7 @@
       "adminSuppliers": "Fournisseurs",
       "adminReceivables": "Échéances & Créances",
       "adminReminders": "Rappels",
+      "adminPaymentSettings": "Paiement en ligne (iyzico)",
       "adminAccounting": "Caisse & Comptabilité",
       "adminEInvoice": "Facturation & E-Facture",
       "adminReports": "Rapports ventes & caisse",

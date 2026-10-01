@@ -92,6 +92,11 @@ export class MobileApi {
     return this.api.post<MemberPaymentSession>('/gym/mobile/payments/checkout', body).pipe(map((r) => r.data));
   }
 
+  /** Salon kendi iyzico anahtarlarını tanımlayıp açtıysa kartla ödeme gösterilir. */
+  paymentAvailability() {
+    return this.api.get<{ card: boolean }>('/gym/mobile/payments/availability').pipe(map((r) => r.data));
+  }
+
   debts() {
     return this.api.get<MemberDebt[]>('/gym/mobile/debts').pipe(map((r) => unwrapList<MemberDebt>(r.data)));
   }
