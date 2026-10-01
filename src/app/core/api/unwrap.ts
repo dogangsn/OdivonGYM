@@ -37,7 +37,7 @@ export function tenantReload<T>(
  * Periyodik yenileme yalnızca sekme görünürken çalışır; arka plandaki sekme API'ye istek atmaz.
  * Sekme yeniden görünür olunca hemen bir kez yeniler.
  */
-function visiblePolling(refreshMs: number): Observable<unknown> {
+export function visiblePolling(refreshMs: number): Observable<unknown> {
   if (typeof document === 'undefined') {
     return interval(refreshMs);
   }

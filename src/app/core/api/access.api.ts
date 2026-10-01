@@ -8,6 +8,17 @@ import { unwrapList } from './unwrap';
 export class AccessApi {
   private readonly api = inject(ApiClient);
 
+  /** Salon ayarı: turnike kayıtlarının canlı yenilenmesi (varsayılan kapalı). */
+  settings() {
+    return this.api
+      .get<{ liveRefresh: boolean }>('/gym/access/settings', undefined, { skipLoading: true })
+      .pipe(map((r) => r.data));
+  }
+
+  saveSettings(body: { liveRefresh: boolean }) {
+    return this.api.put<{ liveRefresh: boolean }>('/gym/access/settings', body).pipe(map((r) => r.data));
+  }
+
   listGates(options?: RequestOptions) {
     return this.api
       .get<unknown[]>('/gym/access/gates', { limit: 100 }, { skipLoading: true, ...options })

@@ -1,8 +1,22 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, Subject, firstValueFrom } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  distinctUntilChanged,
+  firstValueFrom,
+  map,
+  merge,
+  of,
+  shareReplay,
+  startWith,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { AccessApi } from '../../core/api/access.api';
-import { tenantReload, tenantReloadValue } from '../../core/api/unwrap';
+import { tenantReload, tenantReloadValue, visiblePolling } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   AccessDirection,
@@ -100,10 +114,12 @@ export interface DeviceSyncItem {
 export type DeviceSyncSummary = Record<string, Partial<Record<DeviceSyncStatus, number>>>;
 
 /**
- * Panel verileri bu aralıkla yenilenir (yalnızca sekme görünürken). Agent 5 sn'de bir tarar;
- * 10 sn, istek sayısını ve Firestore okumalarını yarıya indirir.
+ * Canlı yenileme açıkken geçiş kayıtları bu aralıkla okunur (yalnızca sekme görünürken ve Edge
+ * Agent ile turnike cihazı çevrimiçiyken).
  */
 export const ACCESS_REFRESH_MS = 10000;
+/** Cihaz / agent durumu ve kapı listesi bu yavaş aralıkla yenilenir. */
+export const ACCESS_STATUS_MS = 60000;
 
 export interface GateScanResult {
   allowed: boolean;
@@ -115,15 +131,75 @@ export interface GateScanResult {
   timestamp: Date;
 }
 
+/**
+ * Kayıt yenileme tetikleri: ayar açık VE cihazlar çevrimiçi olduğu sürece `poll()` akışı;
+ * ayar kapanınca veya cihaz/agent çevrimdışı olunca durur. Cihaz durumu yalnızca ayar açıkken izlenir.
+ */
+export function accessLiveTicks(
+  liveRefresh$: Observable<boolean>,
+  devicesOnline$: Observable<boolean>,
+  poll: () => Observable<unknown>,
+  onActive: (active: boolean) => void = () => undefined,
+): Observable<unknown> {
+  return liveRefresh$.pipe(
+    switchMap((on) => (on ? devicesOnline$ : of(false))),
+    distinctUntilChanged(),
+    tap(onActive),
+    switchMap((active) => (active ? poll() : EMPTY)),
+  );
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminAccessControlService {
   private readonly api = inject(AccessApi);
   private readonly auth = inject(AuthService);
   private readonly profile$ = toObservable(this.auth.profile);
   private readonly reload$ = new Subject<void>();
+  private readonly settingsChanged$ = new Subject<void>();
+
+  /** Salon ayarı (sunucuda): kapalıyken kayıtlar sayfa açılışında ve "Yenile" ile okunur. */
+  readonly liveRefresh = signal(false);
+  /** Canlı yenileme şu an çalışıyor mu (ayar açık + agent ve cihaz çevrimiçi). */
+  readonly liveActive = signal(false);
+
+  private readonly liveRefresh$ = this.profile$.pipe(
+    switchMap((profile) =>
+      profile?.tenantId
+        ? this.settingsChanged$.pipe(
+            startWith(null),
+            switchMap(() => this.api.settings().pipe(catchError(() => of({ liveRefresh: false })))),
+            map((settings) => settings.liveRefresh === true),
+          )
+        : of(false),
+    ),
+    tap((on) => this.liveRefresh.set(on)),
+    distinctUntilChanged(),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  /** En az bir kapı çevrimiçi mi (sunucu: agent heartbeat'i ve cihaz erişimi taze). */
+  private readonly devicesOnline$ = visiblePolling(ACCESS_STATUS_MS).pipe(
+    startWith(null),
+    switchMap(() => this.api.listGates().pipe(catchError(() => of([])))),
+    map((gates) => (gates as TurnstileGate[]).some((gate) => gate.online === true)),
+    distinctUntilChanged(),
+  );
+
+  /** Yalnızca ayar açıkken ve cihazlar çevrimiçiyken kayıt yenileme tetikleri üretir. */
+  private readonly liveTicks$: Observable<unknown> = accessLiveTicks(
+    this.liveRefresh$,
+    this.devicesOnline$,
+    () => visiblePolling(ACCESS_REFRESH_MS),
+    (active) => this.liveActive.set(active),
+  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
 
   refresh(): void {
     this.reload$.next();
+  }
+
+  async setLiveRefresh(liveRefresh: boolean): Promise<void> {
+    await firstValueFrom(this.api.saveSettings({ liveRefresh }));
+    this.settingsChanged$.next();
   }
 
   watchGates(): Observable<TurnstileGate[]> {
@@ -131,7 +207,7 @@ export class AdminAccessControlService {
       this.profile$,
       this.reload$,
       () => this.api.listGates() as Observable<TurnstileGate[]>,
-      ACCESS_REFRESH_MS,
+      ACCESS_STATUS_MS,
     );
   }
 
@@ -140,7 +216,7 @@ export class AdminAccessControlService {
       this.profile$,
       this.reload$,
       () => this.api.listAgents() as Observable<AccessAgent[]>,
-      ACCESS_REFRESH_MS,
+      ACCESS_STATUS_MS,
     );
   }
 
@@ -150,7 +226,7 @@ export class AdminAccessControlService {
       this.reload$,
       () => this.api.syncSummary() as Observable<DeviceSyncSummary>,
       {} as DeviceSyncSummary,
-      ACCESS_REFRESH_MS,
+      ACCESS_STATUS_MS,
     );
   }
 
@@ -187,8 +263,21 @@ export class AdminAccessControlService {
     return Promise.resolve();
   }
 
+  /**
+   * Geçiş kayıtları: açılışta bir kez ve "Yenile" ile; canlı yenileme ayarı açıksa agent ve cihaz
+   * çevrimiçi olduğu sürece arka planda (sekme görünürken) da yenilenir.
+   */
   watchLogs(): Observable<AccessLog[]> {
-    return tenantReload(this.profile$, this.reload$, () => this.api.listLogs(), ACCESS_REFRESH_MS);
+    return this.profile$.pipe(
+      switchMap((profile) =>
+        profile?.tenantId
+          ? merge(this.reload$, this.liveTicks$).pipe(
+              startWith(null),
+              switchMap(() => this.api.listLogs().pipe(catchError(() => EMPTY))),
+            )
+          : of([] as AccessLog[]),
+      ),
+    );
   }
 
   async logAccess(input: CreateAccessLogInput): Promise<string> {

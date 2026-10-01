@@ -280,13 +280,16 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
 
           <!-- Quick Metrics Pills -->
           <div class="flex flex-wrap items-center gap-2">
-            <div
+            <label
               class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300"
-              matTooltip="Kayıtlar ve cihaz durumu arka planda kesintisiz yenilenir."
+              [class.cursor-pointer]="canChangeLive()"
+              [matTooltip]="liveTooltip()"
             >
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="font-bold">Canlı Akış (Arka Plan)</span>
-            </div>
+              <input type="checkbox" class="cursor-pointer" [checked]="accessService.liveRefresh()" [disabled]="!canChangeLive() || savingLive()"
+                     (change)="toggleLive($any($event.target).checked)" />
+              <span class="w-2 h-2 rounded-full" [ngClass]="accessService.liveActive() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+              <span class="font-bold">{{ accessService.liveActive() ? 'Canlı Akış Açık' : accessService.liveRefresh() ? 'Canlı Akış (cihaz çevrimdışı)' : 'Canlı Akış Kapalı' }}</span>
+            </label>
 
             <button
               type="button"
@@ -1088,7 +1091,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
   `,
 })
 export class AdminAccessControl implements OnInit {
-  private readonly accessService = inject(AdminAccessControlService);
+  protected readonly accessService = inject(AdminAccessControlService);
+  protected readonly savingLive = signal(false);
   private readonly membersService = inject(AdminMembersService);
   private readonly alertService = inject(AlertService);
   private readonly auth = inject(AuthService);
@@ -1239,6 +1243,32 @@ export class AdminAccessControl implements OnInit {
       this.alertService.toastError('Senkron durumu alınamadı.');
     } finally {
       this.syncLoading.set(false);
+    }
+  }
+
+  /** Canlı yenileme ayarını yalnızca salon sahibi / yönetici değiştirir (sunucu da kontrol eder). */
+  protected canChangeLive(): boolean {
+    return ['owner', 'admin'].includes(this.auth.profile()?.role ?? '');
+  }
+
+  protected liveTooltip(): string {
+    if (!this.accessService.liveRefresh()) {
+      return 'Kapalı: kayıtlar sayfa açılışında ve "Yenile" ile okunur. Açınca, Edge Agent ve turnike çevrimiçiyken arka planda 10 sn\'de bir yenilenir.';
+    }
+    return this.accessService.liveActive()
+      ? 'Açık: Edge Agent ve turnike çevrimiçi; kayıtlar 10 sn\'de bir yenileniyor (sekme açıkken).'
+      : 'Açık, ancak Edge Agent veya turnike çevrimdışı; cihaz durumu dakikada bir kontrol ediliyor.';
+  }
+
+  protected async toggleLive(on: boolean): Promise<void> {
+    this.savingLive.set(true);
+    try {
+      await this.accessService.setLiveRefresh(on);
+      this.alertService.toastSuccess(on ? 'Canlı akış açıldı.' : 'Canlı akış kapatıldı.');
+    } catch {
+      this.alertService.toastError('Ayar kaydedilemedi.');
+    } finally {
+      this.savingLive.set(false);
     }
   }
 
