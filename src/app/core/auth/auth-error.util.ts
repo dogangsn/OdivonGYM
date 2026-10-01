@@ -1,9 +1,7 @@
 /**
- * Firebase Auth VE Cloud Functions callable hata kodlarını `authErrors.*`
- * çeviri anahtarlarına çevirir. Callable'lardan (bkz. functions/src/tenant/*)
- * gelen `HttpsError`'lar client'a `functions/<code>` biçiminde ulaşır — bu
- * eşleme olmadan hepsi `authErrors.generic`'e düşer ("Bir şeyler ters gitti"),
- * ki bu tam olarak asıl nedeni gizleyen, teşhis edilemez bir mesajdır.
+ * Firebase Auth hata kodlarını `authErrors.*` çeviri anahtarlarına çevirir. Eşleme
+ * olmadan hepsi `authErrors.generic`'e düşer ("Bir şeyler ters gitti"), ki bu asıl
+ * nedeni gizleyen, teşhis edilemez bir mesajdır.
  */
 const CODE_TO_KEY: Record<string, string> = {
   'auth/invalid-email': 'authErrors.invalidEmail',
@@ -16,13 +14,7 @@ const CODE_TO_KEY: Record<string, string> = {
   'auth/too-many-requests': 'authErrors.tooManyRequests',
   'auth/popup-closed-by-user': 'authErrors.popupClosedByUser',
   'auth/network-request-failed': 'authErrors.networkRequestFailed',
-  'functions/already-exists': 'authErrors.emailAlreadyInUse',
-  'functions/permission-denied': 'authErrors.permissionDenied',
-  'functions/invalid-argument': 'authErrors.invalidArgument',
-  'functions/unauthenticated': 'authErrors.unauthenticated',
-  'functions/unavailable': 'authErrors.networkRequestFailed',
-  // Spark planında (Cloud Functions yok) yetki hataları artık doğrudan
-  // Firestore client SDK'sından geliyor — `functions/` ön eki OLMADAN.
+  // Firestore client SDK'sının yetki hatası (ön eksiz).
   'permission-denied': 'authErrors.permissionDenied',
 };
 

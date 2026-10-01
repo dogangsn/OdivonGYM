@@ -1,107 +1,84 @@
 # OdivonGYM
 
-Modern, mobil öncelikli spor salonu yönetim ve üyelik uygulaması. Angular 20
-(standalone + signals + zoneless) + Angular Material (M3) + Tailwind CSS 4 +
-Firebase (Auth, Firestore, Storage, Cloud Functions) + PWA.
+Spor salonu yönetim paneli ve üye arayüzü. Angular 20 (standalone, signals, zoneless),
+Angular Material + Tailwind CSS, PWA (service worker).
 
-> **Bu Faz 1'dir:** proje iskeleti + authentication + 14 günlük ücretsiz
-> deneme sistemi. Dashboard, paket satın alma akışı, ders/randevu takvimi ve
-> admin paneli şimdilik placeholder ("Yakında") ekranlar — sıradaki fazlarda
-> `features/` ve `admin/` altına eklenecekler.
+## Mimari
 
-## Gereksinimler
+```
+Tarayıcı (bu proje) ──HTTPS──► MainApi (NestJS, Cloudflare Worker) ──► Firestore
+        │                         mainapi.odivon.com/api/v1
+        └── Firebase Auth (yalnızca oturum açma / ID token)
 
-- Node.js 20+ (bu proje Node 26 üzerinde geliştirildi, ancak Cloud Functions
-  runtime'ı Node 20'yi hedefler)
-- Bir Firebase projesi ([console.firebase.google.com](https://console.firebase.google.com))
-- (Opsiyonel, deploy için) `firebase-tools`: `npm install -g firebase-tools`
+Edge Agent (salondaki PC) ──HTTPS──► MainApi      Turnike/kart okuyucu ◄──LAN── Edge Agent
+```
 
-## 1. Firebase projesini hazırla
+- **Tüm veri MainApi üzerinden okunur ve yazılır.** Panel, Firebase Auth'tan aldığı ID
+  token'ı `Authorization` başlığıyla gönderir (`core/http/auth.interceptor.ts`). Yetki
+  kontrolü (rol, izin, modül, kiracı) sunucuda yapılır; paneldeki menü gizleme yalnızca
+  görünümdür.
+- Firebase projesi: `odivon-main-api-a2095` (Vet client ve MainApi ile ortak). Ayarlar
+  `src/environments/` altında.
+- Cloud Functions **kullanılmıyor**. Zamanlanmış işler (hatırlatmalar, geçmiş ders
+  seanslarının kapanması) MainApi Worker'ının cron tetikleyicisinde çalışır.
+- Turnike entegrasyonu: `edge-agent/` (ayrı Node servisi, bkz. `edge-agent/README.md` ve
+  `docs/access-agent-contract.md`).
 
-Firebase Console'da:
+## Klasör yapısı
 
-1. **Authentication** → Sign-in method → **E-posta/Şifre** ve **Google**
-   sağlayıcılarını etkinleştir.
-2. **Firestore Database** → veritabanı oluştur (production mode).
-3. **Storage** → varsayılan bucket'ı etkinleştir.
-4. **Project settings → General → Your apps** altında bir **Web app**
-   ekle, açılan config nesnesini kopyala.
+```
+src/app/
+├── core/
+│   ├── api/        # MainApi uç noktaları için ince istemciler (*.api.ts)
+│   ├── http/       # ApiClient + interceptor'lar (auth, istemci sürümü, hata, yükleniyor)
+│   ├── auth/       # Firebase Auth oturumu, guard'lar
+│   ├── version/    # Sürüm kimliği ve zorunlu güncelleme (VersionService)
+│   ├── models/ services/ i18n/ config/ data/
+├── admin/          # Personel paneli: üyeler, paketler, taksit/borç, raporlar, dersler,
+│                   #   misafir üyeler (aday hunisi, tavsiye programı), hatırlatmalar,
+│                   #   turnike, muhasebe, mağaza/POS, işlem kaydı …
+├── features/       # Üye ve ortak ekranlar: giriş, panel, dersler, randevular, cüzdan,
+│                   #   antrenman, ölçümler, su takibi, profil
+└── shared/         # Shell, sidebar, ortak UI bileşenleri
+scripts/write-version.mjs   # Her build/serve/test öncesi sürüm kimliğini üretir
+release.json                # Sürüm notu ve zorunlu güncelleme bayrakları (elle düzenlenir)
+firestore.rules, storage.rules, firestore.indexes.json
+```
 
-## 2. Firebase
-
-Gym client, Vet client ile aynı Firebase projesini kullanır: `odivon-main-api-a2095`.
-Değerler `src/environments/environment.ts` ve `environment.development.ts` içindedir.
-Geliştirmede API adresi `/api/v1` (yerel Main API proxy), production’da
-`https://mainapi.odivon.com/api/v1`.
-
-## 3. Kurulum ve çalıştırma
+## Geliştirme
 
 ```bash
 npm install
 npm start
 ```
 
-`http://localhost:4200` — kayıt ol, 14 günlük deneme otomatik başlar
-(`users/{uid}` dokümanı `trial` durumuyla oluşturulur).
-
-## 4. Cloud Functions
-
-`createUserProfile` (kayıt anında trial profili oluşturur) ve `expireTrials`
-(her gün 03:00 TR saatiyle süresi geçen denemeleri `expired` yapar) fonksiyonları
-`functions/` altında.
+`http://localhost:4200`. `ng serve`, `/api` ve `/health` isteklerini
+`src/proxy.conf.json`'daki hedefe yönlendirir. **Bu dosya şu an canlı MainApi'yi
+gösteriyor**: yerelde yapılan her kayıt gerçek veriye yazılır. Yerel MainApi ile çalışmak
+için hedefi `http://localhost:3000` yap (dosyadaki yorum satırı).
 
 ```bash
-cd functions
-npm install
-npm run build
+npm test          # birim testleri (Karma)
+npm run build     # production build → dist/odivongym/browser
+npm run test:agent
 ```
 
-Yerel test (emulator, gerçek Firebase projesine dokunmadan):
+## Sürümler ve oturum
+
+- `scripts/write-version.mjs`, `package.json` sürümü + git commit + build zamanından bir
+  build kimliği üretir; bunu uygulamaya derler ve `public/version.json` olarak yayınlar.
+- Yeni sürüm yayınlandığında açık sekmeler bunu fark eder ve kapatılamayan bir
+  "Güncelle" penceresi gösterir: güncelleme çıkış yaptırır, önbelleği ve yerel depolamayı
+  temizler, kullanıcı yeniden giriş yapar.
+- Sürüm yükseltmek: `npm run release:patch` (veya `release:minor`).
+- Oturum en fazla 30 gün geçerlidir (MainApi tarafında zorlanır).
+
+## Yayın
 
 ```bash
-firebase emulators:start --only auth,firestore,functions
+npm run deploy:hosting   # build + Firebase Hosting
+npm run deploy:rules     # Firestore ve Storage kuralları
 ```
 
-`src/environments/environment.development.ts` içinde `useEmulators: true`
-yaparsan `ng serve` da otomatik olarak emulator'lara bağlanır.
-
-Gerçek projeye deploy:
-
-```bash
-firebase deploy --only functions,firestore:rules,storage
-```
-
-## 5. Neden client + Cloud Function birlikte?
-
-`AuthService`, kayıt olur olmaz `users/{uid}` dokümanını client'tan da
-oluşturmayı dener (`createTrialProfileIfMissing`) — ama sadece doküman henüz
-yoksa. Bu, Cloud Function henüz deploy edilmemişse (örn. bu adımı henüz
-yapmadıysan) uygulamanın yine de çalışmasını sağlayan bir güvenlik ağıdır.
-`firestore.rules`, bu client yazımını sıkı şekilde sınırlar: sadece kendi
-`uid`'ine, sadece `role: 'user'` + `membershipStatus: 'trial'` şekliyle ve en
-fazla 15 günlük bir `trialEndsAt` ile. `role`/`membershipStatus` alanlarının
-**güncellenmesi** ise tamamen kapalı — bunu yalnızca Cloud Functions / admin
-paneli (Admin SDK) yapabilir.
-
-## Klasör yapısı
-
-```
-src/app/
-├── core/           # AuthService, guard'lar, Firestore servisi, modeller
-├── shared/         # Shell, bottom-nav, trial-badge, loading-spinner
-├── features/       # auth (login/register), onboarding, dashboard
-├── admin/          # Admin paneli (placeholder)
-└── app.routes.ts
-
-functions/src/
-├── auth/create-user-profile.ts   # onCreate → trial profili
-└── trial/expire-trials.ts        # scheduled → süresi geçenleri expired yap
-```
-
-## Sırada ne var?
-
-- Paket satın alma (Stripe/Iyzico) → `/onboarding/trial-expired` şu an sadece
-  placeholder kartlar gösteriyor.
-- Dashboard'daki QR kod, e-cüzdan, antrenman özeti, su takibi, vücut ölçümleri.
-- Ders/PT randevu takvimi.
-- Admin paneli: üye listesi, paket yönetimi, gelir raporları.
+Firestore index'leri `firestore.indexes.json`'da tutulur; `firebase deploy --only
+firestore:indexes` ile ayrıca yayınlanır. MainApi kendi deposundan yayınlanır.

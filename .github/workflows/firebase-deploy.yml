@@ -38,12 +38,5 @@ jobs:
       - name: Build Frontend Application
         run: npm run build
 
-      - name: Install Cloud Functions Dependencies
-        run: npm --prefix functions ci
-
-      - name: Build Cloud Functions
-        run: npm --prefix functions run build
-
       - name: Deploy to Firebase
-        # Functions and Storage require a linked billing account before they can be set up.
         run: npx --yes firebase-tools@latest deploy --only hosting,firestore --non-interactive --project odivongym
