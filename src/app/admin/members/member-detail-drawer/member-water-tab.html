@@ -1,0 +1,116 @@
+<div class="space-y-5">
+  <!-- Today's Intake Hero Widget -->
+  <div
+    class="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-blue-500/10 border border-cyan-200/80 shadow-xs space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <span class="text-[11px] font-extrabold uppercase tracking-wider text-cyan-800 flex items-center gap-1.5">
+          <mat-icon class="icon-size-4 text-cyan-600">water_drop</mat-icon>
+          Günün Su Hidrasyon Durumu
+        </span>
+        <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+          {{ todayWaterTotal() }} ml <span class="text-base text-slate-400 font-bold">/ {{ waterTarget }}
+            ml</span>
+        </div>
+        <p class="text-xs font-semibold text-slate-500 mt-0.5 mb-0">
+          Günlük hedefin <strong class="text-cyan-700 font-bold">%{{ waterProgressPercent() }}</strong> kadarı
+          tamamlandı
+        </p>
+      </div>
+
+      <!-- Quick Click Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" (click)="addQuickWater(200, 'Bardak su')" [disabled]="savingWater()"
+          class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+          <mat-icon class="icon-size-3.5 text-cyan-500">local_drink</mat-icon>
+          <span>+200 ml</span>
+        </button>
+        <button type="button" (click)="addQuickWater(250, 'Büyük bardak su')" [disabled]="savingWater()"
+          class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+          <mat-icon class="icon-size-3.5 text-cyan-500">local_drink</mat-icon>
+          <span>+250 ml</span>
+        </button>
+        <button type="button" (click)="addQuickWater(500, 'Pet şişe su')" [disabled]="savingWater()"
+          class="px-3 py-2 rounded-xl bg-white border border-cyan-200 hover:border-cyan-400 text-cyan-800 text-xs font-bold shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+          <mat-icon class="icon-size-3.5 text-cyan-500">water_drop</mat-icon>
+          <span>+500 ml</span>
+        </button>
+        <button type="button" (click)="addQuickWater(1000, 'Termos / Büyük şişe')" [disabled]="savingWater()"
+          class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+          <mat-icon class="icon-size-3.5">add</mat-icon>
+          <span>+1.000 ml</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="w-full bg-white/80 rounded-full h-3 p-0.5 border border-cyan-200/60 overflow-hidden">
+      <div
+        class="bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 h-full rounded-full transition-all duration-500"
+        [style.width.%]="waterProgressPercent()"></div>
+    </div>
+
+    <!-- Custom Water Entry Row -->
+    <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-cyan-200/50">
+      <span class="text-xs font-bold text-slate-700">Özel Miktar:</span>
+      <input type="number" step="50" [value]="customWaterAmount()"
+        (input)="customWaterAmount.set($any($event.target).value)"
+        class="w-24 h-8 px-2.5 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+        placeholder="ml" />
+      <input type="text" [value]="customWaterNote()" (input)="customWaterNote.set($any($event.target).value)"
+        placeholder="Not (örn: Antrenman sırası)"
+        class="flex-1 min-w-[150px] h-8 px-2.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-800 focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+      <button type="button" (click)="addCustomWater()" [disabled]="savingWater()"
+        class="px-4 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50">
+        <mat-icon class="icon-size-3.5">add</mat-icon>
+        <span>Ekle</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Water Logs History -->
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Su Tüketim Geçmişi</h4>
+      <span class="text-xs font-semibold text-slate-500">Toplam {{ waterLogs().length }} kayıt</span>
+    </div>
+
+    @if (waterLogs().length === 0) {
+    <div class="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-300">
+      <mat-icon class="icon-size-10 text-cyan-300 mx-auto mb-2">water_drop</mat-icon>
+      <p class="text-sm font-bold text-slate-700 m-0">Henüz su tüketim kaydı yok</p>
+      <p class="text-xs text-slate-400 mt-1 mb-0">Yukarıdaki hızlı butonlarla anında su kaydı ekleyebilirsiniz.
+      </p>
+    </div>
+    } @else {
+    <div class="space-y-2">
+      @for (log of waterLogs(); track log.id) {
+      <div
+        class="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+            <mat-icon class="icon-size-4">water_drop</mat-icon>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-800 m-0">
+              +{{ log.amount }} {{ log.unit || 'ml' }}
+              @if (log.notes) {
+              <span class="font-normal text-slate-500">({{ log.notes }})</span>
+              }
+            </p>
+            <span class="text-[11px] text-slate-400 font-medium">
+              {{ formatDate(log.date) }} • {{ formatTime(log.createdAt) }}
+            </span>
+          </div>
+        </div>
+
+        <button type="button" (click)="deleteWaterLog(log.id)" matTooltip="Sil"
+          class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer">
+          <mat-icon class="icon-size-4">delete</mat-icon>
+        </button>
+      </div>
+      }
+    </div>
+    }
+  </div>
+</div>

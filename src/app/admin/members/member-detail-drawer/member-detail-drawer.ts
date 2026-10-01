@@ -12,7 +12,7 @@ import {
 import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -20,8 +20,6 @@ import { AlertService } from '../../../core/services/alert.service';
 import { UserProfile, MembershipStatus } from '../../../core/models/user-profile.model';
 import { WalletTransaction } from '../../../core/models/wallet-transaction.model';
 import { AccessLog } from '../../../core/models/access-log.model';
-import { BodyMeasurement } from '../../../core/models/body-measurement.model';
-import { WaterLog } from '../../../core/models/water-log.model';
 import {
   WorkoutPlan,
   CreateWorkoutPlanInput,
@@ -50,6 +48,8 @@ import {
   FITNESS_LEVEL_LABELS,
   PROGRAM_GOAL_LABELS,
 } from '../../../core/models/workout-template.model';
+import { MemberBodyState } from './member-body.state';
+import { MemberMeasurementsTab, MemberWaterTab } from './member-body-tabs';
 
 export type MemberDetailTab =
   | 'measurements'
@@ -87,7 +87,10 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
     SignaturePadModal,
     CdkDrag,
     CdkDragHandle,
+    MemberMeasurementsTab,
+    MemberWaterTab,
   ],
+  providers: [MemberBodyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-detail-drawer.html',
   styleUrl: './member-detail-drawer.scss',
@@ -96,9 +99,9 @@ export class MemberDetailDrawer {
   private readonly membersService = inject(AdminMembersService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly templatesService = inject(WorkoutTemplatesService);
-  private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  private readonly body = inject(MemberBodyState);
 
   readonly open = input(false);
   readonly member = input<UserProfile | null>(null);
@@ -148,8 +151,8 @@ export class MemberDetailDrawer {
   // Telemetry signals
   protected readonly walletTransactions = signal<WalletTransaction[]>([]);
   protected readonly accessLogs = signal<AccessLog[]>([]);
-  protected readonly measurements = signal<BodyMeasurement[]>([]);
-  protected readonly waterLogs = signal<WaterLog[]>([]);
+  protected readonly measurements = this.body.measurements;
+  protected readonly waterLogs = this.body.waterLogs;
   protected readonly loadingTelemetry = signal(false);
 
   // Workout & Programs
@@ -208,26 +211,15 @@ export class MemberDetailDrawer {
     { key: 'fullbody', label: 'Tüm Vücut (Full Body)' },
   ];
 
-  // Form toggles & states
-  protected readonly showAddMeasurementForm = signal(false);
-  protected readonly savingMeasurement = signal(false);
-  protected readonly savingWater = signal(false);
-  protected readonly customWaterAmount = signal<number>(250);
-  protected readonly customWaterNote = signal<string>('');
-
-  protected readonly measurementForm: FormGroup = this.fb.group({
-    date: [new Date().toISOString().substring(0, 10), [Validators.required]],
-    weight: [null, [Validators.min(20), Validators.max(300)]],
-    height: [null, [Validators.min(50), Validators.max(250)]],
-    bodyFatPercentage: [null, [Validators.min(1), Validators.max(70)]],
-    chest: [null, [Validators.min(30), Validators.max(200)]],
-    waist: [null, [Validators.min(30), Validators.max(200)]],
-    hips: [null, [Validators.min(30), Validators.max(200)]],
-    bicep: [null, [Validators.min(10), Validators.max(80)]],
-    thigh: [null, [Validators.min(20), Validators.max(120)]],
-    calf: [null, [Validators.min(15), Validators.max(80)]],
-    notes: [''],
-  });
+  // Ölçüm ve su takibi durumu (sekmeler ve özet kartları ortak kullanır)
+  protected readonly showAddMeasurementForm = this.body.showAddMeasurementForm;
+  protected readonly latestMeasurement = this.body.latestMeasurement;
+  protected readonly weightDelta = this.body.weightDelta;
+  protected readonly currentHeight = this.body.currentHeight;
+  protected readonly bmiInfo = this.body.bmiInfo;
+  protected readonly todayWaterTotal = this.body.todayWaterTotal;
+  protected readonly waterTarget = this.body.waterTarget;
+  protected readonly waterProgressPercent = this.body.waterProgressPercent;
 
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly statusBadgeClass = STATUS_BADGE_CLASS;
@@ -243,81 +235,6 @@ export class MemberDetailDrawer {
     return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
   });
 
-  /** Son ölçüm kaydı */
-  protected readonly latestMeasurement = computed(() => {
-    const list = this.measurements();
-    return list.length > 0 ? list[0] : null;
-  });
-
-  /** Bir önceki ölçüm (delta kilo hesabı için) */
-  protected readonly previousMeasurement = computed(() => {
-    const list = this.measurements();
-    return list.length > 1 ? list[1] : null;
-  });
-
-  /** Kilo farkı (örn: -1.2 kg ya da +0.5 kg) */
-  protected readonly weightDelta = computed(() => {
-    const curr = this.latestMeasurement()?.weight;
-    const prev = this.previousMeasurement()?.weight;
-    if (curr === undefined || curr === null || prev === undefined || prev === null) {
-      return null;
-    }
-    const diff = +(curr - prev).toFixed(1);
-    return diff;
-  });
-
-  /** Son boy bilgisi */
-  protected readonly currentHeight = computed(() => {
-    const list = this.measurements();
-    for (const m of list) {
-      if (m.height) return m.height;
-    }
-    return null;
-  });
-
-  /** Vücut Kitle Endeksi (BMI) */
-  protected readonly bmiInfo = computed(() => {
-    const w = this.latestMeasurement()?.weight;
-    const h = this.currentHeight();
-    if (!w || !h || h <= 0) return null;
-    const hM = h / 100;
-    const val = +(w / (hM * hM)).toFixed(1);
-
-    if (val < 18.5) {
-      return { val, label: 'Zayıf', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' };
-    }
-    if (val <= 24.9) {
-      return { val, label: 'İdeal / Normal', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    }
-    if (val <= 29.9) {
-      return { val, label: 'Fazla Kilolu', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' };
-    }
-    return { val, label: 'Obez', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' };
-  });
-
-  /** Bugün içilen toplam su (ml) */
-  protected readonly todayWaterTotal = computed(() => {
-    const logs = this.waterLogs();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
-    const tomorrowMs = todayMs + 24 * 60 * 60 * 1000;
-
-    return logs
-      .filter((l) => {
-        const t = l.date?.toMillis() ?? 0;
-        return t >= todayMs && t < tomorrowMs;
-      })
-      .reduce((sum, l) => sum + (l.amount || 0), 0);
-  });
-
-  /** Günlük hedef (3000 ml varsayılan) ve yüzde */
-  protected readonly waterTarget = 3000;
-  protected readonly waterProgressPercent = computed(() => {
-    const total = this.todayWaterTotal();
-    return Math.min(100, Math.round((total / this.waterTarget) * 100));
-  });
-
   /** Son 30 gündeki toplam turnike girişi */
   protected readonly monthlyVisits = computed(() => {
     const logs = this.accessLogs();
@@ -328,6 +245,8 @@ export class MemberDetailDrawer {
   });
 
   constructor() {
+    this.body.bind(() => this.member());
+
     effect((onCleanup) => {
       const isOpened = this.open();
       const current = this.member();
@@ -458,109 +377,6 @@ export class MemberDetailDrawer {
   onWallet(): void {
     const m = this.member();
     if (m) this.walletRequested.emit(m);
-  }
-
-  toggleAddMeasurement(): void {
-    this.showAddMeasurementForm.update((v) => !v);
-    if (this.showAddMeasurementForm()) {
-      this.measurementForm.patchValue({
-        date: new Date().toISOString().substring(0, 10),
-        weight: this.latestMeasurement()?.weight || null,
-        height: this.currentHeight() || null,
-      });
-    }
-  }
-
-  async saveMeasurement(): Promise<void> {
-    const current = this.member();
-    if (!current?.uid) return;
-    if (this.measurementForm.invalid) {
-      this.measurementForm.markAllAsTouched();
-      return;
-    }
-
-    const val = this.measurementForm.value;
-    const dateVal = val.date ? new Date(val.date) : new Date();
-
-    this.savingMeasurement.set(true);
-    try {
-      await this.membersService.addBodyMeasurement(current.uid, {
-        date: dateVal,
-        weight: val.weight ? Number(val.weight) : undefined,
-        height: val.height ? Number(val.height) : undefined,
-        bodyFatPercentage: val.bodyFatPercentage ? Number(val.bodyFatPercentage) : undefined,
-        chest: val.chest ? Number(val.chest) : undefined,
-        waist: val.waist ? Number(val.waist) : undefined,
-        hips: val.hips ? Number(val.hips) : undefined,
-        bicep: val.bicep ? Number(val.bicep) : undefined,
-        thigh: val.thigh ? Number(val.thigh) : undefined,
-        calf: val.calf ? Number(val.calf) : undefined,
-        notes: val.notes?.trim() || '',
-      });
-
-      this.snackBar.open('Vücut ölçümü ve kilo kaydı başarıyla eklendi.', 'Tamam', { duration: 3000 });
-      this.showAddMeasurementForm.set(false);
-      this.measurementForm.reset({
-        date: new Date().toISOString().substring(0, 10),
-      });
-    } catch (err) {
-      console.error(err);
-      this.snackBar.open('Ölçüm kaydedilemedi. Lütfen tekrar deneyin.', 'Kapat', { duration: 4000 });
-    } finally {
-      this.savingMeasurement.set(false);
-    }
-  }
-
-  async deleteMeasurement(id: string): Promise<void> {
-    if (!(await this.alertService.deleteConfirm('Ölçüm Kaydı'))) return;
-    try {
-      await this.membersService.deleteBodyMeasurement(id);
-      this.alertService.toastSuccess('Ölçüm kaydı silindi.');
-    } catch (err) {
-      console.error(err);
-      this.alertService.toastError('Silme işlemi başarısız oldu.');
-    }
-  }
-
-  async addQuickWater(amount: number, note = ''): Promise<void> {
-    const current = this.member();
-    if (!current?.uid) return;
-    this.savingWater.set(true);
-    try {
-      await this.membersService.addWaterLog(current.uid, {
-        date: new Date(),
-        amount,
-        unit: 'ml',
-        notes: note,
-      });
-      this.snackBar.open(`+${amount} ml su kaydı eklendi!`, 'Tamam', { duration: 2500 });
-    } catch (err) {
-      console.error(err);
-      this.snackBar.open('Su kaydı eklenemedi.', 'Kapat', { duration: 3000 });
-    } finally {
-      this.savingWater.set(false);
-    }
-  }
-
-  async addCustomWater(): Promise<void> {
-    const amount = Number(this.customWaterAmount());
-    if (!amount || amount <= 0) {
-      this.snackBar.open('Geçerli bir su miktarı girin.', 'Kapat', { duration: 2500 });
-      return;
-    }
-    await this.addQuickWater(amount, this.customWaterNote() || '');
-    this.customWaterNote.set('');
-  }
-
-  async deleteWaterLog(id: string): Promise<void> {
-    if (!(await this.alertService.deleteConfirm('Su Tüketim Kaydı'))) return;
-    try {
-      await this.membersService.deleteWaterLog(id);
-      this.alertService.toastSuccess('Su kaydı silindi.');
-    } catch (err) {
-      console.error(err);
-      this.alertService.toastError('Silme başarısız.');
-    }
   }
 
   formatDate(ts?: string | Timestamp | null): string {
