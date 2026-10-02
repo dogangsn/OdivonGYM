@@ -78,20 +78,6 @@
             class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
         </div>
 
-        <!-- Kol / Pazı (cm) -->
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">Kol / Pazı (cm)</label>
-          <input type="number" step="0.5" placeholder="Örn: 38" formControlName="bicep"
-            class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-        </div>
-
-        <!-- Bacak / Uyluk (cm) -->
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">Bacak / Uyluk (cm)</label>
-          <input type="number" step="0.5" placeholder="Örn: 56" formControlName="thigh"
-            class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-        </div>
-
         <!-- Baldır (cm) -->
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Baldır (cm)</label>
@@ -99,8 +85,48 @@
             class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
         </div>
 
-        <!-- Notlar (2 Sütun) -->
-        <div class="col-span-2">
+        <!-- Sağ Kol / Pazı (cm) -->
+        <div>
+          <label class="block text-[11px] font-bold text-indigo-900 mb-1 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            Sağ Kol / Pazı (cm)
+          </label>
+          <input type="number" step="0.5" placeholder="Örn: 38.5" formControlName="rightBicep"
+            class="w-full h-9.5 px-3 rounded-xl bg-white border border-indigo-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        </div>
+
+        <!-- Sol Kol / Pazı (cm) -->
+        <div>
+          <label class="block text-[11px] font-bold text-purple-900 mb-1 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+            Sol Kol / Pazı (cm)
+          </label>
+          <input type="number" step="0.5" placeholder="Örn: 38.0" formControlName="leftBicep"
+            class="w-full h-9.5 px-3 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+        </div>
+
+        <!-- Sağ Bacak (cm) -->
+        <div>
+          <label class="block text-[11px] font-bold text-indigo-900 mb-1 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            Sağ Bacak (cm)
+          </label>
+          <input type="number" step="0.5" placeholder="Örn: 56.5" formControlName="rightThigh"
+            class="w-full h-9.5 px-3 rounded-xl bg-white border border-indigo-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        </div>
+
+        <!-- Sol Bacak (cm) -->
+        <div>
+          <label class="block text-[11px] font-bold text-purple-900 mb-1 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+            Sol Bacak (cm)
+          </label>
+          <input type="number" step="0.5" placeholder="Örn: 56.0" formControlName="leftThigh"
+            class="w-full h-9.5 px-3 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+        </div>
+
+        <!-- Notlar (4 Sütun) -->
+        <div class="col-span-2 sm:col-span-4">
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Antrenör / Ölçüm Notu</label>
           <input type="text" placeholder="Örn: Sabah aç karnına, kardiyo öncesi alındı" formControlName="notes"
             class="w-full h-9.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
@@ -197,16 +223,32 @@
           <span class="text-[10px] font-semibold text-slate-400 block">Kalça</span>
           <strong class="font-bold text-slate-800">{{ m.hips ? m.hips + ' cm' : '—' }}</strong>
         </div>
-        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-          <span class="text-[10px] font-semibold text-slate-400 block">Kol / Pazı</span>
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center">
+          <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">Kol (Sağ / Sol)</span>
+          @if (m.rightBicep || m.leftBicep) {
+          <div class="flex items-center justify-center gap-1 text-[11px] font-bold text-slate-800">
+            <span class="text-indigo-600 font-bold">Sağ:</span>{{ m.rightBicep || '—' }}
+            <span class="text-slate-300">|</span>
+            <span class="text-purple-600 font-bold">Sol:</span>{{ m.leftBicep || '—' }}<span class="text-[10px] text-slate-400 font-normal">cm</span>
+          </div>
+          } @else {
           <strong class="font-bold text-slate-800">{{ m.bicep ? m.bicep + ' cm' : '—' }}</strong>
+          }
         </div>
-        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-          <span class="text-[10px] font-semibold text-slate-400 block">Bacak / Uyluk</span>
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center">
+          <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">Bacak (Sağ / Sol)</span>
+          @if (m.rightThigh || m.leftThigh) {
+          <div class="flex items-center justify-center gap-1 text-[11px] font-bold text-slate-800">
+            <span class="text-indigo-600 font-bold">Sağ:</span>{{ m.rightThigh || '—' }}
+            <span class="text-slate-300">|</span>
+            <span class="text-purple-600 font-bold">Sol:</span>{{ m.leftThigh || '—' }}<span class="text-[10px] text-slate-400 font-normal">cm</span>
+          </div>
+          } @else {
           <strong class="font-bold text-slate-800">{{ m.thigh ? m.thigh + ' cm' : '—' }}</strong>
+          }
         </div>
-        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-          <span class="text-[10px] font-semibold text-slate-400 block">Baldır</span>
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center">
+          <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">Baldır</span>
           <strong class="font-bold text-slate-800">{{ m.calf ? m.calf + ' cm' : '—' }}</strong>
         </div>
       </div>

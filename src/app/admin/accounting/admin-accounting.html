@@ -1,0 +1,979 @@
+<div class="font-sans space-y-6">
+  <!-- Page Header -->
+  <app-page-header
+    title="Muhasebe & Kasa Yönetimi"
+    icon="account_balance"
+    description="Kasa hareketleri, gün sonu Z raporu kasa mutabakatı ve detaylı gider analitiği."
+  >
+    <div actions class="flex items-center gap-2">
+      @if (activeTab() === 'ledger') {
+        <button type="button" class="odv-btn-soft" (click)="openCategoryModal()">
+          <mat-icon class="icon-size-4">category</mat-icon>
+          <span>Kategorileri Yönet</span>
+        </button>
+        <button type="button" class="odv-btn-primary" (click)="openForm()">
+          <mat-icon class="icon-size-4.5">add</mat-icon>
+          <span>Yeni Kayıt Ekle</span>
+        </button>
+      } @else if (activeTab() === 'daily-close') {
+        <button type="button" class="odv-btn-soft" (click)="loadPreClosePreview()" title="Verileri Yenile">
+          <mat-icon class="icon-size-4">refresh</mat-icon>
+          <span>Canlı Kasayı Yenile</span>
+        </button>
+        <button type="button" class="odv-btn-primary" (click)="openDailyCloseDrawer()">
+          <mat-icon class="icon-size-4.5">point_of_sale</mat-icon>
+          <span>Günü Kapat & Sayım Yap</span>
+        </button>
+      } @else if (activeTab() === 'analytics') {
+        <button type="button" class="odv-btn-soft" (click)="exportAnalyticsCsv()">
+          <mat-icon class="icon-size-4">file_download</mat-icon>
+          <span>Excel / CSV İndir</span>
+        </button>
+      }
+    </div>
+  </app-page-header>
+
+  <!-- Main Tabs Switcher -->
+  <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+    <button
+      type="button"
+      (click)="activeTab.set('ledger')"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+      [class]="
+        activeTab() === 'ledger'
+          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+      "
+    >
+      <mat-icon class="icon-size-4">receipt_long</mat-icon>
+      <span>Kasa Defteri (Gelir & Gider)</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('daily-close')"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+      [class]="
+        activeTab() === 'daily-close'
+          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+      "
+    >
+      <mat-icon class="icon-size-4">point_of_sale</mat-icon>
+      <span>Gün Sonu Kapanışı (Z Raporu)</span>
+      @if (preClosePreview()?.isAlreadyClosed) {
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      } @else {
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+      }
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('analytics')"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+      [class]="
+        activeTab() === 'analytics'
+          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+      "
+    >
+      <mat-icon class="icon-size-4">query_stats</mat-icon>
+      <span>Gider & Kârlılık Analitiği (P&L)</span>
+    </button>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- TAB 1: KASA DEFTERİ (GELİR & GİDER)                           -->
+  <!-- ============================================================= -->
+  @if (activeTab() === 'ledger') {
+    <div class="space-y-6">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Toplam Gelir</p>
+          <p class="m-0 mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ money(totals().income) }}</p>
+        </div>
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Toplam Gider</p>
+          <p class="m-0 mt-1 text-2xl font-black text-rose-600 dark:text-rose-400">{{ money(totals().expense) }}</p>
+        </div>
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Net Kasa Durumu</p>
+          <p
+            class="m-0 mt-1 text-2xl font-black"
+            [class]="totals().net >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'"
+          >
+            {{ money(totals().net) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Filters Toolbar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex gap-2">
+          @for (f of filters; track f.id) {
+            <button
+              type="button"
+              (click)="typeFilter.set(f.id)"
+              class="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+              [class]="
+                typeFilter() === f.id
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              "
+            >
+              {{ f.label }}
+            </button>
+          }
+        </div>
+        <input
+          type="month"
+          class="odv-input !w-auto"
+          [ngModel]="monthFilter()"
+          (ngModelChange)="monthFilter.set($event)"
+          aria-label="Ay filtresi"
+        />
+        @if (monthFilter()) {
+          <button type="button" class="odv-btn-soft" (click)="monthFilter.set('')">Tüm zamanlar</button>
+        }
+      </div>
+
+      <!-- Entries Table -->
+      <div class="odv-card overflow-hidden">
+        @if (entries() === null) {
+          <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+        } @else if (visible().length === 0) {
+          <div class="py-16 text-center">
+            <p class="text-sm text-slate-500 dark:text-slate-400 m-0">Bu görünümde kayıt yok.</p>
+            <button type="button" class="odv-btn-soft mt-4" (click)="openForm()">+ Kayıt Ekle</button>
+          </div>
+        } @else {
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <th class="odv-th">Tarih</th>
+                  <th class="odv-th">Açıklama</th>
+                  <th class="odv-th">Kategori</th>
+                  <th class="odv-th">Ödeme Yöntemi</th>
+                  <th class="odv-th text-right">Tutar</th>
+                  <th class="odv-th text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+                @for (e of visible(); track e.id) {
+                  <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ date(e.entryDate) }}</td>
+                    <td class="odv-td">
+                      <p class="font-semibold text-slate-900 dark:text-white m-0">{{ e.description }}</p>
+                      @if (e.notes) {
+                        <p class="text-[11px] text-slate-400 m-0">{{ e.notes }}</p>
+                      }
+                    </td>
+                    <td class="odv-td">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {{ e.category }}
+                      </span>
+                    </td>
+                    <td class="odv-td text-slate-600 dark:text-slate-300">{{ e.paymentMethod ? paymentLabel[e.paymentMethod] : '—' }}</td>
+                    <td
+                      class="odv-td text-right font-bold whitespace-nowrap"
+                      [class]="e.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                    >
+                      {{ e.type === 'income' ? '+' : '−' }}{{ money(e.amount) }}
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap">
+                      <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(e)">
+                        <mat-icon class="icon-size-4">edit</mat-icon>
+                      </button>
+                      <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" title="Sil" (click)="remove(e)">
+                        <mat-icon class="icon-size-4">delete</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================= -->
+  <!-- TAB 2: GÜN SONU KAPANISI & Z RAPORU                           -->
+  <!-- ============================================================= -->
+  @if (activeTab() === 'daily-close') {
+    <div class="space-y-6">
+      <!-- Date Bar & Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kapanış Tarihi:</label>
+          <input
+            type="date"
+            class="odv-input !w-auto"
+            [ngModel]="dailyCloseDate()"
+            (ngModelChange)="onDateChange($event)"
+          />
+        </div>
+
+        <div class="flex items-center gap-2">
+          @if (preClosePreview()?.isAlreadyClosed) {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+              <mat-icon class="icon-size-3.5">verified</mat-icon>
+              <span>Z Raporu Kapatıldı ({{ preClosePreview()?.existingClosing?.closingNumber }})</span>
+            </span>
+            <button
+              type="button"
+              class="odv-btn-soft"
+              (click)="viewZReport(preClosePreview()!.existingClosing!)"
+            >
+              <mat-icon class="icon-size-4">receipt</mat-icon>
+              <span>Z Fişini İncele / Yazdır</span>
+            </button>
+          } @else {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+              <span>Kasa Açık (Vardiya Devam Ediyor)</span>
+            </span>
+            <button
+              type="button"
+              class="odv-btn-primary"
+              (click)="openDailyCloseDrawer()"
+            >
+              <mat-icon class="icon-size-4.5">lock_clock</mat-icon>
+              <span>Günü Kapat & Sayım Yap</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Live Calculation 4-KPI Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Devreden Kasa -->
+        <div class="odv-card p-5 bg-gradient-to-br from-slate-50 to-slate-100/60 dark:from-slate-900 dark:to-slate-800/40">
+          <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Açılış Kasası (Devir)</span>
+            <mat-icon class="icon-size-4 text-slate-400">history</mat-icon>
+          </div>
+          <p class="m-0 mt-2 text-2xl font-black text-slate-900 dark:text-white">
+            {{ money(preClosePreview()?.openingCash ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">Önceki günün devir bakiyesi</p>
+        </div>
+
+        <!-- 2. Günün Nakit Girişleri -->
+        <div class="odv-card p-5 bg-gradient-to-br from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 border-emerald-100 dark:border-emerald-900/40">
+          <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Nakit Tahsilatlar</span>
+            <mat-icon class="icon-size-4">add_circle</mat-icon>
+          </div>
+          <p class="m-0 mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            +{{ money(preClosePreview()?.incomeSummary?.cash ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">
+            Paket ({{ preClosePreview()?.incomeSummary?.packageSaleCount }}), Mağaza ({{ preClosePreview()?.incomeSummary?.shopSaleCount }}), Taksit ({{ preClosePreview()?.incomeSummary?.receivableCollectionCount }})
+          </p>
+        </div>
+
+        <!-- 3. Günün Nakit Giderleri -->
+        <div class="odv-card p-5 bg-gradient-to-br from-rose-50/50 to-rose-100/30 dark:from-rose-950/20 dark:to-rose-900/10 border-rose-100 dark:border-rose-900/40">
+          <div class="flex items-center justify-between text-rose-600 dark:text-rose-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Nakit Harcamalar</span>
+            <mat-icon class="icon-size-4">remove_circle</mat-icon>
+          </div>
+          <p class="m-0 mt-2 text-2xl font-black text-rose-600 dark:text-rose-400">
+            -{{ money(preClosePreview()?.expenseSummary?.cash ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">
+            Kasadan yapılan {{ preClosePreview()?.expenseSummary?.count }} ödeme
+          </p>
+        </div>
+
+        <!-- 4. BEKLENEN KASA NAKDİ -->
+        <div class="odv-card p-5 bg-gradient-to-br from-indigo-50/70 to-indigo-100/50 dark:from-indigo-950/40 dark:to-indigo-900/30 border-indigo-200 dark:border-indigo-800">
+          <div class="flex items-center justify-between text-indigo-700 dark:text-indigo-300">
+            <span class="text-xs font-black uppercase tracking-wider">Beklenen Kasa Nakdi</span>
+            <mat-icon class="icon-size-4">savings</mat-icon>
+          </div>
+          <p class="m-0 mt-2 text-2xl font-black text-indigo-600 dark:text-indigo-400">
+            {{ money(preClosePreview()?.expectedCash ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-indigo-900/70 dark:text-indigo-300/70 font-semibold">
+            Kasada bulunması gereken fiziki tutar
+          </p>
+        </div>
+      </div>
+
+      <!-- Diğer Kanallar & Ciro Özeti -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="m-0 text-xs text-slate-500 font-bold uppercase">POS / Kredi Kartı Ciro</p>
+            <p class="m-0 mt-1 text-lg font-black text-slate-800 dark:text-slate-200">
+              {{ money(preClosePreview()?.incomeSummary?.posCard ?? 0) }}
+            </p>
+          </div>
+          <mat-icon class="text-slate-400">credit_card</mat-icon>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="m-0 text-xs text-slate-500 font-bold uppercase">Havale / EFT Tahsilat</p>
+            <p class="m-0 mt-1 text-lg font-black text-slate-800 dark:text-slate-200">
+              {{ money(preClosePreview()?.incomeSummary?.bankTransfer ?? 0) }}
+            </p>
+          </div>
+          <mat-icon class="text-slate-400">account_balance</mat-icon>
+        </div>
+
+        <div class="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-between">
+          <div>
+            <p class="m-0 text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Günün Toplam Cirosu</p>
+            <p class="m-0 mt-1 text-lg font-black text-indigo-600 dark:text-indigo-400">
+              {{ money(preClosePreview()?.incomeSummary?.total ?? 0) }}
+            </p>
+          </div>
+          <mat-icon class="text-indigo-500">payments</mat-icon>
+        </div>
+      </div>
+
+      <!-- Geçmiş Z Raporları Tablosu -->
+      <div class="odv-card overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <h3 class="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 m-0">
+            Geçmiş Gün Sonu Z Raporları (Kasa Mutabakat Geçmişi)
+          </h3>
+          <span class="text-xs text-slate-400 font-semibold">{{ closingsHistory().length }} Kapanış</span>
+        </div>
+
+        @if (loadingHistory()) {
+          <p class="py-12 text-center text-sm text-slate-400 m-0">Yükleniyor…</p>
+        } @else if (closingsHistory().length === 0) {
+          <div class="py-12 text-center text-sm text-slate-400">
+            Henüz kaydedilmiş gün sonu Z raporu bulunmuyor.
+          </div>
+        } @else {
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <th class="odv-th">Tarih</th>
+                  <th class="odv-th">Z No</th>
+                  <th class="odv-th">Kapatan</th>
+                  <th class="odv-th text-right">Beklenen Kasa</th>
+                  <th class="odv-th text-right">Sayılan Kasa</th>
+                  <th class="odv-th text-right">Fark (Açık/Fazla)</th>
+                  <th class="odv-th text-right">POS Ciro</th>
+                  <th class="odv-th text-right">Devir Kasası</th>
+                  <th class="odv-th text-center">Durum</th>
+                  <th class="odv-th text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+                @for (c of closingsHistory(); track c.id) {
+                  <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="odv-td whitespace-nowrap font-medium text-slate-600 dark:text-slate-300">{{ c.date }}</td>
+                    <td class="odv-td whitespace-nowrap font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {{ c.closingNumber }}
+                    </td>
+                    <td class="odv-td whitespace-nowrap text-slate-700 dark:text-slate-300">
+                      {{ c.closedByStaffName }}
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap text-slate-500">
+                      {{ money(c.expectedCash) }}
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                      {{ money(c.actualCashCounted) }}
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap">
+                      @if (c.cashDifference === 0) {
+                        <span class="inline-flex px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          Tam Mutabık
+                        </span>
+                      } @else if (c.cashDifference > 0) {
+                        <span class="inline-flex px-2 py-0.5 rounded text-[11px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
+                          +{{ money(c.cashDifference) }}
+                        </span>
+                      } @else {
+                        <span class="inline-flex px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                          {{ money(c.cashDifference) }}
+                        </span>
+                      }
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap text-slate-600 dark:text-slate-300">
+                      {{ money(c.incomeSummary.posCard) }}
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap font-semibold text-slate-700 dark:text-slate-300">
+                      {{ money(c.retainedCashForNextDay) }}
+                    </td>
+                    <td class="odv-td text-center whitespace-nowrap">
+                      @if (c.status === 'verified') {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                          <mat-icon class="icon-size-3">check_circle</mat-icon>
+                          <span>Müdür Onaylı</span>
+                        </span>
+                      } @else {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          <mat-icon class="icon-size-3">lock</mat-icon>
+                          <span>Kapatıldı</span>
+                        </span>
+                      }
+                    </td>
+                    <td class="odv-td text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        class="odv-icon-btn"
+                        title="Termal Fişi Yazdır"
+                        (click)="printThermalReceipt(c)"
+                      >
+                        <mat-icon class="icon-size-4">print</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="odv-icon-btn ml-1"
+                        title="Z Raporu Detayı"
+                        (click)="viewZReport(c)"
+                      >
+                        <mat-icon class="icon-size-4">visibility</mat-icon>
+                      </button>
+                      @if (c.status !== 'verified') {
+                        <button
+                          type="button"
+                          class="odv-icon-btn ml-1 text-emerald-600 hover:text-emerald-700"
+                          title="Yönetici Onayı Ver"
+                          (click)="verifyZReport(c)"
+                        >
+                          <mat-icon class="icon-size-4">verified</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================= -->
+  <!-- TAB 3: GİDER & KÂRLILIK ANALİTİĞİ (P&L)                       -->
+  <!-- ============================================================= -->
+  @if (activeTab() === 'analytics') {
+    <div class="space-y-6">
+      <!-- Period Selector -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="setAnalyticsPeriod('thisMonth')"
+            class="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            [class]="analyticsPeriod() === 'thisMonth' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'"
+          >
+            Bu Ay
+          </button>
+          <button
+            type="button"
+            (click)="setAnalyticsPeriod('lastMonth')"
+            class="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            [class]="analyticsPeriod() === 'lastMonth' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'"
+          >
+            Geçen Ay
+          </button>
+          <button
+            type="button"
+            (click)="setAnalyticsPeriod('last3Months')"
+            class="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            [class]="analyticsPeriod() === 'last3Months' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'"
+          >
+            Son 3 Ay
+          </button>
+          <button
+            type="button"
+            (click)="setAnalyticsPeriod('thisYear')"
+            class="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            [class]="analyticsPeriod() === 'thisYear' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'"
+          >
+            Bu Yıl
+          </button>
+        </div>
+
+        <span class="text-xs text-slate-500 font-semibold">
+          Dönem: {{ expenseAnalytics()?.startDate }} ~ {{ expenseAnalytics()?.endDate }}
+        </span>
+      </div>
+
+      <!-- 4-Card Executive KPI Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Toplam Gider -->
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dönem Toplam Gideri</p>
+          <p class="m-0 mt-1 text-2xl font-black text-rose-600 dark:text-rose-400">
+            {{ money(expenseAnalytics()?.totalExpense ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">Tüm kategoriler toplamı</p>
+        </div>
+
+        <!-- 2. En Yüksek Harcama Kalemi -->
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">En Yüksek Harcama Kalemi</p>
+          <p class="m-0 mt-1 text-lg font-black text-slate-900 dark:text-white truncate">
+            {{ expenseAnalytics()?.topCategory?.name || '—' }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">
+            {{ money(expenseAnalytics()?.topCategory?.amount ?? 0) }} (%{{ expenseAnalytics()?.topCategory?.percentage ?? 0 }})
+          </p>
+        </div>
+
+        <!-- 3. Net Kâr & Zarar -->
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Net Kâr & Zarar (Ciro - Gider)</p>
+          <p
+            class="m-0 mt-1 text-2xl font-black"
+            [class]="(expenseAnalytics()?.netProfit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+          >
+            {{ money(expenseAnalytics()?.netProfit ?? 0) }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">
+            Toplam Ciro: {{ money(expenseAnalytics()?.totalIncome ?? 0) }}
+          </p>
+        </div>
+
+        <!-- 4. Gider Marjı -->
+        <div class="odv-card p-5">
+          <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gider / Gelir Oranı (% Gider Marjı)</p>
+          <p class="m-0 mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">
+            %{{ expenseAnalytics()?.expenseMarginPercentage ?? 0 }}
+          </p>
+          <p class="m-0 mt-1 text-[11px] text-slate-400">Cironun giderlere giden payı</p>
+        </div>
+      </div>
+
+      <!-- Kategori Harcama Dağılımı Listesi & Barlar -->
+      <div class="odv-card p-6 space-y-4">
+        <h3 class="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+          Kategori Bazlı Gider Dağılımı ve Harcama Ağırlıkları
+        </h3>
+
+        @if (expenseAnalytics()?.categoryBreakdown?.length === 0) {
+          <p class="py-8 text-center text-sm text-slate-400 m-0">Bu dönemde gider kaydı bulunmuyor.</p>
+        } @else {
+          <div class="space-y-3.5">
+            @for (cat of expenseAnalytics()?.categoryBreakdown; track cat.name) {
+              <div>
+                <div class="flex items-center justify-between text-xs sm:text-sm font-bold mb-1">
+                  <span class="text-slate-800 dark:text-slate-200">{{ cat.name }} ({{ cat.count }} işlem)</span>
+                  <span class="text-slate-900 dark:text-white font-mono">{{ money(cat.amount) }} (%{{ cat.percentage }})</span>
+                </div>
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    class="bg-gradient-to-r from-indigo-500 to-rose-500 h-2.5 rounded-full transition-all duration-500"
+                    [style.width.%]="cat.percentage"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Son 6 Ay Mali Trend Tablosu -->
+      <div class="odv-card overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+          <h3 class="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+            Son 6 Ay Mali Değişim Trendi (P&L Trend)
+          </h3>
+        </div>
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                <th class="odv-th">Ay</th>
+                <th class="odv-th text-right">Gelir (Ciro)</th>
+                <th class="odv-th text-right">Toplam Gider</th>
+                <th class="odv-th text-right">Net Kâr / Zarar</th>
+                <th class="odv-th text-center">Gider Marjı</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+              @for (m of expenseAnalytics()?.monthlyTrend; track m.month) {
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                  <td class="odv-td font-bold font-mono text-slate-700 dark:text-slate-300">{{ m.month }}</td>
+                  <td class="odv-td text-right font-semibold text-emerald-600 dark:text-emerald-400">{{ money(m.income) }}</td>
+                  <td class="odv-td text-right font-semibold text-rose-600 dark:text-rose-400">{{ money(m.expense) }}</td>
+                  <td
+                    class="odv-td text-right font-black font-mono"
+                    [class]="m.net >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'"
+                  >
+                    {{ money(m.net) }}
+                  </td>
+                  <td class="odv-td text-center text-slate-500 font-bold">
+                    %{{ m.income > 0 ? (m.expense / m.income * 100).toFixed(1) : 0 }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- ============================================================= -->
+<!-- SLIDE-OVER: YENİ MUHASEBE KAYDI (GELİR / GİDER)              -->
+<!-- ============================================================= -->
+<app-slide-over
+  [open]="drawerOpen()"
+  [title]="editing() ? 'Kaydı Düzenle' : 'Yeni Muhasebe Kaydı'"
+  [submitLabel]="editing() ? 'Değişiklikleri Kaydet' : 'Kaydı Ekle'"
+  [submitting]="submitting()"
+  [errorMessage]="errorMessage()"
+  (closed)="close()"
+  (submitted)="submit()"
+>
+  <div [formGroup]="form" class="space-y-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <app-field label="Tür" [required]="true">
+        <select formControlName="type" class="odv-input">
+          <option value="income">Gelir (+)</option>
+          <option value="expense">Gider (−)</option>
+        </select>
+      </app-field>
+      <app-field label="Tutar (₺)" [required]="true" [error]="err('amount', { required: 'Tutar gerekli.', min: 'Sıfırdan büyük olmalı.' })">
+        <input type="number" min="0.01" step="0.01" formControlName="amount" class="odv-input font-bold" />
+      </app-field>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label class="odv-label required m-0">Kategori</label>
+        <button
+          type="button"
+          (click)="openCategoryModal()"
+          class="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-bold flex items-center gap-1 cursor-pointer"
+        >
+          <mat-icon class="icon-size-3.5">add_circle</mat-icon>
+          <span>Yeni Kategori Tanımla</span>
+        </button>
+      </div>
+      <select formControlName="category" class="odv-input">
+        <option value="">-- Kategori Seçiniz --</option>
+        @for (c of categoryOptions(); track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+      @if (form.controls.category.touched && form.controls.category.invalid) {
+        <p class="text-xs text-rose-500 mt-1 m-0">Kategori seçimi zorunludur.</p>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <app-field label="Tarih" [required]="true" [error]="err('entryDate', { required: 'Tarih gerekli.' })">
+        <input type="date" formControlName="entryDate" class="odv-input" />
+      </app-field>
+      <app-field label="Ödeme Yöntemi">
+        <select formControlName="paymentMethod" class="odv-input">
+          <option value="">Belirtilmedi</option>
+          <option value="cash">Nakit</option>
+          <option value="card">Banka / Kredi Kartı</option>
+          <option value="transfer">Havale / EFT</option>
+          <option value="wallet">Üye Cüzdanı</option>
+        </select>
+      </app-field>
+    </div>
+
+    <app-field label="Açıklama" [required]="true" [error]="err('description', { required: 'Açıklama gerekli.' })">
+      <input type="text" formControlName="description" placeholder="Örn: Salon Kirası, Elektrik Faturası, PT Seans Ödemesi" class="odv-input" />
+    </app-field>
+
+    <app-field label="Özel Not">
+      <textarea formControlName="notes" rows="2" placeholder="Fatura no, dekont referansı vb." class="odv-input resize-none text-xs"></textarea>
+    </app-field>
+  </div>
+</app-slide-over>
+
+<!-- ============================================================= -->
+<!-- SLIDE-OVER: KATEGORİ TANIMLAMA VE YÖNETİM                     -->
+<!-- ============================================================= -->
+<app-slide-over
+  [open]="categoryModalOpen()"
+  title="Muhasebe Kategorileri"
+  submitLabel="Kategoriyi Ekle"
+  [submitting]="savingCategory()"
+  (closed)="closeCategoryModal()"
+  (submitted)="saveNewCategory()"
+>
+  <div class="space-y-5">
+    <div class="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 space-y-3">
+      <h4 class="text-xs font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-200 m-0">Yeni Kategori Ekle</h4>
+      <div>
+        <label class="odv-label required">Kategori Adı</label>
+        <input
+          type="text"
+          [(ngModel)]="newCategoryName"
+          placeholder="Örn: Personel Primi, Temizlik Sarf, Bakım Onarım"
+          class="odv-input"
+        />
+      </div>
+      <div>
+        <label class="odv-label required">Kategori Türü</label>
+        <select [(ngModel)]="newCategoryType" class="odv-input">
+          <option value="income">Gelir Kategorisi</option>
+          <option value="expense">Gider Kategorisi</option>
+          <option value="both">Her İkisi (Gelir & Gider)</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Tanımlı Kategoriler ({{ categories().length }})</h4>
+      <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-80 overflow-y-auto custom-scroll">
+        @for (cat of categories(); track cat.id || cat.name) {
+          <div class="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <div class="flex items-center gap-2">
+              <span
+                class="w-2 h-2 rounded-full"
+                [class.bg-emerald-500]="cat.type === 'income'"
+                [class.bg-rose-500]="cat.type === 'expense'"
+                [class.bg-indigo-500]="cat.type === 'both'"
+              ></span>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ cat.name }}</span>
+              <span class="text-[10px] text-slate-400">
+                ({{ cat.type === 'income' ? 'Gelir' : cat.type === 'expense' ? 'Gider' : 'Ortak' }})
+              </span>
+            </div>
+            @if (cat.id) {
+              <button
+                type="button"
+                (click)="deleteCategory(cat)"
+                class="w-6 h-6 rounded text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer transition-colors"
+                title="Kategoriyi Sil"
+              >
+                <mat-icon class="icon-size-3.5">delete</mat-icon>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</app-slide-over>
+
+<!-- ============================================================= -->
+<!-- SLIDE-OVER: GÜN SONU KASA SAYIMI VE KAPANISI                  -->
+<!-- ============================================================= -->
+<app-slide-over
+  [open]="closeDrawerOpen()"
+  title="Kasa Sayımı & Gün Sonu Kapanışı (Z Raporu)"
+  submitLabel="Z Raporunu Onayla ve Kapat"
+  [submitting]="submittingClose()"
+  (closed)="closeDailyCloseDrawer()"
+  (submitted)="handleDailyCloseSubmit()"
+>
+  <div [formGroup]="closeForm" class="space-y-5">
+    <!-- Info Banner -->
+    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
+      Kapanış Tarihi: <strong class="text-slate-900 dark:text-white">{{ dailyCloseDate() }}</strong><br/>
+      Sistemde Beklenen Kasa: <strong class="text-indigo-600 dark:text-indigo-400 font-mono">{{ money(preClosePreview()?.expectedCash ?? 0) }}</strong>
+    </div>
+
+    <!-- 1. Fiziki Nakit Sayımı -->
+    <div>
+      <label class="odv-label required">Kasada Sayılan Fiziki Nakit (₺)</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        formControlName="actualCashCounted"
+        class="odv-input font-mono text-lg font-black"
+        placeholder="0.00"
+      />
+
+      <!-- Live Cash Discrepancy Indicator -->
+      <div class="mt-2">
+        @if (liveCashDiff() === 0) {
+          <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+            <mat-icon class="icon-size-4">check_circle</mat-icon>
+            <span>Kasa Tam Mutabık! (Fark: 0,00 ₺)</span>
+          </div>
+        } @else if (liveCashDiff() > 0) {
+          <div class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center gap-2 text-xs font-bold text-sky-800 dark:text-sky-300">
+            <mat-icon class="icon-size-4">info</mat-icon>
+            <span>Kasa Fazlası: +{{ money(liveCashDiff()) }}</span>
+          </div>
+        } @else {
+          <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
+            <mat-icon class="icon-size-4">warning</mat-icon>
+            <span>Kasa Açığı: {{ money(liveCashDiff()) }} (Lütfen aşağıdaki not alanına açıklama giriniz)</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 2. POS Slip Sayımı -->
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label class="odv-label m-0">Fiziki POS Gün Sonu Slipleri Toplamı (₺)</label>
+        <span class="text-xs text-slate-400 font-mono">Sistem POS: {{ money(preClosePreview()?.expectedPos ?? 0) }}</span>
+      </div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        formControlName="actualPosCounted"
+        class="odv-input font-mono font-bold"
+        placeholder="0.00"
+      />
+      @if (livePosDiff() !== 0) {
+        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 m-0 font-medium">
+          POS Farkı: {{ money(livePosDiff()) }}
+        </p>
+      }
+    </div>
+
+    <!-- 3. Devir & Banka Dağılımı -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <app-field label="Ertesi Güne Bırakılacak Devir Nakdi (₺)">
+        <input type="number" min="0" step="0.01" formControlName="retainedCashForNextDay" class="odv-input font-mono" />
+      </app-field>
+      <app-field label="Bankaya Yatırılacak Nakit (₺)">
+        <input type="number" min="0" step="0.01" formControlName="bankDepositAmount" class="odv-input font-mono" />
+      </app-field>
+    </div>
+
+    <!-- 4. Notlar -->
+    <app-field label="Kapanış / Vardiya / Kasa Farkı Notları">
+      <textarea formControlName="notes" rows="3" placeholder="Örn: 50 TL bozuk para eksik verildi / Vardiya devri yapıldı" class="odv-input resize-none text-xs"></textarea>
+    </app-field>
+  </div>
+</app-slide-over>
+
+<!-- ============================================================= -->
+<!-- MODAL: Z RAPORU GÖRÜNTÜLEME & TERMAL FİŞ ÖNİZLEME             -->
+<!-- ============================================================= -->
+@if (zReportModalOpen() && activeZReport()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-indigo-600 dark:text-indigo-400">receipt</mat-icon>
+          <span class="font-black text-slate-900 dark:text-white">{{ activeZReport()?.closingNumber }}</span>
+        </div>
+        <button type="button" class="odv-icon-btn" (click)="closeZReportModal()">
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Thermal Receipt Preview Body -->
+      <div class="p-6 overflow-y-auto custom-scroll font-mono text-xs text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950">
+        <div class="text-center space-y-1 mb-4">
+          <div class="font-black text-sm">ODIVON GYM</div>
+          <div class="text-[11px] text-slate-500">GÜN SONU KASA MUTABAKATI & Z RAPORU</div>
+          <div class="font-bold text-indigo-600 dark:text-indigo-400">{{ activeZReport()?.closingNumber }}</div>
+          <div class="text-[10px] text-slate-400">{{ activeZReport()?.date }} | Kapatan: {{ activeZReport()?.closedByStaffName }}</div>
+        </div>
+
+        <div class="border-t border-dashed border-slate-300 dark:border-slate-700 my-2"></div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span>AÇILIŞ KASASI (DEVİR):</span>
+            <span class="font-bold">{{ money(activeZReport()?.openingCash ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between text-emerald-600">
+            <span>+ Nakit Tahsilatlar:</span>
+            <span>{{ money(activeZReport()?.incomeSummary?.cash ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between text-rose-600">
+            <span>- Nakit Harcamalar:</span>
+            <span>{{ money(activeZReport()?.expenseSummary?.cash ?? 0) }}</span>
+          </div>
+        </div>
+
+        <div class="border-t border-dashed border-slate-300 dark:border-slate-700 my-2"></div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between font-bold">
+            <span>BEKLENEN KASA NAKDİ:</span>
+            <span>{{ money(activeZReport()?.expectedCash ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between font-bold">
+            <span>SAYILAN FİZİKİ NAKİT:</span>
+            <span>{{ money(activeZReport()?.actualCashCounted ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between font-black text-sm" [class]="(activeZReport()?.cashDifference ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+            <span>KASA FARKI:</span>
+            <span>{{ money(activeZReport()?.cashDifference ?? 0) }}</span>
+          </div>
+        </div>
+
+        <div class="border-t border-dashed border-slate-300 dark:border-slate-700 my-2"></div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span>POS / Kredi Kartı Ciro:</span>
+            <span>{{ money(activeZReport()?.incomeSummary?.posCard ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Havale / EFT Tahsilat:</span>
+            <span>{{ money(activeZReport()?.incomeSummary?.bankTransfer ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between font-bold">
+            <span>TOPLAM GÜNLÜK CİRO:</span>
+            <span>{{ money(activeZReport()?.incomeSummary?.total ?? 0) }}</span>
+          </div>
+        </div>
+
+        <div class="border-t border-dashed border-slate-300 dark:border-slate-700 my-2"></div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span>Ertesi Güne Devir Kasası:</span>
+            <span class="font-bold">{{ money(activeZReport()?.retainedCashForNextDay ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Bankaya Yatırılacak:</span>
+            <span class="font-bold">{{ money(activeZReport()?.bankDepositAmount ?? 0) }}</span>
+          </div>
+        </div>
+
+        @if (activeZReport()?.notes) {
+          <div class="border-t border-dashed border-slate-300 dark:border-slate-700 my-2"></div>
+          <div class="text-[11px] text-slate-500">
+            <strong>Notlar:</strong> {{ activeZReport()?.notes }}
+          </div>
+        }
+
+        @if (activeZReport()?.status === 'verified') {
+          <div class="mt-4 p-2 text-center rounded border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">
+            YÖNETİCİ ONAYLI Z RAPORU<br/>
+            Onaylayan: {{ activeZReport()?.verifiedByStaffName }}
+          </div>
+        }
+      </div>
+
+      <!-- Actions Footer -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+        <button type="button" class="odv-btn-soft" (click)="closeZReportModal()">Kapat</button>
+        <div class="flex items-center gap-2">
+          @if (activeZReport()?.status !== 'verified') {
+            <button type="button" class="odv-btn-soft text-emerald-600" (click)="verifyZReport(activeZReport()!)">
+              <mat-icon class="icon-size-4">verified</mat-icon>
+              <span>Müdür Onayı Ver</span>
+            </button>
+          }
+          <button type="button" class="odv-btn-primary" (click)="printThermalReceipt(activeZReport()!)">
+            <mat-icon class="icon-size-4">print</mat-icon>
+            <span>80mm Fiş Yazdır</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

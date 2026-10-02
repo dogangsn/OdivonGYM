@@ -40,7 +40,11 @@ export class MemberBodyState {
     waist: [null, [Validators.min(30), Validators.max(200)]],
     hips: [null, [Validators.min(30), Validators.max(200)]],
     bicep: [null, [Validators.min(10), Validators.max(80)]],
+    rightBicep: [null, [Validators.min(10), Validators.max(80)]],
+    leftBicep: [null, [Validators.min(10), Validators.max(80)]],
     thigh: [null, [Validators.min(20), Validators.max(120)]],
+    rightThigh: [null, [Validators.min(20), Validators.max(120)]],
+    leftThigh: [null, [Validators.min(20), Validators.max(120)]],
     calf: [null, [Validators.min(15), Validators.max(80)]],
     notes: [''],
   });
@@ -157,6 +161,13 @@ export class MemberBodyState {
 
     this.savingMeasurement.set(true);
     try {
+      const rightBicepNum = val.rightBicep ? Number(val.rightBicep) : undefined;
+      const leftBicepNum = val.leftBicep ? Number(val.leftBicep) : undefined;
+      const rightThighNum = val.rightThigh ? Number(val.rightThigh) : undefined;
+      const leftThighNum = val.leftThigh ? Number(val.leftThigh) : undefined;
+      const bicepNum = val.bicep ? Number(val.bicep) : (rightBicepNum || leftBicepNum);
+      const thighNum = val.thigh ? Number(val.thigh) : (rightThighNum || leftThighNum);
+
       await this.membersService.addBodyMeasurement(current.uid, {
         date: dateVal,
         weight: val.weight ? Number(val.weight) : undefined,
@@ -165,8 +176,12 @@ export class MemberBodyState {
         chest: val.chest ? Number(val.chest) : undefined,
         waist: val.waist ? Number(val.waist) : undefined,
         hips: val.hips ? Number(val.hips) : undefined,
-        bicep: val.bicep ? Number(val.bicep) : undefined,
-        thigh: val.thigh ? Number(val.thigh) : undefined,
+        bicep: bicepNum,
+        rightBicep: rightBicepNum,
+        leftBicep: leftBicepNum,
+        thigh: thighNum,
+        rightThigh: rightThighNum,
+        leftThigh: leftThighNum,
         calf: val.calf ? Number(val.calf) : undefined,
         notes: val.notes?.trim() || '',
       });

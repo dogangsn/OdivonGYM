@@ -160,7 +160,7 @@
 
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                <span>T.C. Kimlik No</span>
+                <span>T.C. Kimlik No <span class="text-rose-500">*</span></span>
                 <span class="text-[10px] text-slate-400 font-normal">11 Haneli</span>
               </label>
               <div class="relative">
@@ -171,14 +171,32 @@
                   formControlName="nationalId"
                   (input)="onNationalIdInput($event)"
                   placeholder="11 haneli T.C. Kimlik No"
-                  class="w-full px-4 py-2.5 rounded-xl text-sm font-mono bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
+                  class="w-full px-4 py-2.5 rounded-xl text-sm font-mono bg-slate-50 dark:bg-slate-800/60 border text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all font-semibold"
+                  [class.border-rose-500]="(form.controls.nationalId.invalid && form.controls.nationalId.touched) || duplicateMember()"
+                  [class.focus:ring-rose-500/30]="(form.controls.nationalId.invalid && form.controls.nationalId.touched) || duplicateMember()"
+                  [class.border-slate-200]="!(form.controls.nationalId.invalid && form.controls.nationalId.touched) && !duplicateMember()"
+                  [class.dark:border-slate-700]="!(form.controls.nationalId.invalid && form.controls.nationalId.touched) && !duplicateMember()"
+                  [class.focus:ring-indigo-500/30]="!(form.controls.nationalId.invalid && form.controls.nationalId.touched) && !duplicateMember()"
+                  [class.focus:border-indigo-500]="!(form.controls.nationalId.invalid && form.controls.nationalId.touched) && !duplicateMember()"
                 />
                 <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                   <mat-icon class="icon-size-4">badge</mat-icon>
                 </div>
               </div>
-              @if (form.controls.nationalId.invalid && form.controls.nationalId.touched) {
-                <p class="text-xs text-rose-500 mt-1 mb-0">T.C. Kimlik No 11 haneli rakamlardan oluşmalıdır.</p>
+              @if (duplicateMember()) {
+                <div class="p-2.5 mt-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-start gap-2 text-amber-800 dark:text-amber-200 text-xs">
+                  <mat-icon class="icon-size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">warning</mat-icon>
+                  <div>
+                    <span class="font-bold">Aynı T.C. ile üye mevcut: </span>
+                    <span class="font-semibold">{{ duplicateMember()?.displayName }}</span>
+                    <span class="ml-1 text-[11px] opacity-80">(#{{ duplicateMember()?.memberNumber || '-----' }})</span>
+                    <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5 mb-0">Bir T.C. Kimlik Numarası yalnızca tek bir üyeye ait olabilir.</p>
+                  </div>
+                </div>
+              } @else if (form.controls.nationalId.errors?.['required'] && form.controls.nationalId.touched) {
+                <p class="text-xs text-rose-500 mt-1 mb-0">T.C. Kimlik No zorunludur.</p>
+              } @else if (form.controls.nationalId.invalid && form.controls.nationalId.touched) {
+                <p class="text-xs text-rose-500 mt-1 mb-0">T.C. Kimlik No 11 haneli olmalı ve sıfır ile başlamamalıdır.</p>
               }
             </div>
 
@@ -715,6 +733,82 @@
             class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"
           ></textarea>
         </div>
+
+        <!-- 5. KVKK AYDINLATMA VE AÇIK RIZA KUTUSU -->
+        <div class="p-4 rounded-2xl bg-indigo-50/30 dark:bg-slate-800/40 border border-indigo-100 dark:border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0 flex items-center gap-1.5">
+              <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400">verified_user</mat-icon>
+              <span>KVKK & Yasal Açık Rıza Kayıtları</span>
+            </p>
+            <span class="text-[10px] font-semibold text-slate-400">6698 Sayılı Kanun Uyarınca</span>
+          </div>
+
+          <div class="space-y-2.5 pt-1">
+            <!-- Genel KVKK Aydınlatma & Açık Rıza -->
+            <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+              <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  formControlName="kvkkConsent"
+                  class="mt-0.5 w-4 h-4 rounded text-indigo-600 accent-indigo-600"
+                />
+                <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug">
+                  <span class="font-bold text-slate-900 dark:text-white">Genel KVKK Aydınlatma ve Açık Rıza Metni</span>'ni okudum, onaylıyorum.
+                </div>
+              </label>
+              <button
+                type="button"
+                (click)="openConsentText('kvkk_general')"
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline shrink-0"
+              >
+                Metni Oku
+              </button>
+            </div>
+
+            <!-- Ticari Elektronik İleti İzni -->
+            <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+              <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  formControlName="commercialConsent"
+                  class="mt-0.5 w-4 h-4 rounded text-indigo-600 accent-indigo-600"
+                />
+                <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug">
+                  Kampanya ve duyuru amaçlı <span class="font-bold">Ticari İleti (SMS/E-posta)</span> almayı kabul ediyorum.
+                </div>
+              </label>
+              <button
+                type="button"
+                (click)="openConsentText('commercial_communication')"
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline shrink-0"
+              >
+                Metni Oku
+              </button>
+            </div>
+
+            <!-- Sağlık / Biyometrik Veri Rızası -->
+            <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+              <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  formControlName="healthConsent"
+                  class="mt-0.5 w-4 h-4 rounded text-indigo-600 accent-indigo-600"
+                />
+                <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug">
+                  Özel antrenman programı için <span class="font-bold">Sağlık ve Vücut Analiz Verileri</span>min işlenmesine rıza veriyorum.
+                </div>
+              </label>
+              <button
+                type="button"
+                (click)="openConsentText('health_biometric')"
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline shrink-0"
+              >
+                Metni Oku
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
@@ -736,3 +830,4 @@
     </form>
   </div>
 }
+<app-consent-modal />

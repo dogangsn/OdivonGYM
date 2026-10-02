@@ -20,6 +20,7 @@ export interface GymPackage {
   classCredits?: number | null;
   barcode?: string;
   isHidden?: boolean;
+  requiredDocuments?: string[]; // Bu paket için zorunlu evrak tanımları (['health_report', 'parent_consent'])
   status: 'active' | 'inactive' | 'archived';
   createdAt: string;
   updatedAt: string;
@@ -64,6 +65,7 @@ export interface CreateGymPackageInput {
   classCredits?: number | null;
   barcode?: string;
   isHidden?: boolean;
+  requiredDocuments?: string[];
 }
 
 export type UpdateGymPackageInput = Partial<CreateGymPackageInput> & { status?: GymPackage['status'] };

@@ -291,6 +291,16 @@
 
     <!-- 3. Navigation Tabs -->
     <div class="px-6 pt-3 bg-white border-b border-slate-200/80 flex gap-6 shrink-0 overflow-x-auto custom-scroll">
+      <button type="button" (click)="setTab('overview')"
+        class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+        [class]="activeTab() === 'overview' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
+        <mat-icon class="icon-size-4">info</mat-icon>
+        <span>Genel Bilgiler</span>
+        @if (activeTab() === 'overview') {
+        <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+        }
+      </button>
+
       <button type="button" (click)="setTab('measurements')"
         class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
         [class]="activeTab() === 'measurements' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
@@ -329,6 +339,11 @@
         @if (memberDocuments().length > 0) {
         <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-50 text-purple-600">
           {{ memberDocuments().length }}
+        </span>
+        }
+        @if (missingRequiredDocsCount() > 0) {
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 animate-pulse">
+          {{ missingRequiredDocsCount() }} Bekleniyor
         </span>
         }
         @if (activeTab() === 'documents') {
@@ -396,13 +411,18 @@
         }
       </button>
 
-      <button type="button" (click)="setTab('overview')"
+      <button type="button" (click)="setTab('consents')"
         class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
-        [class]="activeTab() === 'overview' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
-        <mat-icon class="icon-size-4">info</mat-icon>
-        <span>Genel Bilgiler</span>
-        @if (activeTab() === 'overview') {
-        <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+        [class]="activeTab() === 'consents' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
+        <mat-icon class="icon-size-4">verified_user</mat-icon>
+        <span>KVKK & Açık Rıza</span>
+        @if (member()?.kvkkConsent) {
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs"></span>
+        } @else {
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        }
+        @if (activeTab() === 'consents') {
+          <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
         }
       </button>
     </div>
@@ -563,11 +583,24 @@
 
           <!-- 2. Özel Hareket / Cihaz Ekleme Satırı -->
           <div class="p-4 rounded-2xl bg-white border border-indigo-100 space-y-3">
-            <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
-              <mat-icon class="icon-size-4 text-emerald-600">edit_note</mat-icon>
-              Özel Hareket / Cihaz Tanımla
-            </span>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <mat-icon class="icon-size-4 text-emerald-600">edit_note</mat-icon>
+                Özel Hareket / Cihaz Tanımla
+              </span>
 
+              <button
+                type="button"
+                (click)="enableCustomSuperSet.set(!enableCustomSuperSet())"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                [class]="enableCustomSuperSet() ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'"
+              >
+                <mat-icon class="icon-size-3.5">{{ enableCustomSuperSet() ? 'link' : 'add_link' }}</mat-icon>
+                <span>{{ enableCustomSuperSet() ? '🔗 Süper Set Aktif (Kapat)' : '+ Bu Harekete Süper Set Ekle' }}</span>
+              </button>
+            </div>
+
+            <!-- Ana Hareket Girdileri -->
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
               <div class="col-span-2">
                 <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Hareket Adı *</label>
@@ -622,61 +655,207 @@
                 </button>
               </div>
             </div>
+
+            <!-- Bağlı Süper Set Tanımlama Formu (Açılır Panel) -->
+            @if (enableCustomSuperSet()) {
+              <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/90 space-y-2 mt-2">
+                <div class="flex items-center justify-between text-xs font-bold text-amber-900">
+                  <div class="flex items-center gap-1.5">
+                    <mat-icon class="icon-size-4 text-amber-600">link</mat-icon>
+                    <span>Bağlı Süper Set Hareketi (1. hareketin hemen ardından dinlenmeden yapılacak hareket)</span>
+                  </div>
+                  <span class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                    Süper Set (0 sn Dinlenme)
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                  <div class="col-span-2">
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Süper Set Hareket Adı *</label>
+                    <input type="text" [value]="superExName()" (input)="superExName.set($any($event.target).value)"
+                      placeholder="Örn: Dumbbell Flye veya Pushup"
+                      class="w-full h-8 px-2.5 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden font-medium" />
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Kas Grubu</label>
+                    <select [value]="superExMuscle()" (change)="superExMuscle.set($any($event.target).value)"
+                      class="w-full h-8 px-1.5 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden font-medium">
+                      @for (mg of muscleGroupsList; track mg.key) {
+                      <option [value]="mg.key">{{ mg.label.split(' ')[0] }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Cihaz / Ekipman</label>
+                    <input type="text" [value]="superExEquipment()" (input)="superExEquipment.set($any($event.target).value)"
+                      placeholder="Örn: Açılı Sehpa"
+                      class="w-full h-8 px-2.5 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden" />
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Set</label>
+                    <input type="number" [value]="superExSets()" (input)="superExSets.set(+$any($event.target).value)" min="1"
+                      max="20"
+                      class="w-full h-8 px-2 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden" />
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Tekrar</label>
+                    <input type="text" [value]="superExReps()" (input)="superExReps.set($any($event.target).value)"
+                      placeholder="10-12"
+                      class="w-full h-8 px-2 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden" />
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Kilo (kg)</label>
+                    <input type="number" [value]="superExWeight() || ''"
+                      (input)="superExWeight.set(+$any($event.target).value || null)" placeholder="Opsiyonel"
+                      class="w-full h-8 px-2 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden" />
+                  </div>
+
+                  <div>
+                    <label class="text-[10px] font-bold text-amber-900 block mb-0.5">Dinlenme (sn)</label>
+                    <input type="number" [value]="superExRest()" (input)="superExRest.set(+$any($event.target).value)" min="0"
+                      placeholder="0"
+                      class="w-full h-8 px-2 text-xs rounded-lg bg-white border border-amber-200 focus:outline-hidden" />
+                  </div>
+                </div>
+              </div>
+            }
           </div>
 
-          <!-- 3. Eklenen Hareketler Listesi -->
+          <!-- 3. Eklenen Hareketler Listesi (Program Akışı) -->
           <div>
-            <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Program Akışı (Toplam {{ currentPlanExercises().length }} Hareket)
-            </h5>
+            <div class="flex items-center justify-between mb-2">
+              <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">
+                Program Akışı (Toplam {{ currentPlanExercises().length }} Ana Hareket
+                @if (totalSuperSetsCount() > 0) {
+                  • <span class="text-amber-600 font-extrabold">{{ totalSuperSetsCount() }} Süper Set</span>
+                })
+              </h5>
+              @if (currentPlanExercises().length > 0) {
+                <span class="text-[11px] font-semibold text-slate-400">
+                  Toplam {{ totalMovementsCount() }} Egzersiz
+                </span>
+              }
+            </div>
 
             @if (currentPlanExercises().length === 0) {
             <div class="p-6 text-center bg-white rounded-2xl border border-dashed border-slate-300">
               <mat-icon class="icon-size-8 text-slate-300 mx-auto mb-1">fitness_center</mat-icon>
               <p class="text-xs font-bold text-slate-600 m-0">Henüz programa hareket eklenmedi</p>
-              <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Yukarıdaki kütüphaneden seçebilir veya özel hareket
+              <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Yukarıdaki kütüphaneden seçebilir veya özel hareket / süper set
                 ekleyebilirsiniz.</p>
             </div>
             } @else {
-            <div class="space-y-2">
+            <div class="space-y-2.5">
               @for (ex of currentPlanExercises(); track $index) {
               <div
-                class="p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <span
-                    class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
-                    {{ $index + 1 }}
-                  </span>
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-bold text-slate-900">{{ ex.name }}</span>
-                      <span
-                        class="px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold">
-                        {{ getMuscleGroupLabel(ex.muscleGroup) }}
-                      </span>
-                      @if (ex.equipmentName) {
-                      <span class="text-[10px] text-slate-500 font-medium">({{ ex.equipmentName }})</span>
-                      }
+                class="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                <!-- Ana Hareket Satırı -->
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
+                      {{ ex.superSet ? ($index + 1 + 'A') : ($index + 1) }}
+                    </span>
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-slate-900">{{ ex.name }}</span>
+                        <span
+                          class="px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold">
+                          {{ getMuscleGroupLabel(ex.muscleGroup) }}
+                        </span>
+                        @if (ex.equipmentName) {
+                        <span class="text-[10px] text-slate-500 font-medium">({{ ex.equipmentName }})</span>
+                        }
+                        @if (ex.superSet) {
+                        <span
+                          class="px-2 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                          <mat-icon class="icon-size-3">link</mat-icon>
+                          Süper Setli
+                        </span>
+                        }
+                      </div>
+                      <p class="text-[11px] text-slate-500 font-semibold m-0 mt-0.5">
+                        {{ ex.sets }} Set × {{ ex.reps }} Tekrar
+                        @if (ex.weight) {
+                        • <strong class="text-slate-800">{{ ex.weight }} kg</strong>
+                        }
+                        @if (ex.restSeconds !== undefined) {
+                        • <span class="text-slate-400">{{ ex.restSeconds }} sn dinlenme</span>
+                        }
+                        @if (ex.notes) {
+                        • <span class="text-indigo-600 italic">"{{ ex.notes }}"</span>
+                        }
+                      </p>
                     </div>
-                    <p class="text-[11px] text-slate-500 font-semibold m-0 mt-0.5">
-                      {{ ex.sets }} Set × {{ ex.reps }} Tekrar
-                      @if (ex.weight) {
-                      • <strong class="text-slate-800">{{ ex.weight }} kg</strong>
-                      }
-                      @if (ex.restSeconds) {
-                      • <span class="text-slate-400">{{ ex.restSeconds }} sn dinlenme</span>
-                      }
-                      @if (ex.notes) {
-                      • <span class="text-indigo-600 italic">"{{ ex.notes }}"</span>
-                      }
-                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-1 shrink-0">
+                    @if (!ex.superSet) {
+                    <button type="button" (click)="openAddSuperSetModal($index)" matTooltip="Bu Harekete Süper Set Ekle"
+                      class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer">
+                      <mat-icon class="icon-size-3.5 text-amber-600">add_link</mat-icon>
+                      <span>Süper Set Ekle</span>
+                    </button>
+                    }
+                    <button type="button" (click)="removeExerciseFromPlan($index)" matTooltip="Bu Hareketi Çıkar"
+                      class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer">
+                      <mat-icon class="icon-size-4">delete</mat-icon>
+                    </button>
                   </div>
                 </div>
 
-                <button type="button" (click)="removeExerciseFromPlan($index)" matTooltip="Bu Hareketi Çıkar"
-                  class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer">
-                  <mat-icon class="icon-size-4">delete</mat-icon>
-                </button>
+                <!-- Bağlı Süper Set Hareketi (1B) -->
+                @if (ex.superSet; as ss) {
+                <div class="ml-4 pl-3 border-l-2 border-amber-400/80 pt-1">
+                  <div class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/90 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                      <span
+                        class="w-6 h-6 rounded-lg bg-amber-500 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                        {{ $index + 1 }}B
+                      </span>
+                      <div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                          <span class="text-[10px] font-black text-amber-800 uppercase tracking-wider">🔗 SÜPER SET:</span>
+                          <span class="text-xs font-bold text-slate-900">{{ ss.name }}</span>
+                          <span
+                            class="px-1.5 py-0.2 rounded-md bg-white text-amber-800 border border-amber-200 text-[10px] font-bold">
+                            {{ getMuscleGroupLabel(ss.muscleGroup) }}
+                          </span>
+                          @if (ss.equipmentName) {
+                          <span class="text-[10px] text-slate-500 font-medium">({{ ss.equipmentName }})</span>
+                          }
+                        </div>
+                        <p class="text-[11px] text-slate-600 font-semibold m-0 mt-0.5">
+                          {{ ss.sets }} Set × {{ ss.reps }} Tekrar
+                          @if (ss.weight) {
+                          • <strong class="text-slate-900">{{ ss.weight }} kg</strong>
+                          }
+                          • <span class="text-amber-800 font-medium">Hemen ardından ({{ ss.restSeconds || 0 }} sn dinlenme)</span>
+                          @if (ss.notes) {
+                          • <span class="text-amber-800 italic">"{{ ss.notes }}"</span>
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button type="button" (click)="openAddSuperSetModal($index)" matTooltip="Süper Seti Düzenle"
+                        class="w-7 h-7 rounded-md text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors cursor-pointer">
+                        <mat-icon class="icon-size-3.5">edit</mat-icon>
+                      </button>
+                      <button type="button" (click)="removeSuperSet($index)" matTooltip="Sadece Bu Süper Seti Kaldır"
+                        class="w-7 h-7 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer">
+                        <mat-icon class="icon-size-3.5">link_off</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                }
               </div>
               }
             </div>
@@ -783,14 +962,21 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 @for (ex of plan.exercises; track $index) {
                 <div
-                  class="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex items-start justify-between gap-3">
+                  class="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between gap-2.5">
                   <div class="flex items-start gap-2.5">
                     <div
                       class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
-                      {{ $index + 1 }}
+                      {{ ex.superSet ? ($index + 1 + 'A') : ($index + 1) }}
                     </div>
-                    <div>
-                      <h5 class="text-xs font-bold text-slate-900 m-0">{{ ex.name }}</h5>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <h5 class="text-xs font-bold text-slate-900 m-0">{{ ex.name }}</h5>
+                        @if (ex.superSet) {
+                        <span class="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider">
+                          Süper Set
+                        </span>
+                        }
+                      </div>
                       <div class="flex flex-wrap items-center gap-1.5 mt-1">
                         <span
                           class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200">
@@ -805,7 +991,7 @@
                         @if (ex.weight) {
                         • <span class="text-emerald-700 font-bold">{{ ex.weight }} kg</span>
                         }
-                        @if (ex.restSeconds) {
+                        @if (ex.restSeconds !== undefined) {
                         • <span class="text-slate-400">{{ ex.restSeconds }} sn dinlenme</span>
                         }
                       </p>
@@ -816,6 +1002,39 @@
                       }
                     </div>
                   </div>
+
+                  <!-- Bağlı Süper Set Gösterimi -->
+                  @if (ex.superSet; as ss) {
+                  <div class="pl-2.5 border-l-2 border-amber-400 bg-amber-50/60 p-2.5 rounded-r-xl">
+                    <div class="flex items-start gap-2">
+                      <span class="w-5 h-5 rounded-md bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                        {{ $index + 1 }}B
+                      </span>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-1">
+                          <span class="text-[9px] font-black text-amber-800 uppercase tracking-wider">🔗 SÜPER SET:</span>
+                          <strong class="text-xs text-slate-900">{{ ss.name }}</strong>
+                          <span class="px-1 py-0.2 rounded text-[9px] font-bold bg-white text-amber-800 border border-amber-200">
+                            {{ getMuscleGroupLabel(ss.muscleGroup) }}
+                          </span>
+                          @if (ss.equipmentName) {
+                          <span class="text-[9px] text-slate-500 font-medium">({{ ss.equipmentName }})</span>
+                          }
+                        </div>
+                        <p class="text-[10px] text-slate-600 font-medium m-0 mt-0.5">
+                          {{ ss.sets }} Set × {{ ss.reps }} Tekrar
+                          @if (ss.weight) {
+                          • <strong class="text-slate-800">{{ ss.weight }} kg</strong>
+                          }
+                          • <span class="text-amber-800 font-semibold">Hemen ardından ({{ ss.restSeconds || 0 }} sn dinlenme)</span>
+                          @if (ss.notes) {
+                          • <span class="text-amber-800 italic">"{{ ss.notes }}"</span>
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  }
                 </div>
                 }
               </div>
@@ -825,6 +1044,138 @@
           }
         </div>
       </div>
+
+      <!-- ======================================================== -->
+      <!-- MODAL: HAREKETE SÜPER SET BAĞLAMA MODALI                 -->
+      <!-- ======================================================== -->
+      @if (superSetModalOpen()) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="odv-card max-w-xl w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 flex items-center justify-center">
+                <mat-icon class="icon-size-4">link</mat-icon>
+              </span>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">
+                  Harekete Süper Set Bağla
+                </h3>
+                @if (superSetTargetIndex() !== null && currentPlanExercises()[superSetTargetIndex()!]; as parentEx) {
+                  <p class="text-[11px] text-slate-500 m-0">
+                    Ana Hareket: <strong>{{ parentEx.name }}</strong> ({{ parentEx.sets }} Set × {{ parentEx.reps }} Tekrar)
+                  </p>
+                }
+              </div>
+            </div>
+            <button type="button" (click)="superSetModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+              <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
+          </div>
+
+          <!-- Kütüphaneden Hızlı Seçim -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Hazır Kütüphaneden Hızlı Seç
+              </label>
+              <div class="flex flex-wrap gap-1">
+                <button type="button" (click)="superSetFilterMuscle.set('all')"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer"
+                  [class]="superSetFilterMuscle() === 'all' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                  Tümü
+                </button>
+                @for (mg of muscleGroupsList; track mg.key) {
+                  <button type="button" (click)="superSetFilterMuscle.set(mg.key)"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer"
+                    [class]="superSetFilterMuscle() === mg.key ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                    {{ mg.label.split(' ')[0] }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scroll p-1 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+              @for (libEx of getAvailableLibrarySuperSetExercises(); track libEx.name) {
+                <button type="button" (click)="pickLibraryForSuperSet(libEx)"
+                  class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-amber-50 hover:border-amber-300 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer">
+                  <mat-icon class="icon-size-3 text-amber-500">add_link</mat-icon>
+                  <span>{{ libEx.name }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Süper Set Detayları -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div class="col-span-2">
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Süper Set Hareket Adı *</label>
+              <input type="text" [value]="attachSuperName()" (input)="attachSuperName.set($any($event.target).value)"
+                placeholder="Örn: Triceps Pushdown"
+                class="w-full h-8 px-2.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden font-semibold" />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Kas Grubu</label>
+              <select [value]="attachSuperMuscle()" (change)="attachSuperMuscle.set($any($event.target).value)"
+                class="w-full h-8 px-1.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden font-medium">
+                @for (mg of muscleGroupsList; track mg.key) {
+                  <option [value]="mg.key">{{ mg.label.split(' ')[0] }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Cihaz / Ekipman</label>
+              <input type="text" [value]="attachSuperEquipment()" (input)="attachSuperEquipment.set($any($event.target).value)"
+                placeholder="Örn: Halat Kablo"
+                class="w-full h-8 px-2.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Set</label>
+              <input type="number" [value]="attachSuperSets()" (input)="attachSuperSets.set(+$any($event.target).value)" min="1" max="20"
+                class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Tekrar</label>
+              <input type="text" [value]="attachSuperReps()" (input)="attachSuperReps.set($any($event.target).value)" placeholder="10-12"
+                class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Kilo (kg)</label>
+              <input type="number" [value]="attachSuperWeight() || ''" (input)="attachSuperWeight.set(+$any($event.target).value || null)" placeholder="Opsiyonel"
+                class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Dinlenme (sn)</label>
+              <input type="number" [value]="attachSuperRest()" (input)="attachSuperRest.set(+$any($event.target).value)" min="0" placeholder="0"
+                class="w-full h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+
+            <div class="col-span-2 sm:col-span-4">
+              <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Direktif / Antrenör Notu (Opsiyonel)</label>
+              <input type="text" [value]="attachSuperNotes()" (input)="attachSuperNotes.set($any($event.target).value)"
+                placeholder="Örn: 1. hareket biter bitmez ara vermeden geçiniz"
+                class="w-full h-8 px-2.5 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:outline-hidden" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <button type="button" (click)="superSetModalOpen.set(false)" class="odv-btn-ghost text-xs">
+              Vazgeç
+            </button>
+            <button type="button" (click)="confirmAttachSuperSet()" [disabled]="!attachSuperName().trim()"
+              class="odv-btn-primary text-xs bg-amber-500 hover:bg-amber-600 border-amber-500 flex items-center gap-1.5 cursor-pointer">
+              <mat-icon class="icon-size-4">link</mat-icon>
+              <span>Süper Seti Bağla</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      }
       }
 
       <!-- ============================================== -->
@@ -851,6 +1202,12 @@
               <span>Tablet ile İmzalat</span>
             </button>
 
+            <button type="button" (click)="showDocDefsModal.set(true)"
+              class="px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 text-xs font-bold border border-slate-200 hover:border-purple-200 flex items-center gap-1.5 transition-all cursor-pointer">
+              <mat-icon class="icon-size-4 text-purple-600">settings</mat-icon>
+              <span>Belge Tanımlarını Yönet</span>
+            </button>
+
             <button type="button" (click)="toggleAddDoc()"
               class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition-all cursor-pointer">
               <mat-icon class="icon-size-4">
@@ -859,6 +1216,155 @@
               <span>{{ showAddDocForm() ? 'Formu Kapat' : ' Yeni Evrak / Lisans Ekle' }}</span>
             </button>
           </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- ZORUNLU EVRAK & LİSANS ŞARTLARI (DOKÜMAN BEKLENİYOR BİLGİSİ) -->
+        <!-- ============================================== -->
+        <div class="rounded-3xl border p-5 sm:p-6 transition-all space-y-4"
+          [class]="missingRequiredDocsCount() > 0 
+            ? 'bg-gradient-to-br from-rose-50/70 via-amber-50/40 to-white border-rose-200 shadow-xs' 
+            : memberRequiredDocChecklist().length > 0 
+              ? 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-200' 
+              : 'bg-slate-50/60 border-slate-200'">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xs"
+                [class]="missingRequiredDocsCount() > 0 
+                  ? 'bg-rose-100 text-rose-600' 
+                  : memberRequiredDocChecklist().length > 0 
+                    ? 'bg-emerald-100 text-emerald-600' 
+                    : 'bg-slate-100 text-slate-500'">
+                <mat-icon class="icon-size-5">
+                  {{ missingRequiredDocsCount() > 0 ? 'pending_actions' : memberRequiredDocChecklist().length > 0 ? 'verified' : 'fact_check' }}
+                </mat-icon>
+              </div>
+              <div>
+                <h4 class="text-xs sm:text-sm font-black text-slate-900 m-0 flex items-center gap-2">
+                  <span>Zorunlu Evrak & Lisans Şartları</span>
+                  @if (missingRequiredDocsCount() > 0) {
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
+                      {{ missingRequiredDocsCount() }} Doküman Bekleniyor
+                    </span>
+                  } @else if (memberRequiredDocChecklist().length > 0) {
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      Tüm Evraklar Tamamlandı
+                    </span>
+                  }
+                </h4>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0">
+                  @if (missingRequiredDocsCount() > 0) {
+                    Üyenin kayıtlı olduğu seans, paket ve salon kurallarına göre sisteme yüklenmesi gereken zorunlu belgeler bulunmaktadır.
+                  } @else if (memberRequiredDocChecklist().length > 0) {
+                    Üyenin paket ve seansları için zorunlu kılınan tüm belgeler teslim edilmiş ve onaylanmıştır.
+                  } @else {
+                    Bu üyenin paketi veya seansları için tanımlanmış ek zorunlu evrak şartı bulunmamaktadır.
+                  }
+                </p>
+              </div>
+            </div>
+
+            <button type="button" (click)="showDocDefsModal.set(true)"
+              class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto">
+              <mat-icon class="icon-size-4 text-purple-600">tune</mat-icon>
+              <span>Belge Tanımlarını Düzenle</span>
+            </button>
+          </div>
+
+          <!-- Şartlar Listesi / Kartları -->
+          @if (memberRequiredDocChecklist().length > 0) {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            @for (req of memberRequiredDocChecklist(); track req.code) {
+            <div class="p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3"
+              [class]="req.status === 'missing' ? 'bg-white border-rose-200 shadow-xs ring-1 ring-rose-100' :
+                       req.status === 'expired' || req.status === 'rejected' ? 'bg-white border-rose-200 shadow-xs' :
+                       req.status === 'pending' ? 'bg-white border-amber-200 shadow-xs' :
+                       'bg-white/85 border-slate-200/90'">
+              
+              <div class="flex items-start justify-between gap-2.5">
+                <div class="flex items-start gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                    [class]="req.status === 'missing' ? 'bg-rose-50 text-rose-600' :
+                             req.status === 'expired' || req.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                             req.status === 'pending' ? 'bg-amber-50 text-amber-600' :
+                             'bg-emerald-50 text-emerald-600'">
+                    <mat-icon class="icon-size-4">
+                      {{ req.status === 'missing' ? 'warning_amber' :
+                         req.status === 'expired' || req.status === 'rejected' ? 'error_outline' :
+                         req.status === 'pending' ? 'hourglass_top' : 'check_circle' }}
+                    </mat-icon>
+                  </div>
+                  <div class="min-w-0">
+                    <h5 class="text-xs sm:text-sm font-bold text-slate-900 m-0 truncate">
+                      {{ req.name }}
+                    </h5>
+                    @if (req.description) {
+                    <p class="text-[11px] text-slate-500 m-0 line-clamp-1 mt-0.5">
+                      {{ req.description }}
+                    </p>
+                    }
+                    <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                      @for (src of req.sources; track src) {
+                      <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        {{ src }}
+                      </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0 text-right">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border"
+                    [class]="req.status === 'missing' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                             req.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                             req.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                             'bg-rose-50 text-rose-700 border-rose-200'">
+                    @if (req.status === 'missing') {
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                    }
+                    <span>{{ req.statusLabel }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card Action Area -->
+              <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-0.5">
+                <div class="min-w-0 text-[11px] text-slate-500">
+                  @if (req.uploadedDoc) {
+                    <span class="flex items-center gap-1 truncate text-slate-700 font-medium">
+                      <mat-icon class="icon-size-3.5 text-purple-600">attachment</mat-icon>
+                      <span class="truncate">{{ req.uploadedDoc.fileName || req.uploadedDoc.documentName }}</span>
+                    </span>
+                  } @else {
+                    <span class="text-rose-600 font-semibold flex items-center gap-1">
+                      <mat-icon class="icon-size-3.5">error</mat-icon>
+                      Henüz belge yüklenmedi
+                    </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  @if (req.uploadedDoc?.fileUrl) {
+                  <button type="button" (click)="openDocPreview(req.uploadedDoc!.fileUrl, req.uploadedDoc!.documentName, req.uploadedDoc!.fileType)"
+                    class="px-2.5 py-1.2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1">
+                    <mat-icon class="icon-size-3.5">visibility</mat-icon>
+                    <span>Önizle</span>
+                  </button>
+                  }
+                  @if (req.isMissing) {
+                  <button type="button" (click)="startUploadForRequirement(req)"
+                    class="px-3 py-1.2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer">
+                    <mat-icon class="icon-size-3.5">upload_file</mat-icon>
+                    <span>Hemen Yükle</span>
+                  </button>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+          }
         </div>
 
         <!-- Evrak Ekleme Formu -->
@@ -929,6 +1435,76 @@
             </div>
           </div>
 
+          <!-- Dosya Yükleme (Upload) Alanı -->
+          <div>
+            <label class="text-[11px] font-bold text-slate-700 block mb-1">
+              Evrak / Belge Dosyası (.PDF, .JPG, .PNG, .WEBP)
+            </label>
+            
+            <input #docFileInput type="file" (change)="onDocFileSelected($event)"
+              accept=".pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg" class="hidden" />
+
+            @if (!selectedDocDataUrl()) {
+            <div (click)="docFileInput.click()"
+              (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave($event)" (drop)="onDocDropped($event)"
+              class="border-2 border-dashed rounded-2xl p-4 sm:p-5 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center gap-2 group"
+              [class]="docFileDragOver() ? 'border-purple-500 bg-purple-100/60 scale-[1.01]' : 'border-purple-300 hover:border-purple-500 bg-white/80 hover:bg-purple-50/40'">
+              
+              <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <mat-icon class="icon-size-5">upload_file</mat-icon>
+              </div>
+              <div class="space-y-0.5">
+                <p class="text-xs font-bold text-slate-800 m-0">
+                  Dosya seçmek için tıklayın <span class="font-normal text-slate-500">veya sürükleyip bırakın</span>
+                </p>
+                <p class="text-[10px] text-slate-400 m-0">
+                  Desteklenen formatlar: PDF, JPG, PNG, WEBP (Maksimum 10MB)
+                </p>
+              </div>
+              @if (isDocFileProcessing()) {
+              <div class="flex items-center gap-1.5 text-xs text-purple-700 font-semibold mt-1">
+                <mat-icon class="animate-spin icon-size-4">progress_activity</mat-icon>
+                <span>Dosya işleniyor...</span>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="p-3 bg-white rounded-2xl border border-purple-200 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+              <div class="flex items-center gap-3 min-w-0">
+                @if (selectedDocType().includes('pdf') || selectedDocName().toLowerCase().endsWith('.pdf')) {
+                <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-5">picture_as_pdf</mat-icon>
+                </div>
+                } @else {
+                <div class="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 overflow-hidden shrink-0 flex items-center justify-center">
+                  <img [src]="selectedDocDataUrl()" alt="Önizleme" class="w-full h-full object-cover" />
+                </div>
+                }
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-slate-900 truncate m-0">{{ selectedDocName() }}</p>
+                  <p class="text-[10px] text-slate-500 m-0 flex items-center gap-1.5">
+                    <span class="font-semibold text-purple-700 uppercase">{{ selectedDocType().includes('pdf') ? 'PDF Belgesi' : 'Görsel Dosya' }}</span>
+                    <span>•</span>
+                    <span>{{ formatFileSize(selectedDocSize()) }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" (click)="openDocPreview(selectedDocDataUrl(), selectedDocName(), selectedDocType())"
+                  class="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1">
+                  <mat-icon class="icon-size-3.5">visibility</mat-icon>
+                  <span>Önizle</span>
+                </button>
+                <button type="button" (click)="removeSelectedDocFile()" matTooltip="Dosyayı Kaldır"
+                  class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer">
+                  <mat-icon class="icon-size-4">close</mat-icon>
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+
           <div>
             <label class="text-[11px] font-bold text-slate-700 block mb-1">Açıklama / Not</label>
             <input type="text" [value]="docNotes()" (input)="docNotes.set($any($event.target).value)"
@@ -993,6 +1569,19 @@
                       [class]="doc.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : doc.status === 'pending_review' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
                       {{ docStatusLabels[doc.status] }}
                     </span>
+                    @if (doc.fileUrl) {
+                      @if (isPdf(doc)) {
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                        <mat-icon class="icon-size-3">picture_as_pdf</mat-icon>
+                        PDF
+                      </span>
+                      } @else {
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1">
+                        <mat-icon class="icon-size-3">image</mat-icon>
+                        Görsel
+                      </span>
+                      }
+                    }
                     @if (doc.disciplineId) {
                     <span
                       class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
@@ -1010,6 +1599,12 @@
                       Bitiş: {{ formatDate(doc.expiryDate) }}
                     </span>
                     }
+                    @if (doc.fileName || doc.fileSize) {
+                    <span>•</span>
+                    <span class="text-slate-500 font-medium">
+                      {{ doc.fileName }} @if (doc.fileSize) { ({{ formatFileSize(doc.fileSize) }}) }
+                    </span>
+                    }
                     @if (doc.verifiedBy) {
                     <span>•</span>
                     <span class="text-slate-400 font-medium">Onaylayan: {{ doc.verifiedBy }}</span>
@@ -1025,10 +1620,15 @@
 
               <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                 @if (doc.fileUrl) {
-                <button type="button" (click)="openDocPreview(doc.fileUrl, doc.documentName)"
+                <button type="button" (click)="openDocPreview(doc.fileUrl, doc.documentName, doc.fileType)"
                   class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1">
                   <mat-icon class="icon-size-3.5">visibility</mat-icon>
                   <span>Görüntüle</span>
+                </button>
+                <button type="button" (click)="downloadDocFile(doc.fileUrl, doc.fileName || doc.documentName)"
+                  matTooltip="Dosyayı İndir"
+                  class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer">
+                  <mat-icon class="icon-size-4">download</mat-icon>
                 </button>
                 }
                 @if (doc.status !== 'approved') {
@@ -1466,6 +2066,274 @@
         </div>
       </div>
       }
+
+      <!-- ============================================== -->
+      <!-- TAB 8: KVKK AYDINLATMA VE AÇIK RIZA YÖNETİMİ   -->
+      <!-- ============================================== -->
+      @if (activeTab() === 'consents') {
+      <div class="space-y-6">
+        <!-- Başlık ve Yenileme Butonu -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm sm:text-base font-black text-slate-900 m-0 flex items-center gap-2">
+              <mat-icon class="icon-size-5 text-indigo-600">verified_user</mat-icon>
+              KVKK Aydınlatma, Açık Rıza ve Denetim İspat Kütüğü
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5 mb-0">
+              6698 Sayılı Kanun kapsamında üyenin onayladığı yasal aydınlatma, ticari iletişim ve sağlık verisi rıza kayıtları
+            </p>
+          </div>
+
+          <button
+            type="button"
+            (click)="loadConsents(member()!.uid)"
+            [disabled]="loadingConsents()"
+            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <mat-icon class="icon-size-4" [class.animate-spin]="loadingConsents()">refresh</mat-icon>
+            <span>Yenile</span>
+          </button>
+        </div>
+
+        <!-- 4'lü Açık Rıza Durum Kartları -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 1. Genel KVKK Metni -->
+          <div class="p-4.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Genel Aydınlatma</span>
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                   [class]="memberConsents()?.summary?.kvkk_general?.status === 'granted' || member()?.kvkkConsent ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                <mat-icon class="icon-size-4.5">policy</mat-icon>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-900">KVKK Açık Rıza</div>
+              <div class="mt-1">
+                @if (memberConsents()?.summary?.kvkk_general?.status === 'granted' || member()?.kvkkConsent) {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Onaylandı (Geçerli)
+                  </span>
+                } @else if (memberConsents()?.summary?.kvkk_general?.status === 'revoked') {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    Geri Çekildi
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                    Onay Bekliyor
+                  </span>
+                }
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <button type="button" (click)="openConsentText('kvkk_general')" class="font-bold text-indigo-600 hover:underline cursor-pointer">
+                Metni İncele
+              </button>
+              @if (memberConsents()?.summary?.kvkk_general?.status === 'granted' || member()?.kvkkConsent) {
+                <button
+                  type="button"
+                  (click)="revokeMemberConsent('kvkk_general')"
+                  [disabled]="revokingConsentType() === 'kvkk_general'"
+                  class="font-bold text-rose-600 hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  Rızayı Kaldır
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- 2. Ticari İletişim İzni -->
+          <div class="p-4.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ticari İletişim</span>
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                   [class]="memberConsents()?.summary?.commercial_communication?.status === 'granted' || member()?.commercialConsent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'">
+                <mat-icon class="icon-size-4.5">sms</mat-icon>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-900">SMS / E-posta İzni</div>
+              <div class="mt-1">
+                @if (memberConsents()?.summary?.commercial_communication?.status === 'granted' || member()?.commercialConsent) {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    İzin Verildi
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                    İzin Verilmedi
+                  </span>
+                }
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <button type="button" (click)="openConsentText('commercial_communication')" class="font-bold text-indigo-600 hover:underline cursor-pointer">
+                Metni İncele
+              </button>
+              @if (memberConsents()?.summary?.commercial_communication?.status === 'granted' || member()?.commercialConsent) {
+                <button
+                  type="button"
+                  (click)="revokeMemberConsent('commercial_communication')"
+                  [disabled]="revokingConsentType() === 'commercial_communication'"
+                  class="font-bold text-rose-600 hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  İptal Et
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- 3. Özel Nitelikli Sağlık Verisi -->
+          <div class="p-4.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Özel Nitelikli Veri</span>
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                   [class]="memberConsents()?.summary?.health_biometric?.status === 'granted' || member()?.healthConsent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'">
+                <mat-icon class="icon-size-4.5">monitor_weight</mat-icon>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-900">Sağlık & Analiz Verisi</div>
+              <div class="mt-1">
+                @if (memberConsents()?.summary?.health_biometric?.status === 'granted' || member()?.healthConsent) {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    İşlem Rızası Var
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                    Rıza Kaydı Yok
+                  </span>
+                }
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <button type="button" (click)="openConsentText('health_biometric')" class="font-bold text-indigo-600 hover:underline cursor-pointer">
+                Metni İncele
+              </button>
+              @if (memberConsents()?.summary?.health_biometric?.status === 'granted' || member()?.healthConsent) {
+                <button
+                  type="button"
+                  (click)="revokeMemberConsent('health_biometric')"
+                  [disabled]="revokingConsentType() === 'health_biometric'"
+                  class="font-bold text-rose-600 hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  Rızayı Kaldır
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- 4. Güvenlik Kameraları CCTV -->
+          <div class="p-4.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tesis Güvenliği</span>
+              <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <mat-icon class="icon-size-4.5">videocam</mat-icon>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-900">Kamera & CCTV Kaydı</div>
+              <div class="mt-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Aydınlatma Yapıldı
+                </span>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <button type="button" (click)="openConsentText('camera_cctv')" class="font-bold text-indigo-600 hover:underline cursor-pointer">
+                Metni İncele
+              </button>
+              <span class="text-slate-400 text-[10px]">Tesis İçi Bilgilendirme</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hukuki Denetim İspat Günlüğü (Audit Log Timeline) -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 m-0 flex items-center gap-2">
+                <mat-icon class="icon-size-4 text-indigo-600">history_edu</mat-icon>
+                <span>Hukuki Rıza ve İspat Kütüğü (Audit Log)</span>
+              </h4>
+              <p class="text-[11px] text-slate-400 mt-0.5 mb-0">
+                Kanun uyarınca değiştirilemez ve zaman damgalı işlem geçmişi
+              </p>
+            </div>
+            <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+              Toplam {{ memberConsents()?.history?.length || 0 }} Kayıt
+            </span>
+          </div>
+
+          @if (loadingConsents()) {
+            <div class="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+              <mat-icon class="icon-size-4 animate-spin">refresh</mat-icon>
+              <span>Rıza kütüğü yükleniyor...</span>
+            </div>
+          } @else if (!memberConsents()?.history?.length) {
+            <div class="py-10 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200 space-y-2">
+              <mat-icon class="icon-size-8 text-slate-300">verified_user</mat-icon>
+              <p class="text-xs text-slate-500 font-semibold m-0">Henüz kayıtlı bir rıza denetim logu bulunmuyor.</p>
+              <p class="text-[11px] text-slate-400 m-0">Üye kayıt veya düzenleme işlemlerinde loglar otomatik mühürlenir.</p>
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px]">
+                    <th class="py-2.5 px-3">Tarih / Zaman</th>
+                    <th class="py-2.5 px-3">Rıza Türü</th>
+                    <th class="py-2.5 px-3">Versiyon</th>
+                    <th class="py-2.5 px-3">Kanal</th>
+                    <th class="py-2.5 px-3">İşlem / Durum</th>
+                    <th class="py-2.5 px-3">Yetkili / Not</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (log of memberConsents()?.history; track log.id) {
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                      <td class="py-3 px-3 font-mono font-medium text-slate-700">
+                        {{ formatDateTime(log.consentedAt) }}
+                      </td>
+                      <td class="py-3 px-3 font-semibold text-slate-900">
+                        {{ getConsentTypeLabel(log.consentType) }}
+                      </td>
+                      <td class="py-3 px-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
+                          v{{ log.version }}
+                        </span>
+                      </td>
+                      <td class="py-3 px-3">
+                        <span class="inline-flex items-center gap-1 font-medium text-slate-600">
+                          <mat-icon class="icon-size-3.5 text-slate-400">devices</mat-icon>
+                          {{ log.channel }}
+                        </span>
+                      </td>
+                      <td class="py-3 px-3">
+                        @if (log.status === 'granted') {
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ✓ Onaylandı
+                          </span>
+                        } @else {
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            ✕ Geri Çekildi
+                          </span>
+                        }
+                      </td>
+                      <td class="py-3 px-3 text-slate-500">
+                        {{ log.notes || 'Sistem kaydı' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+      }
     </div>
 
     <!-- 5. Sticky Footer Action Bar -->
@@ -1796,21 +2664,64 @@
 @if (previewDocUrl()) {
 <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-70 flex items-center justify-center p-4">
   <div
-    class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 animate-in zoom-in-95 font-sans">
+    class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 font-sans">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-      <h3 class="text-sm font-bold text-slate-900 m-0 flex items-center gap-2">
-        <mat-icon class="text-indigo-600">visibility</mat-icon>
-        {{ previewDocTitle() }}
-      </h3>
-      <button type="button" (click)="closeDocPreview()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
-        <mat-icon class="icon-size-5">close</mat-icon>
-      </button>
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          [class]="isPdfDoc() ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'">
+          <mat-icon class="icon-size-5">{{ isPdfDoc() ? 'picture_as_pdf' : 'visibility' }}</mat-icon>
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-sm font-bold text-slate-900 m-0 truncate">
+            {{ previewDocTitle() }}
+          </h3>
+          <span class="text-[11px] text-slate-400 font-medium">
+            {{ isPdfDoc() ? 'PDF Belgesi' : 'Görsel / Belge Dosyası' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" (click)="downloadDocFile(previewDocUrl(), previewDocTitle())"
+          matTooltip="İndir"
+          class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer">
+          <mat-icon class="icon-size-4">download</mat-icon>
+        </button>
+        <button type="button" (click)="closeDocPreview()"
+          class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer">
+          <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+      </div>
     </div>
+
     <div
-      class="p-4 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200/80 max-h-[60vh] overflow-auto">
-      <img [src]="previewDocUrl()!" [alt]="previewDocTitle()" class="max-w-full h-auto rounded-xl shadow-xs" />
+      class="p-2 sm:p-4 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200/80 min-h-[40vh] max-h-[70vh] overflow-auto">
+      @if (isPdfDoc()) {
+        @if (safeDocUrl()) {
+        <iframe [src]="safeDocUrl()!" class="w-full h-[65vh] rounded-xl border border-slate-200 bg-white" title="PDF Önizleme"></iframe>
+        } @else {
+        <div class="text-center p-8 space-y-3">
+          <mat-icon class="icon-size-12 text-rose-500">picture_as_pdf</mat-icon>
+          <p class="text-xs text-slate-600 font-medium">PDF dosyası önizlenemiyor.</p>
+          <button type="button" (click)="downloadDocFile(previewDocUrl(), previewDocTitle())"
+            class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+            <mat-icon class="icon-size-4">download</mat-icon>
+            <span>Dosyayı İndir</span>
+          </button>
+        </div>
+        }
+      } @else {
+        <img [src]="previewDocUrl()!" [alt]="previewDocTitle()" class="max-w-full max-h-[65vh] object-contain rounded-xl shadow-xs" />
+      }
     </div>
-    <div class="flex justify-end">
+
+    <div class="flex items-center justify-between pt-1">
+      <button type="button" (click)="downloadDocFile(previewDocUrl(), previewDocTitle())"
+        class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
+        <mat-icon class="icon-size-4">download</mat-icon>
+        <span>İndir</span>
+      </button>
+
       <button type="button" (click)="closeDocPreview()"
         class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer">
         Kapat
@@ -1820,3 +2731,5 @@
 </div>
 }
 }
+<app-consent-modal />
+<app-document-definitions-modal [open]="showDocDefsModal()" (closed)="showDocDefsModal.set(false)" />

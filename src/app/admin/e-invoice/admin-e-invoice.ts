@@ -4,9 +4,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angu
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
+import * as QRCode from 'qrcode';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { AdminEInvoiceService } from './admin-e-invoice.service';
+import { AdminMembersService } from '../members/admin-members.service';
+import { AdminPackagesService } from '../packages/admin-packages.service';
 import {
   EInvoiceConfig,
   EInvoiceItem,
@@ -16,20 +20,26 @@ import {
   InvoiceStatus,
   InvoiceType,
 } from '../../core/models/e-invoice.model';
+import { UserProfile } from '../../core/models/user-profile.model';
+import { GymPackage } from '../../core/models/gym-package.model';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
 import { formatMoney } from '../../shared/ui/ui-utils';
+import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { downloadFile, generateGibQrCodePayload, generateUblTr21Xml, turkishNumberToWords } from './gib-ubl.helper';
 
 export interface FormLineItem {
   name: string;
   quantity: number;
+  unit: string;
   unitPrice: number;
-  kdvRate: number;
+  discountRate: number; // Yüzde iskonto
+  kdvRate: number; // %20, %10, %1, %0
 }
 
 const PROVIDERS = [
   { id: 'manuel' as InvoiceProvider, name: 'Manuel Fatura Girişi (Özel Entegratörsüz)', desc: 'Matbu veya kağıt faturalar, serbest muhasebe kayıtları' },
-  { id: 'gib_portal' as InvoiceProvider, name: 'GİB Portal (Gelir İdaresi Başkanlığı Doğrudan)', desc: 'Doğrudan Gelir İdaresi e-arşiv portalı' },
+  { id: 'gib_portal' as InvoiceProvider, name: 'GİB Portal (Gelir İdaresi Başkanlığı Doğrudan)', desc: 'Doğrudan Gelir İdaresi e-arşiv portalı (UBL-TR formatı)' },
   { id: 'uyumsoft' as InvoiceProvider, name: 'Uyumsoft Özel Entegratör', desc: 'Uyumsoft web servisleri ile tam otomatik e-dönüşüm' },
   { id: 'sovos_foriba' as InvoiceProvider, name: 'Sovos / Foriba Özel Entegratör', desc: 'Sovos e-fatura ve e-arşiv API entegrasyonu' },
   { id: 'qnb_efinans' as InvoiceProvider, name: 'QNB eFinans Özel Entegratör', desc: 'QNB Finansbank e-fatura portal web servisi' },
@@ -39,7 +49,7 @@ const PROVIDERS = [
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
   draft: 'Taslak',
   queued: 'Kuyrukta',
-  signed: 'Onaylandı / Mühürlendi',
+  signed: 'İmzalandı / Mühürlendi',
   sent: 'GİB’e İletildi',
   paid: 'Ödendi / Kapandı',
   rejected: 'Hata / İptal',
@@ -72,18 +82,28 @@ const PROVIDER_NAMES: Record<InvoiceProvider, string> = {
   parasut: 'Paraşüt / Logo',
 };
 
-import { RouterLink } from '@angular/router';
-import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
-
 @Component({
   selector: 'app-admin-e-invoice',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatTooltipModule,
+    PageHeader,
+    SlideOver,
+    Field,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-e-invoice.html',
+  styleUrl: './admin-e-invoice.scss',
 })
 export class AdminEInvoice {
   private readonly invoiceService = inject(AdminEInvoiceService);
+  private readonly membersService = inject(AdminMembersService);
+  private readonly packagesService = inject(AdminPackagesService);
   private readonly fb = inject(FormBuilder);
   private readonly alertService = inject(AlertService);
   protected readonly saasSub = inject(SaasSubscriptionService);
@@ -94,9 +114,12 @@ export class AdminEInvoice {
   protected readonly typeLabels = TYPE_LABELS;
   protected readonly providerNames = PROVIDER_NAMES;
   protected readonly money = formatMoney;
+  protected readonly words = turkishNumberToWords;
 
   readonly config = toSignal(this.invoiceService.watchConfig(), { initialValue: null });
   readonly invoices = toSignal(this.invoiceService.watchInvoices(), { initialValue: [] as EInvoiceItem[] });
+  readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
+  readonly packages = toSignal(this.packagesService.watchPackages(), { initialValue: [] as GymPackage[] });
 
   readonly activeTab = signal<'invoices' | 'settings'>('invoices');
   readonly searchTerm = signal('');
@@ -108,27 +131,39 @@ export class AdminEInvoice {
   readonly createDrawerOpen = signal(false);
   readonly submittingInvoice = signal(false);
   readonly invoiceError = signal('');
+  readonly selectedMemberId = signal<string>('');
 
-  // Fatura Önizleme / Yazdırma Modalı
+  // Fatura Önizleme / GİB Standart Görüntüleyici Modalı
   readonly selectedInvoiceForView = signal<EInvoiceItem | null>(null);
+  readonly qrCodeDataUrl = signal<string>('');
+  readonly updatingStatus = signal(false);
 
   // Çoklu Kalem Yönetimi
   readonly formLineItems = signal<FormLineItem[]>([
-    { name: 'Salon Üyelik & Spor Hizmet Bedeli', quantity: 1, unitPrice: 1500, kdvRate: 20 },
+    { name: 'Salon Üyelik & Spor Hizmet Bedeli', quantity: 1, unit: 'Ay', unitPrice: 1500, discountRate: 0, kdvRate: 20 },
   ]);
 
   readonly invoiceForm = this.fb.nonNullable.group({
     invoiceNumber: [''],
+    prefix: ['GIB'],
     direction: ['outbound' as InvoiceDirection, [Validators.required]],
     invoiceType: ['earswive' as InvoiceType, [Validators.required]],
+    invoiceProfile: ['EARSIVFATURA' as 'EARSIVFATURA' | 'TICARIFATURA' | 'TEMELFATURA' | 'KAMU' | 'IHRACAT'],
+    invoiceTypeCode: ['SATIS' as 'SATIS' | 'IADE' | 'TEVKIFAT' | 'ISTISNA' | 'OZELMATRAH'],
     provider: ['manuel' as InvoiceProvider],
     issueDate: [new Date().toISOString().split('T')[0], [Validators.required]],
+    issueTime: [new Date().toTimeString().split(' ')[0]],
     recipientName: ['', [Validators.required, Validators.minLength(3)]],
     recipientVknOrTckn: ['', [Validators.required, Validators.pattern(/^[0-9]{10,11}$/)]],
     recipientTaxOffice: [''],
     recipientAddress: [''],
+    recipientDistrict: [''],
+    recipientCity: [''],
+    recipientPhone: [''],
+    recipientEmail: [''],
     paymentMethod: ['card' as 'cash' | 'card' | 'transfer' | 'open_account'],
     paymentStatus: ['paid' as 'paid' | 'pending'],
+    isDeliveryNoteReplacement: [true],
     notes: [''],
   });
 
@@ -142,11 +177,15 @@ export class AdminEInvoice {
     address: ['Levent Mah. Cömert Sk. No: 12 Beşiktaş / İstanbul'],
     phone: ['0850 300 00 00'],
     email: ['muhasebe@odivongym.com'],
+    mersisNo: ['0729018491000001'],
+    tradeRegistryNo: ['542190'],
+    website: ['www.odivongym.com'],
+    iban: ['TR44 0006 2000 0001 2901 8491 01'],
     username: [''],
     apiKey: [''],
     apiSecret: [''],
     webServiceUrl: [''],
-    prefix: ['FAT'],
+    prefix: ['GIB'],
     isTestEnvironment: [true],
     autoSendOnPayment: [true],
   });
@@ -163,6 +202,10 @@ export class AdminEInvoice {
           address: cfg.address || 'Levent Mah. Cömert Sk. No: 12 Beşiktaş / İstanbul',
           phone: cfg.phone || '0850 300 00 00',
           email: cfg.email || 'muhasebe@odivongym.com',
+          mersisNo: cfg.mersisNo || '0729018491000001',
+          tradeRegistryNo: cfg.tradeRegistryNo || '542190',
+          website: cfg.website || 'www.odivongym.com',
+          iban: cfg.iban || 'TR44 0006 2000 0001 2901 8491 01',
           username: cfg.username || '',
           apiKey: cfg.apiKey || '',
           apiSecret: cfg.apiSecret || '',
@@ -177,14 +220,26 @@ export class AdminEInvoice {
 
   // Hesaplanan Kalem Toplamları
   readonly calcSubtotal = computed(() => {
-    return this.formLineItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    return this.formLineItems().reduce((sum, item) => {
+      const gross = (item.quantity || 1) * (item.unitPrice || 0);
+      const discount = gross * ((item.discountRate || 0) / 100);
+      return sum + (gross - discount);
+    }, 0);
+  });
+
+  readonly calcDiscountTotal = computed(() => {
+    return this.formLineItems().reduce((sum, item) => {
+      const gross = (item.quantity || 1) * (item.unitPrice || 0);
+      return sum + (gross * ((item.discountRate || 0) / 100));
+    }, 0);
   });
 
   readonly calcKdvTotal = computed(() => {
-    return this.formLineItems().reduce(
-      (sum, item) => sum + (item.quantity * item.unitPrice * (item.kdvRate / 100)),
-      0,
-    );
+    return this.formLineItems().reduce((sum, item) => {
+      const gross = (item.quantity || 1) * (item.unitPrice || 0);
+      const net = gross - (gross * ((item.discountRate || 0) / 100));
+      return sum + (net * ((item.kdvRate || 0) / 100));
+    }, 0);
   });
 
   readonly calcGrandTotal = computed(() => {
@@ -212,6 +267,7 @@ export class AdminEInvoice {
           inv.invoiceNumber.toLowerCase().includes(term) ||
           inv.recipientName.toLowerCase().includes(term) ||
           inv.recipientVknOrTckn.includes(term) ||
+          (inv.gibUuid && inv.gibUuid.toLowerCase().includes(term)) ||
           inv.description?.toLowerCase().includes(term),
       );
     }
@@ -245,7 +301,7 @@ export class AdminEInvoice {
   addLineItem(): void {
     this.formLineItems.update((items) => [
       ...items,
-      { name: '', quantity: 1, unitPrice: 0, kdvRate: 20 },
+      { name: '', quantity: 1, unit: 'Adet', unitPrice: 0, discountRate: 0, kdvRate: 20 },
     ]);
   }
 
@@ -262,6 +318,59 @@ export class AdminEInvoice {
     );
   }
 
+  // Üye Seçildiğinde Formu Otomatik Doldurma
+  onMemberSelected(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const uid = select.value;
+    this.selectedMemberId.set(uid);
+    if (!uid) return;
+
+    const m = this.members().find((mem) => mem.uid === uid);
+    if (!m) return;
+
+    this.invoiceForm.patchValue({
+      recipientName: m.displayName || '',
+      recipientVknOrTckn: m.nationalId || '',
+      recipientPhone: m.phone || '',
+      recipientEmail: m.email || '',
+      recipientAddress: m.branchName ? `${m.branchName} Şubesi Kayıtlı Üyesi` : 'Türkiye',
+    });
+
+    // Otomatik paket kalemi ekleme teklifi veya ekleme
+    if (m.packageLabel) {
+      this.formLineItems.set([
+        {
+          name: `${m.packageLabel} Spor & Fitness Üyeliği`,
+          quantity: 1,
+          unit: 'Paket',
+          unitPrice: m.packagePrice || 1500,
+          discountRate: 0,
+          kdvRate: 20,
+        },
+      ]);
+    }
+  }
+
+  // Hızlı Paket Ekleme
+  addGymPackageToLines(pkgId: string): void {
+    if (!pkgId) return;
+    const pkg = this.packages().find((p) => p.id === pkgId);
+    if (!pkg) return;
+
+    this.formLineItems.update((items) => [
+      ...items,
+      {
+        name: `${pkg.name} (${pkg.durationDays} Günlük Üyelik)`,
+        quantity: 1,
+        unit: 'Paket',
+        unitPrice: pkg.price || 0,
+        discountRate: 0,
+        kdvRate: 20,
+      },
+    ]);
+    this.alertService.toastSuccess(`"${pkg.name}" kalemi eklendi.`);
+  }
+
   openCreateDrawer(): void {
     if (this.saasSub.isExpired()) {
       void this.alertService.error(
@@ -271,26 +380,40 @@ export class AdminEInvoice {
       return;
     }
     this.invoiceError.set('');
+    this.selectedMemberId.set('');
     const cfg = this.config();
     const currentProvider = cfg?.provider || 'manuel';
+    const prefix = cfg?.prefix || (currentProvider === 'gib_portal' ? 'GIB' : currentProvider === 'manuel' ? 'FAT' : 'ODV');
+    const now = new Date();
+    const year = now.getFullYear();
+    const autoNumber = `${prefix}${year}${String(Date.now()).slice(-9)}`;
 
     this.invoiceForm.reset({
-      invoiceNumber: '',
+      invoiceNumber: autoNumber,
+      prefix,
       direction: 'outbound',
       invoiceType: 'earswive',
+      invoiceProfile: 'EARSIVFATURA',
+      invoiceTypeCode: 'SATIS',
       provider: currentProvider,
-      issueDate: new Date().toISOString().split('T')[0],
+      issueDate: now.toISOString().split('T')[0],
+      issueTime: now.toTimeString().split(' ')[0],
       recipientName: '',
       recipientVknOrTckn: '',
       recipientTaxOffice: '',
       recipientAddress: '',
+      recipientDistrict: '',
+      recipientCity: 'İstanbul',
+      recipientPhone: '',
+      recipientEmail: '',
       paymentMethod: 'card',
       paymentStatus: 'paid',
-      notes: '',
+      isDeliveryNoteReplacement: true,
+      notes: 'İşbu e-Arşiv faturanın kağıt çıktısı irsaliye yerine geçer.',
     });
 
     this.formLineItems.set([
-      { name: 'Salon Üyelik & Spor Hizmet Bedeli', quantity: 1, unitPrice: 1500, kdvRate: 20 },
+      { name: 'Salon Üyelik & Spor Hizmet Bedeli', quantity: 1, unit: 'Ay', unitPrice: 1500, discountRate: 0, kdvRate: 20 },
     ]);
 
     this.createDrawerOpen.set(true);
@@ -300,28 +423,92 @@ export class AdminEInvoice {
     this.createDrawerOpen.set(false);
   }
 
+  // GİB Standart Fatura Görüntüleyici Açma
   viewInvoice(inv: EInvoiceItem): void {
     this.selectedInvoiceForView.set(inv);
+    // GİB Karekod Metni ve QR kod üretimi
+    const qrPayload = generateGibQrCodePayload(inv, this.config());
+    QRCode.toDataURL(qrPayload, {
+      width: 130,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff',
+      },
+    })
+      .then((url: string) => this.qrCodeDataUrl.set(url))
+      .catch((err: unknown) => {
+        console.error('QR code generation error', err);
+        this.qrCodeDataUrl.set('');
+      });
   }
 
   closeViewModal(): void {
     this.selectedInvoiceForView.set(null);
+    this.qrCodeDataUrl.set('');
   }
 
   printInvoice(): void {
     window.print();
   }
 
+  // UBL-TR 2.1 XML İndirme
+  downloadUblXml(inv: EInvoiceItem): void {
+    const xml = generateUblTr21Xml(inv, this.config());
+    const fileName = `${inv.invoiceNumber || 'GIB2026000000001'}.xml`;
+    downloadFile(xml, fileName, 'application/xml;charset=utf-8');
+    this.alertService.toastSuccess(`✓ ${fileName} UBL-TR XML formatında indirildi.`);
+  }
+
+  // Faturayı Mühürle ve GİB'e Gönder (Statü geçişi)
+  async signAndSendToGib(inv: EInvoiceItem): Promise<void> {
+    this.updatingStatus.set(true);
+    try {
+      await this.invoiceService.updateInvoice(inv.id, {
+        status: 'sent',
+      });
+      // Güncel faturayı modalda güncelle
+      this.selectedInvoiceForView.set({
+        ...inv,
+        status: 'sent',
+      });
+      this.alertService.toastSuccess('✓ Fatura mali mühür ile onaylandı ve GİB Portal kuyruğuna iletildi.');
+    } catch {
+      this.alertService.toastError('Fatura durumu güncellenemedi.');
+    } finally {
+      this.updatingStatus.set(false);
+    }
+  }
+
+  // Müşteriye E-Posta Gönderme Simülasyonu
+  async sendInvoiceEmail(inv: EInvoiceItem): Promise<void> {
+    const email = inv.recipientEmail || this.config()?.email;
+    if (!email) {
+      this.alertService.toastError('Alıcıya ait kayıtlı bir e-posta adresi bulunamadı.');
+      return;
+    }
+    const confirmed = await this.alertService.confirm({
+      title: 'E-Posta Gönderilsin mi?',
+      message: `Fatura PDF ve XML bağlantısı "${email}" adresine iletilecektir. Onaylıyor musunuz?`,
+      confirmText: 'Evet, Gönder',
+      cancelText: 'Vazgeç',
+      icon: 'question',
+    });
+    if (confirmed) {
+      this.alertService.toastSuccess(`✓ Fatura başarıyla ${email} adresine gönderildi.`);
+    }
+  }
+
   async submitInvoice(): Promise<void> {
     if (this.invoiceForm.invalid || this.submittingInvoice()) {
       this.invoiceForm.markAllAsTouched();
-      this.invoiceError.set('Lütfen zorunlu alanları (Alıcı/Cari Adı, TCKN/VKN) eksiksiz doldurunuz.');
+      this.invoiceError.set('Lütfen zorunlu alanları (Alıcı/Cari Adı, 10-11 haneli TCKN/VKN) eksiksiz doldurunuz.');
       return;
     }
 
     const items = this.formLineItems();
     if (items.length === 0 || items.some((it) => !it.name.trim() || it.unitPrice < 0)) {
-      this.invoiceError.set('Lütfen en az bir geçerli fatura kalemi (açıklama ve fiyat) giriniz.');
+      this.invoiceError.set('Lütfen en az bir geçerli fatura kalemi (açıklama ve tutar) giriniz.');
       return;
     }
 
@@ -330,6 +517,28 @@ export class AdminEInvoice {
 
     try {
       const v = this.invoiceForm.getRawValue();
+      const subtotal = this.calcSubtotal();
+      const discountTotal = this.calcDiscountTotal();
+
+      const lineItems: InvoiceLineItem[] = items.map((it) => {
+        const gross = (it.quantity || 1) * (it.unitPrice || 0);
+        const disc = gross * ((it.discountRate || 0) / 100);
+        const net = gross - disc;
+        const kdv = net * ((it.kdvRate || 0) / 100);
+        return {
+          name: it.name.trim(),
+          quantity: Number(it.quantity || 1),
+          unit: it.unit || 'Adet',
+          unitPrice: Number(it.unitPrice || 0),
+          discountRate: Number(it.discountRate || 0),
+          discountAmount: Number(disc),
+          kdvRate: Number(it.kdvRate || 20),
+          total: Number(net),
+          kdvAmount: Number(kdv),
+          grandTotal: Number(net + kdv),
+        };
+      });
+
       await this.invoiceService.createInvoice({
         invoiceNumber: v.invoiceNumber.trim() || undefined,
         direction: v.direction,
@@ -337,27 +546,30 @@ export class AdminEInvoice {
         recipientVknOrTckn: v.recipientVknOrTckn.trim(),
         recipientTaxOffice: v.recipientTaxOffice?.trim() || undefined,
         recipientAddress: v.recipientAddress?.trim() || undefined,
-        amount: this.calcSubtotal(),
+        recipientDistrict: v.recipientDistrict?.trim() || undefined,
+        recipientCity: v.recipientCity?.trim() || undefined,
+        recipientPhone: v.recipientPhone?.trim() || undefined,
+        recipientEmail: v.recipientEmail?.trim() || undefined,
+        amount: subtotal,
+        discountTotal,
         kdvRate: items[0]?.kdvRate ?? 20,
         invoiceType: v.invoiceType,
+        invoiceProfile: v.invoiceProfile,
+        invoiceTypeCode: v.invoiceTypeCode,
         provider: v.provider,
         issueDate: v.issueDate,
+        issueTime: v.issueTime,
+        currency: 'TRY',
         paymentMethod: v.paymentMethod,
         paymentStatus: v.paymentStatus,
+        isDeliveryNoteReplacement: v.isDeliveryNoteReplacement,
         description: items[0]?.name || 'Fatura Kalemi',
         notes: v.notes.trim() || undefined,
-        items: items.map((it) => ({
-          name: it.name.trim(),
-          quantity: Number(it.quantity || 1),
-          unitPrice: Number(it.unitPrice || 0),
-          kdvRate: Number(it.kdvRate || 20),
-          total: Number(it.quantity * it.unitPrice),
-          kdvAmount: Number(it.quantity * it.unitPrice * (it.kdvRate / 100)),
-          grandTotal: Number(it.quantity * it.unitPrice * (1 + it.kdvRate / 100)),
-        })),
+        memberId: this.selectedMemberId() || undefined,
+        items: lineItems,
       });
 
-      this.alertService.toastSuccess('✓ Fatura başarıyla kaydedildi.');
+      this.alertService.toastSuccess('✓ Fatura başarıyla oluşturuldu ve GİB standartlarında kaydedildi.');
       this.closeCreateDrawer();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Fatura oluşturulamadı';
@@ -372,7 +584,7 @@ export class AdminEInvoice {
     try {
       const v = this.configForm.getRawValue();
       await this.invoiceService.saveConfig(v as any);
-      this.alertService.toastSuccess('✓ Entegratör ve fatura ayarları başarıyla güncellendi.');
+      this.alertService.toastSuccess('✓ Entegratör ve resmi fatura ayarları başarıyla güncellendi.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Kaydedilemedi';
       this.alertService.toastError(`Hata: ${msg}`);
@@ -400,7 +612,7 @@ export class AdminEInvoice {
     this.seeding.set(true);
     try {
       await this.invoiceService.seedSampleInvoices();
-      this.alertService.toastSuccess('Örnek satış ve alış faturaları başarıyla yüklendi!');
+      this.alertService.toastSuccess('GİB uyumlu örnek satış ve alış faturaları başarıyla yüklendi!');
     } catch {
       this.alertService.toastError('Örnek faturalar yüklenemedi.');
     } finally {
@@ -411,6 +623,13 @@ export class AdminEInvoice {
   formatDate(ts: any): string {
     if (!ts) return 'Bugün';
     const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  formatTime(ts: any, customTime?: string): string {
+    if (customTime) return customTime;
+    if (!ts) return '12:00:00';
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 }

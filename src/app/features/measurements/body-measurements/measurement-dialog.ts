@@ -47,6 +47,30 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Kalça (cm)</label>
                 <input type="number" formControlName="hips" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
               </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5">Sağ Kol / Pazı (cm)</label>
+                <input type="number" formControlName="rightBicep" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1.5">Sol Kol / Pazı (cm)</label>
+                <input type="number" formControlName="leftBicep" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5">Sağ Bacak (cm)</label>
+                <input type="number" formControlName="rightThigh" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1.5">Sol Bacak (cm)</label>
+                <input type="number" formControlName="leftThigh" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Baldır (cm)</label>
+                <input type="number" formControlName="calf" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Yağ Oranı (%)</label>
+                <input type="number" formControlName="bodyFatPercentage" step="0.1" class="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
+              </div>
             </div>
 
             <div>
@@ -87,7 +111,11 @@ export class MeasurementDialog {
     chest: [0],
     hips: [0],
     bicep: [0],
+    rightBicep: [0],
+    leftBicep: [0],
     thigh: [0],
+    rightThigh: [0],
+    leftThigh: [0],
     calf: [0],
     bodyFatPercentage: [0],
     notes: [''],
@@ -106,7 +134,11 @@ export class MeasurementDialog {
           chest: m.chest || 0,
           hips: m.hips || 0,
           bicep: m.bicep || 0,
+          rightBicep: m.rightBicep || m.bicep || 0,
+          leftBicep: m.leftBicep || m.bicep || 0,
           thigh: m.thigh || 0,
+          rightThigh: m.rightThigh || m.thigh || 0,
+          leftThigh: m.leftThigh || m.thigh || 0,
           calf: m.calf || 0,
           bodyFatPercentage: m.bodyFatPercentage || 0,
           notes: m.notes || '',
@@ -121,7 +153,11 @@ export class MeasurementDialog {
           chest: 0,
           hips: 0,
           bicep: 0,
+          rightBicep: 0,
+          leftBicep: 0,
           thigh: 0,
+          rightThigh: 0,
+          leftThigh: 0,
           calf: 0,
           bodyFatPercentage: 0,
           notes: '',
@@ -142,8 +178,12 @@ export class MeasurementDialog {
         waist: value.waist || undefined,
         chest: value.chest || undefined,
         hips: value.hips || undefined,
-        bicep: value.bicep || undefined,
-        thigh: value.thigh || undefined,
+        bicep: value.rightBicep || value.leftBicep || value.bicep || undefined,
+        rightBicep: value.rightBicep || undefined,
+        leftBicep: value.leftBicep || undefined,
+        thigh: value.rightThigh || value.leftThigh || value.thigh || undefined,
+        rightThigh: value.rightThigh || undefined,
+        leftThigh: value.leftThigh || undefined,
         calf: value.calf || undefined,
         bodyFatPercentage: value.bodyFatPercentage || undefined,
         notes: value.notes,

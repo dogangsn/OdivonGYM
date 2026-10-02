@@ -5,6 +5,7 @@ import { AccountingApi } from '../../core/api/accounting.api';
 import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import { AccountingEntry, CreateAccountingEntryInput } from '../../core/models/accounting-entry.model';
+import { SubmitDailyCloseDto } from '../../core/models/daily-close.model';
 
 export interface AccountingCategory {
   id?: string;
@@ -88,4 +89,35 @@ export class AdminAccountingService {
       await this.addCategory(cat.name, cat.type);
     }
   }
+
+  // Daily Close (Z Report)
+  async getDailyClosePreview(date?: string, branchId?: string) {
+    return firstValueFrom(this.api.getDailyClosePreview(date, branchId));
+  }
+
+  async submitDailyClose(input: SubmitDailyCloseDto) {
+    const res = await firstValueFrom(this.api.submitDailyClose(input));
+    this.reload$.next();
+    return res;
+  }
+
+  async listDailyClosings(branchId?: string, limit = 50) {
+    return firstValueFrom(this.api.listDailyClosings(branchId, limit));
+  }
+
+  async getDailyCloseById(id: string) {
+    return firstValueFrom(this.api.getDailyCloseById(id));
+  }
+
+  async verifyDailyClose(id: string, notes?: string) {
+    const res = await firstValueFrom(this.api.verifyDailyClose(id, notes));
+    this.reload$.next();
+    return res;
+  }
+
+  // Expense Analytics
+  async getExpenseAnalytics(params?: { startDate?: string; endDate?: string; branchId?: string }) {
+    return firstValueFrom(this.api.getExpenseAnalytics(params));
+  }
 }
+

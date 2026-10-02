@@ -24,6 +24,12 @@ const CODE_TO_KEY: Record<string, string> = {
  * kalmasın diye saf bir fonksiyon olarak tutuluyor.
  */
 export function toAuthErrorMessage(error: unknown, translate: (key: string) => string): string {
+  if (error && typeof error === 'object') {
+    const httpErr = error as { error?: { message?: string | string[] } };
+    if (httpErr.error?.message) {
+      return Array.isArray(httpErr.error.message) ? httpErr.error.message.join(', ') : httpErr.error.message;
+    }
+  }
   if (error instanceof Error && !(error as { code?: string }).code) {
     return error.message;
   }

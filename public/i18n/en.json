@@ -232,6 +232,7 @@
       "adminBranches": "Branches",
       "adminGymInfo": "Gym Information",
       "adminSubscription": "SaaS Plan & License",
+      "adminSmsSettings": "SMS Gateway & Providers",
       "workoutPlan": "Workout Program",
       "waterTracker": "Water Tracker",
       "bodyMeasurements": "Body Measurements",

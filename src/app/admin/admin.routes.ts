@@ -140,4 +140,11 @@ export const adminRoutes: Routes = [
       import('./subscription/admin-subscription').then((m) => m.AdminSubscription),
     title: 'Paket & Lisans · OdivonGYM',
   },
+  {
+    path: 'sms-settings',
+    loadComponent: () =>
+      import('./sms-settings/admin-sms-settings').then((m) => m.AdminSmsSettings),
+    title: 'SMS Sağlayıcı & Ayarları · OdivonGYM',
+  },
 ];
+

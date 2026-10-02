@@ -43,7 +43,7 @@ export interface NewMemberInput {
   email: string;
   phone: string;
   password: string;
-  nationalId?: string | null;
+  nationalId: string;
   gender: Gender;
   birthDate: Date | null;
   membershipStatus: MembershipStatus;
@@ -68,9 +68,17 @@ export interface NewMemberInput {
   rfidCardNumber?: string;
   cardDepositFee?: number;
   cardDepositPaid?: boolean;
+  kvkkConsent?: boolean | null;
+  kvkkConsentAt?: string | null;
+  commercialConsent?: boolean | null;
+  commercialConsentAt?: string | null;
+  healthConsent?: boolean | null;
+  healthConsentAt?: string | null;
 }
 
-export type UpdateMemberInput = Omit<NewMemberInput, 'email' | 'password'>;
+export type UpdateMemberInput = Omit<NewMemberInput, 'email' | 'password' | 'nationalId'> & {
+  nationalId?: string | null;
+};
 
 @Injectable({ providedIn: 'root' })
 export class AdminMembersService {
@@ -383,6 +391,12 @@ export class AdminMembersService {
       rfidCardNumber: input.rfidCardNumber,
       cardDepositFee: input.cardDepositFee,
       cardDepositPaid: input.cardDepositPaid,
+      kvkkConsent: input.kvkkConsent,
+      kvkkConsentAt: input.kvkkConsentAt,
+      commercialConsent: input.commercialConsent,
+      commercialConsentAt: input.commercialConsentAt,
+      healthConsent: input.healthConsent,
+      healthConsentAt: input.healthConsentAt,
     };
   }
 }

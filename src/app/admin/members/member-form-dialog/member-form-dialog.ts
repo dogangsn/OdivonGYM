@@ -3,7 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoService } from '@jsverse/transloco';
-import { map } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
+import { ConsentApi } from '../../../core/api/consent.api';
+import { ConsentModal } from '../../../shared/components/consent-modal/consent-modal';
+import { ConsentModalService } from '../../../shared/components/consent-modal/consent-modal.service';
+import { ConsentText, ConsentType } from '../../../core/models/consent.model';
 import { AdminMembersService } from '../admin-members.service';
 import { AdminStaffService } from '../../staff/admin-staff.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
@@ -54,7 +58,7 @@ function addDays(dateStr: string, days: number): string {
 @Component({
   selector: 'app-member-form-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatIconModule, ConsentModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-form-dialog.html',
   styleUrl: './member-form-dialog.scss',
@@ -64,6 +68,8 @@ export class MemberFormDialog {
   private readonly membersService = inject(AdminMembersService);
   private readonly staffService = inject(AdminStaffService);
   private readonly packagesService = inject(AdminPackagesService);
+  private readonly consentApi = inject(ConsentApi);
+  protected readonly consentModal = inject(ConsentModalService);
   protected readonly branchContext = inject(BranchContextService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
@@ -93,6 +99,19 @@ export class MemberFormDialog {
   protected readonly isPhotoProcessing = signal(false);
   protected readonly photoDragOver = signal(false);
 
+  // Aktif rıza ve aydınlatma metinleri
+  protected readonly activeConsentTexts = toSignal(this.consentApi.getActiveTexts(), {
+    initialValue: [] as ConsentText[],
+  });
+
+  openConsentText(type: ConsentType) {
+    const list = this.activeConsentTexts();
+    const found = list.find((t) => t.type === type);
+    if (found) {
+      this.consentModal.open(found);
+    }
+  }
+
   // Aktif antrenörleri listele (Zorunlu seçim için)
   protected readonly trainers = toSignal(
     this.staffService.watchStaff().pipe(
@@ -103,11 +122,27 @@ export class MemberFormDialog {
     { initialValue: [] },
   );
 
+  // Mevcut üyeleri izle (T.C. tekillik kontrolü için)
+  private readonly existingMembers = toSignal(this.membersService.watchMembers(), {
+    initialValue: [] as UserProfile[],
+  });
+
+  protected readonly duplicateMember = computed(() => {
+    const currentVal = this.formValues().nationalId?.trim();
+    if (!currentVal || currentVal.length !== 11) {
+      return null;
+    }
+    const currentMember = this.member();
+    const currentUid = currentMember?.uid;
+    const list = this.existingMembers();
+    return list.find((m) => m.uid !== currentUid && m.nationalId && m.nationalId.trim() === currentVal) ?? null;
+  });
+
   protected readonly activeSafetyTab = signal<'emergency' | 'health'>('emergency');
 
   readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2)]],
-    nationalId: ['', [Validators.pattern(/^[1-9]\d{10}$/)]],
+    nationalId: ['', [Validators.required, Validators.pattern(/^[1-9]\d{10}$/)]],
     memberNumber: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9+()\s-]{7,20}$/)]],
@@ -140,6 +175,9 @@ export class MemberFormDialog {
     cardDepositFee: [150],
     cardDepositPaid: [false],
     notes: [''],
+    kvkkConsent: [false],
+    commercialConsent: [false],
+    healthConsent: [false],
   });
 
   private readonly formValues = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -232,6 +270,9 @@ export class MemberFormDialog {
         cardDepositFee: m?.cardDepositFee ?? 150,
         cardDepositPaid: m?.cardDepositPaid ?? false,
         notes: m?.notes ?? '',
+        kvkkConsent: m?.kvkkConsent ?? false,
+        commercialConsent: m?.commercialConsent ?? false,
+        healthConsent: m?.healthConsent ?? false,
       });
 
       if (editMode) {
@@ -427,6 +468,13 @@ export class MemberFormDialog {
       );
       return;
     }
+    if (this.duplicateMember()) {
+      const dup = this.duplicateMember();
+      this.errorMessage.set(
+        `Bu T.C. Kimlik Numarası (${this.form.controls.nationalId.value.trim()}) "${dup?.displayName}" adlı üyede zaten kayıtlıdır.`,
+      );
+      return;
+    }
     const sale = this.sale();
     const selling = !this.isEditMode() && this.form.controls.membershipStatus.value === 'active';
     if (selling && sale.overpaid) {
@@ -454,7 +502,7 @@ export class MemberFormDialog {
 
       const membershipInput = {
         displayName: value.displayName.trim(),
-        nationalId: value.nationalId?.trim() || null,
+        nationalId: value.nationalId.trim(),
         memberNumber: value.memberNumber.trim(),
         phone: value.phone.trim(),
         gender: value.gender,
@@ -480,12 +528,30 @@ export class MemberFormDialog {
         cardDepositFee: value.cardDepositFee,
         cardDepositPaid: value.cardDepositPaid,
         notes: value.notes.trim(),
+        kvkkConsent: value.kvkkConsent,
+        kvkkConsentAt: value.kvkkConsent ? new Date().toISOString() : null,
+        commercialConsent: value.commercialConsent,
+        commercialConsentAt: value.commercialConsent ? new Date().toISOString() : null,
+        healthConsent: value.healthConsent,
+        healthConsentAt: value.healthConsent ? new Date().toISOString() : null,
       };
 
       if (this.isEditMode() && currentMember) {
         await this.membersService.updateMember(currentMember.uid, membershipInput);
+        await firstValueFrom(
+          this.consentApi.recordConsents({
+            memberId: currentMember.uid,
+            memberFullName: value.displayName.trim(),
+            channel: 'ADMIN_PANEL',
+            consents: [
+              { consentType: 'kvkk_general', granted: !!value.kvkkConsent },
+              { consentType: 'commercial_communication', granted: !!value.commercialConsent },
+              { consentType: 'health_biometric', granted: !!value.healthConsent },
+            ],
+          }),
+        ).catch(() => {});
       } else {
-        await this.membersService.createMember({
+        const createdUid = await this.membersService.createMember({
           ...membershipInput,
           email: value.email.trim(),
           password: value.password,
@@ -501,6 +567,20 @@ export class MemberFormDialog {
               }
             : null,
         });
+
+        // Hukuki ispat günlüğüne (audit log) mühürle
+        await firstValueFrom(
+          this.consentApi.recordConsents({
+            memberId: createdUid,
+            memberFullName: value.displayName.trim(),
+            channel: 'ADMIN_PANEL',
+            consents: [
+              { consentType: 'kvkk_general', granted: !!value.kvkkConsent },
+              { consentType: 'commercial_communication', granted: !!value.commercialConsent },
+              { consentType: 'health_biometric', granted: !!value.healthConsent },
+            ],
+          }),
+        ).catch(() => {});
       }
 
       this.closed.emit(true);

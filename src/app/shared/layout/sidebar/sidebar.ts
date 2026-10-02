@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -117,7 +117,9 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
       { icon: 'store', labelKey: 'sidebar.items.adminBranches', link: '/admin/branches' },
       { icon: 'business', labelKey: 'sidebar.items.adminGymInfo', link: '/admin/gym-info' },
       { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription', badgeKey: 'sidebar.badges.plan', badgeClass: 'badge-purple' },
+      { icon: 'sms', labelKey: 'sidebar.items.adminSmsSettings', link: '/admin/sms-settings' },
     ],
+
   },
 ];
 
@@ -174,6 +176,17 @@ export class Sidebar {
   protected readonly transloco = inject(TranslocoService);
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
+  private readonly router = inject(Router);
+
+  isGroupDefaultOpen(group: NavGroup): boolean {
+    if (group.titleKey === 'sidebar.groups.general') {
+      return true;
+    }
+    const currentUrl = this.router.url;
+    return group.items.some(
+      (item) => currentUrl === item.link || (item.link !== '/dashboard' && currentUrl.startsWith(item.link)),
+    );
+  }
 
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */
   readonly collapsed = input(false);

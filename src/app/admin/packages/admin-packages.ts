@@ -11,6 +11,8 @@ import { firstError, formatMoney, splitLines } from '../../shared/ui/ui-utils';
 import { AdminPackagesService } from './admin-packages.service';
 import { AdminDisciplinesService } from '../disciplines/admin-disciplines.service';
 import { GymPackage } from '../../core/models/gym-package.model';
+import { DocumentDefinitionsService } from '../../core/services/document-definitions.service';
+import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
 
 const STATUS_LABEL: Record<GymPackage['status'], string> = {
   active: 'Satışta',
@@ -37,7 +39,7 @@ const DAYS_OF_WEEK = [
 @Component({
   selector: 'app-admin-packages',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field],
+  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, DocumentDefinitionsModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans">
@@ -92,6 +94,12 @@ const DAYS_OF_WEEK = [
                         </span>
                         @if (p.features.length) {
                           <span class="text-[11px] text-slate-400 truncate max-w-xs">{{ p.features.join(' · ') }}</span>
+                        }
+                        @if (p.requiredDocuments?.length) {
+                          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
+                            <mat-icon class="icon-size-3">badge</mat-icon>
+                            <span>{{ formatDocRequirements(p.requiredDocuments) }}</span>
+                          </span>
                         }
                       </div>
                     </td>
@@ -346,6 +354,35 @@ const DAYS_OF_WEEK = [
           </p>
         </div>
 
+        <!-- ZORUNLU EVRAK & LİSANS ŞARTLARI -->
+        <div class="p-3.5 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 m-0 flex items-center gap-1.5">
+              <mat-icon class="icon-size-4 text-purple-600">badge</mat-icon>
+              <span>Zorunlu Evrak & Belge Şartları</span>
+            </p>
+            <button type="button" (click)="showDocDefsModal.set(true)"
+              class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1">
+              <mat-icon class="icon-size-3">settings</mat-icon>
+              <span>Belge Türlerini Yönet / Ekle</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-300">
+            @for (def of docDefsService.activeDefinitions(); track def.id) {
+            <label class="flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all"
+              [class]="hasDocRequirement(def.code) ? 'border-purple-600 bg-purple-100/60 dark:bg-purple-950/60 font-bold text-purple-950 dark:text-purple-200' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'">
+              <input type="checkbox" [checked]="hasDocRequirement(def.code)" (change)="toggleDocRequirement(def.code)"
+                class="rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
+              <span class="truncate">{{ def.name }}</span>
+            </label>
+            }
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">
+            * Bu paketi satın alan veya tanımlanan üyeler için seçilen belgeler zorunlu tutulur ve üye detayında "Doküman Bekleniyor" olarak takip edilir.
+          </p>
+        </div>
+
         @if (editing()) {
           <app-field label="Durum">
             <select formControlName="status" class="odv-input">
@@ -378,6 +415,12 @@ const DAYS_OF_WEEK = [
         </div>
       </div>
     </app-slide-over>
+
+    <app-document-definitions-modal
+      [open]="showDocDefsModal()"
+      (closed)="showDocDefsModal.set(false)"
+      (definitionCreated)="toggleDocRequirement($event.code)"
+    />
   `,
 })
 export class AdminPackages {
@@ -407,6 +450,28 @@ export class AdminPackages {
   protected readonly editing = signal<GymPackage | null>(null);
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
+
+  protected readonly docDefsService = inject(DocumentDefinitionsService);
+  protected readonly showDocDefsModal = signal(false);
+  protected readonly selectedDocRequirements = signal<string[]>([]);
+
+  hasDocRequirement(code: string): boolean {
+    return this.selectedDocRequirements().includes(code);
+  }
+
+  toggleDocRequirement(code: string): void {
+    const cur = this.selectedDocRequirements();
+    if (cur.includes(code)) {
+      this.selectedDocRequirements.set(cur.filter((c) => c !== code));
+    } else {
+      this.selectedDocRequirements.set([...cur, code]);
+    }
+  }
+
+  formatDocRequirements(reqs?: string[]): string {
+    if (!reqs || reqs.length === 0) return '';
+    return reqs.map((r) => this.docDefsService.getLabel(r)).join(', ');
+  }
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -519,6 +584,7 @@ export class AdminPackages {
   protected openForm(pkg: GymPackage | null = null): void {
     this.editing.set(pkg);
     this.errorMessage.set('');
+    this.selectedDocRequirements.set(pkg?.requiredDocuments || []);
     
     const type = pkg?.durationType || (pkg?.durationDays && pkg.durationDays % 30 === 0 ? 'month' : 'day');
     const val = pkg?.durationValue || (type === 'month' && pkg?.durationDays ? Math.round(pkg.durationDays / 30) : pkg?.durationDays || 1);
@@ -580,6 +646,7 @@ export class AdminPackages {
         features: splitLines(v.features),
         description: v.description.trim(),
         trialEligible: v.trialEligible,
+        requiredDocuments: this.selectedDocRequirements(),
       };
       const current = this.editing();
       if (current) {

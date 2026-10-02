@@ -26,6 +26,10 @@ export class EinvoiceApi {
     return this.api.post<EInvoiceItem>('/gym/einvoice/items', body).pipe(map((r) => r.data));
   }
 
+  updateItem(id: string, body: unknown) {
+    return this.api.patch<EInvoiceItem>(`/gym/einvoice/items/${id}`, body).pipe(map((r) => r.data));
+  }
+
   removeItem(id: string) {
     return this.api.delete<{ id: string }>(`/gym/einvoice/items/${id}`).pipe(map((r) => r.data));
   }

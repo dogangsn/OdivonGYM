@@ -503,10 +503,40 @@ export class AdminSubscriptions {
     this.freezeModalOpen.set(true);
   }
 
+  protected readonly calculatedFreezePreview = computed(() => {
+    const m = this.freezeMember();
+    const days = this.freezeDays();
+    if (!m || !days || days <= 0) return '';
+
+    let base = new Date();
+    if (m.membershipEndsAt) {
+      const ms = toMillis(m.membershipEndsAt);
+      if (ms > Date.now()) base = new Date(ms);
+    }
+    base.setDate(base.getDate() + days);
+    return base.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+  });
+
+  onFreezeDaysInput(val: string | number | null | undefined): void {
+    if (val === null || val === undefined || val === '') {
+      this.freezeDays.set(0);
+      return;
+    }
+    const parsed = typeof val === 'number' ? val : parseInt(String(val), 10);
+    if (!isNaN(parsed)) {
+      this.freezeDays.set(Math.max(0, Math.min(365, parsed)));
+    } else {
+      this.freezeDays.set(0);
+    }
+  }
+
   async saveFreeze(): Promise<void> {
     const m = this.freezeMember();
     const days = this.freezeDays();
-    if (!m || days <= 0) return;
+    if (!m || !days || days <= 0) {
+      this.alertService.toastWarning('Lütfen geçerli bir dondurma süresi (en az 1 gün) giriniz.');
+      return;
+    }
 
     this.freezeSubmitting.set(true);
     try {

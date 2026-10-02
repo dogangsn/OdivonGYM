@@ -13,6 +13,7 @@ export interface Exercise {
   restSeconds?: number; // Dinlenme süresi (sn)
   duration?: number; // seconds
   notes?: string; // Antrenör direktifi (Örn: "Zirvede 1 sn sıkıştır")
+  superSet?: Exercise; // Bu harekete bağlı süper set hareketi
 }
 
 export interface WorkoutPlan {

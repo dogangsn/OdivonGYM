@@ -51,13 +51,29 @@ describe('MemberBodyState', () => {
     expect(state.waterProgressPercent()).toBe(100);
   });
 
-  it('prefills the measurement form and writes for the bound member', async () => {
+  it('prefills the measurement form and writes for the bound member including separate arm and leg measurements', async () => {
     state.measurements.set([{ id: 'a', weight: 70, height: 170, date: at(new Date()) }] as unknown as BodyMeasurement[]);
     state.toggleAddMeasurement();
     expect(state.showAddMeasurementForm()).toBeTrue();
     expect(state.measurementForm.value).toEqual(jasmine.objectContaining({ weight: 70, height: 170 }));
+    state.measurementForm.patchValue({
+      rightBicep: 38.5,
+      leftBicep: 38.0,
+      rightThigh: 57.0,
+      leftThigh: 56.5,
+    });
     await state.saveMeasurement();
-    expect(members.addBodyMeasurement).toHaveBeenCalledWith('m1', jasmine.objectContaining({ weight: 70, height: 170 }));
+    expect(members.addBodyMeasurement).toHaveBeenCalledWith(
+      'm1',
+      jasmine.objectContaining({
+        weight: 70,
+        height: 170,
+        rightBicep: 38.5,
+        leftBicep: 38.0,
+        rightThigh: 57.0,
+        leftThigh: 56.5,
+      }),
+    );
     expect(state.showAddMeasurementForm()).toBeFalse();
 
     state.customWaterAmount.set(400);

@@ -1,0 +1,491 @@
+<div class="font-sans space-y-6">
+  <!-- Page Header -->
+  <app-page-header
+    title="SMS Sağlayıcıları & Operatör Ayarları"
+    icon="sms"
+    description="Resmi SMS operatörleri (Netgsm, İletiMerkezi, Mutlucell, Verimor, Twilio) entegrasyonu, canlı bakiye sorgusu ve test mesajları."
+  >
+    <div actions class="flex items-center gap-2">
+      <button
+        type="button"
+        class="odv-btn-soft"
+        [disabled]="queryingBalance()"
+        (click)="fetchBalance()"
+      >
+        <mat-icon class="icon-size-4" [class.animate-spin]="queryingBalance()">sync</mat-icon>
+        <span>{{ queryingBalance() ? 'Sorgulanıyor…' : 'Bakiye Sorgula' }}</span>
+      </button>
+
+      <button type="button" class="odv-btn-primary" (click)="openTestDrawer()">
+        <mat-icon class="icon-size-4.5">send</mat-icon>
+        <span>Hızlı Test SMS Gönder</span>
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- 3-KPI Overview Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <!-- 1. Aktif Sağlayıcı -->
+    <div class="odv-card p-5 bg-gradient-to-br from-indigo-50/60 to-indigo-100/30 dark:from-indigo-950/30 dark:to-indigo-900/20 border-indigo-200 dark:border-indigo-800">
+      <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400">
+        <span class="text-xs font-bold uppercase tracking-wider">Aktif SMS Operatörü</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Yayında</span>
+        </span>
+      </div>
+      <p class="m-0 mt-2 text-2xl font-black text-slate-900 dark:text-white capitalize">
+        {{ activeProvider() }}
+      </p>
+      <p class="m-0 mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+        Başlık (Originator): <strong class="text-slate-700 dark:text-slate-200">{{ config()?.defaultHeader || 'ODIVON GYM' }}</strong>
+      </p>
+    </div>
+
+    <!-- 2. Canlı SMS Kredi Bakiyesi -->
+    <div class="odv-card p-5 bg-gradient-to-br from-emerald-50/60 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800">
+      <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+        <span class="text-xs font-bold uppercase tracking-wider">Kalan SMS Kredisi</span>
+        <button
+          type="button"
+          class="text-emerald-600 hover:text-emerald-700 cursor-pointer"
+          (click)="fetchBalance()"
+          title="Bakiyeyi Yenile"
+        >
+          <mat-icon class="icon-size-4" [class.animate-spin]="queryingBalance()">refresh</mat-icon>
+        </button>
+      </div>
+      <p class="m-0 mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+        @if (config()?.balanceCache?.balance !== undefined) {
+          {{ config()?.balanceCache?.balance | number }} {{ config()?.balanceCache?.currency }}
+        } @else {
+          Sorgu Bekleniyor
+        }
+      </p>
+      <p class="m-0 mt-1 text-[11px] text-slate-400">
+        @if (config()?.balanceCache?.fetchedAt) {
+          Son sorgu: {{ config()?.balanceCache?.fetchedAt | date:'dd.MM.yyyy HH:mm' }}
+        } @else {
+          Canlı bakiye için "Bakiye Sorgula" butonuna basınız
+        }
+      </p>
+    </div>
+
+    <!-- 3. Son Gönderim & Sağlık -->
+    <div class="odv-card p-5">
+      <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+        <span class="text-xs font-bold uppercase tracking-wider">Entegrasyon Durumu</span>
+        <mat-icon class="icon-size-4">health_and_safety</mat-icon>
+      </div>
+      <div class="mt-2 flex items-center gap-2">
+        @if (config()?.lastTestStatus === 'success') {
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+            <mat-icon class="icon-size-3.5">check_circle</mat-icon>
+            <span>Bağlantı Sağlıklı</span>
+          </span>
+        } @else if (config()?.lastTestStatus === 'failed') {
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+            <mat-icon class="icon-size-3.5">error</mat-icon>
+            <span>Bağlantı Hatası</span>
+          </span>
+        } @else {
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            <span>Henüz Test Edilmedi</span>
+          </span>
+        }
+      </div>
+      <p class="m-0 mt-1 text-[11px] text-slate-400 truncate">
+        {{ config()?.lastTestMessage || 'API anahtarlarınızı girip test edebilirsiniz.' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Sağlayıcı Seçim Grid'i -->
+  <div class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 m-0">
+        Entegre Edilebilir Resmi SMS Operatörleri
+      </h3>
+      <span class="text-xs text-slate-400">6 Sağlayıcı Hazır</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (p of providers; track p.id) {
+        <div
+          class="odv-card p-5 relative flex flex-col justify-between transition-all hover:shadow-md"
+          [class.border-indigo-500]="activeProvider() === p.id"
+          [class.ring-2]="activeProvider() === p.id"
+          [class.ring-indigo-500/20]="activeProvider() === p.id"
+        >
+          <!-- Active Badge -->
+          @if (activeProvider() === p.id) {
+            <div class="absolute top-4 right-4">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-600 text-white shadow-sm">
+                <mat-icon class="icon-size-3">done</mat-icon>
+                <span>Aktif</span>
+              </span>
+            </div>
+          }
+
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <div
+                class="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-sm"
+                [class]="
+                  p.id === 'netgsm' ? 'bg-sky-600' :
+                  p.id === 'iletimerkezi' ? 'bg-indigo-600' :
+                  p.id === 'mutlucell' ? 'bg-amber-600' :
+                  p.id === 'verimor' ? 'bg-teal-600' :
+                  p.id === 'twilio' ? 'bg-rose-600' : 'bg-slate-700'
+                "
+              >
+                <mat-icon class="icon-size-5">{{ p.icon }}</mat-icon>
+              </div>
+
+              <div>
+                <h4 class="text-base font-black text-slate-900 dark:text-white m-0 flex items-center gap-2">
+                  <span>{{ p.name }}</span>
+                </h4>
+                <span class="inline-flex text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                  {{ p.badge }}
+                </span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300 m-0 mb-4 leading-relaxed">
+              {{ p.description }}
+            </p>
+
+            <div class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded-md mb-4">
+              <mat-icon class="icon-size-3">code</mat-icon>
+              <span>{{ p.protocol }}</span>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <button
+              type="button"
+              class="w-full odv-btn-soft !py-2 text-xs font-bold flex items-center justify-center gap-1.5"
+              (click)="openConfigDrawer(p.id)"
+            >
+              <mat-icon class="icon-size-4">settings</mat-icon>
+              <span>{{ activeProvider() === p.id ? 'Ayarları Güncelle' : 'Seç & Yapılandır' }}</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Otomatik Bildirim Tetikleyicileri & Şablonlar -->
+  <div class="odv-card p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+          Otomatik SMS Bildirim Senaryoları & Şablonlar
+        </h3>
+        <p class="text-xs text-slate-400 m-0 mt-0.5">
+          Üyelik olaylarında ve borç süreçlerinde üyelere giden SMS metinleri.
+        </p>
+      </div>
+      <span class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full">
+        4 Senaryo Aktif
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 1. Üyelik Bitiş Uyarısı -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-amber-500 icon-size-4">event_busy</mat-icon>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Üyelik Bitişine 3 Gün Kala</span>
+          </div>
+          <span class="text-[10px] font-bold text-emerald-600">Açık</span>
+        </div>
+        <p class="text-xs font-mono bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 m-0">
+          "Sayin {{'{'}}ad{{'}'}}, {{'{'}}kulup{{'}'}} uyeliginiz 3 gun sonra sona erecektir. Ozel kampanya ile yenilemek icin kulubumuzu ziyaret edebilirsiniz."
+        </p>
+      </div>
+
+      <!-- 2. Yeni Üye Karşılama -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-indigo-500 icon-size-4">celebration</mat-icon>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Yeni Üye Hoş Geldin & Şifre</span>
+          </div>
+          <span class="text-[10px] font-bold text-emerald-600">Açık</span>
+        </div>
+        <p class="text-xs font-mono bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 m-0">
+          "Aramiza hos geldiniz! Mobil uygulamamizi indirip gecis QR kodunuzu olusturabilirsiniz. Sifreniz: {{'{'}}sifre{{'}'}}"
+        </p>
+      </div>
+
+      <!-- 3. Taksit & Borç Hatırlatma -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-rose-500 icon-size-4">notification_important</mat-icon>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Geciken Taksit / Borç Bildirimi</span>
+          </div>
+          <span class="text-[10px] font-bold text-emerald-600">Açık</span>
+        </div>
+        <p class="text-xs font-mono bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 m-0">
+          "Sayin {{'{'}}ad{{'}'}}, {{'{'}}vadeTarihi{{'}'}} vadeli {{'{'}}tutar{{'}'}} TL tutarindaki taksit odemenizin vadesi gecmistir. Lutfen resepsiyonumuzla iletisime geciniz."
+        </p>
+      </div>
+
+      <!-- 4. Doğum Günü Tebriki -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-sky-500 icon-size-4">cake</mat-icon>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Doğum Günü Kutlaması & İndirim</span>
+          </div>
+          <span class="text-[10px] font-bold text-emerald-600">Açık</span>
+        </div>
+        <p class="text-xs font-mono bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 m-0">
+          "Dogum gununuz kutlu olsun! Saglikli ve zinde bir yas dileriz. Size ozel %15 indirim kuponunuz: DG{{'{'}}yil{{'}'}}"
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- SLIDE-OVER: SAĞLAYICI YAPILANDIRMA PANELİ                    -->
+<!-- ============================================================= -->
+<app-slide-over
+  [open]="drawerOpen()"
+  [title]="editingProvider() | uppercase"
+  submitLabel="Kaydet ve Sağlayıcıyı Aktif Et"
+  [submitting]="saving()"
+  (closed)="closeDrawer()"
+  (submitted)="saveConfig()"
+>
+  <div [formGroup]="form" class="space-y-4">
+    <!-- Header banner -->
+    <div class="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between">
+      <div>
+        <p class="m-0 text-xs font-bold text-indigo-900 dark:text-indigo-200 uppercase">Seçili Operatör</p>
+        <p class="m-0 text-sm font-black text-indigo-600 dark:text-indigo-400 capitalize">{{ editingProvider() }}</p>
+      </div>
+      <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+        <input type="checkbox" formControlName="isActive" class="rounded text-indigo-600" />
+        <span>Etkinleştir</span>
+      </label>
+    </div>
+
+    <!-- Varsayılan Başlık -->
+    <app-field label="Varsayılan Gönderici Başlığı (Header / Originator)" [required]="true">
+      <input type="text" formControlName="defaultHeader" placeholder="Örn: ODIVON GYM" class="odv-input font-bold" />
+    </app-field>
+
+    <!-- 1. NETGSM FIELDS -->
+    @if (editingProvider() === 'netgsm') {
+      <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <h4 class="text-xs font-black uppercase text-slate-500 m-0">Netgsm API Parametreleri</h4>
+        <app-field label="Kullanıcı Kodu / Abone Numarası" [required]="true">
+          <input type="text" formControlName="netgsmUsercode" placeholder="Örn: 850303XXXX" class="odv-input" />
+        </app-field>
+        <app-field label="API Şifresi" [required]="true">
+          <div class="relative">
+            <input
+              [type]="showSecret() ? 'text' : 'password'"
+              formControlName="netgsmPassword"
+              placeholder="Portal veya API şifreniz"
+              class="odv-input pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              (click)="showSecret.set(!showSecret())"
+            >
+              <mat-icon class="icon-size-4">{{ showSecret() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </app-field>
+        <app-field label="Netgsm Onaylı Başlık">
+          <input type="text" formControlName="netgsmHeader" placeholder="Örn: ODIVON GYM" class="odv-input" />
+        </app-field>
+      </div>
+    }
+
+    <!-- 2. ILETIMERKEZI FIELDS -->
+    @if (editingProvider() === 'iletimerkezi') {
+      <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <h4 class="text-xs font-black uppercase text-slate-500 m-0">İletiMerkezi API Parametreleri</h4>
+        <app-field label="API Anahtarı (Key)" [required]="true">
+          <input type="text" formControlName="iletimerkeziApiKey" placeholder="İletiMerkezi API Key" class="odv-input font-mono" />
+        </app-field>
+        <app-field label="API Gizli Anahtar (Hash)" [required]="true">
+          <div class="relative">
+            <input
+              [type]="showSecret() ? 'text' : 'password'"
+              formControlName="iletimerkeziApiHash"
+              placeholder="İletiMerkezi API Hash"
+              class="odv-input font-mono pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              (click)="showSecret.set(!showSecret())"
+            >
+              <mat-icon class="icon-size-4">{{ showSecret() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </app-field>
+        <app-field label="Gönderici Başlığı (Sender)">
+          <input type="text" formControlName="iletimerkeziSender" placeholder="Örn: ODIVON GYM" class="odv-input" />
+        </app-field>
+      </div>
+    }
+
+    <!-- 3. MUTLUCELL FIELDS -->
+    @if (editingProvider() === 'mutlucell') {
+      <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <h4 class="text-xs font-black uppercase text-slate-500 m-0">Mutlucell API Parametreleri</h4>
+        <app-field label="Kullanıcı Adı" [required]="true">
+          <input type="text" formControlName="mutlucellUsername" placeholder="Mutlucell kullanıcı adı" class="odv-input" />
+        </app-field>
+        <app-field label="Şifre" [required]="true">
+          <div class="relative">
+            <input
+              [type]="showSecret() ? 'text' : 'password'"
+              formControlName="mutlucellPassword"
+              placeholder="Mutlucell şifresi"
+              class="odv-input pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              (click)="showSecret.set(!showSecret())"
+            >
+              <mat-icon class="icon-size-4">{{ showSecret() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </app-field>
+        <app-field label="Originator Başlık">
+          <input type="text" formControlName="mutlucellOriginator" placeholder="Örn: ODIVON" class="odv-input" />
+        </app-field>
+      </div>
+    }
+
+    <!-- 4. VERIMOR FIELDS -->
+    @if (editingProvider() === 'verimor') {
+      <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <h4 class="text-xs font-black uppercase text-slate-500 m-0">Verimor API Parametreleri</h4>
+        <app-field label="Kullanıcı Adı" [required]="true">
+          <input type="text" formControlName="verimorUsername" placeholder="Verimor kullanıcı adı" class="odv-input" />
+        </app-field>
+        <app-field label="Şifre" [required]="true">
+          <div class="relative">
+            <input
+              [type]="showSecret() ? 'text' : 'password'"
+              formControlName="verimorPassword"
+              placeholder="Verimor şifreniz"
+              class="odv-input pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              (click)="showSecret.set(!showSecret())"
+            >
+              <mat-icon class="icon-size-4">{{ showSecret() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </app-field>
+        <app-field label="Başlık (Header)">
+          <input type="text" formControlName="verimorHeader" placeholder="Örn: ODIVONGYM" class="odv-input" />
+        </app-field>
+      </div>
+    }
+
+    <!-- 5. TWILIO FIELDS -->
+    @if (editingProvider() === 'twilio') {
+      <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <h4 class="text-xs font-black uppercase text-slate-500 m-0">Twilio Global API Parametreleri</h4>
+        <app-field label="Account SID" [required]="true">
+          <input type="text" formControlName="twilioAccountSid" placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" class="odv-input font-mono" />
+        </app-field>
+        <app-field label="Auth Token" [required]="true">
+          <div class="relative">
+            <input
+              [type]="showSecret() ? 'text' : 'password'"
+              formControlName="twilioAuthToken"
+              placeholder="Twilio Auth Token"
+              class="odv-input font-mono pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              (click)="showSecret.set(!showSecret())"
+            >
+              <mat-icon class="icon-size-4">{{ showSecret() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </app-field>
+        <app-field label="Gönderici Numarası (From Number)" [required]="true">
+          <input type="text" formControlName="twilioFromNumber" placeholder="+1234567890" class="odv-input font-mono" />
+        </app-field>
+      </div>
+    }
+
+    <!-- 6. SIMULATOR INFO -->
+    @if (editingProvider() === 'simulator') {
+      <div class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+        <strong>Simülatör Modu:</strong> Herhangi bir dış operatör API anahtarına ihtiyaç duymaz. Gönderilen tüm SMS'ler başarıyla teslim edilmiş gibi simüle edilir ve bakiye harcamaz.
+      </div>
+    }
+  </div>
+</app-slide-over>
+
+<!-- ============================================================= -->
+<!-- SLIDE-OVER: HIZLI TEST SMS GÖNDER                             -->
+<!-- ============================================================= -->
+<app-slide-over
+  [open]="testDrawerOpen()"
+  title="Hızlı Test SMS Gönder"
+  submitLabel="Mesajı Gönder"
+  [submitting]="sendingTest()"
+  (closed)="closeTestDrawer()"
+  (submitted)="sendTestSms()"
+>
+  <div class="space-y-4">
+    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+      Aktif Sağlayıcı: <strong class="capitalize text-slate-900 dark:text-white">{{ activeProvider() }}</strong><br/>
+      Mesaj belirtilen numaraya gerçek operatör üzerinden anında iletilecektir.
+    </div>
+
+    <div>
+      <label class="odv-label required">Alıcı Cep Telefonu</label>
+      <input
+        type="tel"
+        [(ngModel)]="testPhone"
+        placeholder="Örn: 0555 123 45 67"
+        class="odv-input font-mono font-bold"
+      />
+    </div>
+
+    <div>
+      <label class="odv-label required">Gönderici Başlığı (Originator)</label>
+      <input
+        type="text"
+        [(ngModel)]="testHeader"
+        placeholder="Örn: ODIVON GYM"
+        class="odv-input font-bold"
+      />
+    </div>
+
+    <div>
+      <label class="odv-label required">Test Mesajı Metni</label>
+      <textarea
+        [(ngModel)]="testMessage"
+        rows="4"
+        class="odv-input resize-none text-xs leading-relaxed"
+      ></textarea>
+      <p class="text-[11px] text-slate-400 mt-1 m-0">Karakter sayısı: {{ testMessage.length }} (1 SMS)</p>
+    </div>
+  </div>
+</app-slide-over>

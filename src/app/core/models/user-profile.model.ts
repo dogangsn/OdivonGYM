@@ -48,4 +48,10 @@ export interface UserProfile {
   isArchived?: boolean;
   archivedAt?: string | null;
   onboardingCompleted?: boolean;
+  kvkkConsent?: boolean | null;
+  kvkkConsentAt?: string | null;
+  commercialConsent?: boolean | null;
+  commercialConsentAt?: string | null;
+  healthConsent?: boolean | null;
+  healthConsentAt?: string | null;
 }

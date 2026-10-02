@@ -18,6 +18,8 @@ import { ClassesService } from '../classes.service';
 import { AdminDisciplinesService } from '../../../admin/disciplines/admin-disciplines.service';
 import { MemberDocumentsService } from '../../../core/services/member-documents.service';
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
+import { DocumentDefinitionsService } from '../../../core/services/document-definitions.service';
+import { DocumentDefinitionsModal } from '../../../shared/components/document-definitions-modal/document-definitions-modal';
 
 type Day = ScheduleModel['dayOfWeek'];
 
@@ -48,7 +50,16 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
 @Component({
   selector: 'app-class-schedule',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, ClassRosterPanel],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    PageHeader,
+    SlideOver,
+    Field,
+    ClassRosterPanel,
+    DocumentDefinitionsModal,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6 pb-20">
@@ -337,29 +348,29 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
 
         <!-- Zorunlu Evrak ve E-İmza Taahhüt Seçimi -->
         <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">
-            Zorunlu Evrak & E-İmza Şartları
-          </label>
-          <div class="grid grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-300">
-            <label class="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" [checked]="hasDocRequirement('health_report')" (change)="toggleDocRequirement('health_report')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <span>Sağlık Raporu</span>
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">
+              Zorunlu Evrak & Belge Şartları
             </label>
-            <label class="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" [checked]="hasDocRequirement('waiver_form')" (change)="toggleDocRequirement('waiver_form')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <span>Taahhütname (E-İmza)</span>
+            <button type="button" (click)="showDocDefsModal.set(true)"
+              class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1">
+              <mat-icon class="icon-size-3">settings</mat-icon>
+              <span>Belge Türlerini Yönet / Ekle</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-300">
+            @for (def of docDefsService.activeDefinitions(); track def.id) {
+            <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all"
+              [class]="hasDocRequirement(def.code) ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 font-bold text-indigo-900 dark:text-indigo-200' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'">
+              <input type="checkbox" [checked]="hasDocRequirement(def.code)" (change)="toggleDocRequirement(def.code)"
+                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+              <span class="truncate">{{ def.name }}</span>
             </label>
-            <label class="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" [checked]="hasDocRequirement('federation_license')" (change)="toggleDocRequirement('federation_license')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <span>Sporcu Lisansı</span>
-            </label>
-            <label class="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" [checked]="hasDocRequirement('parent_permission')" (change)="toggleDocRequirement('parent_permission')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <span>Veli İzin Belgesi</span>
-            </label>
+            }
           </div>
           <p class="m-0 text-[11px] text-slate-500">
-            Bu şartları taşımayan üyelerin kaydı sistem tarafından kısıtlanır veya antrenör onayı gerektirir.
+            Bu şartları taşımayan üyeler için üye evrak sekmesinde "Doküman Bekleniyor" uyarısı gösterilir.
           </p>
         </div>
 
@@ -514,6 +525,12 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
     }
 
     <app-class-roster [schedule]="rosterClass()" [members]="allMembers()" (closed)="rosterClass.set(null)" />
+
+    <app-document-definitions-modal
+      [open]="showDocDefsModal()"
+      (closed)="showDocDefsModal.set(false)"
+      (definitionCreated)="toggleDocRequirement($event.code)"
+    />
   `,
 })
 export class ClassSchedule {
@@ -522,8 +539,11 @@ export class ClassSchedule {
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly documentsService = inject(MemberDocumentsService);
   private readonly membersService = inject(AdminMembersService);
+  protected readonly docDefsService = inject(DocumentDefinitionsService);
   protected readonly auth = inject(AuthService);
   private readonly alertService = inject(AlertService);
+
+  protected readonly showDocDefsModal = signal(false);
 
   protected readonly dayOrder = DAY_ORDER;
   protected readonly dayLabel = DAY_LABEL;
@@ -610,13 +630,7 @@ export class ClassSchedule {
   }
 
   protected formatDocRequirements(reqs: string[]): string {
-    const map: Record<string, string> = {
-      health_report: 'Sağlık Raporu',
-      waiver_form: 'Taahhütname (E-İmza)',
-      federation_license: 'Lisans',
-      parent_permission: 'Veli İzni',
-    };
-    return reqs.map((r) => map[r] || r).join(', ');
+    return reqs.map((r) => this.docDefsService.getLabel(r)).join(', ');
   }
 
   protected hasDocRequirement(key: string): boolean {

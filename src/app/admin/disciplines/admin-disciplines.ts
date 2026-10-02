@@ -31,6 +31,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { StockCategoryItem } from '../../core/models/stock-category.model';
 import { ShopProduct } from '../../core/models/shop-product.model';
+import { DocumentDefinitionsService } from '../../core/services/document-definitions.service';
+import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
 
 export type DisciplinesTab = 'disciplines' | 'muscles' | 'equipment' | 'facilities' | 'stock_categories';
 
@@ -113,7 +115,7 @@ export const MUSCLE_DETAILS: MuscleGroupDetail[] = [
 @Component({
   selector: 'app-admin-disciplines',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, DocumentDefinitionsModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-disciplines.html',
   styleUrl: './admin-disciplines.scss',
@@ -125,6 +127,8 @@ export class AdminDisciplines {
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
   private readonly route = inject(ActivatedRoute);
+  protected readonly docDefsService = inject(DocumentDefinitionsService);
+  protected readonly showDocDefsModal = signal(false);
 
   protected readonly activeTab = signal<DisciplinesTab>('disciplines');
   protected readonly muscleDetails = MUSCLE_DETAILS;
@@ -380,8 +384,8 @@ export class AdminDisciplines {
     this.disciplineModalOpen.set(true);
   }
 
-  toggleDocumentRequirement(docType: DocumentType): void {
-    const current: DocumentType[] = this.disciplineForm.value.requiredDocuments || [];
+  toggleDocumentRequirement(docType: string): void {
+    const current: string[] = this.disciplineForm.value.requiredDocuments || [];
     if (current.includes(docType)) {
       this.disciplineForm.patchValue({
         requiredDocuments: current.filter((t) => t !== docType),
