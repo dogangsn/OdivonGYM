@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 import { LogoMark } from '../../components/logo-mark/logo-mark';
+import { VersionService } from '../../../core/version/version.service';
 
 export interface NavItem {
   icon: string;
@@ -176,6 +177,7 @@ export class Sidebar {
   protected readonly transloco = inject(TranslocoService);
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
+  protected readonly version = inject(VersionService);
   private readonly router = inject(Router);
 
   isGroupDefaultOpen(group: NavGroup): boolean {

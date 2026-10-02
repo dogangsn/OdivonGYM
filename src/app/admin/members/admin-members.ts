@@ -9,13 +9,14 @@ import { Field } from '../../shared/ui/field';
 import { firstError, formatMoney } from '../../shared/ui/ui-utils';
 import { AuthService } from '../../core/auth/auth.service';
 import { BranchContextService } from '../../core/services/branch-context.service';
-import { AdminMembersService } from './admin-members.service';
+import { AdminMembersService, NewMemberInput } from './admin-members.service';
 import { MembershipStatus, UserProfile } from '../../core/models/user-profile.model';
 import { Router } from '@angular/router';
 import { MemberFormDialog } from './member-form-dialog/member-form-dialog';
 import { MemberDetailDrawer } from './member-detail-drawer/member-detail-drawer';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 import { AlertService } from '../../core/services/alert.service';
+
 
 const STATUS_LABEL: Record<MembershipStatus, string> = {
   trial: 'Deneme',
@@ -52,7 +53,8 @@ export class AdminMembers {
   private readonly alertService = inject(AlertService);
   private readonly router = inject(Router);
   private readonly saasSub = inject(SaasSubscriptionService);
-  protected readonly branchContext = inject(BranchContextService);
+  private readonly branchContext = inject(BranchContextService);
+
 
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly statusBadgeClass = STATUS_BADGE_CLASS;
@@ -332,3 +334,4 @@ export class AdminMembers {
     return new Date(ts).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }
+

@@ -31,8 +31,15 @@ export class VersionService {
   readonly applying = signal(false);
   private readonly forced = signal(false);
 
+  readonly manualOpen = signal(false);
+  readonly isChecking = signal(false);
+  readonly lastCheckedAt = signal<Date | null>(null);
+
   /** A newer release is deployed (or the API refused this build): the update dialog is shown. */
   readonly updateRequired = computed(() => this.forced() || this.available() !== null);
+
+  /** Modal is visible if an update is required or if opened manually for release info. */
+  readonly modalVisible = computed(() => this.updateRequired() || this.manualOpen());
 
   /** Release marked critical in release.json (only changes the wording of the dialog). */
   readonly critical = computed(() => {
@@ -41,6 +48,25 @@ export class VersionService {
     if (!next) return false;
     return next.forceLogout || (!!next.minVersion && compareVersions(this.current.version, next.minVersion) < 0);
   });
+
+  openModal(): void {
+    this.manualOpen.set(true);
+  }
+
+  closeModal(): void {
+    this.manualOpen.set(false);
+  }
+
+  async checkNow(): Promise<void> {
+    if (this.isChecking()) return;
+    this.isChecking.set(true);
+    try {
+      await this.check();
+      this.lastCheckedAt.set(new Date());
+    } finally {
+      this.isChecking.set(false);
+    }
+  }
 
   private started = false;
 

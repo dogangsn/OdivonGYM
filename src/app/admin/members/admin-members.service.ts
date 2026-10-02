@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, Subject, of, startWith, switchMap } from 'rxjs';
+import { Observable, Subject, of, startWith, switchMap, catchError } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { GymApi } from '../../core/api/gym.api';
 import { AccessApi } from '../../core/api/access.api';
@@ -101,7 +101,14 @@ export class AdminMembersService {
         }
         return this.reload$.pipe(
           startWith(null),
-          switchMap(() => this.api.listMembers()),
+          switchMap(() =>
+            this.api.listMembers().pipe(
+              catchError((err) => {
+                console.warn('OdivonGYM: Üyeler yüklenemedi (yeniden denenebilir):', err);
+                return of([] as UserProfile[]);
+              }),
+            ),
+          ),
         );
       }),
     );

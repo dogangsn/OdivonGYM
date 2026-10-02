@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, Subject, firstValueFrom, of, startWith, switchMap } from 'rxjs';
+import { Observable, Subject, firstValueFrom, of, startWith, switchMap, catchError } from 'rxjs';
 import { GymApi } from '../../core/api/gym.api';
 import { AuthService } from '../../core/auth/auth.service';
 import { GymPackage, CreateGymPackageInput, UpdateGymPackageInput } from '../../core/models/gym-package.model';
@@ -19,7 +19,14 @@ export class AdminPackagesService {
         }
         return this.reload$.pipe(
           startWith(null),
-          switchMap(() => this.api.listPackages()),
+          switchMap(() =>
+            this.api.listPackages().pipe(
+              catchError((err) => {
+                console.warn('OdivonGYM: Paketler yüklenemedi (yeniden denenebilir):', err);
+                return of([] as GymPackage[]);
+              }),
+            ),
+          ),
         );
       }),
     );

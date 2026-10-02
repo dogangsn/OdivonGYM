@@ -9,15 +9,19 @@
           </div>
           <div class="brand-titles">
             <span class="brand-name">Odivon <span class="brand-name-accent">GYM</span></span>
-            <span class="brand-subtitle">
-              <span class="dot-cyan">•</span> v2.0 Pro <span class="dot-purple">•</span> {{ 'sidebar.cloudBased' | transloco }}
+            <span
+              class="brand-subtitle cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              (click)="$event.preventDefault(); $event.stopPropagation(); version.openModal()"
+              [matTooltip]="'Sürüm Bilgisi: v' + version.current.version + ' (Tıklayın)'"
+            >
+              <span class="dot-cyan">•</span> v{{ version.current.version }} <span class="dot-purple">•</span> {{ 'sidebar.cloudBased' | transloco }}
             </span>
           </div>
         </a>
       </div>
     } @else {
       <div class="brand-collapsed-wrapper">
-        <a routerLink="/dashboard" class="brand-compact-link" [matTooltip]="'OdivonGYM'" matTooltipPosition="right">
+        <a routerLink="/dashboard" class="brand-compact-link" [matTooltip]="'OdivonGYM v' + version.current.version" matTooltipPosition="right">
           <div class="brand-logo-ring">
             <app-logo-mark [size]="22" />
           </div>
