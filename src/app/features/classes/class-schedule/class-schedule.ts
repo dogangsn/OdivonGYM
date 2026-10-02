@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { AlertService } from '../../../core/services/alert.service';
@@ -14,7 +15,8 @@ import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { Field } from '../../../shared/ui/field';
 import { SlideOver } from '../../../shared/ui/slide-over';
 import { firstError } from '../../../shared/ui/ui-utils';
-import { ClassesService } from '../classes.service';
+import { toAppError } from '../../../shared/models/app-error.model';
+import { ClassesService, MemberClassSchedule } from '../classes.service';
 import { AdminDisciplinesService } from '../../../admin/disciplines/admin-disciplines.service';
 import { MemberDocumentsService } from '../../../core/services/member-documents.service';
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
@@ -22,6 +24,15 @@ import { DocumentDefinitionsService } from '../../../core/services/document-defi
 import { DocumentDefinitionsModal } from '../../../shared/components/document-definitions-modal/document-definitions-modal';
 
 type Day = ScheduleModel['dayOfWeek'];
+
+/** Üye rezervasyonunda MainApi hata kodlarının Türkçe karşılığı. */
+const MEMBER_BOOKING_ERRORS: Record<string, string> = {
+  GYM_CLASS_FULL: 'Bu seansın kontenjanı doldu; bekleme listesine katılabilirsin.',
+  GYM_CLASS_NO_CREDIT: 'Paketinde ders hakkı kalmadı.',
+  GYM_WAITLIST_EXISTS: 'Bu seans için zaten kaydın var.',
+  GYM_CLASS_NOT_FOUND: 'Bu ders artık rezervasyona açık değil.',
+  GYM_BOOKING_NOT_FOUND: 'Rezervasyon bulunamadı.',
+};
 
 const DAY_ORDER: Day[] = [1, 2, 3, 4, 5, 6, 0];
 const DAY_LABEL: Record<Day, string> = {
@@ -240,6 +251,19 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                             <mat-icon class="icon-size-3.5">fact_check</mat-icon>
                             <span>Yoklama</span>
                           </button>
+                        } @else if (memberState(c); as m) {
+                          <!-- Üye: sıradaki seans için rezervasyon / bekleme listesi -->
+                          <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{{ sessionLabel(m.sessionDate) }}</span>
+                          @if (m.booked) {
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">Rezervasyonlu</span>
+                            <button type="button" class="odv-btn-ghost" [disabled]="busyId() === c.id" (click)="cancelMine(c)">İptal Et</button>
+                          } @else if (m.waitlisted) {
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">Bekleme Listesindesin</span>
+                          } @else if (m.capacity > 0 && m.taken >= m.capacity) {
+                            <button type="button" class="odv-btn-soft" [disabled]="busyId() === c.id" (click)="waitlist(c)">Bekleme Listesine Katıl</button>
+                          } @else {
+                            <button type="button" class="odv-btn-primary" [disabled]="busyId() === c.id" (click)="book(c)">Rezervasyon Yap</button>
+                          }
                         } @else {
                           <span class="text-xs text-slate-500 font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">
                             Resepsiyon & Eğitmen Kontrolünde
@@ -556,16 +580,30 @@ export class ClassSchedule {
   });
 
   protected readonly isTrainer = computed(() => this.auth.profile()?.role === 'trainer');
-  protected readonly canManage = computed(() => this.isAdmin() || this.isTrainer());
+  protected readonly isReceptionist = computed(() => this.auth.profile()?.role === 'receptionist');
+  /** Öğrenci ataması ve yoklama: yönetici, antrenör ve resepsiyon (MainApi'de classes:update izni). */
+  protected readonly canManage = computed(() => this.isAdmin() || this.isTrainer() || this.isReceptionist());
+  /** Üye hesabı personel uçlarından (branş, alan, üye listesi) 403 alır; onları hiç istemez. */
+  protected readonly isMember = this.service.isMember();
+  protected readonly busyId = signal<string | null>(null);
   protected readonly currentUserId = computed(() => this.auth.profile()?.uid || '');
   protected readonly currentUserName = computed(() => this.auth.profile()?.displayName || 'Antrenör');
 
   protected readonly schedules = toSignal(this.service.watchSchedules(), { initialValue: null });
-  protected readonly disciplines = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] as SportsDiscipline[] });
-  protected readonly facilities = toSignal(this.disciplinesService.watchFacilities(), { initialValue: [] as GymFacility[] });
+  protected readonly disciplines = toSignal(
+    this.isMember ? of([] as SportsDiscipline[]) : this.disciplinesService.watchDisciplines(),
+    { initialValue: [] as SportsDiscipline[] },
+  );
+  protected readonly facilities = toSignal(
+    this.isMember ? of([] as GymFacility[]) : this.disciplinesService.watchFacilities(),
+    { initialValue: [] as GymFacility[] },
+  );
   /** Yoklama paneli açık olan ders (seans bazında kayıt, yoklama, bekleme listesi). */
   protected readonly rosterClass = signal<ScheduleModel | null>(null);
-  protected readonly allMembers = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
+  protected readonly allMembers = toSignal(
+    this.isMember ? of([] as UserProfile[]) : this.membersService.watchMembers(),
+    { initialValue: [] as UserProfile[] },
+  );
 
   // Antrenör görünümünde yalnızca kendi derslerini filtreleme
   protected readonly days = computed(() => {
@@ -618,6 +656,50 @@ export class ClassSchedule {
     status: ['active' as ScheduleModel['status']],
     description: [''],
   });
+
+  protected memberState(schedule: ScheduleModel) {
+    return (schedule as Partial<MemberClassSchedule>).member ?? null;
+  }
+
+  protected sessionLabel(sessionDate: string): string {
+    const date = new Date(`${sessionDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', weekday: 'short' });
+  }
+
+  protected async book(schedule: ScheduleModel): Promise<void> {
+    await this.memberAction(schedule.id, () => this.service.bookNextSession(schedule.id), 'Rezervasyonun alındı.');
+  }
+
+  protected async waitlist(schedule: ScheduleModel): Promise<void> {
+    await this.memberAction(schedule.id, () => this.service.joinWaitlist(schedule.id), 'Bekleme listesine eklendin.');
+  }
+
+  protected async cancelMine(schedule: ScheduleModel): Promise<void> {
+    const bookingId = this.memberState(schedule)?.bookingId;
+    if (!bookingId) return;
+    const ok = await this.alertService.actionConfirm(
+      'Rezervasyon İptali',
+      'Seanstan 2 saatten az kala yapılan iptallerde ders hakkı iade edilmez. İptal etmek istiyor musun?',
+      'Rezervasyonu İptal Et',
+      'warning',
+    );
+    if (!ok) return;
+    await this.memberAction(schedule.id, () => this.service.cancelMyBooking(bookingId), 'Rezervasyonun iptal edildi.');
+  }
+
+  private async memberAction(id: string, run: () => Promise<void>, success: string): Promise<void> {
+    if (this.busyId()) return;
+    this.busyId.set(id);
+    try {
+      await run();
+      this.alertService.toastSuccess(success);
+    } catch (err: unknown) {
+      this.alertService.toastError(MEMBER_BOOKING_ERRORS[toAppError(err).code] ?? 'İşlem tamamlanamadı, tekrar dene.');
+    } finally {
+      this.busyId.set(null);
+    }
+  }
 
   protected getDiscipline(id?: string | null): SportsDiscipline | undefined {
     if (!id) return undefined;

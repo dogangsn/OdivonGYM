@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MeasurementsService } from '../measurements.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { BodyMeasurement } from '../../../core/models/body-measurement.model';
+import { toJsDate } from '../../../shared/ui/ui-utils';
 
 @Component({
   selector: 'app-measurement-dialog',
@@ -126,7 +127,7 @@ export class MeasurementDialog {
       const m = this.measurement();
       if (m) {
         this.isEditMode.set(true);
-        const date = m.date.toDate();
+        const date = toJsDate(m.date) ?? new Date();
         this.form.reset({
           date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
           weight: m.weight || 0,

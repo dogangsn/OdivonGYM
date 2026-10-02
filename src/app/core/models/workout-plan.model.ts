@@ -23,6 +23,7 @@ export interface WorkoutPlan {
   templateId?: string; // Reference to trainer's template
   trainerId?: string;
   trainerName?: string; // Antrenör adı
+  createdByMember?: boolean; // Üyenin kendi yazdığı program (antrenör ataması değil)
   disciplineId?: string; // Hangi branş (Fitness, Kickboks vb.)
   title: string; // Örn: "4 Günlük Bölgesel Split Programı"
   description?: string;

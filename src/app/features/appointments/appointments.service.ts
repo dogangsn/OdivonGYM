@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { AppointmentsApi } from '../../core/api/appointments.api';
+import { MemberApi } from '../../core/api/member.api';
 import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import { CreatePtAppointmentInput, PtAppointment } from '../../core/models/pt-appointment.model';
@@ -13,12 +14,27 @@ export class AppointmentsService {
   private readonly auth = inject(AuthService);
   private readonly profile$ = toObservable(this.auth.profile);
   private readonly reload$ = new Subject<void>();
+  private readonly member = inject(MemberApi);
+
+  /** Üye hesabı personel uçlarından 403 alır; üye kendi kayıtlarını /gym/mobile/* ile yönetir. */
+  isMember(): boolean {
+    return this.auth.profile()?.role === 'user';
+  }
+
+  /** Üyenin atanmış antrenörü; randevu bu antrenörle açılır. */
+  memberTrainer() {
+    return this.member.trainer();
+  }
 
   watchAppointments(): Observable<PtAppointment[]> {
     return tenantReload(this.profile$, this.reload$, () => {
       const userId = this.auth.profile()?.uid;
       if (!userId) return of([]);
-      return this.api.list({ userId });
+      if (this.isMember()) return this.member.appointments();
+      // Personel: antrenör kendine bağlı randevuları, resepsiyon ve yönetici salonun tümünü görür
+      // (önceden userId=personel filtrelendiği için liste hep boş geliyordu).
+      const role = this.auth.profile()?.role;
+      return this.api.list(role === 'trainer' ? { trainerId: userId } : {});
     });
   }
 
@@ -44,6 +60,18 @@ export class AppointmentsService {
   }
 
   async bookAppointment(input: CreatePtAppointmentInput): Promise<string> {
+    if (this.isMember()) {
+      // Antrenör üyeye atanmış olandır; çakışmayı sunucu denetler (409).
+      const created = await firstValueFrom(
+        this.member.createAppointment({
+          appointmentTime: input.appointmentTime.toISOString(),
+          duration: input.duration,
+          notes: input.notes || '',
+        }),
+      );
+      this.reload$.next();
+      return created.id;
+    }
     const hasConflict = await this.checkTrainerConflict(input.trainerName, input.appointmentTime, input.duration);
     if (hasConflict) {
       throw new Error(
@@ -65,6 +93,17 @@ export class AppointmentsService {
   }
 
   async updateAppointment(id: string, input: Partial<CreatePtAppointmentInput>): Promise<void> {
+    if (this.isMember()) {
+      await firstValueFrom(
+        this.member.rescheduleAppointment(id, {
+          appointmentTime: input.appointmentTime?.toISOString(),
+          duration: input.duration,
+          notes: input.notes,
+        }),
+      );
+      this.reload$.next();
+      return;
+    }
     if (input.trainerName && input.appointmentTime && input.duration) {
       const hasConflict = await this.checkTrainerConflict(
         input.trainerName,
@@ -89,7 +128,11 @@ export class AppointmentsService {
   }
 
   async cancelAppointment(id: string, reason?: string): Promise<void> {
-    await firstValueFrom(this.api.cancel(id, { cancellationReason: reason || '' }));
+    await firstValueFrom(
+      this.isMember()
+        ? this.member.cancelAppointment(id, reason || '')
+        : this.api.cancel(id, { cancellationReason: reason || '' }),
+    );
     this.reload$.next();
   }
 

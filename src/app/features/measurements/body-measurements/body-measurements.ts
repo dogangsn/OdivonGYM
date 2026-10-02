@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { sortDesc } from '../../../shared/ui/ui-utils';
+import { sortDesc, toJsDate } from '../../../shared/ui/ui-utils';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
@@ -119,7 +119,9 @@ export class BodyMeasurements {
   }
 
   formatDate(timestamp: any): string {
-    const date = timestamp.toDate();
+    // API tarihi ISO metin döner; Timestamp varsayımı (.toDate) sayfayı çökertiyordu.
+    const date = toJsDate(timestamp);
+    if (!date) return '';
     return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

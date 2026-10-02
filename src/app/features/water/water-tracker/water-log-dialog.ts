@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { WaterService } from '../water.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { WaterLog, CreateWaterLogInput } from '../../../core/models/water-log.model';
+import { toJsDate } from '../../../shared/ui/ui-utils';
 
 @Component({
   selector: 'app-water-log-dialog',
@@ -120,7 +121,7 @@ export class WaterLogDialog {
       const logData = this.log();
       if (logData) {
         this.isEditMode.set(true);
-        const date = logData.date.toDate();
+        const date = toJsDate(logData.date) ?? new Date();
         this.form.reset({
           date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
           amount: logData.amount,

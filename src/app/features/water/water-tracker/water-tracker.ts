@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { AlertService } from '../../../core/services/alert.service';
 import { WaterLogDialog } from './water-log-dialog';
 import { WaterLog } from '../../../core/models/water-log.model';
-import { formatDate, sortDesc } from '../../../shared/ui/ui-utils';
+import { formatDate, sortDesc, toJsDate } from '../../../shared/ui/ui-utils';
 
 @Component({
   selector: 'app-water-tracker',
@@ -130,7 +130,8 @@ export class WaterTracker {
     today.setHours(0, 0, 0, 0);
     return this.logs()
       .filter(log => {
-        const logDate = log.date.toDate();
+        const logDate = toJsDate(log.date);
+        if (!logDate) return false;
         logDate.setHours(0, 0, 0, 0);
         return logDate.getTime() === today.getTime();
       })

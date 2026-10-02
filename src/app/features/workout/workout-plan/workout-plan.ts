@@ -187,12 +187,14 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
                     <mat-icon class="icon-size-3.5">restart_alt</mat-icon>
                     Antrenmanı Baştan Başlat
                   </button>
-                  <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(plan)">
-                    <mat-icon class="icon-size-4">edit</mat-icon>
-                  </button>
-                  <button type="button" class="odv-icon-btn odv-icon-btn-danger" title="Sil" (click)="remove(plan)">
-                    <mat-icon class="icon-size-4">delete</mat-icon>
-                  </button>
+                  @if (canEdit(plan)) {
+                    <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(plan)">
+                      <mat-icon class="icon-size-4">edit</mat-icon>
+                    </button>
+                    <button type="button" class="odv-icon-btn odv-icon-btn-danger" title="Sil" (click)="remove(plan)">
+                      <mat-icon class="icon-size-4">delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </div>
 
@@ -340,9 +342,11 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
         </app-field>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <app-field label="Antrenör Adı">
-            <input type="text" formControlName="trainerName" class="odv-input" placeholder="Örn. Ahmet Hoca" />
-          </app-field>
+          @if (!isMember) {
+            <app-field label="Antrenör Adı">
+              <input type="text" formControlName="trainerName" class="odv-input" placeholder="Örn. Ahmet Hoca" />
+            </app-field>
+          }
           @if (editing()) {
             <app-field label="Program Durumu">
               <select formControlName="status" class="odv-input">
@@ -475,6 +479,13 @@ export class WorkoutPlan {
   protected readonly date = formatDate;
 
   private readonly data = toSignal(this.service.watchPlans(), { initialValue: null });
+
+  /** Üye kendi yazdığı programı düzenler/siler; antrenörün atadığı programda yalnız durumu değiştirir. */
+  protected readonly isMember = this.service.isMember();
+
+  protected canEdit(plan: PlanModel): boolean {
+    return !this.isMember || plan.createdByMember === true;
+  }
   protected readonly plans = computed(() => {
     const list = this.data();
     return list && sortDesc(list, (p) => p.createdAt);

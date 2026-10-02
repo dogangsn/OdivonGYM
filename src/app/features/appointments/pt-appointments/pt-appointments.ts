@@ -5,10 +5,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AlertService } from '../../../core/services/alert.service';
 import { PtAppointment } from '../../../core/models/pt-appointment.model';
+import { AppError } from '../../../shared/models/app-error.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { Field } from '../../../shared/ui/field';
 import { SlideOver } from '../../../shared/ui/slide-over';
-import { firstError, formatDateTime, sortAsc, sortDesc, toDateTimeInput } from '../../../shared/ui/ui-utils';
+import { firstError, formatDateTime, sortAsc, sortDesc, toDateTimeInput, toMillis } from '../../../shared/ui/ui-utils';
 import { AppointmentsService } from '../appointments.service';
 
 const STATUS_LABEL: Record<PtAppointment['status'], string> = {
@@ -37,18 +38,26 @@ const STATUS_CLASS: Record<PtAppointment['status'], string> = {
         icon="event_available"
         description="Personal trainer'ınla randevu al, randevularını düzenle veya iptal et."
       >
-        <button actions type="button" class="odv-btn-primary" (click)="openForm()">
+        <button actions type="button" class="odv-btn-primary" [disabled]="!canBook()" (click)="openForm()">
           <mat-icon class="icon-size-4.5">add</mat-icon>
           Randevu Al
         </button>
       </app-page-header>
+
+      @if (isMember && trainerLoaded() && !trainer()) {
+        <div class="odv-card mb-4 p-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800/50">
+          Henüz sana atanmış bir antrenör yok. PT randevusu alabilmek için resepsiyondan antrenör ataması iste.
+        </div>
+      }
 
       @if (appointments() === null) {
         <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
       } @else if (appointments()!.length === 0) {
         <div class="odv-card py-16 text-center">
           <p class="text-sm text-slate-500 dark:text-slate-400 m-0">Henüz randevun yok.</p>
-          <button type="button" class="odv-btn-soft mt-4" (click)="openForm()">+ İlk Randevunu Al</button>
+          @if (canBook()) {
+            <button type="button" class="odv-btn-soft mt-4" (click)="openForm()">+ İlk Randevunu Al</button>
+          }
         </div>
       } @else {
         <div class="space-y-6">
@@ -88,9 +97,11 @@ const STATUS_CLASS: Record<PtAppointment['status'], string> = {
                       <p class="m-0 text-xs text-slate-400">{{ a.trainerName }} · {{ a.duration }} dk</p>
                     </div>
                     <span class="odv-badge" [class]="statusClass[a.status]">{{ statusLabel[a.status] }}</span>
-                    <button type="button" class="odv-icon-btn odv-icon-btn-danger" title="Kaydı sil" (click)="remove(a)">
-                      <mat-icon class="icon-size-4">delete</mat-icon>
-                    </button>
+                    @if (!isMember) {
+                      <button type="button" class="odv-icon-btn odv-icon-btn-danger" title="Kaydı sil" (click)="remove(a)">
+                        <mat-icon class="icon-size-4">delete</mat-icon>
+                      </button>
+                    }
                   </div>
                 }
               </div>
@@ -111,7 +122,7 @@ const STATUS_CLASS: Record<PtAppointment['status'], string> = {
     >
       <div [formGroup]="form" class="space-y-4">
         <app-field label="Antrenör" [required]="true" [error]="err('trainerName', { required: 'Antrenör adı gerekli.' })">
-          <input type="text" formControlName="trainerName" class="odv-input" />
+          <input type="text" formControlName="trainerName" class="odv-input" [readonly]="isMember" />
         </app-field>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <app-field label="Tarih & Saat" [required]="true" [error]="err('appointmentTime', { required: 'Tarih ve saat gerekli.' })">
@@ -145,8 +156,26 @@ export class PtAppointments {
 
   protected readonly appointments = toSignal(this.service.watchAppointments(), { initialValue: null });
 
+  /** Üye randevuyu kendine atanmış antrenörle alır; personel uçlarına (403) gitmez. */
+  protected readonly isMember = this.service.isMember();
+  protected readonly trainer = signal<{ displayName: string } | null>(null);
+  protected readonly trainerLoaded = signal(false);
+  protected readonly canBook = computed(() => !this.isMember || !!this.trainer());
+
+  constructor() {
+    if (this.isMember) {
+      this.service.memberTrainer().subscribe({
+        next: (trainer) => {
+          this.trainer.set(trainer);
+          this.trainerLoaded.set(true);
+        },
+        error: () => this.trainerLoaded.set(true),
+      });
+    }
+  }
+
   private isUpcoming(a: PtAppointment): boolean {
-    return a.status === 'booked' && (a.appointmentTime?.toMillis?.() ?? 0) >= Date.now();
+    return a.status === 'booked' && toMillis(a.appointmentTime) >= Date.now();
   }
 
   protected readonly upcoming = computed(() =>
@@ -176,7 +205,7 @@ export class PtAppointments {
     this.editing.set(appointment);
     this.errorMessage.set('');
     this.form.reset({
-      trainerName: appointment?.trainerName ?? '',
+      trainerName: appointment?.trainerName ?? (this.isMember ? this.trainer()?.displayName ?? '' : ''),
       appointmentTime: appointment ? toDateTimeInput(appointment.appointmentTime) : '',
       duration: appointment?.duration ?? 60,
       notes: appointment?.notes ?? '',
@@ -218,7 +247,15 @@ export class PtAppointments {
       this.snackBar.open(current ? 'Randevu güncellendi.' : 'Randevu alındı.', 'Kapat', { duration: 3000 });
       this.close();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Kaydedilemedi, tekrar dene.';
+      // Sunucu mesajları İngilizce; yalnız panelin kendi çakışma uyarısı (düz Error) olduğu gibi gösterilir.
+      const msg =
+        err instanceof AppError
+          ? err.status === 409
+            ? 'Antrenörün bu saatte başka bir randevusu var. Lütfen farklı bir saat seç.'
+            : 'Kaydedilemedi, tekrar dene.'
+          : err instanceof Error
+            ? err.message
+            : 'Kaydedilemedi, tekrar dene.';
       this.errorMessage.set(msg);
     } finally {
       this.submitting.set(false);
