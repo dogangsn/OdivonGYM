@@ -721,18 +721,18 @@ export class MemberDetailDrawer {
 
   applyTemplate(template: WorkoutTemplate): void {
     this.selectedTemplateId.set(template.id);
-    this.workoutPlanTitle.set(template.title);
-    this.workoutPlanNotes.set(template.description);
+    this.workoutPlanTitle.set(template.title || 'Antrenman Programı');
+    this.workoutPlanNotes.set(template.description || '');
     this.workoutPlanDisciplineId.set(template.disciplineId || '');
 
-    const clonedExercises: Exercise[] = template.exercises.map((ex, idx) => ({
+    const clonedExercises: Exercise[] = (template.exercises || []).map((ex, idx) => ({
       ...ex,
       id: `ex-${Date.now()}-${idx}`,
     }));
 
     this.currentPlanExercises.set(clonedExercises);
     this.snackBar.open(
-      `"${template.title}" şablonu yüklendi! (${clonedExercises.length} egzersiz hazır)`,
+      `"${template.title || 'Şablon'}" şablonu yüklendi! (${clonedExercises.length} egzersiz hazır)`,
       'Tamam',
       { duration: 3000 },
     );

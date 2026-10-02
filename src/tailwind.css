@@ -30,6 +30,16 @@
    `!important` because Angular Material's own `.mat-icon { width: 24px; ... }`
    rule is injected after tailwind.css in the build and would otherwise win at
    equal specificity regardless of these utilities' source order. */
+.icon-size-3 {
+  width: 0.75rem !important;
+  height: 0.75rem !important;
+  font-size: 0.75rem !important;
+}
+.icon-size-3\.5 {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+  font-size: 0.875rem !important;
+}
 .icon-size-4 {
   width: 1rem !important;
   height: 1rem !important;

@@ -484,7 +484,7 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-              @for (tpl of workoutTemplates(); track tpl.id) {
+              @for (tpl of workoutTemplates(); track tpl.id || $index) {
               <button type="button" (click)="applyTemplate(tpl)"
                 class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer group"
                 [class]="selectedTemplateId() === tpl.id
@@ -495,10 +495,10 @@
                   @else if (tpl.level === 'intermediate') { ⚡ }
                   @else { 🔥 }
                 </span>
-                <span>{{ tpl.title }}</span>
+                <span>{{ tpl.title || 'İsimsiz Şablon' }}</span>
                 <span class="text-[10px] px-1.5 py-0.2 rounded-full font-semibold"
                   [class]="selectedTemplateId() === tpl.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-600'">
-                  {{ tpl.exercises.length }} hareket
+                  {{ tpl.exercises?.length || 0 }} hareket
                 </span>
               </button>
               }
@@ -960,7 +960,7 @@
 
               <!-- Egzersiz Tablosu -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                @for (ex of plan.exercises; track $index) {
+                @for (ex of plan.exercises || []; track $index) {
                 <div
                   class="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between gap-2.5">
                   <div class="flex items-start gap-2.5">

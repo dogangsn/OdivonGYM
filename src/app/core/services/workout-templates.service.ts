@@ -21,7 +21,13 @@ export class WorkoutTemplatesService {
 
   watchTemplates(): Observable<WorkoutTemplate[]> {
     return tenantReload(this.profile$, this.reload$, () => this.api.listTemplates()).pipe(
-      map((list) => [...this.systemTemplates(), ...list]),
+      map((list) =>
+        [...this.systemTemplates(), ...(list || [])].map((t) => ({
+          ...t,
+          title: t.title || 'İsimsiz Şablon',
+          exercises: Array.isArray(t.exercises) ? t.exercises : [],
+        })),
+      ),
     );
   }
 

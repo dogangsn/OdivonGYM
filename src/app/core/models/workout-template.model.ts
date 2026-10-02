@@ -27,7 +27,7 @@ export interface WorkoutTemplate {
   targetDaysPerWeek: number;
   description: string;
   disciplineId?: string | null;
-  exercises: Exercise[];
+  exercises?: Exercise[];
   isSystemDefault?: boolean;
   createdByTrainerId?: string | null;
   createdByTrainerName?: string | null;
