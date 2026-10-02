@@ -235,5 +235,6 @@ function mapCurrentUser(me: MeRoleSource & {
     updatedAt: '',
     phone: me.phone ?? undefined,
     onboardingCompleted: me.onboardingCompleted,
+    permissions: me.permissions ?? {},
   };
 }

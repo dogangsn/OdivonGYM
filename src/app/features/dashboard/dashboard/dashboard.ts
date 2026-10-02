@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Observable, of } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -13,10 +14,18 @@ import { MemberQrService } from '../../../shared/components/member-qr-modal/memb
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
 import { AdminShopService } from '../../../admin/shop/admin-shop.service';
 import { AlertService } from '../../../core/services/alert.service';
-import { formatMoney } from '../../../shared/ui/ui-utils';
+import { MemberAccountService } from '../../../core/services/member-account.service';
+import { PermissionService } from '../../../core/services/permission.service';
+import { formatMoney, toJsDate } from '../../../shared/ui/ui-utils';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { ShopSale } from '../../../core/models/shop-product.model';
 import { AccessLog } from '../../../core/models/access-log.model';
+
+const MEMBERSHIP_STATUS_LABEL: Record<string, string> = {
+  trial: 'DENEME',
+  expired: 'SÜRESİ DOLDU',
+  cancelled: 'İPTAL',
+};
 
 type Accent = 'primary' | 'sky' | 'emerald' | 'amber' | 'purple';
 
@@ -79,22 +88,37 @@ export class Dashboard {
   private readonly accessService = inject(AdminAccessControlService);
   private readonly memberQrService = inject(MemberQrService);
   private readonly alertService = inject(AlertService);
+  private readonly account = inject(MemberAccountService);
+  private readonly permissions = inject(PermissionService);
 
   protected readonly accentClasses = ACCENT_CLASSES;
   protected readonly money = formatMoney;
 
-  // Role Checks
-  protected readonly isStaffOrTrainer = computed(() => {
-    const role = this.auth.profile()?.role;
-    return role === 'admin' || role === 'owner' || role === 'trainer';
-  });
+  // Rol: üye ana sayfası kişisel kartları, personel ana sayfası salon özetini gösterir. Her rol
+  // yalnız MainApi izninin yettiği veriyi ister (aksi halde 403 ve "yetkiniz yok" uyarısı çıkar).
+  protected readonly isMember = this.auth.profile()?.role === 'user';
+  protected readonly isStaff = !this.isMember;
+  /** Satış (shop:view) ve turnike (accessControl:view): varsayılan rollerde yönetici ve resepsiyon. */
+  protected readonly canSeeSales = signal(this.isStaff && this.permissions.can('shop'));
+  protected readonly canSeeAccess = signal(this.isStaff && this.permissions.can('accessControl'));
+  private readonly canSeeMembers = this.isStaff && this.permissions.can('members');
 
   // Data signals
-  private readonly waterLogs = toSignal(this.waterService.watchLogs(), { initialValue: [] });
-  private readonly workoutPlans = toSignal(this.workoutService.watchPlans(), { initialValue: [] });
-  protected readonly allMembers = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
-  protected readonly allSales = toSignal(this.shopService.watchSales(), { initialValue: [] as ShopSale[] });
-  protected readonly allAccessLogs = toSignal(this.accessService.watchLogs(), { initialValue: [] as AccessLog[] });
+  private readonly waterLogs = toSignal(this.onlyIf(this.isMember, () => this.waterService.watchLogs()), { initialValue: [] });
+  private readonly workoutPlans = toSignal(this.onlyIf(this.isMember, () => this.workoutService.watchPlans()), { initialValue: [] });
+  protected readonly allMembers = toSignal(this.onlyIf(this.canSeeMembers, () => this.membersService.watchMembers()), {
+    initialValue: [] as UserProfile[],
+  });
+  protected readonly allSales = toSignal(this.onlyIf(this.canSeeSales(), () => this.shopService.watchSales()), {
+    initialValue: [] as ShopSale[],
+  });
+  protected readonly allAccessLogs = toSignal(this.onlyIf(this.canSeeAccess(), () => this.accessService.watchLogs()), {
+    initialValue: [] as AccessLog[],
+  });
+
+  private onlyIf<T>(allowed: boolean, load: () => Observable<T[]>): Observable<T[]> {
+    return allowed ? load() : of([] as T[]);
+  }
 
   protected readonly firstName = computed(
     () => this.auth.profile()?.displayName?.split(' ')[0] ?? this.t('dashboard.defaultMemberName'),
@@ -177,24 +201,44 @@ export class Dashboard {
   // ========================================================
   // BİREYSEL ÜYE METRİKLERİ (Member Profile View)
   // ========================================================
-  protected readonly isMembershipActive = computed(() => this.auth.membershipStatus() === 'active');
+  /** Üyelik özeti `/gym/mobile/me`den gelir (`/identity/me` salon denemesini taşır, üyeliği değil). */
+  private readonly membership = computed(() => this.account.me()?.membership ?? null);
 
-  protected readonly membershipTitle = computed(() =>
-    this.isMembershipActive() ? 'Aktif Üyelik' : 'Ücretsiz Deneme',
-  );
+  protected readonly isMembershipActive = computed(() => {
+    const membership = this.membership();
+    return membership ? membership.status === 'active' : this.auth.membershipStatus() === 'active';
+  });
+
+  protected readonly membershipTitle = computed(() => {
+    if (this.isMembershipActive()) return 'Aktif Üyelik';
+    return this.membership() ? 'Üyelik Durumu' : 'Ücretsiz Deneme';
+  });
 
   protected readonly membershipValue = computed(() => {
     if (this.isMembershipActive()) return 'AKTİF';
+    const membership = this.membership();
+    if (membership) return MEMBERSHIP_STATUS_LABEL[membership.status] ?? 'PASİF';
     const days = this.auth.trialDaysLeft();
     return `${days} GÜN`;
   });
 
   protected readonly membershipSubText = computed(() => {
+    const membership = this.membership();
+    if (membership) {
+      if (membership.daysLeft != null) return `${membership.type ?? 'Üyelik'} · ${membership.daysLeft} gün kaldı`;
+      return membership.type ?? 'Üyelik';
+    }
     if (this.isMembershipActive()) return 'Tam Erişim Paketi';
     return `${this.auth.trialDaysLeft()} Gün Kalan Deneme`;
   });
 
   protected readonly membershipEndDate = computed(() => {
+    const membership = this.membership();
+    if (membership) {
+      return membership.endsAt
+        ? new Date(membership.endsAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+        : 'Süresiz';
+    }
     const profile = this.auth.profile();
     const date = this.isMembershipActive() ? profile?.membershipEndsAt : profile?.trialEndsAt;
     if (!date) return 'Süresiz';
@@ -202,7 +246,7 @@ export class Dashboard {
   });
 
   protected readonly walletFormatted = computed(() => {
-    const bal = this.auth.profile()?.walletBalance ?? 0;
+    const bal = this.account.me()?.walletBalance ?? this.auth.profile()?.walletBalance ?? 0;
     return bal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   });
 
@@ -213,7 +257,8 @@ export class Dashboard {
     today.setHours(0, 0, 0, 0);
 
     const todayLogs = logs.filter((log) => {
-      const d = log.date.toDate();
+      const d = toJsDate(log.date);
+      if (!d) return false;
       d.setHours(0, 0, 0, 0);
       return d.getTime() === today.getTime();
     });

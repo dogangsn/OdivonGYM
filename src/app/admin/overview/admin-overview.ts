@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { GymReportsApi, OccupancyNow } from '../../core/api/gym-reports.api';
 import { tenantReloadValue } from '../../core/api/unwrap';
 import { RouterLink } from '@angular/router';
@@ -15,6 +15,7 @@ import { AdminAccessControlService } from '../access-control/admin-access-contro
 import { formatMoney, toMillis } from '../../shared/ui/ui-utils';
 import { AccessLog } from '../../core/models/access-log.model';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 type Accent = 'primary' | 'sky' | 'emerald' | 'amber';
 
@@ -421,20 +422,31 @@ export class AdminOverview {
   private readonly accountingService = inject(AdminAccountingService);
   private readonly accessService = inject(AdminAccessControlService);
   private readonly reportsApi = inject(GymReportsApi);
+  private readonly permissions = inject(PermissionService);
 
   protected readonly accentClasses = ACCENT_CLASSES;
 
   /** Anlık doluluk MainApi'den (bugünün turnike kayıtları); dakikada bir, sekme görünürken yenilenir. */
   private readonly occupancy = toSignal(
-    tenantReloadValue(toObservable(this.auth.profile), new Subject<void>(), () => this.reportsApi.occupancyNow(), null as OccupancyNow | null, 60_000),
+    this.permissions.can('reports')
+      ? tenantReloadValue(toObservable(this.auth.profile), new Subject<void>(), () => this.reportsApi.occupancyNow(), null as OccupancyNow | null, 60_000)
+      : of(null),
     { initialValue: null },
   );
   /** Aktif şubelerin toplam kapasitesi; şube kapasitesi girilmemişse bilinmiyor. */
   protected readonly maxCapacity = computed(() => this.occupancy()?.capacity ?? null);
 
-  private readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
-  private readonly accountingEntries = toSignal(this.accountingService.watchEntries(), { initialValue: [] });
-  private readonly accessLogs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
+  // Resepsiyon/antrenör bu sayfaya düşer; izni olmayan veriyi istemez (yoksa her yenilemede 403 uyarısı).
+  private readonly members = toSignal(this.permissions.can('members') ? this.membersService.watchMembers() : of([]), {
+    initialValue: [],
+  });
+  private readonly accountingEntries = toSignal(
+    this.permissions.can('accounting') ? this.accountingService.watchEntries() : of([]),
+    { initialValue: [] },
+  );
+  private readonly accessLogs = toSignal(this.permissions.can('accessControl') ? this.accessService.watchLogs() : of([]), {
+    initialValue: [],
+  });
 
   protected readonly totalMembers = computed(() => this.members().length);
 

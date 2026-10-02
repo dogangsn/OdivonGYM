@@ -48,6 +48,8 @@ export interface UserProfile {
   isArchived?: boolean;
   archivedAt?: string | null;
   onboardingCompleted?: boolean;
+  /** MainApi'nin `/identity/me` ile döndürdüğü etkin izinler (kaynak → işlemler); sahipte boş olabilir. */
+  permissions?: Record<string, string[]>;
   kvkkConsent?: boolean | null;
   kvkkConsentAt?: string | null;
   commercialConsent?: boolean | null;

@@ -7,6 +7,7 @@
         {{ firstName() }}
       </h1>
     </div>
+    @if (isMember) {
     <div class="flex items-center gap-2">
       <button type="button" (click)="openQrPass()"
         class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 inline-flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]">
@@ -23,12 +24,13 @@
         Antrenmana Başla
       </a>
     </div>
+    }
   </section>
 
   <!-- ========================================================================= -->
   <!-- SECTION 8: EXECUTIVE & LIVE SALON OPERATIONS WIDGETS (Admin/Trainer/Staff)-->
   <!-- ========================================================================= -->
-  @if (isStaffOrTrainer()) {
+  @if (isStaff) {
   <section class="flex flex-col gap-4">
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200/80 dark:border-slate-800">
@@ -46,6 +48,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
 
+      @if (canSeeSales()) {
       <!-- WIDGET 1: Bugün Yapılan Satışlar -->
       <div
         class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
@@ -98,6 +101,9 @@
         </div>
       </div>
 
+      }
+
+      @if (canSeeAccess()) {
       <!-- WIDGET 2: Günlük Gelen Kadın / Erkek Üye İstatistikleri -->
       <div
         class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
@@ -157,6 +163,8 @@
           </a>
         </div>
       </div>
+
+      }
 
       <!-- WIDGET 3: Bugün Abonelik Yapan & Yenileyenler -->
       <div
@@ -274,6 +282,8 @@
   </section>
   }
 
+  <!-- Üye ana sayfası: kişisel kartlar ve kısayollar (personel bu verileri üye uçlarından alamaz) -->
+  @if (isMember) {
   <!-- 2. Personal Member KPI Cards (4-Column Grid) -->
   <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
 
@@ -448,4 +458,5 @@
       }
     </div>
   </section>
+  }
 </div>

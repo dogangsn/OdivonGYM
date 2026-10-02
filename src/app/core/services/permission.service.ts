@@ -72,6 +72,19 @@ export class PermissionService {
   }
 
   /**
+   * MainApi izni var mı (`@RequirePermission(resource, action)` ile aynı kural: sahip her şeye
+   * yetkili, diğerleri rollerinden gelen izinlerle). Ekranlar personel verisini istemeden önce
+   * bununla bakar; yoksa istek 403 döner ve "yetkiniz yok" uyarısı çıkar. Önizleme rolü değil,
+   * oturumun gerçek izni esas alınır (istekleri gerçek token yapar).
+   */
+  can(resource: string, action: 'view' | 'create' | 'update' | 'delete' = 'view'): boolean {
+    const profile = this.auth.profile();
+    if (!profile) return false;
+    if (profile.role === 'owner') return true;
+    return profile.permissions?.[resource]?.includes(action) ?? false;
+  }
+
+  /**
    * Belirli bir rota için erişim iznini denetler.
    */
   canAccessRoute(path: string): boolean {
@@ -113,6 +126,9 @@ export class PermissionService {
         '/admin/packages',
         '/admin/receivables',
         '/admin/reminders',
+        // MainApi resepsiyona shop:create ve guestMembers:create/update veriyor; ekranlar kapalıydı.
+        '/admin/pos',
+        '/admin/guest-members',
         '/classes',
         '/appointments',
         '/dashboard',

@@ -16,6 +16,7 @@
         <span class="hidden sm:inline">{{ 'subscriptions.csvExport' | transloco }}</span>
       </button>
 
+      @if (canEditMembers) {
       <button
         type="button"
         (click)="openRenewDrawer()"
@@ -24,6 +25,7 @@
         <mat-icon class="icon-size-4.5">autorenew</mat-icon>
         <span>{{ 'subscriptions.quickRenew' | transloco }}</span>
       </button>
+      }
     </div>
   </app-page-header>
 
@@ -478,6 +480,8 @@
                 <!-- Kısayol İşlemleri (Aksiyonlar) -->
                 <td class="odv-td text-right">
                   <div class="flex items-center justify-end gap-1.5">
+                    <!-- Yenile / gün ekle / dondur / iptal: members:update izni (antrenörde yok) -->
+                    @if (canEditMembers) {
                     <!-- Hızlı Yenile Butonu (Ana Eylem) -->
                     <button
                       type="button"
@@ -499,6 +503,7 @@
                       <mat-icon class="icon-size-3.5">more_time</mat-icon>
                       <span>+ {{ 'subscriptions.days' | transloco }}</span>
                     </button>
+                    }
 
                     <!-- WhatsApp Hatırlatma -->
                     @if (item.member.phone) {
@@ -528,6 +533,7 @@
                         <span>{{ 'subscriptions.memberDetail' | transloco }}</span>
                       </button>
 
+                      @if (canEditMembers) {
                       <button mat-menu-item (click)="openExtendModal(item.member, 15)">
                         <mat-icon>add_circle_outline</mat-icon>
                         <span>{{ 'subscriptions.add15Days' | transloco }}</span>
@@ -542,6 +548,7 @@
                         <mat-icon class="text-rose-600">cancel</mat-icon>
                         <span>{{ 'subscriptions.cancelSubscription' | transloco }}</span>
                       </button>
+                      }
                     </mat-menu>
                   </div>
                 </td>

@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { AdminDisciplinesService, normalizeDisciplineKey } from './admin-disciplines.service';
 import {
   DisciplineCategory,
@@ -28,6 +29,7 @@ import {
 import { DOCUMENT_TYPE_LABELS, DocumentType } from '../../core/models/member-document.model';
 import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../core/models/workout-plan.model';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { StockCategoryItem } from '../../core/models/stock-category.model';
 import { ShopProduct } from '../../core/models/shop-product.model';
@@ -143,10 +145,13 @@ export class AdminDisciplines {
   protected readonly equipment = toSignal(this.disciplinesService.watchEquipment(), {
     initialValue: [] as GymEquipment[],
   });
-  protected readonly stockCategories = toSignal(this.shopService.watchCategories(), {
-    initialValue: [] as StockCategoryItem[],
-  });
-  protected readonly shopProducts = toSignal(this.shopService.watchProducts(), {
+  // Stok sekmesi mağaza iznine (shop:view) bağlı; antrenörde yok, istek 403 döner.
+  private readonly canSeeShop = inject(PermissionService).can('shop');
+  protected readonly stockCategories = toSignal(
+    this.canSeeShop ? this.shopService.watchCategories() : of([] as StockCategoryItem[]),
+    { initialValue: [] as StockCategoryItem[] },
+  );
+  protected readonly shopProducts = toSignal(this.canSeeShop ? this.shopService.watchProducts() : of([] as ShopProduct[]), {
     initialValue: [] as ShopProduct[],
   });
 

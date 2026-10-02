@@ -19,6 +19,7 @@ import { AdminMembersService } from '../members/admin-members.service';
 import { AdminPackagesService } from '../packages/admin-packages.service';
 import { BranchContextService } from '../../core/services/branch-context.service';
 import { AlertService } from '../../core/services/alert.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserProfile, MembershipStatus } from '../../core/models/user-profile.model';
 import { GymPackage } from '../../core/models/gym-package.model';
@@ -71,6 +72,8 @@ export class AdminSubscriptions {
   protected readonly branchContext = inject(BranchContextService);
   private readonly alertService = inject(AlertService);
   private readonly auth = inject(AuthService);
+  /** Yenileme, gün ekleme, dondurma ve iptal MainApi'de members:update ister (antrenör yalnız görür). */
+  protected readonly canEditMembers = inject(PermissionService).can('members', 'update');
 
   protected readonly money = formatMoney;
   protected readonly formatDate = formatDate;
