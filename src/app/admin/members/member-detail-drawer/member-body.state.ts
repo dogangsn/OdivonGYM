@@ -5,6 +5,7 @@ import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { WaterLog } from '../../../core/models/water-log.model';
 import { AlertService } from '../../../core/services/alert.service';
+import { toMillis } from '../../../shared/ui/ui-utils';
 import { AdminMembersService } from '../admin-members.service';
 
 /**
@@ -119,7 +120,7 @@ export class MemberBodyState {
 
     return logs
       .filter((l) => {
-        const t = l.date?.toMillis() ?? 0;
+        const t = toMillis(l.date);
         return t >= todayMs && t < tomorrowMs;
       })
       .reduce((sum, l) => sum + (l.amount || 0), 0);

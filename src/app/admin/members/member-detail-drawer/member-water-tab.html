@@ -99,7 +99,7 @@
               }
             </p>
             <span class="text-[11px] text-slate-400 font-medium">
-              {{ formatDate(log.date) }} • {{ formatTime(log.createdAt) }}
+              {{ formatDate(log.date) }} • {{ formatTime(log.createdAt || log.date) }}
             </span>
           </div>
         </div>

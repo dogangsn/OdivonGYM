@@ -84,4 +84,10 @@ describe('DocumentDefinitionsService', () => {
     expect(deletedDefault).toBeFalse();
     expect(service.getDefinition('health_report')).toBeDefined();
   });
+
+  it('ensures system defaults do not force global document requirements (isRequiredByDefault is false)', () => {
+    const healthReport = service.getDefinition('health_report');
+    expect(healthReport).toBeDefined();
+    expect(healthReport?.isRequiredByDefault).toBeFalse();
+  });
 });

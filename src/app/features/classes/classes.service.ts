@@ -12,6 +12,15 @@ import {
   UpdateClassScheduleInput,
 } from '../../core/models/class-schedule.model';
 
+function normalizeSchedule<T extends ClassSchedule>(item: T): T {
+  const ext = (item as any).extras;
+  return {
+    ...item,
+    daysOfWeek: item.daysOfWeek ?? ext?.daysOfWeek ?? (item.dayOfWeek != null ? [item.dayOfWeek] : [1]),
+    ageGroup: item.ageGroup || ext?.ageGroup || '',
+  };
+}
+
 /** Üye görünümünde ders satırı: sıradaki seanstaki rezervasyon / bekleme durumu da gelir. */
 export type MemberClassSchedule = ClassSchedule & { member: MemberClass };
 
@@ -31,7 +40,9 @@ export class ClassesService {
 
   watchSchedules(): Observable<(ClassSchedule | MemberClassSchedule)[]> {
     return tenantReload(this.profile$, this.reload$, () =>
-      this.isMember() ? this.member.classes().pipe(map((list) => list.map(toMemberSchedule))) : this.api.list(),
+      this.isMember()
+        ? this.member.classes().pipe(map((list) => list.map(toMemberSchedule).map(normalizeSchedule)))
+        : this.api.list().pipe(map((list) => list.map(normalizeSchedule))),
     );
   }
 
@@ -81,6 +92,10 @@ export class ClassesService {
         requiredDocuments: input.requiredDocuments ?? [],
         level: input.level ?? 'beginner',
         status: 'active',
+        extras: {
+          daysOfWeek: input.daysOfWeek ?? [input.dayOfWeek],
+          ageGroup: input.ageGroup ?? '',
+        },
       }),
     );
     this.refresh();
@@ -88,7 +103,16 @@ export class ClassesService {
   }
 
   async updateSchedule(id: string, input: UpdateClassScheduleInput): Promise<void> {
-    await firstValueFrom(this.api.update(id, input));
+    const { daysOfWeek, ageGroup, ...rest } = input;
+    await firstValueFrom(
+      this.api.update(id, {
+        ...rest,
+        extras: {
+          daysOfWeek: daysOfWeek ?? (input.dayOfWeek != null ? [input.dayOfWeek] : undefined),
+          ageGroup: ageGroup ?? '',
+        },
+      }),
+    );
     this.refresh();
   }
 

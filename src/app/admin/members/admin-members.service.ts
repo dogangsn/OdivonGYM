@@ -341,13 +341,15 @@ export class AdminMembersService {
   }
 
   async addMemberDocument(input: CreateMemberDocumentInput): Promise<void> {
-    await firstValueFrom(
-      this.documents.create({
-        ...input,
-        issueDate: input.issueDate.toISOString(),
-        expiryDate: input.expiryDate ? input.expiryDate.toISOString() : null,
-      }),
+    const rawPayload: Record<string, unknown> = {
+      ...input,
+      issueDate: input.issueDate instanceof Date ? input.issueDate.toISOString() : input.issueDate,
+      expiryDate: input.expiryDate ? (input.expiryDate instanceof Date ? input.expiryDate.toISOString() : input.expiryDate) : null,
+    };
+    const cleanPayload = Object.fromEntries(
+      Object.entries(rawPayload).filter(([_, v]) => v !== undefined),
     );
+    await firstValueFrom(this.documents.create(cleanPayload));
     this.refresh();
   }
 

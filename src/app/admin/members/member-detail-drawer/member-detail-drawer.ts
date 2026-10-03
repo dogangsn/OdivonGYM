@@ -370,20 +370,14 @@ export class MemberDetailDrawer {
       reqSourcesMap.get(code)!.add(source);
     };
 
-    // 1. Genel Salon / Sistem Varsayılan Şartları (isRequiredByDefault)
-    for (const def of activeDefs) {
-      if (def.isRequiredByDefault) {
-        addReq(def.code, 'Genel Salon Şartı');
-      }
-    }
-
-    // 2. Üyenin Paketi (member.packageLabel)
+    // 1. Üyenin Paketi (Paketler kısmında ne seçimli ise ona göre zorunlu belgeler olacak)
     if (currentMember.packageLabel) {
       const pkgLabel = currentMember.packageLabel.trim().toLowerCase();
-      const matchedPkg = packages.find(
-        (p) => p.name.trim().toLowerCase() === pkgLabel || p.id === currentMember.packageLabel,
-      );
-      if (matchedPkg && matchedPkg.requiredDocuments?.length) {
+      const matchedPkg =
+        packages.find((p) => p.name.trim().toLowerCase() === pkgLabel || p.id === currentMember.packageLabel) ||
+        packages.find((p) => p.name.trim().toLowerCase().includes(pkgLabel) || pkgLabel.includes(p.name.trim().toLowerCase()));
+
+      if (matchedPkg && matchedPkg.requiredDocuments && matchedPkg.requiredDocuments.length > 0) {
         for (const docCode of matchedPkg.requiredDocuments) {
           addReq(docCode, `Paket: ${matchedPkg.name}`);
         }
@@ -435,7 +429,7 @@ export class MemberDetailDrawer {
           const pA = statusPriority[a.status] ?? 0;
           const pB = statusPriority[b.status] ?? 0;
           if (pA !== pB) return pB - pA;
-          return (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0);
+          return toMillis(b.createdAt) - toMillis(a.createdAt);
         })[0];
       }
 
@@ -551,7 +545,7 @@ export class MemberDetailDrawer {
     const logs = this.accessLogs();
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return logs.filter(
-      (l) => l.status === 'granted' && l.direction === 'in' && (l.timestamp?.toMillis() ?? 0) >= thirtyDaysAgo,
+      (l) => l.status === 'granted' && l.direction === 'in' && toMillis(l.timestamp) >= thirtyDaysAgo,
     ).length;
   });
 
@@ -589,7 +583,7 @@ export class MemberDetailDrawer {
         .watchMemberWalletTransactions(current.uid)
         .subscribe((txs) => {
           const sorted = [...txs].sort(
-            (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
+            (a, b) => toMillis(b.createdAt) - toMillis(a.createdAt),
           );
           this.walletTransactions.set(sorted);
           this.loadingTelemetry.set(false);
@@ -599,7 +593,7 @@ export class MemberDetailDrawer {
         .watchMemberAccessLogs(current.uid)
         .subscribe((logs) => {
           const sorted = [...logs].sort(
-            (a, b) => (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0),
+            (a, b) => toMillis(b.timestamp) - toMillis(a.timestamp),
           );
           this.accessLogs.set(sorted);
         });
@@ -608,7 +602,7 @@ export class MemberDetailDrawer {
         .watchMemberMeasurements(current.uid)
         .subscribe((list) => {
           const sorted = [...list].sort(
-            (a, b) => (b.date?.toMillis() ?? 0) - (a.date?.toMillis() ?? 0),
+            (a, b) => toMillis(b.date) - toMillis(a.date),
           );
           this.measurements.set(sorted);
         });
@@ -617,7 +611,7 @@ export class MemberDetailDrawer {
         .watchMemberWaterLogs(current.uid)
         .subscribe((logs) => {
           const sorted = [...logs].sort(
-            (a, b) => (b.date?.toMillis() ?? 0) - (a.date?.toMillis() ?? 0),
+            (a, b) => toMillis(b.date) - toMillis(a.date),
           );
           this.waterLogs.set(sorted);
         });

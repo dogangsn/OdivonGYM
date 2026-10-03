@@ -8,7 +8,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
-import { firstError, formatDateTime, formatMoney, sortDesc } from '../../shared/ui/ui-utils';
+import { firstError, formatDateTime, formatMoney, sortDesc, toMillis } from '../../shared/ui/ui-utils';
 import { AdminShopService } from './admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { ShopProduct, ShopSale, isLowStock } from '../../core/models/shop-product.model';
@@ -163,7 +163,7 @@ export class AdminShop {
     const todayMs = today.getTime();
 
     return list
-      .filter((s) => s.status === 'completed' && (s.saleDate?.toMillis() ?? 0) >= todayMs)
+      .filter((s) => s.status === 'completed' && toMillis(s.saleDate) >= todayMs)
       .reduce((sum, s) => sum + s.totalAmount, 0);
   });
 
@@ -173,7 +173,7 @@ export class AdminShop {
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
 
-    return list.filter((s) => s.status === 'completed' && (s.saleDate?.toMillis() ?? 0) >= todayMs).length;
+    return list.filter((s) => s.status === 'completed' && toMillis(s.saleDate) >= todayMs).length;
   });
 
   // Cart Computations

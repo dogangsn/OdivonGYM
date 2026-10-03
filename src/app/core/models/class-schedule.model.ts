@@ -10,6 +10,8 @@ export interface ClassSchedule {
   instructorId?: string;
   instructorName: string;
   dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Pazar, 1 = Pazartesi ... 6 = Cumartesi
+  daysOfWeek?: number[]; // Çoklu gün seçimi: [1, 3, 5] (Pazartesi, Çarşamba, Cuma)
+  ageGroup?: string; // Örn: 'Çocuk Grubu (4-12 Yaş)', 'Genç Grubu', 'Yetişkin (+18)', 'Tüm Yaşlar'
   startTime: string; // HH:mm format
   endTime: string; // HH:mm format
   capacity: number;
@@ -44,6 +46,8 @@ export interface CreateClassScheduleInput {
   instructorId?: string;
   instructorName: string;
   dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  daysOfWeek?: number[];
+  ageGroup?: string;
   startTime: string;
   endTime: string;
   capacity: number;

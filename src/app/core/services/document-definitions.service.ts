@@ -35,7 +35,16 @@ export class DocumentDefinitionsService {
         const missingDefaults = DEFAULT_DOCUMENT_DEFINITIONS.filter(
           (d) => !customOrStoredCodes.has(d.code),
         );
-        return [...parsed, ...missingDefaults];
+        const synced = parsed.map((item) => {
+          if (item.isSystemDefault) {
+            const def = DEFAULT_DOCUMENT_DEFINITIONS.find((d) => d.code === item.code);
+            if (def) {
+              return { ...item, isRequiredByDefault: def.isRequiredByDefault ?? false };
+            }
+          }
+          return item;
+        });
+        return [...synced, ...missingDefaults];
       }
     } catch {
       // ignore JSON error and fall back to default

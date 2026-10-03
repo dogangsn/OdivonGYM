@@ -47,7 +47,7 @@ export const DEFAULT_DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
     description: 'Spor faaliyetlerine katılım için hekim onaylı sağlık raporu.',
     documentType: 'health_report',
     requiresExpiry: true,
-    isRequiredByDefault: true,
+    isRequiredByDefault: false,
     isSystemDefault: true,
     isActive: true,
   },

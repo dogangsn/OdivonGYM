@@ -8,6 +8,16 @@ import { AuthService } from '../../core/auth/auth.service';
 import { CreatePtAppointmentInput, PtAppointment } from '../../core/models/pt-appointment.model';
 import { toJsDate } from '../../shared/ui/ui-utils';
 
+function normalizeAppointment(a: PtAppointment): PtAppointment {
+  const ext = (a as any).extras;
+  return {
+    ...a,
+    memberName: a.memberName || ext?.memberName || '',
+    memberPhone: a.memberPhone || ext?.memberPhone || '',
+    sessionType: a.sessionType || ext?.sessionType || '',
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AppointmentsService {
   private readonly api = inject(AppointmentsApi);
@@ -30,11 +40,12 @@ export class AppointmentsService {
     return tenantReload(this.profile$, this.reload$, () => {
       const userId = this.auth.profile()?.uid;
       if (!userId) return of([]);
-      if (this.isMember()) return this.member.appointments();
+      if (this.isMember()) return this.member.appointments().pipe(map((list) => list.map(normalizeAppointment)));
       // Personel: antrenör kendine bağlı randevuları, resepsiyon ve yönetici salonun tümünü görür
-      // (önceden userId=personel filtrelendiği için liste hep boş geliyordu).
       const role = this.auth.profile()?.role;
-      return this.api.list(role === 'trainer' ? { trainerId: userId } : {});
+      return this.api
+        .list(role === 'trainer' ? { trainerId: userId } : {})
+        .pipe(map((list) => list.map(normalizeAppointment)));
     });
   }
 
@@ -86,6 +97,14 @@ export class AppointmentsService {
         duration: input.duration,
         notes: input.notes || '',
         status: 'booked',
+        userId: input.userId || null,
+        memberName: input.memberName || null,
+        sessionType: input.sessionType || null,
+        extras: {
+          memberName: input.memberName || '',
+          memberPhone: input.memberPhone || '',
+          sessionType: input.sessionType || '',
+        },
       }),
     );
     this.reload$.next();
@@ -122,6 +141,11 @@ export class AppointmentsService {
         ...input,
         appointmentTime: input.appointmentTime ? input.appointmentTime.toISOString() : undefined,
         trainerName: input.trainerName?.trim(),
+        extras: {
+          memberName: input.memberName || '',
+          memberPhone: input.memberPhone || '',
+          sessionType: input.sessionType || '',
+        },
       }),
     );
     this.reload$.next();

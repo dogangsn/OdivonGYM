@@ -20,6 +20,8 @@ import { ClassesService, MemberClassSchedule } from '../classes.service';
 import { AdminDisciplinesService } from '../../../admin/disciplines/admin-disciplines.service';
 import { MemberDocumentsService } from '../../../core/services/member-documents.service';
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
+import { AdminStaffService } from '../../../admin/staff/admin-staff.service';
+import { StaffMember } from '../../../core/models/staff.model';
 import { DocumentDefinitionsService } from '../../../core/services/document-definitions.service';
 import { DocumentDefinitionsModal } from '../../../shared/components/document-definitions-modal/document-definitions-modal';
 
@@ -44,6 +46,26 @@ const DAY_LABEL: Record<Day, string> = {
   5: 'Cuma',
   6: 'Cumartesi',
 };
+
+const DAY_SHORT_LABEL: Record<Day, string> = {
+  0: 'Paz',
+  1: 'Pzt',
+  2: 'Sal',
+  3: 'Çar',
+  4: 'Per',
+  5: 'Cum',
+  6: 'Cmt',
+};
+
+const AGE_PRESETS = [
+  { value: 'Tüm Yaş Grupları', label: 'Tüm Yaşlar (Genel)', icon: '👥' },
+  { value: 'Çocuk Grubu (4 - 7 Yaş)', label: 'Çocuk Grubu (4-7 Yaş)', icon: '👶' },
+  { value: 'Çocuk Grubu (8 - 12 Yaş)', label: 'Çocuk Grubu (8-12 Yaş)', icon: '🧒' },
+  { value: 'Çocuk Grubu (Genel)', label: 'Çocuk Grubu (Genel)', icon: '🧒' },
+  { value: 'Genç Grubu (13 - 17 Yaş)', label: 'Genç Grubu (13-17 Yaş)', icon: '🏃' },
+  { value: 'Yetişkin (+18 Yaş)', label: 'Yetişkin (+18 Yaş)', icon: '🏋️' },
+  { value: 'Bebek & Ebeveyn (0 - 3 Yaş)', label: 'Bebek & Ebeveyn (0-3)', icon: '🍼' },
+];
 
 const LEVEL_LABEL: Record<string, string> = {
   all: 'Tüm Seviyeler',
@@ -190,6 +212,25 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                             </span>
                           }
 
+                          @if (c.daysOfWeek && c.daysOfWeek.length > 1) {
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1" title="Haftalık Tekrarlanan Günler">
+                              <mat-icon class="icon-size-3">event_repeat</mat-icon>
+                              <span>{{ formatDaysBadge(c.daysOfWeek) }}</span>
+                            </span>
+                          }
+
+                          @if (c.ageGroup && c.ageGroup !== 'Tüm Yaş Grupları') {
+                            <span
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1"
+                              [class]="isKidsGroup(c.ageGroup)
+                                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'"
+                            >
+                              <mat-icon class="icon-size-3">{{ isKidsGroup(c.ageGroup) ? 'child_care' : 'groups' }}</mat-icon>
+                              <span>{{ c.ageGroup }}</span>
+                            </span>
+                          }
+
                           @if (c.requiredDocuments?.length) {
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
                               <mat-icon class="icon-size-3">warning</mat-icon>
@@ -314,20 +355,79 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
             </select>
           </app-field>
 
-          <app-field label="Salon / Stüdyo Alanı">
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                Salon / Stüdyo Alanı
+              </label>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  (click)="openQuickFacilityModal()"
+                  class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Yeni salon veya stüdyo alanı tanımla"
+                >
+                  <mat-icon class="icon-size-3">add_circle</mat-icon>
+                  <span>+ Yeni Alan Ekle</span>
+                </button>
+              }
+            </div>
             <select formControlName="facilityId" class="odv-input bg-white dark:bg-slate-800">
               <option value="">-- Alan Seçin --</option>
               @for (f of facilities(); track f.id) {
                 <option [value]="f.id">{{ f.name }}</option>
               }
             </select>
-          </app-field>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <app-field label="Eğitmen Adı" [required]="true" [error]="err('instructorName', { required: 'Eğitmen adı gerekli.' })">
-            <input type="text" formControlName="instructorName" class="odv-input" placeholder="Örn. Murat Hoca" />
+            @if (!isCustomTrainer()) {
+              <div class="flex items-center gap-2">
+                <select
+                  [value]="selectedTrainerValue()"
+                  (change)="onTrainerSelect($event)"
+                  class="odv-input bg-white dark:bg-slate-800 flex-1"
+                >
+                  <option value="">-- Antrenör Listesinden Seçin --</option>
+                  @for (t of trainers(); track t.id) {
+                    <option [value]="t.displayName">
+                      {{ t.displayName }} ({{ t.title || 'Antrenör' }})
+                    </option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  (click)="toggleCustomTrainer(true)"
+                  class="px-2.5 py-2 rounded-xl text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1"
+                  title="Listede olmayan farklı bir antrenör veya misafir eğitmen adı yazın"
+                >
+                  <mat-icon class="icon-size-3">edit</mat-icon>
+                  <span>Özel Eğitmen</span>
+                </button>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  formControlName="instructorName"
+                  class="odv-input flex-1"
+                  placeholder="Örn. Murat Hoca, Misafir Antrenör"
+                />
+                <button
+                  type="button"
+                  (click)="toggleCustomTrainer(false)"
+                  class="px-2.5 py-2 rounded-xl text-[11px] font-bold border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1"
+                  title="Antrenör listesinden seçmeye geri dön"
+                >
+                  <mat-icon class="icon-size-3">list</mat-icon>
+                  <span>Listeden Seç</span>
+                </button>
+              </div>
+            }
           </app-field>
+
           <app-field label="Seviye">
             <select formControlName="level" class="odv-input bg-white dark:bg-slate-800">
               <option value="all">Tüm Seviyeler</option>
@@ -338,15 +438,80 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
           </app-field>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <app-field label="Haftanın Günü" [required]="true">
-            <select formControlName="dayOfWeek" class="odv-input bg-white dark:bg-slate-800">
-              @for (d of dayOrder; track d) {
-                <option [ngValue]="d">{{ dayLabel[d] }}</option>
-              }
-            </select>
-          </app-field>
+        <!-- Çoklu Gün Seçimi -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-1">
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400">calendar_today</mat-icon>
+              <span>Haftanın Günleri (Çoklu Seçim)</span>
+              <span class="text-rose-500">*</span>
+            </label>
 
+            <!-- Hızlı Seçim Kısa Yolları -->
+            <div class="flex items-center gap-1 flex-wrap">
+              <button
+                type="button"
+                (click)="setPresetDays([1, 3, 5])"
+                class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
+                title="Pazartesi, Çarşamba, Cuma"
+              >
+                Pzt-Çar-Cum
+              </button>
+              <button
+                type="button"
+                (click)="setPresetDays([2, 4, 6])"
+                class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
+                title="Salı, Perşembe, Cumartesi"
+              >
+                Sal-Per-Cmt
+              </button>
+              <button
+                type="button"
+                (click)="setPresetDays([1, 2, 3, 4, 5])"
+                class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
+                title="Hafta İçi Tüm Günler"
+              >
+                Hafta İçi
+              </button>
+              <button
+                type="button"
+                (click)="setPresetDays([6, 0])"
+                class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
+                title="Cumartesi ve Pazar"
+              >
+                Hafta Sonu
+              </button>
+            </div>
+          </div>
+
+          <!-- Gün Seçim Butonları -->
+          <div class="grid grid-cols-7 gap-1.5">
+            @for (d of dayOrder; track d) {
+              <button
+                type="button"
+                (click)="toggleDay(d)"
+                class="py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer border"
+                [class]="isDaySelected(d)
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs shadow-indigo-600/30 font-black'
+                  : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700'"
+              >
+                <span class="text-[11px]">{{ dayShortLabel[d] }}</span>
+                @if (isDaySelected(d)) {
+                  <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                } @else {
+                  <span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+                }
+              </button>
+            }
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Seçilen günler: <strong class="text-indigo-600 dark:text-indigo-400">{{ formatSelectedDaysSummary() }}</strong></span>
+            <span class="font-medium text-slate-400">Tek tıkla ekle/çıkar</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <app-field label="Başlangıç Saati" [required]="true" [error]="err('startTime', { required: 'Saat gerekli.' })">
             <input type="time" formControlName="startTime" class="odv-input" />
           </app-field>
@@ -368,6 +533,60 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
               <option value="cancelled">İptal</option>
             </select>
           </app-field>
+        </div>
+
+        <!-- Yaş Grubu / Hedef Kitle (Çocuk Grubu vb.) -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <mat-icon class="icon-size-3.5 text-amber-500">child_care</mat-icon>
+              <span>Yaş Grubu / Hedef Kitle (Çocuk Grubu vb.)</span>
+            </label>
+            @if (form.controls.ageGroup.value) {
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200">
+                {{ form.controls.ageGroup.value }}
+              </span>
+            }
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            @for (preset of agePresets; track preset.value) {
+              <button
+                type="button"
+                (click)="selectAgeGroup(preset.value)"
+                class="p-2 rounded-lg border text-left text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                [class]="form.controls.ageGroup.value === preset.value && !isCustomAge()
+                  ? 'border-amber-500 bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold ring-1 ring-amber-500'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'"
+              >
+                <span>{{ preset.icon }}</span>
+                <span class="truncate">{{ preset.label }}</span>
+              </button>
+            }
+            <button
+              type="button"
+              (click)="toggleCustomAge(true)"
+              class="p-2 rounded-lg border text-left text-xs transition-all cursor-pointer flex items-center gap-1.5"
+              [class]="isCustomAge()
+                ? 'border-amber-500 bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold ring-1 ring-amber-500'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'"
+            >
+              <span>✏️</span>
+              <span class="truncate">Özel Yaş Grubu</span>
+            </button>
+          </div>
+
+          @if (isCustomAge()) {
+            <div class="pt-1">
+              <input
+                type="text"
+                [value]="form.controls.ageGroup.value"
+                (input)="onCustomAgeInput($event)"
+                class="odv-input text-xs"
+                placeholder="Örn. 5-10 Yaş Çocuk Grubu, Kadınlara Özel, Genç Gelişim vb."
+              />
+            </div>
+          }
         </div>
 
         <!-- Zorunlu Evrak ve E-İmza Taahhüt Seçimi -->
@@ -555,6 +774,85 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
       (closed)="showDocDefsModal.set(false)"
       (definitionCreated)="toggleDocRequirement($event.code)"
     />
+
+    <!-- 4. YENİ SALON / STÜDYO ALANI TANIMLAMA MODALI -->
+    @if (showFacilityModal()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <mat-icon class="icon-size-4">meeting_room</mat-icon>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Salon / Stüdyo Alanı</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0">Derslerin verileceği alanı sisteme ekleyin</p>
+              </div>
+            </div>
+            <button type="button" (click)="closeQuickFacilityModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                Alan / Stüdyo Adı <span class="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="newFacilityName"
+                class="odv-input"
+                placeholder="Örn. Reformer Stüdyosu, Tatami Salonu, Boks Ringi"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                Maksimum Kapasite
+              </label>
+              <input
+                type="number"
+                min="1"
+                [(ngModel)]="newFacilityCapacity"
+                class="odv-input"
+                placeholder="20"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                Açıklama (İsteğe Bağlı)
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="newFacilityDescription"
+                class="odv-input"
+                placeholder="Örn. 2. Kat Stüdyo B, Aynalı Salon"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" (click)="closeQuickFacilityModal()" class="odv-btn-ghost text-xs">Vazgeç</button>
+            <button
+              type="button"
+              (click)="saveQuickFacility()"
+              [disabled]="!newFacilityName.trim() || savingFacility()"
+              class="odv-btn-primary text-xs disabled:opacity-50 flex items-center gap-1.5"
+            >
+              @if (savingFacility()) {
+                <mat-icon class="animate-spin icon-size-3.5">progress_activity</mat-icon>
+                <span>Kaydediliyor...</span>
+              } @else {
+                <mat-icon class="icon-size-3.5">check</mat-icon>
+                <span>Alanı Kaydet ve Seç</span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class ClassSchedule {
@@ -563,6 +861,7 @@ export class ClassSchedule {
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly documentsService = inject(MemberDocumentsService);
   private readonly membersService = inject(AdminMembersService);
+  private readonly staffService = inject(AdminStaffService);
   protected readonly docDefsService = inject(DocumentDefinitionsService);
   protected readonly auth = inject(AuthService);
   private readonly alertService = inject(AlertService);
@@ -571,8 +870,10 @@ export class ClassSchedule {
 
   protected readonly dayOrder = DAY_ORDER;
   protected readonly dayLabel = DAY_LABEL;
+  protected readonly dayShortLabel = DAY_SHORT_LABEL;
   protected readonly levelLabel = LEVEL_LABEL;
   protected readonly statusLabel = STATUS_LABEL;
+  protected readonly agePresets = AGE_PRESETS;
 
   protected readonly isAdmin = computed(() => {
     const role = this.auth.profile()?.role;
@@ -598,6 +899,27 @@ export class ClassSchedule {
     this.isMember ? of([] as GymFacility[]) : this.disciplinesService.watchFacilities(),
     { initialValue: [] as GymFacility[] },
   );
+  protected readonly staffList = toSignal(
+    this.isMember ? of([] as StaffMember[]) : this.staffService.watchStaff(),
+    { initialValue: [] as StaffMember[] },
+  );
+
+  protected readonly trainers = computed(() => {
+    const list = this.staffList();
+    return list
+      .filter(
+        (s) =>
+          s.status === 'active' &&
+          (s.role === 'trainer' ||
+            s.role === 'admin' ||
+            s.role === 'owner' ||
+            s.title?.toLowerCase().includes('antren') ||
+            s.title?.toLowerCase().includes('hoca') ||
+            s.title?.toLowerCase().includes('pt')),
+      )
+      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'tr'));
+  });
+
   /** Yoklama paneli açık olan ders (seans bazında kayıt, yoklama, bekleme listesi). */
   protected readonly rosterClass = signal<ScheduleModel | null>(null);
   protected readonly allMembers = toSignal(
@@ -605,7 +927,7 @@ export class ClassSchedule {
     { initialValue: [] as UserProfile[] },
   );
 
-  // Antrenör görünümünde yalnızca kendi derslerini filtreleme
+  // Antrenör görünümünde yalnızca kendi derslerini filtreleme + çoklu gün desteği
   protected readonly days = computed(() => {
     let list = this.schedules() ?? [];
 
@@ -623,7 +945,14 @@ export class ClassSchedule {
 
     return DAY_ORDER.map((day) => ({
       day,
-      classes: list.filter((c) => c.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      classes: list
+        .filter((c) => {
+          if (c.daysOfWeek && Array.isArray(c.daysOfWeek) && c.daysOfWeek.length > 0) {
+            return c.daysOfWeek.includes(day);
+          }
+          return c.dayOfWeek === day;
+        })
+        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     })).filter((g) => g.classes.length > 0);
   });
 
@@ -633,6 +962,23 @@ export class ClassSchedule {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly selectedDocRequirements = signal<string[]>([]);
+
+  // Eğitmen Seçimi Durumu
+  protected readonly isCustomTrainer = signal(false);
+  protected selectedInstructorId = '';
+
+  // Hızlı Salon / Stüdyo Alanı Tanımlama Modalı
+  protected readonly showFacilityModal = signal(false);
+  protected newFacilityName = '';
+  protected newFacilityCapacity = 20;
+  protected newFacilityDescription = '';
+  protected readonly savingFacility = signal(false);
+
+  // Çoklu Gün Seçimi
+  protected readonly selectedDays = signal<Day[]>([1]);
+
+  // Yaş Grubu Seçimi
+  protected readonly isCustomAge = signal(false);
 
   // Öğrenci Yönetimi Slide-Over
   protected readonly studentDrawerOpen = signal(false);
@@ -649,6 +995,7 @@ export class ClassSchedule {
     facilityId: [''],
     instructorName: ['', [Validators.required]],
     dayOfWeek: [1 as Day],
+    ageGroup: [''],
     level: ['all' as NonNullable<ScheduleModel['level']>],
     startTime: ['18:00', [Validators.required]],
     endTime: ['19:00', [Validators.required]],
@@ -835,17 +1182,180 @@ export class ClassSchedule {
     }
   }
 
+  // ---- Eğitmen Listesi & Özel Eğitmen Girişi ----
+  protected toggleCustomTrainer(custom: boolean): void {
+    this.isCustomTrainer.set(custom);
+    if (!custom) {
+      const first = this.trainers()[0];
+      if (first) {
+        this.form.patchValue({ instructorName: first.displayName });
+        this.selectedInstructorId = first.uid || first.id;
+      }
+    }
+  }
+
+  protected onTrainerSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const name = select.value;
+    this.form.patchValue({ instructorName: name });
+    const trainer = this.trainers().find((t) => t.displayName === name);
+    this.selectedInstructorId = trainer?.uid || trainer?.id || '';
+  }
+
+  protected selectedTrainerValue(): string {
+    return this.form.controls.instructorName.value;
+  }
+
+  // ---- Hızlı Salon / Stüdyo Alanı Tanımlama ----
+  protected openQuickFacilityModal(): void {
+    this.newFacilityName = '';
+    this.newFacilityCapacity = 20;
+    this.newFacilityDescription = '';
+    this.showFacilityModal.set(true);
+  }
+
+  protected closeQuickFacilityModal(): void {
+    this.showFacilityModal.set(false);
+  }
+
+  protected async saveQuickFacility(): Promise<void> {
+    const name = this.newFacilityName.trim();
+    if (!name || this.savingFacility()) return;
+
+    this.savingFacility.set(true);
+    try {
+      const facilityId = await this.disciplinesService.createFacility({
+        name,
+        capacity: Number(this.newFacilityCapacity) || 20,
+        description: this.newFacilityDescription.trim() || undefined,
+        disciplineIds: [],
+        status: 'active',
+      });
+      this.form.patchValue({ facilityId });
+      this.alertService.toastSuccess(`"${name}" stüdyo alanı başarıyla oluşturuldu ve seçildi.`);
+      this.closeQuickFacilityModal();
+    } catch {
+      this.alertService.toastError('Salon alanı oluşturulamadı, lütfen tekrar deneyin.');
+    } finally {
+      this.savingFacility.set(false);
+    }
+  }
+
+  // ---- Çoklu Gün Seçimi ----
+  protected isDaySelected(day: Day): boolean {
+    return this.selectedDays().includes(day);
+  }
+
+  protected toggleDay(day: Day): void {
+    const current = this.selectedDays();
+    if (current.includes(day)) {
+      if (current.length === 1) {
+        this.alertService.toastError('En az bir gün seçili olmalıdır.');
+        return;
+      }
+      this.selectedDays.set(current.filter((d) => d !== day));
+    } else {
+      this.selectedDays.set(
+        [...current, day].sort((a, b) => {
+          const orderA = DAY_ORDER.indexOf(a);
+          const orderB = DAY_ORDER.indexOf(b);
+          return orderA - orderB;
+        }),
+      );
+    }
+    if (this.selectedDays().length > 0) {
+      this.form.patchValue({ dayOfWeek: this.selectedDays()[0] });
+    }
+  }
+
+  protected setPresetDays(days: Day[]): void {
+    this.selectedDays.set(days);
+    if (days.length > 0) {
+      this.form.patchValue({ dayOfWeek: days[0] });
+    }
+  }
+
+  protected formatSelectedDaysSummary(): string {
+    const days = this.selectedDays();
+    if (days.length === 0) return 'Gün seçilmedi';
+    if (days.length === 7) return 'Her gün (7 gün)';
+    return days.map((d) => DAY_LABEL[d]).join(', ') + ` (${days.length} gün)`;
+  }
+
+  protected formatDaysBadge(days?: number[]): string {
+    if (!days || days.length === 0) return '';
+    return days.map((d) => DAY_SHORT_LABEL[d as Day] || String(d)).join(', ');
+  }
+
+  // ---- Yaş Grubu Seçimi ----
+  protected isKidsGroup(ageGroup?: string): boolean {
+    if (!ageGroup) return false;
+    const lower = ageGroup.toLowerCase();
+    return lower.includes('çocuk') || lower.includes('bebek') || lower.includes('kid') || lower.includes('child');
+  }
+
+  protected selectAgeGroup(value: string): void {
+    this.isCustomAge.set(false);
+    this.form.patchValue({ ageGroup: value });
+  }
+
+  protected toggleCustomAge(custom: boolean): void {
+    this.isCustomAge.set(custom);
+    if (custom) {
+      if (!this.form.controls.ageGroup.value || AGE_PRESETS.some((p) => p.value === this.form.controls.ageGroup.value)) {
+        this.form.patchValue({ ageGroup: '' });
+      }
+    }
+  }
+
+  protected onCustomAgeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.form.patchValue({ ageGroup: input.value });
+  }
+
   // ---- Admin: Ders Tanımlama ve Güncelleme ----
   protected openForm(schedule: ScheduleModel | null = null): void {
     this.editing.set(schedule);
     this.errorMessage.set('');
     this.selectedDocRequirements.set(schedule?.requiredDocuments || []);
+
+    // 1. Gün Seçimi
+    if (schedule?.daysOfWeek && schedule.daysOfWeek.length > 0) {
+      this.selectedDays.set([...schedule.daysOfWeek] as Day[]);
+    } else if (schedule?.dayOfWeek != null) {
+      this.selectedDays.set([schedule.dayOfWeek]);
+    } else {
+      this.selectedDays.set([1]);
+    }
+
+    // 2. Eğitmen Seçimi
+    const instructor = schedule?.instructorName ?? (this.isTrainer() ? this.currentUserName() : '');
+    this.selectedInstructorId = schedule?.instructorId ?? (this.isTrainer() ? this.currentUserId() : '');
+    const trainerExists = this.trainers().some((t) => t.displayName === instructor);
+    if (!instructor) {
+      this.isCustomTrainer.set(false);
+    } else if (trainerExists) {
+      this.isCustomTrainer.set(false);
+    } else {
+      this.isCustomTrainer.set(true);
+    }
+
+    // 3. Yaş Grubu
+    const age = schedule?.ageGroup ?? '';
+    const agePresetExists = AGE_PRESETS.some((p) => p.value === age);
+    if (!age || agePresetExists) {
+      this.isCustomAge.set(false);
+    } else {
+      this.isCustomAge.set(true);
+    }
+
     this.form.reset({
       name: schedule?.name ?? '',
       disciplineId: schedule?.disciplineId ?? '',
       facilityId: schedule?.facilityId ?? '',
-      instructorName: schedule?.instructorName ?? (this.isTrainer() ? this.currentUserName() : ''),
-      dayOfWeek: schedule?.dayOfWeek ?? 1,
+      instructorName: instructor,
+      dayOfWeek: this.selectedDays()[0] ?? 1,
+      ageGroup: age,
       level: schedule?.level ?? 'all',
       startTime: schedule?.startTime ?? '18:00',
       endTime: schedule?.endTime ?? '19:00',
@@ -871,6 +1381,10 @@ export class ClassSchedule {
       this.errorMessage.set('Bitiş saati başlangıçtan sonra olmalı.');
       return;
     }
+    if (this.selectedDays().length === 0) {
+      this.errorMessage.set('Lütfen en az bir gün seçin.');
+      return;
+    }
     const current = this.editing();
     if (current && v.capacity < (current.enrolledMemberIds?.length || current.currentBookings)) {
       this.errorMessage.set(`Kontenjan mevcut kayıt sayısından az olamaz.`);
@@ -883,8 +1397,11 @@ export class ClassSchedule {
         name: v.name.trim(),
         disciplineId: v.disciplineId || null,
         facilityId: v.facilityId || null,
+        instructorId: this.selectedInstructorId || undefined,
         instructorName: v.instructorName.trim(),
-        dayOfWeek: v.dayOfWeek,
+        dayOfWeek: this.selectedDays()[0] as Day,
+        daysOfWeek: [...this.selectedDays()],
+        ageGroup: v.ageGroup?.trim() || '',
         level: v.level,
         startTime: v.startTime,
         endTime: v.endTime,
@@ -899,8 +1416,10 @@ export class ClassSchedule {
       }
       this.alertService.toastSuccess(current ? 'Ders güncellendi.' : 'Yeni ders tanımlandı.');
       this.close();
-    } catch {
-      this.errorMessage.set('Kaydedilemedi, lütfen tekrar deneyin.');
+    } catch (err: unknown) {
+      console.error('Save class error:', err);
+      const appErr = toAppError(err);
+      this.errorMessage.set(appErr.message || 'Kaydedilemedi, lütfen tekrar deneyin.');
     } finally {
       this.submitting.set(false);
     }
