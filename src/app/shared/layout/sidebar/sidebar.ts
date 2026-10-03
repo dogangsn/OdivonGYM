@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -179,7 +179,6 @@ export class Sidebar {
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly version = inject(VersionService);
-  private readonly router = inject(Router);
 
   /** Kullanıcının açık/kapalı yaptığı menü gruplarının reaktif durumu */
   private readonly groupStates = signal<Record<string, boolean>>({});
@@ -189,8 +188,8 @@ export class Sidebar {
     if (custom !== undefined) {
       return custom;
     }
-    // Tüm menü grupları varsayılan olarak açık gelsin (kullanıcı tüm işlemleri doğrudan görebilsin)
-    return true;
+    // Varsayılan olarak sadece "Genel" grubu açık gelsin
+    return group.titleKey === 'sidebar.groups.general';
   }
 
   toggleGroup(group: NavGroup, event: Event): void {
