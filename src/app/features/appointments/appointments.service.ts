@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { Observable, Subject, firstValueFrom, of } from 'rxjs';
+import { Observable, Subject, firstValueFrom, of, map } from 'rxjs';
 import { AppointmentsApi } from '../../core/api/appointments.api';
 import { MemberApi } from '../../core/api/member.api';
 import { tenantReload } from '../../core/api/unwrap';
