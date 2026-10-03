@@ -32,17 +32,15 @@ import { VersionService } from '../../../core/version/version.service';
 
           <!-- Header Section -->
           <div class="p-6 pb-4 sm:p-7 sm:pb-4 relative">
-            <!-- Close Button (only visible in manual info view, hidden when update is strictly mandatory) -->
-            @if (!version.updateRequired()) {
-              <button
-                type="button"
-                (click)="version.closeModal()"
-                class="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border border-slate-200/50 dark:border-slate-700/60"
-                matTooltip="Kapat"
-              >
-                <mat-icon class="icon-size-4">close</mat-icon>
-              </button>
-            }
+            <!-- Close Button -->
+            <button
+              type="button"
+              (click)="version.closeModal()"
+              class="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border border-slate-200/50 dark:border-slate-700/60"
+              matTooltip="Kapat"
+            >
+              <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
 
             <div class="flex items-start gap-4">
               <!-- Animated Glowing Icon Container -->

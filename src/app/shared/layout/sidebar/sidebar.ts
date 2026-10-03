@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -181,14 +181,26 @@ export class Sidebar {
   protected readonly version = inject(VersionService);
   private readonly router = inject(Router);
 
-  isGroupDefaultOpen(group: NavGroup): boolean {
-    if (group.titleKey === 'sidebar.groups.general') {
-      return true;
+  /** Kullanıcının açık/kapalı yaptığı menü gruplarının reaktif durumu */
+  private readonly groupStates = signal<Record<string, boolean>>({});
+
+  isGroupOpen(group: NavGroup): boolean {
+    const custom = this.groupStates()[group.titleKey];
+    if (custom !== undefined) {
+      return custom;
     }
-    const currentUrl = this.router.url;
-    return group.items.some(
-      (item) => currentUrl === item.link || (item.link !== '/dashboard' && currentUrl.startsWith(item.link)),
-    );
+    // Tüm menü grupları varsayılan olarak açık gelsin (kullanıcı tüm işlemleri doğrudan görebilsin)
+    return true;
+  }
+
+  toggleGroup(group: NavGroup, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const current = this.isGroupOpen(group);
+    this.groupStates.update((prev) => ({
+      ...prev,
+      [group.titleKey]: !current,
+    }));
   }
 
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */

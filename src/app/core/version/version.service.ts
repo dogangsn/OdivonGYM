@@ -55,6 +55,7 @@ export class VersionService {
 
   closeModal(): void {
     this.manualOpen.set(false);
+    this.available.set(null);
   }
 
   async checkNow(): Promise<void> {

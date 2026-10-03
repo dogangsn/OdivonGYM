@@ -223,31 +223,25 @@
   gap: 8px;
 }
 
-.group-details {
-  border: none;
-  margin-bottom: 2px;
-
-  &[open] > .group-summary .group-chevron {
-    transform: rotate(180deg);
-  }
+.group-container {
+  margin-bottom: 4px;
 }
 
 .group-summary {
-  list-style: none;
+  width: 100%;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 8px;
+  padding: 6px 8px;
   cursor: pointer;
   user-select: none;
   border-radius: 8px;
   transition: all 0.15s ease;
 
-  &::-webkit-details-marker {
-    display: none;
-  }
-
   &:hover {
+    background: rgba(255, 255, 255, 0.04);
     .group-title,
     .group-chevron {
       color: #94A3B8;
@@ -270,6 +264,10 @@
   height: 16px;
   color: #475569;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease;
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
 }
 
 .group-items {

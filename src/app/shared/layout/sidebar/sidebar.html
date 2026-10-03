@@ -36,7 +36,7 @@
       [matTooltip]="(collapsed() ? 'sidebar.expand' : 'sidebar.collapse') | transloco"
       matTooltipPosition="right"
     >
-      <mat-icon>{{ collapsed() ? 'chevron_right' : 'menu' }}</mat-icon>
+      <mat-icon>{{ collapsed() ? 'chevron_right' : 'menu_open' }}</mat-icon>
     </button>
     <button
       type="button"
@@ -110,46 +110,52 @@
   <nav class="sidebar__nav custom-scroll">
     @for (group of groups(); track group.titleKey) {
       @if (!collapsed()) {
-        <details class="group-details" [open]="isGroupDefaultOpen(group)">
-          <summary class="group-summary">
+        <div class="group-container">
+          <button
+            type="button"
+            class="group-summary"
+            (click)="toggleGroup(group, $event)"
+          >
             <span class="group-title">
               {{ group.titleKey.includes('.') ? (group.titleKey | transloco) : group.titleKey }}
             </span>
-            <mat-icon class="group-chevron">expand_more</mat-icon>
-          </summary>
+            <mat-icon class="group-chevron" [class.rotated]="isGroupOpen(group)">expand_more</mat-icon>
+          </button>
 
-          <div class="group-items">
-            @for (item of group.items; track item.link) {
-              <a
-                [routerLink]="item.link"
-                routerLinkActive="active"
-                class="nav-item"
-                [class.nav-item--locked]="item.isLocked"
-                [class.nav-item--highlighted]="item.isHighlighted"
-                (click)="closeMobile.emit()"
-              >
-                <mat-icon class="nav-icon" [class.text-rose-400]="item.isLocked">{{ item.icon }}</mat-icon>
-                <span class="nav-label">
-                  {{ item.labelKey.includes('.') ? (item.labelKey | transloco) : item.labelKey }}
-                </span>
-                @if (item.isLocked) {
-                  <span class="nav-badge badge-rose flex items-center gap-0.5" [title]="'sidebar.saasLicenseRequired' | transloco">
-                    <mat-icon class="text-[11px] w-3 h-3">lock</mat-icon>
-                    <span>{{ 'sidebar.badges.locked' | transloco }}</span>
+          @if (isGroupOpen(group)) {
+            <div class="group-items">
+              @for (item of group.items; track item.link) {
+                <a
+                  [routerLink]="item.link"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  [class.nav-item--locked]="item.isLocked"
+                  [class.nav-item--highlighted]="item.isHighlighted"
+                  (click)="closeMobile.emit()"
+                >
+                  <mat-icon class="nav-icon" [class.text-rose-400]="item.isLocked">{{ item.icon }}</mat-icon>
+                  <span class="nav-label">
+                    {{ item.labelKey.includes('.') ? (item.labelKey | transloco) : item.labelKey }}
                   </span>
-                } @else if (item.badgeKey) {
-                  <span class="nav-badge" [class]="item.badgeClass || 'badge-default'">
-                    {{ item.badgeKey | transloco: (item.badgeParams || {}) }}
-                  </span>
-                } @else if (item.badge) {
-                  <span class="nav-badge" [class]="item.badgeClass || 'badge-default'">
-                    {{ item.badge }}
-                  </span>
-                }
-              </a>
-            }
-          </div>
-        </details>
+                  @if (item.isLocked) {
+                    <span class="nav-badge badge-rose flex items-center gap-0.5" [title]="'sidebar.saasLicenseRequired' | transloco">
+                      <mat-icon class="text-[11px] w-3 h-3">lock</mat-icon>
+                      <span>{{ 'sidebar.badges.locked' | transloco }}</span>
+                    </span>
+                  } @else if (item.badgeKey) {
+                    <span class="nav-badge" [class]="item.badgeClass || 'badge-default'">
+                      {{ item.badgeKey | transloco: (item.badgeParams || {}) }}
+                    </span>
+                  } @else if (item.badge) {
+                    <span class="nav-badge" [class]="item.badgeClass || 'badge-default'">
+                      {{ item.badge }}
+                    </span>
+                  }
+                </a>
+              }
+            </div>
+          }
+        </div>
       } @else {
         <!-- Collapsed Icon Rail View -->
         <div class="collapsed-nav-group">
