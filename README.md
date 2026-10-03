@@ -78,7 +78,7 @@ npm run test:agent
 master'a her push GitHub Actions ile test edilir, build alınır ve Cloudflare'e (Worker `odivon-gym-client`) yayınlanır (`.github/workflows/deploy.yml`; repo secret'ları: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID). Elle yayın:
 
 ```bash
-npm run deploy:hosting   # build + Firebase Hosting
+npm run deploy:cf        # build + Cloudflare (CI ile aynı)
 npm run deploy:rules     # Firestore ve Storage kuralları
 ```
 
