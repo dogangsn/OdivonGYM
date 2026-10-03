@@ -20,6 +20,11 @@ import { formatMoney, toJsDate } from '../../../shared/ui/ui-utils';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { ShopSale } from '../../../core/models/shop-product.model';
 import { AccessLog } from '../../../core/models/access-log.model';
+import { BodyMeasurement } from '../../../core/models/body-measurement.model';
+import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../core/models/gym-equipment.model';
+import { DashboardSummary, GymReportsApi } from '../../../core/api/gym-reports.api';
+import { MeasurementsService } from '../../measurements/measurements.service';
+import { BarDatum, DonutSlice, LineSeries, OdvBarChart, OdvDonutChart, OdvLineChart } from '../../../shared/charts/odv-charts';
 
 const MEMBERSHIP_STATUS_LABEL: Record<string, string> = {
   trial: 'DENEME',
@@ -44,6 +49,18 @@ const ACCENT_CLASSES: Record<Accent, string> = {
   amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
   purple: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400',
 };
+
+function weekday(day: string): string {
+  return new Date(`${day}T12:00:00`).toLocaleDateString('tr-TR', { weekday: 'short' });
+}
+
+function longDay(day: string): string {
+  return new Date(`${day}T12:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+}
+
+function monthLabel(month: string): string {
+  return new Date(`${month}-15T12:00:00`).toLocaleDateString('tr-TR', { month: 'short' });
+}
 
 function isDateToday(dateInput: any): boolean {
   if (!dateInput) return false;
@@ -71,7 +88,7 @@ function isDateExpiringSoonOrToday(dateInput: any): boolean {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, MatIconModule, TranslocoPipe],
+  imports: [RouterLink, MatIconModule, TranslocoPipe, OdvBarChart, OdvLineChart, OdvDonutChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -115,6 +132,114 @@ export class Dashboard {
   protected readonly allAccessLogs = toSignal(this.onlyIf(this.canSeeAccess(), () => this.accessService.watchLogs()), {
     initialValue: [] as AccessLog[],
   });
+
+  private readonly measurementsService = inject(MeasurementsService);
+  private readonly reportsApi = inject(GymReportsApi);
+  private readonly measurements = toSignal(this.onlyIf(this.isMember, () => this.measurementsService.watchMeasurements()), {
+    initialValue: [] as BodyMeasurement[],
+  });
+  /** Personel grafikleri tek istekte; her bölüm yalnız izin varsa dolu gelir (yoksa null, istek 403 vermez). */
+  protected readonly summary = toSignal<DashboardSummary | null>(
+    this.isStaff ? this.reportsApi.dashboard() : of(null),
+    { initialValue: null },
+  );
+
+  protected readonly money0 = (value: number) =>
+    value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
+  protected readonly litres = (value: number) => `${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} L`;
+  protected readonly kg = (value: number) => `${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} kg`;
+
+  // ---- Personel grafikleri ----
+  protected readonly checkInBars = computed<BarDatum[]>(() =>
+    (this.summary()?.checkIns ?? []).map((d) => ({ label: weekday(d.day), hint: longDay(d.day), value: d.count })),
+  );
+  protected readonly salesBars = computed<BarDatum[]>(() =>
+    (this.summary()?.sales ?? []).map((d) => ({ label: weekday(d.day), hint: `${longDay(d.day)} (${d.count} satış)`, value: d.amount })),
+  );
+  protected readonly memberSlices = computed<DonutSlice[]>(() => {
+    const m = this.summary()?.members;
+    if (!m) return [];
+    return [
+      { label: 'Aktif', value: m.active, colorIndex: 0 },
+      { label: '7 gün içinde bitiyor', value: m.expiringSoon, colorIndex: 3 },
+      { label: 'Süresi dolmuş', value: m.expired, colorIndex: 1 },
+      { label: 'Deneme', value: m.trial, colorIndex: 2 },
+      { label: 'İptal', value: m.cancelled, colorIndex: 6 },
+    ];
+  });
+  protected readonly financeLabels = computed(() => (this.summary()?.finance ?? []).map((m) => monthLabel(m.month)));
+  protected readonly financeSeries = computed<LineSeries[]>(() => {
+    const finance = this.summary()?.finance ?? [];
+    return [
+      { name: 'Gelir', values: finance.map((m) => m.income), colorIndex: 0 },
+      { name: 'Gider', values: finance.map((m) => m.expense), colorIndex: 1 },
+    ];
+  });
+
+  // ---- Üye grafikleri ----
+  /** Son 7 günün su tüketimi (litre); birim dönüşümü su ekranıyla aynı. */
+  protected readonly waterBars = computed<BarDatum[]>(() => {
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (6 - i));
+      return d;
+    });
+    const totals = new Map(days.map((d) => [d.toDateString(), 0]));
+    for (const log of this.waterLogs()) {
+      const date = toJsDate(log.date);
+      if (!date || !totals.has(date.toDateString())) continue;
+      const ml = log.unit === 'liter' ? log.amount * 1000 : log.unit === 'cup' ? log.amount * 250 : log.unit === 'bottle' ? log.amount * 500 : log.amount;
+      totals.set(date.toDateString(), (totals.get(date.toDateString()) ?? 0) + ml);
+    }
+    return days.map((d) => ({
+      label: d.toLocaleDateString('tr-TR', { weekday: 'short' }),
+      hint: d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }),
+      value: Math.round(((totals.get(d.toDateString()) ?? 0) / 1000) * 10) / 10,
+    }));
+  });
+
+  /** Kilo ölçümlerinin son 8 tanesi, eskiden yeniye. */
+  private readonly weightPoints = computed(() =>
+    this.measurements()
+      .filter((m) => typeof m.weight === 'number' && m.weight > 0)
+      .map((m) => ({ date: toJsDate(m.date), weight: m.weight as number }))
+      .filter((m): m is { date: Date; weight: number } => !!m.date)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(-8),
+  );
+  protected readonly weightLabels = computed(() =>
+    this.weightPoints().map((p) => p.date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })),
+  );
+  protected readonly weightSeries = computed<LineSeries[]>(() => [
+    { name: 'Kilo', values: this.weightPoints().map((p) => p.weight), colorIndex: 0 },
+  ]);
+  protected readonly weightChange = computed(() => {
+    const points = this.weightPoints();
+    if (points.length < 2) return null;
+    return Math.round((points[points.length - 1].weight - points[0].weight) * 10) / 10;
+  });
+
+  /** Aktif programdaki egzersizlerin kas grubuna dağılımı. */
+  protected readonly muscleSlices = computed<DonutSlice[]>(() => {
+    const plans = this.workoutPlans();
+    const active = plans.find((p) => p.status === 'active') ?? plans[0];
+    // Renk kas grubuna sabit bağlı (sıralamaya göre değişmez); bilinmeyenler "Diğer" (8. renk).
+    const groups = Object.keys(MUSCLE_GROUP_LABELS) as MuscleGroup[];
+    const counts = new Map<number, number>();
+    for (const exercise of active?.exercises ?? []) {
+      const index = exercise.muscleGroup ? groups.indexOf(exercise.muscleGroup as MuscleGroup) : -1;
+      const key = index >= 0 && index < 7 ? index : 7;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([index, value]) => ({ label: index < 7 ? MUSCLE_GROUP_LABELS[groups[index]] : 'Diğer', value, colorIndex: index }));
+  });
+
+  protected sumOf(bars: BarDatum[]): number {
+    return Math.round(bars.reduce((sum, bar) => sum + bar.value, 0) * 100) / 100;
+  }
 
   private onlyIf<T>(allowed: boolean, load: () => Observable<T[]>): Observable<T[]> {
     return allowed ? load() : of([] as T[]);

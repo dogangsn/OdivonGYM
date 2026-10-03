@@ -25,6 +25,10 @@
           <span>{{ seeding() ? 'Yükleniyor…' : 'Örnek Ürünleri Yükle' }}</span>
         </button>
       }
+      <a routerLink="/admin/stock" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">fact_check</mat-icon>
+        <span>Sayım & Sipariş →</span>
+      </a>
       <a routerLink="/admin/suppliers" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
         <mat-icon class="icon-size-4">local_shipping</mat-icon>
         <span>Tedarikçiler →</span>
@@ -74,7 +78,7 @@
           {{ lowStockCount() }} Ürün
         </div>
         <div class="text-xs font-semibold text-slate-400 mt-0.5">
-          {{ lowStockCount() > 0 ? '5 veya daha az kalan ürünler' : 'Tüm stoklar yeterli' }}
+          {{ lowStockCount() > 0 ? 'Minimum stokta veya altında' : 'Tüm stoklar yeterli' }}
         </div>
       </div>
       <div
@@ -333,9 +337,34 @@
         </app-field>
       </div>
 
-      <app-field label="Tedarikçi">
-        <input type="text" formControlName="supplier" class="odv-input" placeholder="Örn. Supplementler Dağıtım A.Ş." />
-      </app-field>
+      <div class="grid grid-cols-2 gap-3">
+        <app-field label="Minimum Stok" hint="Bu ve altı düşük stok sayılır (boşsa 5)">
+          <input type="number" formControlName="minStock" class="odv-input" min="0" step="1" placeholder="5" />
+        </app-field>
+        <app-field label="Sipariş Miktarı" hint="Düşük stokta önerilen miktar">
+          <input type="number" formControlName="reorderQty" class="odv-input" min="0" step="1" placeholder="Otomatik" />
+        </app-field>
+      </div>
+
+      @if (suppliers().length) {
+        <app-field label="Tedarikçi">
+          <select formControlName="supplierId" class="odv-select">
+            <option value="">— Tedarikçi kaydı seçilmedi —</option>
+            @for (s of suppliers(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </app-field>
+        @if (!form.controls.supplierId.value) {
+          <app-field label="Tedarikçi (serbest metin)">
+            <input type="text" formControlName="supplier" class="odv-input" placeholder="Örn. Supplementler Dağıtım A.Ş." />
+          </app-field>
+        }
+      } @else {
+        <app-field label="Tedarikçi">
+          <input type="text" formControlName="supplier" class="odv-input" placeholder="Örn. Supplementler Dağıtım A.Ş." />
+        </app-field>
+      }
 
       <app-field label="Açıklama">
         <textarea formControlName="description" class="odv-textarea" rows="2" placeholder="Ürün içerik veya kullanım bilgisi…"></textarea>

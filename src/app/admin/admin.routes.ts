@@ -74,6 +74,11 @@ export const adminRoutes: Routes = [
     title: 'Ürün & Stok Yönetimi · OdivonGYM',
   },
   {
+    path: 'stock',
+    loadComponent: () => import('./stock/admin-stock').then((m) => m.AdminStock),
+    title: 'Stok Sayımı & Sipariş · OdivonGYM',
+  },
+  {
     path: 'reports',
     loadComponent: () => import('./reports/admin-reports').then((m) => m.AdminReports),
     title: 'Satış & Kasa Raporları · OdivonGYM',

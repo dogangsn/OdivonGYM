@@ -428,7 +428,7 @@ export class AdminOverview {
 
   /** Anlık doluluk MainApi'den (bugünün turnike kayıtları); dakikada bir, sekme görünürken yenilenir. */
   private readonly occupancy = toSignal(
-    this.permissions.can('reports')
+    this.permissions.can('accessControl')
       ? tenantReloadValue(toObservable(this.auth.profile), new Subject<void>(), () => this.reportsApi.occupancyNow(), null as OccupancyNow | null, 60_000)
       : of(null),
     { initialValue: null },

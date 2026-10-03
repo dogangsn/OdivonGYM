@@ -282,6 +282,42 @@
   </section>
   }
 
+  <!-- Personel grafikleri: /gym/reports/dashboard (izin olmayan bölüm gelmez) -->
+  @if (isStaff && summary(); as sum) {
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    @if (sum.checkIns) {
+    <div class="kpi-card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Son 7 Gün Turnike Girişi</h3>
+        <span class="text-xs text-slate-500">Toplam {{ sumOf(checkInBars()) }}</span>
+      </div>
+      <odv-bar-chart [data]="checkInBars()" [colorIndex]="0" ariaLabel="Son 7 gün günlük turnike girişleri" />
+    </div>
+    }
+    @if (sum.sales) {
+    <div class="kpi-card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Son 7 Gün Mağaza Satışı</h3>
+        <span class="text-xs text-slate-500">Toplam {{ money0(sumOf(salesBars())) }}</span>
+      </div>
+      <odv-bar-chart [data]="salesBars()" [colorIndex]="2" [format]="money0" ariaLabel="Son 7 gün günlük satış tutarı" />
+    </div>
+    }
+    @if (sum.members) {
+    <div class="kpi-card">
+      <h3 class="m-0 mb-3 text-sm font-bold text-slate-900 dark:text-white">Üye Durumu</h3>
+      <odv-donut-chart [data]="memberSlices()" ariaLabel="Üyelerin duruma göre dağılımı" />
+    </div>
+    }
+    @if (sum.finance) {
+    <div class="kpi-card">
+      <h3 class="m-0 mb-3 text-sm font-bold text-slate-900 dark:text-white">Son 6 Ay Gelir / Gider</h3>
+      <odv-line-chart [labels]="financeLabels()" [series]="financeSeries()" [format]="money0" ariaLabel="Son 6 ay aylık gelir ve gider" />
+    </div>
+    }
+  </section>
+  }
+
   <!-- Üye ana sayfası: kişisel kartlar ve kısayollar (personel bu verileri üye uçlarından alamaz) -->
   @if (isMember) {
   <!-- 2. Personal Member KPI Cards (4-Column Grid) -->
@@ -417,6 +453,39 @@
       </div>
     </div>
 
+  </section>
+
+  <!-- Üye grafikleri: su, kilo, program dağılımı -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div class="kpi-card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Son 7 Gün Su</h3>
+        <a routerLink="/water" class="text-xs font-bold text-sky-600 dark:text-sky-400 no-underline">Su ekle →</a>
+      </div>
+      <odv-bar-chart [data]="waterBars()" [colorIndex]="0" [format]="litres" ariaLabel="Son 7 gün günlük su tüketimi" />
+    </div>
+    <div class="kpi-card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Kilo Değişimi</h3>
+        @if (weightChange() !== null) {
+          <span class="text-xs font-bold text-slate-600 dark:text-slate-300">{{ weightChange()! > 0 ? '+' : '' }}{{ kg(weightChange()!) }}</span>
+        }
+      </div>
+      @if (weightLabels().length >= 2) {
+        <odv-line-chart [labels]="weightLabels()" [series]="weightSeries()" [format]="kg" [height]="120" ariaLabel="Son ölçümlerde kilo değişimi" />
+      } @else {
+        <p class="m-0 py-8 text-center text-xs text-slate-500">Grafik için en az iki kilo ölçümü gerekir.
+          <a routerLink="/measurements" class="font-bold text-indigo-600 dark:text-indigo-400 no-underline">Ölçüm ekle</a></p>
+      }
+    </div>
+    <div class="kpi-card">
+      <h3 class="m-0 mb-3 text-sm font-bold text-slate-900 dark:text-white">Programımdaki Bölgeler</h3>
+      @if (muscleSlices().length) {
+        <odv-donut-chart [data]="muscleSlices()" ariaLabel="Aktif programdaki egzersizlerin kas grubuna dağılımı" />
+      } @else {
+        <p class="m-0 py-8 text-center text-xs text-slate-500">Aktif antrenman programın yok.</p>
+      }
+    </div>
   </section>
 
   <!-- 3. Hızlı Erişim Paneli (Quick Access) -->

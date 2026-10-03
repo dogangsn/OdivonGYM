@@ -7,6 +7,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { ReportChurn } from './report-churn';
 import { ReportOccupancy } from './report-occupancy';
+import { ReportBranches } from './report-branches';
 import { formatMoney, formatDateTime, sortDesc, formatDate } from '../../shared/ui/ui-utils';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { AdminAccountingService } from '../accounting/admin-accounting.service';
@@ -15,7 +16,7 @@ import { AdminAccessControlService } from '../access-control/admin-access-contro
 import { ShopSale } from '../../core/models/shop-product.model';
 import { AccountingEntry } from '../../core/models/accounting-entry.model';
 
-export type ReportTab = 'pnl' | 'memberships' | 'shop' | 'turnstile' | 'churn';
+export type ReportTab = 'pnl' | 'memberships' | 'shop' | 'turnstile' | 'churn' | 'branches';
 export type DateFilterRange = 'all' | 'today' | 'this_month' | 'last_30_days';
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -35,7 +36,7 @@ const PAYMENT_ICON: Record<string, string> = {
 @Component({
   selector: 'app-admin-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, ReportOccupancy, ReportChurn],
+  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, ReportOccupancy, ReportChurn, ReportBranches],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-reports.html',
   styleUrl: './admin-reports.scss',

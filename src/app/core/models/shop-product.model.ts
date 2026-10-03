@@ -11,6 +11,9 @@ export interface ShopProduct {
   description?: string;
   imageUrl?: string;
   supplier?: string;
+  supplierId?: string; // tedarikçi kaydı (sipariş için)
+  minStock?: number; // bu ve altı "düşük stok" (tanımsızsa 5)
+  reorderQty?: number; // düşük stokta önerilen sipariş miktarı
   cost?: number; // cost price for profit calculation
   status: 'active' | 'inactive' | 'discontinued';
   createdAt: Timestamp;
@@ -51,6 +54,9 @@ export interface CreateShopProductInput {
   description?: string;
   imageUrl?: string;
   supplier?: string;
+  supplierId?: string;
+  minStock?: number;
+  reorderQty?: number;
   cost?: number;
 }
 
@@ -66,4 +72,9 @@ export interface CreateShopSaleInput {
   userId?: string;
   discount?: number;
   notes?: string;
+}
+
+/** Düşük stok eşiği: ürünün minimumu, tanımsızsa 5 (MainApi `/gym/stock/low` ile aynı kural). */
+export function isLowStock(p: Pick<ShopProduct, 'stock' | 'minStock'>): boolean {
+  return (p.stock ?? 0) <= (typeof p.minStock === 'number' && p.minStock >= 0 ? p.minStock : 5);
 }

@@ -70,6 +70,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
     titleKey: 'sidebar.groups.stock',
     items: [
       { icon: 'inventory_2', labelKey: 'sidebar.items.adminProducts', link: '/admin/products' },
+      { icon: 'fact_check', labelKey: 'sidebar.items.adminStock', link: '/admin/stock' },
       { icon: 'local_shipping', labelKey: 'sidebar.items.adminSuppliers', link: '/admin/suppliers' },
     ],
   },

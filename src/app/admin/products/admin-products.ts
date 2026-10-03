@@ -11,7 +11,11 @@ import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
 import { firstError, formatMoney } from '../../shared/ui/ui-utils';
 import { AdminShopService } from '../shop/admin-shop.service';
-import { ShopProduct } from '../../core/models/shop-product.model';
+import { ShopProduct, isLowStock } from '../../core/models/shop-product.model';
+import { Supplier } from '../../core/models/supplier.model';
+import { AdminSuppliersService } from '../suppliers/admin-suppliers.service';
+import { PermissionService } from '../../core/services/permission.service';
+import { of } from 'rxjs';
 import { StockCategoryItem } from '../../core/models/stock-category.model';
 
 @Component({
@@ -27,6 +31,11 @@ export class AdminProducts {
   private readonly shopService = inject(AdminShopService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  /** Ürünü tedarikçi kaydına bağlamak için (sipariş ve minimum stok listesi tedarikçiye göre süzülür). */
+  protected readonly suppliers = toSignal(
+    inject(PermissionService).can('gymSuppliers') ? inject(AdminSuppliersService).watchSuppliers() : of([] as Supplier[]),
+    { initialValue: [] as Supplier[] },
+  );
 
   protected readonly money = formatMoney;
 
@@ -60,7 +69,7 @@ export class AdminProducts {
   });
 
   protected readonly lowStockCount = computed(
-    () => this.products().filter((p) => p.status === 'active' && p.stock <= 5).length,
+    () => this.products().filter((p) => p.status === 'active' && isLowStock(p)).length,
   );
 
   protected readonly totalStockUnits = computed(
@@ -103,6 +112,9 @@ export class AdminProducts {
     description: [''],
     cost: [0],
     supplier: [''],
+    supplierId: [''],
+    minStock: [null as number | null, [Validators.min(0)]],
+    reorderQty: [null as number | null, [Validators.min(0)]],
     status: ['active' as ShopProduct['status']],
   });
 
@@ -144,6 +156,9 @@ export class AdminProducts {
       description: '',
       cost: 0,
       supplier: '',
+      supplierId: '',
+      minStock: null,
+      reorderQty: null,
       status: 'active',
     });
     this.form.controls.sku.enable();
@@ -162,6 +177,9 @@ export class AdminProducts {
       description: p.description ?? '',
       cost: p.cost ?? 0,
       supplier: p.supplier ?? '',
+      supplierId: p.supplierId ?? '',
+      minStock: p.minStock ?? null,
+      reorderQty: p.reorderQty ?? null,
       status: p.status,
     });
     this.form.controls.sku.disable();
@@ -188,6 +206,14 @@ export class AdminProducts {
     this.submitting.set(true);
     this.errorMessage.set('');
     const raw = this.form.getRawValue();
+    // Tedarikçi kaydı seçildiyse ad da ondan gelir; seçilmediyse serbest metin.
+    const linked = this.suppliers().find((s) => s.id === raw.supplierId);
+    const supplierFields = {
+      supplier: linked?.name ?? raw.supplier,
+      supplierId: linked?.id || undefined,
+      minStock: raw.minStock ?? undefined,
+      reorderQty: raw.reorderQty ?? undefined,
+    };
 
     try {
       const editing = this.editingProduct();
@@ -199,7 +225,7 @@ export class AdminProducts {
           category: raw.category,
           description: raw.description,
           cost: raw.cost,
-          supplier: raw.supplier,
+          ...supplierFields,
           status: raw.status,
         });
         this.alertService.toastSuccess('Ürün başarıyla güncellendi.');
@@ -212,7 +238,7 @@ export class AdminProducts {
           category: raw.category,
           description: raw.description,
           cost: raw.cost,
-          supplier: raw.supplier,
+          ...supplierFields,
         });
         this.alertService.toastSuccess('Yeni ürün başarıyla eklendi.');
       }

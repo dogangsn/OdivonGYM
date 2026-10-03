@@ -42,6 +42,7 @@ const SEARCHABLE_ROUTES: RouteSearchResult[] = [
   { titleKey: 'sidebar.items.adminPackages', categoryKey: 'sidebar.groups.sales', icon: 'sell', link: '/admin/packages', keywords: ['paket', 'fiyat', 'tarife', 'packages'] },
   { titleKey: 'sidebar.items.adminPos', categoryKey: 'sidebar.groups.pos', icon: 'shopping_cart_checkout', link: '/admin/shop', keywords: ['kasa', 'pos', 'market', 'satış', 'shop'] },
   { titleKey: 'sidebar.items.adminProducts', categoryKey: 'sidebar.groups.stock', icon: 'inventory_2', link: '/admin/products', keywords: ['ürün', 'stok', 'envanter', 'products'] },
+  { titleKey: 'sidebar.items.adminStock', categoryKey: 'sidebar.groups.stock', icon: 'fact_check', link: '/admin/stock', keywords: ['sayım', 'minimum stok', 'sipariş', 'tedarikçi siparişi', 'mal kabul', 'stock'] },
   { titleKey: 'sidebar.items.adminSuppliers', categoryKey: 'sidebar.groups.stock', icon: 'local_shipping', link: '/admin/suppliers', keywords: ['tedarikçi', 'suppliers'] },
   { titleKey: 'sidebar.items.adminPaymentSettings', categoryKey: 'sidebar.groups.finance', icon: 'credit_card', link: '/admin/payment-settings', keywords: ['iyzico', 'kart', 'online ödeme', 'sanal pos', 'payment'] },
   { titleKey: 'sidebar.items.adminReminders', categoryKey: 'sidebar.groups.finance', icon: 'notifications_active', link: '/admin/reminders', keywords: ['hatırlatma', 'bildirim', 'vade', 'gecikme', 'gelmeyen', 'reminder'] },

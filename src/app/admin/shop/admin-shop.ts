@@ -11,7 +11,7 @@ import { Field } from '../../shared/ui/field';
 import { firstError, formatDateTime, formatMoney, sortDesc } from '../../shared/ui/ui-utils';
 import { AdminShopService } from './admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
-import { ShopProduct, ShopSale } from '../../core/models/shop-product.model';
+import { ShopProduct, ShopSale, isLowStock } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 import { StockCategoryItem } from '../../core/models/stock-category.model';
 
@@ -153,7 +153,7 @@ export class AdminShop {
   });
 
   protected readonly lowStockCount = computed(
-    () => (this.products() ?? []).filter((p) => p.status === 'active' && p.stock <= 5).length,
+    () => (this.products() ?? []).filter((p) => p.status === 'active' && isLowStock(p)).length,
   );
 
   protected readonly todaySalesTotal = computed(() => {
