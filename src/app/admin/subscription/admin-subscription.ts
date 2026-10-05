@@ -148,6 +148,49 @@ export class AdminSubscription {
     return Math.round((this.serverPrices()?.[plan.id]?.yearly ?? plan.priceYearly) / 12);
   }
 
+  /** Planın bulunduğu kademe; mevcut plana göre "Yükselt" / "Geç" etiketini seçmek için. */
+  private readonly planRank: Record<SaasPlanId, number> = { starter: 0, pro: 1, enterprise: 2 };
+
+  ctaLabel(plan: SaasPlan): string {
+    if (this.isCurrentPlan(plan.id)) return 'Planı Yenile';
+    return this.planRank[plan.id] > this.planRank[this.activePlan().id] ? 'Bu Plana Yükselt' : 'Bu Plana Geç';
+  }
+
+  /** Yıllık ödemede 12 aylık fiyata göre kazanç (TL). */
+  yearlySaving(plan: SaasPlan): number {
+    const prices = this.serverPrices()?.[plan.id];
+    const monthly = prices?.monthly ?? plan.priceMonthly;
+    const yearly = prices?.yearly ?? plan.priceYearly;
+    return Math.max(0, monthly * 12 - yearly);
+  }
+
+  /** Abonelik durumu rozeti: süresi dolmuş, ek süre, deneme veya aktif. */
+  readonly status = computed<{ label: string; tone: 'rose' | 'amber' | 'emerald' }>(() => {
+    if (this.subService.isExpired()) return { label: 'Süresi doldu', tone: 'rose' };
+    if (this.billing()?.inGrace) return { label: 'Ek süre', tone: 'rose' };
+    if (this.subService.isTrial()) return { label: `Deneme · ${this.subService.trialDaysLeft()} gün`, tone: 'amber' };
+    return { label: 'Aktif', tone: 'emerald' };
+  });
+
+  readonly usage = computed(() => {
+    const plan = this.activePlan();
+    const s = this.subService;
+    return [
+      { label: 'Üye', icon: 'group', used: s.memberCount(), max: plan.limits.maxMembers, unlimited: plan.limits.maxMembers >= 999999, pct: s.memberUsagePct(), color: 'indigo' },
+      { label: 'Şube', icon: 'store', used: s.branchCount(), max: plan.limits.maxBranches, unlimited: plan.limits.maxBranches >= 9999, pct: s.branchUsagePct(), color: 'emerald' },
+      { label: 'Personel', icon: 'badge', used: s.staffCount(), max: plan.limits.maxStaff, unlimited: plan.limits.maxStaff >= 9999, pct: s.staffUsagePct(), color: 'sky' },
+    ];
+  });
+
+  /** Plan fiyatları kuruşsuz gösterilir (₺2.990). */
+  tl(amount: number): string {
+    return `₺${Math.round(amount).toLocaleString('tr-TR')}`;
+  }
+
+  planName(planId: string): string {
+    return SAAS_PLANS_CONFIG[planId as SaasPlanId]?.name ?? planId;
+  }
+
   getPeriodLabel(): string {
     return this.selectedCycle() === 'yearly'
       ? this.transloco.translate('saasSubscription.perYear')
