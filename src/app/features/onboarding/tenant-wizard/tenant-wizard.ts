@@ -64,13 +64,13 @@ export class TenantWizard {
   readonly currentStep = signal<1 | 2 | 3 | 4 | 5>(1);
   readonly submitting = signal(false);
 
-  // GÃ¼n SeÃ§imleri (Step 1)
+  // Gün Seçimleri (Step 1)
   readonly workingDays = signal<DayOption[]>(JSON.parse(JSON.stringify(WEEK_DAYS)));
 
-  // Logo YÃ¼kleme & Ã–nizleme
+  // Logo Yükleme & Önizleme
   readonly previewLogo = signal<string | null>(null);
 
-  // Åube OlanaklarÄ± (Step 2)
+  // Şube Olanakları (Step 2)
   readonly allAmenities = AVAILABLE_FACILITY_AMENITIES;
   readonly selectedAmenities = signal<string[]>([
     'fitness',
@@ -78,44 +78,44 @@ export class TenantWizard {
     'locker',
   ]);
 
-  // HÄ±zlÄ± BaÅŸlangÄ±Ã§ SeÃ§imleri (Step 4)
+  // Hızlı Başlangıç Seçimleri (Step 4)
   readonly seedDefaultPackages = signal<boolean>(true);
   readonly seedWorkoutTemplates = signal<boolean>(true);
   readonly seedDisciplines = signal<boolean>(true);
 
-  // VarsayÄ±lan Paket FiyatlarÄ±
+  // Varsayılan Paket Fiyatları
   readonly package1Price = signal<number>(1250);
   readonly package3Price = signal<number>(3200);
   readonly package12Price = signal<number>(9900);
 
-  // AdÄ±m 1: Salon Bilgileri
+  // Adım 1: Salon Bilgileri
   readonly gymForm = this.fb.nonNullable.group({
     name: [this.auth.profile()?.displayName ? `${this.auth.profile()?.displayName} Gym` : 'Odivon GYM', [Validators.required, Validators.minLength(2)]],
     phone: [this.auth.profile()?.phone || '', [Validators.required]],
-    city: ['Ä°stanbul', [Validators.required]],
+    city: ['İstanbul', [Validators.required]],
     address: ['Merkez Mah. Spor Cad. No: 14', [Validators.required]],
     openTime: ['07:00', [Validators.required]],
     closeTime: ['23:00', [Validators.required]],
   });
 
-  // AdÄ±m 2: Åube Bilgileri
+  // Adım 2: Şube Bilgileri
   readonly branchForm = this.fb.nonNullable.group({
-    branchName: ['Merkez Åube', [Validators.required]],
+    branchName: ['Merkez Şube', [Validators.required]],
     capacity: [250, [Validators.required, Validators.min(10)]],
     branchPhone: [this.auth.profile()?.phone || '+90 216 450 1020', [Validators.required]],
-    branchAddress: ['BaÄŸdat Caddesi No: 142', [Validators.required]],
+    branchAddress: ['Bağdat Caddesi No: 142', [Validators.required]],
   });
 
-  // AdÄ±m 3: Ä°lk AntrenÃ¶r / Personel (Zorunlu)
+  // Adım 3: İlk Antrenör / Personel (Zorunlu)
   readonly trainerForm = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required]],
     specialties: ['Fitness & Personal Training', [Validators.required]],
-    notes: ['Head Coach / BaÅŸ AntrenÃ¶r'],
+    notes: ['Head Coach / Baş Antrenör'],
   });
 
-  // Logo DosyasÄ± SeÃ§me
+  // Logo Dosyası Seçme
   onLogoFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
@@ -132,7 +132,7 @@ export class TenantWizard {
     this.previewLogo.set(null);
   }
 
-  // HÄ±zlÄ± GÃ¼n ÅablonlarÄ±
+  // Hızlı Gün Şablonları
   setDaysPreset(preset: 'all' | 'weekdays' | 'mon_sat'): void {
     this.workingDays.update((days) =>
       days.map((d) => {
@@ -268,7 +268,7 @@ export class TenantWizard {
 
       await this.router.navigateByUrl('/admin/overview');
     } catch (err) {
-      console.error('Onboarding tamamlanamadÄ±:', err);
+      console.error('Onboarding tamamlanamadı:', err);
       void this.alert.error(
         this.transloco.translate('tenantWizard.alerts.errorTitle'),
         this.transloco.translate('tenantWizard.alerts.errorDesc'),
