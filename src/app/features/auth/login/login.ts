@@ -131,13 +131,7 @@ export class Login {
 
       await this.auth.waitUntilReady();
 
-      if (!this.auth.onboardingCompleted()) {
-        await this.router.navigateByUrl('/onboarding/wizard');
-      } else if (this.auth.isTrialExpired() && !this.auth.canAccessApp()) {
-        await this.router.navigateByUrl('/onboarding/trial-expired');
-      } else {
-        await this.router.navigateByUrl('/dashboard');
-      }
+      await this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {

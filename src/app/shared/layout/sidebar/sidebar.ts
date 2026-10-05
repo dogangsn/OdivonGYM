@@ -248,7 +248,8 @@ export class Sidebar {
 
       // Expired SaaS durumu için item'ları dönüştür
       const mappedItems = allowedItems.map((item) => {
-        if (expired && item.requiresActiveSaas) {
+        // Süre bittiğinde abonelik/ödeme ekranı dışındaki her şey kilitli (rota guard'ı da yönlendirir).
+        if (expired && item.link !== '/admin/subscription') {
           return {
             ...item,
             isLocked: true,

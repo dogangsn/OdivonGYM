@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { adminChildGuard, adminGuard } from './core/auth/admin.guard';
 import { authGuard } from './core/auth/auth.guard';
 import { guestGuard } from './core/auth/guest.guard';
-import { trialGuard } from './core/auth/trial.guard';
+import { trialChildGuard, trialGuard, wizardGuard } from './core/auth/trial.guard';
 import { Shell } from './shared/layout/shell/shell';
 
 export const routes: Routes = [
@@ -37,7 +37,7 @@ export const routes: Routes = [
   },
   {
     path: 'onboarding/wizard',
-    canActivate: [authGuard],
+    canActivate: [authGuard, wizardGuard],
     loadComponent: () =>
       import('./features/onboarding/tenant-wizard/tenant-wizard').then((m) => m.TenantWizard),
     title: 'Salon Kurulum Sihirbazı · OdivonGYM',
@@ -48,6 +48,7 @@ export const routes: Routes = [
     path: '',
     component: Shell,
     canActivate: [authGuard, trialGuard],
+    canActivateChild: [trialChildGuard],
     children: [
       {
         path: 'dashboard',
