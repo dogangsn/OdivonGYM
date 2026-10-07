@@ -37,6 +37,7 @@ const SEARCHABLE_ROUTES: RouteSearchResult[] = [
   { titleKey: 'sidebar.items.dashboard', categoryKey: 'sidebar.groups.general', icon: 'dashboard', link: '/dashboard', keywords: ['ana sayfa', 'dashboard', 'panel', 'home'] },
   { titleKey: 'sidebar.items.adminOverview', categoryKey: 'sidebar.groups.general', icon: 'space_dashboard', link: '/admin/overview', keywords: ['genel bakış', 'durum', 'overview', 'rapor'] },
   { titleKey: 'sidebar.items.adminMembers', categoryKey: 'sidebar.groups.club', icon: 'groups', link: '/admin/members', keywords: ['üye', 'üyeler', 'kayıt', 'members'] },
+  { titleKey: 'sidebar.items.adminProgramRequests', categoryKey: 'sidebar.groups.club', icon: 'fitness_center', link: '/admin/program-requests', keywords: ['program', 'talep', 'antrenör', 'workout request'] },
   { titleKey: 'sidebar.items.adminSubscriptions', categoryKey: 'sidebar.groups.club', icon: 'card_membership', link: '/admin/subscriptions', keywords: ['abonelik', 'abone', 'yenileme', 'subscriptions'] },
   { titleKey: 'sidebar.items.adminGuestMembers', categoryKey: 'sidebar.groups.club', icon: 'person_search', link: '/admin/guest-members', keywords: ['misafir', 'ziyaretçi', 'guest'] },
   { titleKey: 'sidebar.items.adminPackages', categoryKey: 'sidebar.groups.sales', icon: 'sell', link: '/admin/packages', keywords: ['paket', 'fiyat', 'tarife', 'packages'] },

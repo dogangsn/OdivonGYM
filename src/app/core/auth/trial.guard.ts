@@ -1,33 +1,52 @@
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateChildFn, CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
 import { filter, map, take } from 'rxjs';
-import { AuthService } from './auth.service';
-import { PermissionService } from '../services/permission.service';
+import { AuthService, SAAS_RENEW_URL } from './auth.service';
+
+/** Süresi biten salonda açık kalan sayfa (abonelik/ödeme). `/admin/subscriptions` (üye abonelikleri) değil. */
+export function isSaasRenewUrl(url: string): boolean {
+  const path = url.split(/[?#]/)[0];
+  return path === SAAS_RENEW_URL || path.startsWith(`${SAAS_RENEW_URL}/`);
+}
 
 /**
- * Deneme süresi bitmiş / üyeliği pasif olan son kullanıcıyı paket alma ekranına yönlendirir.
- * Kulüp yöneticileri ve personeli (owner, admin, staff) ise paket süresi bitse dahi menüyü
- * görebilmeleri, SaaS Paket & Lisans (/admin/subscription) ekranından yenileme yapabilmeleri
- * ve ekran kısıtlamalarını inceleyebilmeleri için kabuk arayüzüne her zaman erişebilir.
+ * Deneme/abonelik süresi biten salonda panel kilitlenir: yönetici yalnızca abonelik ekranına
+ * (ödeme ve çıkış oradan), personel ve üyeler paket ekranına gider. Bu kontrol kurulum
+ * sihirbazından önce yapılır; sihirbazı bitirmemiş ama süresi dolmuş salon da ödemeye düşer.
  */
-export const trialGuard: CanActivateFn = () => {
+const decideFor = (state: RouterStateSnapshot) => {
   const auth = inject(AuthService);
-  const permissions = inject(PermissionService);
   const router = inject(Router);
 
   const decide = () => {
+    if (auth.isSaasLocked()) {
+      const target = auth.lockedLandingUrl();
+      return target === SAAS_RENEW_URL && isSaasRenewUrl(state.url) ? true : router.createUrlTree([target]);
+    }
     if (!auth.onboardingCompleted()) {
       return router.createUrlTree(['/onboarding/wizard']);
     }
-    if (auth.profile()?.email === 'expired@odivongym.app') {
-      return router.createUrlTree(['/onboarding/trial-expired']);
-    }
-    if (permissions.isStaff()) {
-      return true;
-    }
-    return auth.canAccessApp() || router.createUrlTree(['/onboarding/trial-expired']);
+    return true;
   };
+
+  if (auth.ready()) {
+    return decide();
+  }
+
+  return toObservable(auth.ready).pipe(filter(Boolean), take(1), map(decide));
+};
+
+export const trialGuard: CanActivateFn = (_route, state) => decideFor(state);
+
+export const trialChildGuard: CanActivateChildFn = (_route, state) => decideFor(state);
+
+/** Kurulum sihirbazı: süresi biten salon sihirbaz yerine ödeme ekranına gider. */
+export const wizardGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  const decide = () => !auth.isSaasLocked() || router.createUrlTree([auth.lockedLandingUrl()]);
 
   if (auth.ready()) {
     return decide();

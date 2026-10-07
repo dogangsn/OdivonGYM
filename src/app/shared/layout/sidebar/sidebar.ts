@@ -40,6 +40,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
     titleKey: 'sidebar.groups.club',
     items: [
       { icon: 'groups', labelKey: 'sidebar.items.adminMembers', link: '/admin/members' },
+      { icon: 'fitness_center', labelKey: 'sidebar.items.adminProgramRequests', link: '/admin/program-requests' },
       { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscriptions', link: '/admin/subscriptions', badgeKey: 'sidebar.badges.renewal', badgeClass: 'badge-emerald' },
       { icon: 'person_search', labelKey: 'sidebar.items.adminGuestMembers', link: '/admin/guest-members' },
       { icon: 'calendar_month', labelKey: 'sidebar.items.classSchedule', link: '/classes' },
@@ -248,7 +249,8 @@ export class Sidebar {
 
       // Expired SaaS durumu için item'ları dönüştür
       const mappedItems = allowedItems.map((item) => {
-        if (expired && item.requiresActiveSaas) {
+        // Süre bittiğinde abonelik/ödeme ekranı dışındaki her şey kilitli (rota guard'ı da yönlendirir).
+        if (expired && item.link !== '/admin/subscription') {
           return {
             ...item,
             isLocked: true,

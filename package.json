@@ -1,6 +1,6 @@
 {
   "name": "odivongym",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "scripts": {
     "ng": "ng",
     "prestart": "node scripts/write-version.mjs",
@@ -18,6 +18,7 @@
     "pack:agent": "cd edge-agent && rm -f ../public/downloads/odivon-gym-edge-agent.zip && zip -qr ../public/downloads/odivon-gym-edge-agent.zip agent.js package.json README.md baslat.bat servis-kur.bat config.sample.json src",
     "test:agent": "npm --prefix edge-agent test",
     "prepare": "node scripts/install-git-hooks.mjs",
+    "postinstall": "node scripts/write-version.mjs",
     "version:bump": "node scripts/bump-version.mjs"
   },
   "prettier": {

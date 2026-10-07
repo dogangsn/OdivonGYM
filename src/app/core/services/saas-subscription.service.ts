@@ -69,9 +69,8 @@ export class SaasSubscriptionService {
   readonly isExpired = computed(
     () =>
       this.demoSimulateExpired() ||
-      this.auth.profile()?.email === 'expired@odivongym.app' ||
-      this.subscription().status === 'expired' ||
-      this.auth.isTrialExpired(),
+      this.auth.isSaasLocked() ||
+      this.subscription().status === 'expired',
   );
   readonly isActive = computed(() => this.subscription().status === 'active' && !this.isExpired());
   readonly trialDaysLeft = computed(() => this.auth.trialDaysLeft());

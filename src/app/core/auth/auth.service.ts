@@ -16,6 +16,9 @@ import { IdentityApi } from '../api/identity.api';
 import { MembershipStatus, UserProfile } from '../models/user-profile.model';
 import { isSessionTooOld } from './session-policy';
 
+/** Süresi biten salonun yöneticisi için açık kalan abonelik/ödeme ekranı. */
+export const SAAS_RENEW_URL = '/admin/subscription';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly auth = inject(Auth);
@@ -56,6 +59,27 @@ export class AuthService {
   });
 
   readonly onboardingCompleted = computed(() => this.userProfile()?.onboardingCompleted !== false);
+
+  /**
+   * Salonun deneme/abonelik süresi bitti: panel kilitli, yalnızca abonelik ödemesi ve çıkış açık.
+   * Kurulum sihirbazı tamamlanmamış olsa bile önce bu kontrol edilir.
+   */
+  readonly isSaasLocked = computed(
+    () => this.userProfile()?.email === 'expired@odivongym.app' || !this.canAccessApp(),
+  );
+
+  /** Süresi biten salonda gidilecek tek sayfa: yönetici abonelik ekranına, diğerleri paket ekranına. */
+  readonly lockedLandingUrl = computed(() => {
+    const role = this.userProfile()?.role;
+    return role === 'owner' || role === 'admin' ? SAAS_RENEW_URL : '/onboarding/trial-expired';
+  });
+
+  /** Girişten sonra açılacak sayfa: süre bittiyse ödeme, kurulum bitmediyse sihirbaz, yoksa ana sayfa. */
+  landingUrl(): string {
+    if (this.isSaasLocked()) return this.lockedLandingUrl();
+    if (!this.onboardingCompleted()) return '/onboarding/wizard';
+    return '/dashboard';
+  }
 
   constructor() {
     authState(this.auth)
