@@ -102,6 +102,7 @@ export class PermissionService {
         '/admin/overview',
         '/admin/wizard',
         '/admin/members',
+        '/admin/program-requests',
         '/admin/subscriptions',
         '/admin/disciplines',
         '/classes',

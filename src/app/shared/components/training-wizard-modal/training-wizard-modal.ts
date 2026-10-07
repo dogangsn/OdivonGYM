@@ -24,6 +24,7 @@ import { UserProfile } from '../../../core/models/user-profile.model';
 import { DisciplineCategory, DisciplineCode, SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { GymEquipment, GymFacility, MuscleGroup } from '../../../core/models/gym-equipment.model';
 import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../../core/models/workout-plan.model';
+import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
 
 export interface MuscleGroupOption {
   key: MuscleGroup;
@@ -84,6 +85,14 @@ export class TrainingWizardModal {
   // Egzersiz Oluşturucu
   readonly currentPlanTitle = signal('4 Haftalık Bölgesel İtiş/Çekiş Programı');
   readonly currentPlanExercises = signal<Exercise[]>([]);
+  readonly activeDay = signal(1);
+  readonly extraDays = signal(1);
+  readonly dayNumbers = computed(() =>
+    workoutDayNumbers(
+      this.currentPlanExercises().map((exercise) => exercise.dayName),
+      Math.max(this.extraDays(), this.activeDay()),
+    ),
+  );
   readonly planStartDate = signal(new Date().toISOString().substring(0, 10));
   readonly planEndDate = signal(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
@@ -205,17 +214,39 @@ export class TrainingWizardModal {
 
     // Seçilen kas gruplarından varsayılan 4-5 egzersizi otomatik ekleyelim
     if (this.currentPlanExercises().length === 0) {
-      const initial = this.suggestedExercises().slice(0, 5);
+      const initial = this.suggestedExercises().slice(0, 5).map((exercise) => ({
+        ...exercise,
+        dayName: workoutDayLabel(1),
+      }));
       this.currentPlanExercises.set(initial);
     }
     this.workoutStep.set(4);
   }
 
+  selectDay(day: number): void {
+    this.activeDay.set(day);
+  }
+
+  addDay(): void {
+    const next = this.dayNumbers().length + 1;
+    this.extraDays.set(next);
+    this.activeDay.set(next);
+  }
+
+  isOnActiveDay(exercise: Exercise): boolean {
+    return workoutDayIndex(exercise.dayName) === this.activeDay();
+  }
+
+  exercisesOnDay(day: number): Exercise[] {
+    return this.currentPlanExercises().filter((exercise) => workoutDayIndex(exercise.dayName) === day);
+  }
+
   addSuggestedExercise(ex: Exercise): void {
+    const dayName = workoutDayLabel(this.activeDay());
     const list = [...this.currentPlanExercises()];
-    const exists = list.some((e) => e.name === ex.name);
+    const exists = list.some((item) => item.name === ex.name && workoutDayIndex(item.dayName) === this.activeDay());
     if (!exists) {
-      list.push({ ...ex });
+      list.push({ ...ex, dayName });
       this.currentPlanExercises.set(list);
     }
   }
@@ -277,6 +308,8 @@ export class TrainingWizardModal {
     this.selectedDiscipline.set(null);
     this.selectedMuscles.set(['chest', 'arms']);
     this.currentPlanExercises.set([]);
+    this.activeDay.set(1);
+    this.extraDays.set(1);
     this.planNotes.set('');
   }
 

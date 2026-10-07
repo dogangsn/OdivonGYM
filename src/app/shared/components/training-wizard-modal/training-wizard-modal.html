@@ -361,13 +361,31 @@
                 </button>
               </div>
 
+              <div class="flex flex-wrap items-center gap-2">
+                @for (day of dayNumbers(); track day) {
+                  <button
+                    type="button"
+                    (click)="selectDay(day)"
+                    class="px-3 py-1.5 rounded-xl text-xs font-black border cursor-pointer"
+                    [class]="activeDay() === day ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200'"
+                  >
+                    {{ day }}. Gün
+                  </button>
+                }
+                <button type="button" (click)="addDay()" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-dashed border-indigo-300 text-indigo-700 cursor-pointer">
+                  + Gün
+                </button>
+                <span class="text-[11px] text-slate-500">Hareketler seçili güne eklenir.</span>
+              </div>
+
               <!-- Eklenen Egzersizler Tablosu / Listesi -->
               <div class="space-y-2.5">
                 <span class="text-xs font-black uppercase tracking-wider text-slate-400">
-                  Programdaki Egzersizler ({{ currentPlanExercises().length }})
+                  {{ activeDay() }}. Gün · {{ exercisesOnDay(activeDay()).length }} hareket
                 </span>
 
                 @for (ex of currentPlanExercises(); track $index) {
+                  @if (isOnActiveDay(ex)) {
                   <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2.5">
@@ -443,6 +461,7 @@
                       </div>
                     </div>
                   </div>
+                  }
                 }
               </div>
 
@@ -550,18 +569,25 @@
               </div>
 
               <!-- Egzersizlerin Kompakt Özeti -->
-              <div class="space-y-1.5">
-                <span class="text-xs font-bold text-slate-700">Hazırlanan Hareket Akışı:</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  @for (ex of currentPlanExercises(); track $index) {
-                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                      <span class="font-bold text-slate-800">{{ $index + 1 }}. {{ ex.name }}</span>
-                      <span class="text-[11px] font-semibold text-indigo-600">
-                        {{ ex.sets }} set × {{ ex.reps }} {{ ex.weight ? '• ' + ex.weight + 'kg' : '' }}
-                      </span>
+              <div class="space-y-3">
+                <span class="text-xs font-bold text-slate-700">Gün gün hareket akışı:</span>
+                @for (day of dayNumbers(); track day) {
+                  <div class="space-y-1.5">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-600">{{ day }}. Gün</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      @for (ex of exercisesOnDay(day); track ex.name) {
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <span class="font-bold text-slate-800">{{ ex.name }}</span>
+                          <span class="text-[11px] font-semibold text-indigo-600">
+                            {{ ex.sets }} set × {{ ex.reps }} {{ ex.weight ? '• ' + ex.weight + 'kg' : '' }}
+                          </span>
+                        </div>
+                      } @empty {
+                        <span class="text-[11px] text-slate-400">Bu güne hareket eklenmedi.</span>
+                      }
                     </div>
-                  }
-                </div>
+                  </div>
+                }
               </div>
 
               <!-- Onay & Kayıt Butonları -->

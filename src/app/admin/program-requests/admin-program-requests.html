@@ -1,0 +1,112 @@
+<div class="p-4 sm:p-6">
+  <app-page-header
+    icon="fitness_center"
+    title="Program talepleri"
+    description="Üyenin antrenörden istediği programlar. Atama mevcut antrenman kaydıyla talebi kapatır."
+  />
+
+  @if (loading()) {
+    <p class="text-sm text-slate-500">Yükleniyor…</p>
+  } @else if (requests().length === 0) {
+    <p class="text-sm text-slate-500">Henüz program talebi yok.</p>
+  } @else {
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900">
+          <tr>
+            <th class="px-4 py-3">Üye</th>
+            <th class="px-4 py-3">Hedef</th>
+            <th class="px-4 py-3">Gün</th>
+            <th class="px-4 py-3">Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr
+              class="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+              (click)="open(request)"
+            >
+              <td class="px-4 py-3 font-semibold">{{ request.memberName }}</td>
+              <td class="px-4 py-3">{{ request.goal }}</td>
+              <td class="px-4 py-3">{{ request.daysPerWeek }}</td>
+              <td class="px-4 py-3">{{ statusLabel(request.status) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (selected(); as request) {
+  <div class="fixed inset-0 z-40 bg-slate-900/40" (click)="close()"></div>
+  <aside class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-xl dark:bg-slate-950">
+    <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+      <div>
+        <h2 class="m-0 text-lg font-black">{{ request.memberName }}</h2>
+        <p class="m-0 text-sm text-slate-500">{{ statusLabel(request.status) }} · haftada {{ request.daysPerWeek }} gün</p>
+      </div>
+      <button type="button" class="rounded-lg p-2" (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <div class="flex-1 space-y-4 overflow-y-auto p-4">
+      <p class="m-0 text-sm"><span class="font-semibold">Hedef:</span> {{ request.goal }}</p>
+      @if (request.notes) {
+        <p class="m-0 text-sm"><span class="font-semibold">Not:</span> {{ request.notes }}</p>
+      }
+      @if (request.trainerName) {
+        <p class="m-0 text-sm text-slate-500">Antrenör: {{ request.trainerName }}</p>
+      }
+
+      @if (request.status === 'pending') {
+        <label class="block text-sm font-semibold">
+          Program adı
+          <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" [ngModel]="title()" (ngModelChange)="title.set($event)" />
+        </label>
+        <label class="block text-sm font-semibold">
+          Açıklama
+          <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" [ngModel]="description()" (ngModelChange)="description.set($event)" />
+        </label>
+        <label class="block text-sm font-semibold">
+          Hazır hareket
+          <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" (change)="addPreset($any($event.target).value); $any($event.target).value = ''">
+            <option value="">Seç ve ekle</option>
+            @for (preset of presets; track preset.name) {
+              <option [value]="preset.name">{{ preset.name }}</option>
+            }
+          </select>
+        </label>
+        <div class="flex flex-wrap gap-2">
+          @for (day of dayNumbers(); track day) {
+            <button type="button" class="rounded-lg border px-3 py-1 text-xs font-bold" [class]="activeDay() === day ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'" (click)="activeDay.set(day)">{{ day }}. Gün</button>
+          }
+          <button type="button" class="rounded-lg border border-dashed border-indigo-300 px-3 py-1 text-xs font-bold text-indigo-700" (click)="addDay()">+ Gün</button>
+        </div>
+        <button type="button" class="text-sm font-semibold text-indigo-600" (click)="addBlank()">Serbest hareket ekle</button>
+        @for (exercise of exercises(); track $index) {
+          @if (onDay(exercise)) {
+          <div class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+            <input class="col-span-2 rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" placeholder="Hareket" [ngModel]="exercise.name" (ngModelChange)="updateExercise($index, { name: $event })" />
+            <span class="self-center text-xs font-bold text-indigo-600">{{ activeDay() }}. Gün</span>
+            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" type="number" placeholder="Set" [ngModel]="exercise.sets" (ngModelChange)="updateExercise($index, { sets: +$event })" />
+            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" placeholder="Tekrar" [ngModel]="exercise.reps" (ngModelChange)="updateExercise($index, { reps: $event })" />
+            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" type="number" placeholder="Kg" [ngModel]="exercise.weight" (ngModelChange)="updateExercise($index, { weight: +$event })" />
+            <button type="button" class="col-span-2 text-left text-xs text-rose-600" (click)="removeExercise($index)">Kaldır</button>
+          </div>
+          }
+        }
+        <label class="block text-sm font-semibold">
+          Red notu
+          <textarea class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" rows="2" [ngModel]="rejectNote()" (ngModelChange)="rejectNote.set($event)"></textarea>
+        </label>
+      }
+    </div>
+    @if (request.status === 'pending') {
+      <footer class="flex gap-2 border-t border-slate-200 p-4 dark:border-slate-800">
+        <button type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold" [disabled]="saving()" (click)="reject()">Reddet</button>
+        <button type="button" class="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white" [disabled]="saving()" (click)="assign()">Programı ata</button>
+      </footer>
+    }
+  </aside>
+}

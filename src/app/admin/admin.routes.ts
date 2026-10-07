@@ -13,6 +13,12 @@ export const adminRoutes: Routes = [
     title: 'Eğitim & Tanımlama Sihirbazı · OdivonGYM',
   },
   {
+    path: 'program-requests',
+    loadComponent: () =>
+      import('./program-requests/admin-program-requests').then((m) => m.AdminProgramRequests),
+    title: 'Program Talepleri · OdivonGYM',
+  },
+  {
     path: 'members',
     loadComponent: () => import('./members/admin-members').then((m) => m.AdminMembers),
     title: 'Üye Kayıtları · OdivonGYM',

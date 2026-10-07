@@ -728,6 +728,17 @@
 
           <!-- 3. Eklenen Hareketler Listesi (Program Akışı) -->
           <div>
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+              @for (day of planDayNumbers(); track day) {
+                <button type="button" (click)="activeWorkoutDay.set(day)"
+                  class="px-3 py-1.5 rounded-xl text-xs font-black border cursor-pointer"
+                  [class]="activeWorkoutDay() === day ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200'">
+                  {{ day }}. Gün
+                </button>
+              }
+              <button type="button" (click)="addWorkoutDay()" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-dashed border-indigo-300 text-indigo-700 cursor-pointer">+ Gün</button>
+              <span class="text-[11px] text-slate-500">Yeni hareket seçili güne eklenir.</span>
+            </div>
             <div class="flex items-center justify-between mb-2">
               <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">
                 Program Akışı (Toplam {{ currentPlanExercises().length }} Ana Hareket
@@ -752,6 +763,7 @@
             } @else {
             <div class="space-y-2.5">
               @for (ex of currentPlanExercises(); track $index) {
+              @if (isOnActiveWorkoutDay(ex)) {
               <div
                 class="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
                 <!-- Ana Hareket Satırı -->
@@ -857,6 +869,7 @@
                 </div>
                 }
               </div>
+              }
               }
             </div>
             }
