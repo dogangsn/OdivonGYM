@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -14,39 +14,7 @@ import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.ser
 import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 
-export interface DemoProfile {
-  key: 'active' | 'expired';
-  email: string;
-  password: string;
-  roleI18nKey: string;
-  badgeI18nKey: string;
-  descI18nKey: string;
-  icon: string;
-  accent: 'emerald' | 'amber';
-}
 
-export const DEMO_PROFILES: DemoProfile[] = [
-  {
-    key: 'active',
-    email: 'demo@odivongym.app',
-    password: 'Demo123456!',
-    roleI18nKey: 'auth.login.demoActiveTitle',
-    badgeI18nKey: 'auth.login.demoActiveBadge',
-    descI18nKey: 'auth.login.demoActiveDesc',
-    icon: 'verified_user',
-    accent: 'emerald',
-  },
-  {
-    key: 'expired',
-    email: 'expired@odivongym.app',
-    password: 'Demo123456!',
-    roleI18nKey: 'auth.login.demoExpiredTitle',
-    badgeI18nKey: 'auth.login.demoExpiredBadge',
-    descI18nKey: 'auth.login.demoExpiredDesc',
-    icon: 'history_toggle_off',
-    accent: 'amber',
-  },
-];
 
 @Component({
   selector: 'app-login',
@@ -71,12 +39,12 @@ export class Login {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly theme = inject(ThemeService);
   protected readonly language = inject(LanguageService);
 
   protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
   protected readonly languageNames = LANGUAGE_NAMES;
-  protected readonly demoProfiles = DEMO_PROFILES;
   protected readonly currentYear = new Date().getFullYear();
 
   readonly form = this.fb.nonNullable.group({
@@ -88,6 +56,10 @@ export class Login {
   readonly submitting = signal(false);
   readonly resettingPassword = signal(false);
   readonly errorMessage = signal('');
+  readonly failedAttempts = signal(0);
+  readonly lockSecondsLeft = signal(0);
+  private lockTimer: ReturnType<typeof setInterval> | null = null;
+
   /** Neden yeniden giriş istendiğini anlatır: sürüm güncellemesi ya da süresi dolan oturum. */
   readonly infoMessage = signal(
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('updated')
@@ -97,10 +69,17 @@ export class Login {
         : '',
   );
   readonly hidePassword = signal(true);
-  readonly activeDemoKey = signal<'active' | 'expired' | null>(null);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.lockTimer) {
+        clearInterval(this.lockTimer);
+      }
+    });
+  }
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
+    if (this.form.invalid || this.submitting() || this.lockSecondsLeft() > 0) {
       this.form.markAllAsTouched();
       return;
     }
@@ -109,27 +88,9 @@ export class Login {
     try {
       const { email, password, rememberMe } = this.form.getRawValue();
 
-      try {
-        await this.auth.signInWithEmail(email, password, rememberMe);
-      } catch (err: any) {
-        // Demo hesaplar Firebase Auth'ta henüz oluşturulmamışsa tek tıkla otomatik oluştur
-        const isDemo = email === 'demo@odivongym.app' || email === 'expired@odivongym.app';
-        if (isDemo && (err?.code === 'auth/invalid-credential' || err?.code === 'auth/user-not-found')) {
-          await this.auth.signUpWithEmail({
-            tenantName: email === 'expired@odivongym.app' ? 'Odivon Pasif Salon' : 'Odivon Demo Salonu',
-            email,
-            password,
-            displayName: email === 'expired@odivongym.app' ? 'Demo Pasif Üye' : 'Demo Yönetici',
-            country: 'TR',
-            phone: '+90 555 000 00 00',
-            language: 'tr',
-          });
-        } else {
-          throw err;
-        }
-      }
-
+      await this.auth.signInWithEmail(email, password, rememberMe);
       await this.auth.waitUntilReady();
+      this.failedAttempts.set(0);
 
       if (!this.auth.onboardingCompleted()) {
         await this.router.navigateByUrl('/onboarding/wizard');
@@ -139,10 +100,43 @@ export class Login {
         await this.router.navigateByUrl('/dashboard');
       }
     } catch (error) {
-      this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
+      const attempts = this.failedAttempts() + 1;
+      this.failedAttempts.set(attempts);
+      if (attempts >= 5) {
+        this.startLockout(30);
+      } else {
+        this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
+      }
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  private startLockout(seconds: number): void {
+    if (this.lockTimer) {
+      clearInterval(this.lockTimer);
+    }
+    this.lockSecondsLeft.set(seconds);
+    this.errorMessage.set(
+      this.transloco.translate('loginExtra.tooManyAttemptsWait', { seconds }),
+    );
+    this.lockTimer = setInterval(() => {
+      const left = this.lockSecondsLeft() - 1;
+      if (left <= 0) {
+        if (this.lockTimer) {
+          clearInterval(this.lockTimer);
+        }
+        this.lockTimer = null;
+        this.lockSecondsLeft.set(0);
+        this.failedAttempts.set(0);
+        this.errorMessage.set('');
+      } else {
+        this.lockSecondsLeft.set(left);
+        this.errorMessage.set(
+          this.transloco.translate('loginExtra.tooManyAttemptsWait', { seconds: left }),
+        );
+      }
+    }, 1000);
   }
 
   async forgotPassword(): Promise<void> {
@@ -173,20 +167,4 @@ export class Login {
     }
   }
 
-  fillDemoCredentials(profile: DemoProfile): void {
-    this.form.patchValue({
-      email: profile.email,
-      password: profile.password,
-    });
-    this.form.markAsDirty();
-    this.activeDemoKey.set(profile.key);
-    this.errorMessage.set('');
-
-    const translatedRole = this.transloco.translate(profile.roleI18nKey);
-    this.snackBar.open(
-      this.transloco.translate('auth.login.demoFilledSnackbar', { role: translatedRole }),
-      this.transloco.translate('common.close'),
-      { duration: 2500 },
-    );
-  }
 }

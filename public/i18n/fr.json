@@ -798,6 +798,8 @@
   },
   "loginExtra": {
     "needEmailFirst": "Entrez d'abord votre e-mail pour recevoir le lien de réinitialisation.",
-    "resetLinkSent": "Un lien de réinitialisation a été envoyé à {{email}}."
+    "resetLinkSent": "Un lien de réinitialisation a été envoyé à {{email}}.",
+    "tooManyAttemptsWait": "Trop de tentatives infructueuses. Veuillez patienter {{seconds}} secondes.",
+    "lockedButton": "Veuillez patienter ({{seconds}}s)"
   }
 }

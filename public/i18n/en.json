@@ -799,6 +799,8 @@
   },
   "loginExtra": {
     "needEmailFirst": "Enter your email first, then we'll send a reset link.",
-    "resetLinkSent": "A password reset link was sent to {{email}}."
+    "resetLinkSent": "A password reset link was sent to {{email}}.",
+    "tooManyAttemptsWait": "Too many failed attempts. Please wait {{seconds}} seconds.",
+    "lockedButton": "Please wait ({{seconds}}s)"
   }
 }

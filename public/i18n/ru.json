@@ -798,6 +798,8 @@
   },
   "loginExtra": {
     "needEmailFirst": "Сначала введите email для отправки ссылки сброса.",
-    "resetLinkSent": "Ссылка для сброса пароля отправлена на {{email}}."
+    "resetLinkSent": "Ссылка для сброса пароля отправлена на {{email}}.",
+    "tooManyAttemptsWait": "Слишком много неудачных попыток. Подождите {{seconds}} сек.",
+    "lockedButton": "Подождите ({{seconds}}с)"
   }
 }

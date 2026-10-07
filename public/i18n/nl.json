@@ -798,6 +798,8 @@
   },
   "loginExtra": {
     "needEmailFirst": "Voer eerst je e-mailadres in, daarna sturen we een herstellink.",
-    "resetLinkSent": "Er is een link voor wachtwoordherstel verzonden naar {{email}}."
+    "resetLinkSent": "Er is een link voor wachtwoordherstel verzonden naar {{email}}.",
+    "tooManyAttemptsWait": "Te veel mislukte pogingen. Wacht {{seconds}} seconden.",
+    "lockedButton": "Even geduld ({{seconds}}s)"
   }
 }

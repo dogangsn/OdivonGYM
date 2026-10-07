@@ -798,6 +798,8 @@
   },
   "loginExtra": {
     "needEmailFirst": "Önce e-posta adresini gir, sonra sıfırlama bağlantısı gönderelim.",
-    "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi."
+    "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi.",
+    "tooManyAttemptsWait": "Çok fazla başarısız deneme yaptınız. Lütfen {{seconds}} saniye bekleyin.",
+    "lockedButton": "Lütfen bekleyin ({{seconds}}s)"
   }
 }

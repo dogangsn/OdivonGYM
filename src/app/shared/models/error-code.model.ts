@@ -8,8 +8,10 @@ export const ErrorCode = {
   FORBIDDEN_PERMISSION: 'FORBIDDEN_PERMISSION',
   USER_NOT_FOUND: 'USER_NOT_FOUND',
   USER_INACTIVE: 'USER_INACTIVE',
+  RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
+
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
