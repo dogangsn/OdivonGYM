@@ -238,7 +238,8 @@
       "bodyMeasurements": "Замеры тела",
       "wallet": "Электронный кошелёк",
       "packages": "Пакеты",
-      "profile": "Профиль и настройки"
+      "profile": "Профиль и настройки",
+      "adminExitPayments": "Оплата на выходе"
     },
     "badges": {
       "renewal": "Продление",
@@ -801,5 +802,24 @@
     "resetLinkSent": "Ссылка для сброса пароля отправлена на {{email}}.",
     "tooManyAttemptsWait": "Слишком много неудачных попыток. Подождите {{seconds}} сек.",
     "lockedButton": "Подождите ({{seconds}}с)"
+  },
+  "exitPayments": {
+    "title": "Оплата на выходе",
+    "desc": "Управление открытыми чеками и ожидающими платежами при выходе.",
+    "goToPos": "Касса POS",
+    "newTabBtn": "Открыть чек",
+    "kpiOpenCount": "Открытые чеки",
+    "kpiWaitingExit": "Ожидают на выходе",
+    "kpiOpenTotal": "К оплате",
+    "kpiOpenReceivable": "Остаток к получению",
+    "kpiTodayCollected": "Собрано сегодня",
+    "kpiTabsClosedToday": "Чеков закрыто",
+    "kpiTotalRecords": "Всего чеков",
+    "kpiAllTimeHistory": "За все время",
+    "searchPlaceholder": "Поиск по заметке, клиенту или товару...",
+    "tabOpen": "Открытые",
+    "tabCollected": "Оплаченные",
+    "tabCancelled": "Отмененные",
+    "tabAll": "Все"
   }
 }

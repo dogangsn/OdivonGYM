@@ -1,0 +1,615 @@
+<div class="font-sans space-y-6">
+  <!-- 1. Page Header -->
+  <app-page-header
+    title="exitPayments.title"
+    icon="hourglass_top"
+    description="exitPayments.desc"
+  >
+    <div actions class="flex items-center gap-2">
+      <a routerLink="/admin/pos" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
+        <mat-icon class="icon-size-4">point_of_sale</mat-icon>
+        <span>{{ 'exitPayments.goToPos' | transloco }}</span>
+      </a>
+      <button
+        type="button"
+        (click)="openNewTabModal()"
+        class="odv-btn-primary text-xs flex items-center gap-1.5 cursor-pointer"
+      >
+        <mat-icon class="icon-size-4">add</mat-icon>
+        <span>{{ 'exitPayments.newTabBtn' | transloco }}</span>
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- 2. Executive KPI Cards (4 Kolon) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <!-- KPI 1: Bekleyen Açık Fiş Sayısı -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-sm transition-all">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {{ 'exitPayments.kpiOpenCount' | transloco }}
+        </span>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <mat-icon class="icon-size-5">hourglass_top</mat-icon>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {{ openTabsCount() }}
+        </div>
+        <div class="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span>{{ 'exitPayments.kpiWaitingExit' | transloco }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 2: Bekleyen Tahsilat Tutarı -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-sm transition-all">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {{ 'exitPayments.kpiOpenTotal' | transloco }}
+        </span>
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <mat-icon class="icon-size-5">account_balance_wallet</mat-icon>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {{ money(openTabsTotal()) }}
+        </div>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+          {{ 'exitPayments.kpiOpenReceivable' | transloco }}
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Bugün Tahsil Edilen -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-sm transition-all">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {{ 'exitPayments.kpiTodayCollected' | transloco }}
+        </span>
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <mat-icon class="icon-size-5">check_circle</mat-icon>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {{ money(todayCollectedTotal()) }}
+        </div>
+        <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+          {{ todayCollectedCount() }} {{ 'exitPayments.kpiTabsClosedToday' | transloco }}
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 4: Toplam Kayıt -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-sm transition-all">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {{ 'exitPayments.kpiTotalRecords' | transloco }}
+        </span>
+        <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+          <mat-icon class="icon-size-5">receipt_long</mat-icon>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {{ allTabs().length }}
+        </div>
+        <div class="text-xs font-semibold text-slate-400 mt-1">
+          {{ 'exitPayments.kpiAllTimeHistory' | transloco }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Filtreleme & Arama Araç Çubuğu -->
+  <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <!-- Sol: Arama Girişi -->
+    <div class="relative flex-1 max-w-md">
+      <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+      <input
+        type="text"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+        [placeholder]="'exitPayments.searchPlaceholder' | transloco"
+        class="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+      />
+    </div>
+
+    <!-- Sağ: Durum Filtresi Sekmeleri -->
+    <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl shrink-0 overflow-x-auto">
+      <button
+        type="button"
+        (click)="statusFilter.set('open')"
+        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+        [class]="statusFilter() === 'open' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+        <span>{{ 'exitPayments.tabOpen' | transloco }} ({{ openTabsCount() }})</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('collected')"
+        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+        [class]="statusFilter() === 'collected' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        {{ 'exitPayments.tabCollected' | transloco }}
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('cancelled')"
+        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+        [class]="statusFilter() === 'cancelled' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        {{ 'exitPayments.tabCancelled' | transloco }}
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+        [class]="statusFilter() === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        {{ 'exitPayments.tabAll' | transloco }}
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. Açık Fişler Grid Listesi -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    @for (tab of filteredTabs(); track tab.id) {
+      <div
+        class="p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between shadow-2xs hover:shadow-md"
+        [class]="tab.status === 'open'
+          ? 'border-amber-200 dark:border-amber-800/80 bg-gradient-to-b from-amber-50/20 to-white dark:to-slate-900'
+          : tab.status === 'collected'
+            ? 'border-emerald-200 dark:border-emerald-800/60'
+            : 'border-slate-200/80 dark:border-slate-800 opacity-60'"
+      >
+        <div class="space-y-3">
+          <!-- Kart Başlığı & Durum Rozeti -->
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                {{ dateTime(tab.createdAt) }}
+              </span>
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white m-0 break-words leading-snug">
+                {{ tab.note }}
+              </h3>
+            </div>
+
+            <!-- Status Badge -->
+            <span
+              class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase shrink-0 border"
+              [class]="tab.status === 'open'
+                ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
+                : tab.status === 'collected'
+                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700'
+                  : 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-700'"
+            >
+              {{ tab.status === 'open' ? 'Açık / Bekliyor' : tab.status === 'collected' ? 'Tahsil Edildi' : 'İptal Edildi' }}
+            </span>
+          </div>
+
+          <!-- Müşteri Rozeti -->
+          <div class="flex items-center gap-2">
+            @if (tab.userId && getMember(tab.userId); as member) {
+              <div class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5">
+                <mat-icon class="icon-size-4">person</mat-icon>
+                <span>{{ member.displayName }}</span>
+                <span class="text-[10px] opacity-75">(Cüzdan: {{ money(member.walletBalance || 0) }})</span>
+              </div>
+            } @else {
+              <div class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-semibold flex items-center gap-1.5">
+                <mat-icon class="icon-size-4">person_outline</mat-icon>
+                <span>{{ tab.customerName || 'Misafir / Anonim' }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Kalemler Listesi -->
+          @if (tab.items && tab.items.length > 0) {
+            <div class="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ürün Kalemleri:</span>
+              @for (item of tab.items; track $index) {
+                <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                  <span class="font-medium truncate pr-2">{{ item.quantity }}x {{ item.productName }}</span>
+                  <span class="font-bold text-slate-900 dark:text-white shrink-0">{{ money(item.totalAmount) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Kart Alt Bilgi & Aksiyonlar -->
+        <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <!-- Tutar Bilgisi -->
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tahsil Edilecek:</span>
+            <span class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {{ money(tab.totalAmount) }}
+            </span>
+          </div>
+
+          @if (tab.status === 'open') {
+            <!-- Açık Fiş Aksiyonları -->
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                (click)="openCollectModal(tab)"
+                class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+              >
+                <mat-icon class="icon-size-4">payments</mat-icon>
+                <span>Tahsil Et</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="openEditModal(tab)"
+                class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer transition-all"
+                [matTooltip]="'Not veya Tutarı Düzenle'"
+              >
+                <mat-icon class="icon-size-4">edit</mat-icon>
+              </button>
+
+              <button
+                type="button"
+                (click)="confirmCancel(tab)"
+                class="p-2.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-xs font-bold cursor-pointer transition-all"
+                [matTooltip]="'Fişi İptal Et & Stokları İade Et'"
+              >
+                <mat-icon class="icon-size-4">close</mat-icon>
+              </button>
+            </div>
+          } @else if (tab.status === 'collected') {
+            <!-- Tahsil Edilmiş Bilgi Notu -->
+            <div class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <mat-icon class="icon-size-4">task_alt</mat-icon>
+                <span>Tahsil Edildi ({{ tab.paymentMethod === 'cash' ? 'Nakit' : tab.paymentMethod === 'card' ? 'Kredi Kartı' : tab.paymentMethod === 'wallet' ? 'E-Cüzdan' : 'Havale/EFT' }})</span>
+              </span>
+              <span class="text-[11px] font-semibold opacity-80">{{ dateTime(tab.collectedAt || tab.updatedAt) }}</span>
+            </div>
+          } @else {
+            <div class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1.5">
+              <mat-icon class="icon-size-4">cancel</mat-icon>
+              <span>İptal Edildi ({{ dateTime(tab.cancelledAt || tab.updatedAt) }})</span>
+            </div>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="col-span-full py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+          <mat-icon class="icon-size-6">inbox</mat-icon>
+        </div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300 m-0">Kayıt Bulunamadı</p>
+        <p class="text-xs text-slate-400 m-0 max-w-sm mx-auto">
+          Şu anda seçili filtreye uygun açık fiş veya çıkışta ödeme kaydı bulunmuyor.
+        </p>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ==================== MODAL 1: TAHSİLAT YAP (COLLECT) ==================== -->
+@if (selectedTabForCollect(); as tab) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <mat-icon class="icon-size-5">payments</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Çıkışta Tahsilat Yap</h3>
+            <p class="text-[11px] text-slate-400 m-0">Ödeme yöntemini seçerek fişi kapatın ve kasaya işleyin.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeCollectModal()"
+          class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-none bg-transparent cursor-pointer"
+        >
+          <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Fiş Bilgisi & Notu -->
+      <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-1">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fiş Açıklaması / Not:</span>
+        <p class="text-xs font-bold text-slate-900 dark:text-white m-0">{{ tab.note }}</p>
+      </div>
+
+      <!-- Müşteri Eşleştirme (İsteğe Bağlı) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Üye / Müşteri (E-Cüzdan veya Hesap Eşleme)
+        </label>
+        <select
+          [ngModel]="collectUserId()"
+          (ngModelChange)="collectUserId.set($event)"
+          class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        >
+          <option value="">👤 Misafir / Ayaktan (İsimsiz)</option>
+          @for (mem of members(); track mem.uid) {
+            <option [value]="mem.uid">
+              {{ mem.displayName }} (Cüzdan: {{ money(mem.walletBalance || 0) }})
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Tahsil Edilecek Tutar -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Tahsil Edilecek Tutar (₺)
+        </label>
+        <input
+          type="number"
+          [ngModel]="collectAmount()"
+          (ngModelChange)="collectAmount.set($event)"
+          class="w-full px-3 py-2 text-base font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        />
+      </div>
+
+      <!-- Ödeme Yöntemi Seçimi (Grid 4 Buton) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+          Ödeme Yöntemi:
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <!-- Nakit -->
+          <button
+            type="button"
+            (click)="collectPaymentMethod.set('cash')"
+            class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            [class]="collectPaymentMethod() === 'cash'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'"
+          >
+            <mat-icon class="icon-size-4">payments</mat-icon>
+            <span>Nakit</span>
+          </button>
+
+          <!-- Kredi Kartı -->
+          <button
+            type="button"
+            (click)="collectPaymentMethod.set('card')"
+            class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            [class]="collectPaymentMethod() === 'card'
+              ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'"
+          >
+            <mat-icon class="icon-size-4">credit_card</mat-icon>
+            <span>Kredi Kartı</span>
+          </button>
+
+          <!-- Havale/EFT -->
+          <button
+            type="button"
+            (click)="collectPaymentMethod.set('transfer')"
+            class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            [class]="collectPaymentMethod() === 'transfer'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'"
+          >
+            <mat-icon class="icon-size-4">account_balance</mat-icon>
+            <span>Havale/EFT</span>
+          </button>
+
+          <!-- E-Cüzdan -->
+          <button
+            type="button"
+            (click)="collectPaymentMethod.set('wallet')"
+            class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            [class]="collectPaymentMethod() === 'wallet'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+              : 'bg-slate-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-slate-100'"
+          >
+            <mat-icon class="icon-size-4">wallet</mat-icon>
+            <span>E-Cüzdan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          (click)="closeCollectModal()"
+          class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
+        >
+          Vazgeç
+        </button>
+        <button
+          type="button"
+          [disabled]="isCollecting() || collectAmount() <= 0"
+          (click)="confirmCollect()"
+          class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+        >
+          @if (isCollecting()) {
+            <span class="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          } @else {
+            <mat-icon class="icon-size-4">check</mat-icon>
+          }
+          <span>Tahsilatı Tamamla ({{ money(collectAmount()) }})</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL 2: YENİ AÇIK FİŞ AÇ ==================== -->
+@if (showNewTabModal()) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <mat-icon class="icon-size-5">add</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Açık Fiş / Çıkış Kaydı</h3>
+            <p class="text-[11px] text-slate-400 m-0">Üye adı bilinmese de not yazılarak çıkışta tahsilat için kaydedilir.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeNewTabModal()"
+          class="p-1 rounded-lg text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+        >
+          <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Açıklama / Not -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Açıklama / Eşkal / Not <span class="text-rose-500">*</span>
+        </label>
+        <textarea
+          [ngModel]="newTabNote()"
+          (ngModelChange)="newTabNote.set($event)"
+          rows="2"
+          placeholder="Örn: Dolap 14, kırmızı şortlu misafir, 2 Su 1 Protein Bar..."
+          class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        ></textarea>
+      </div>
+
+      <!-- Tutar -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Çıkışta Alınacak Tutar (₺) <span class="text-rose-500">*</span>
+        </label>
+        <input
+          type="number"
+          [ngModel]="newTabAmount()"
+          (ngModelChange)="newTabAmount.set($event)"
+          placeholder="0.00"
+          class="w-full px-3 py-2 text-sm font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        />
+      </div>
+
+      <!-- Üye / Misafir Seçimi (İsteğe Bağlı) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Üye / Müşteri (Opsiyonel)
+        </label>
+        <select
+          [ngModel]="newTabUserId()"
+          (ngModelChange)="newTabUserId.set($event)"
+          class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        >
+          <option value="">👤 Misafir / Ayaktan (İsimsiz)</option>
+          @for (mem of members(); track mem.uid) {
+            <option [value]="mem.uid">{{ mem.displayName }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          (click)="closeNewTabModal()"
+          class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+        >
+          Vazgeç
+        </button>
+        <button
+          type="button"
+          [disabled]="isCreatingTab() || !newTabNote().trim() || newTabAmount() <= 0"
+          (click)="submitNewTab()"
+          class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+        >
+          @if (isCreatingTab()) {
+            <span class="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          } @else {
+            <mat-icon class="icon-size-4">check</mat-icon>
+          }
+          <span>Kaydet ve Fişi Aç</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL 3: FİŞİ DÜZENLE ==================== -->
+@if (selectedTabForEdit(); as tab) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-slate-500/10 text-slate-600 dark:text-slate-400 flex items-center justify-center">
+            <mat-icon class="icon-size-5">edit</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Açık Fişi Düzenle</h3>
+            <p class="text-[11px] text-slate-400 m-0">Not ve tutar bilgilerini güncelleyin.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeEditModal()"
+          class="p-1 rounded-lg text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+        >
+          <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Açıklama / Eşkal / Not <span class="text-rose-500">*</span>
+        </label>
+        <textarea
+          [ngModel]="editTabNote()"
+          (ngModelChange)="editTabNote.set($event)"
+          rows="2"
+          class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Tutar (₺) <span class="text-rose-500">*</span>
+        </label>
+        <input
+          type="number"
+          [ngModel]="editTabAmount()"
+          (ngModelChange)="editTabAmount.set($event)"
+          class="w-full px-3 py-2 text-sm font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+        />
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          (click)="closeEditModal()"
+          class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+        >
+          Vazgeç
+        </button>
+        <button
+          type="button"
+          [disabled]="isEditingTab() || !editTabNote().trim() || editTabAmount() <= 0"
+          (click)="submitEditTab()"
+          class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+        >
+          @if (isEditingTab()) {
+            <span class="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          } @else {
+            <mat-icon class="icon-size-4">check</mat-icon>
+          }
+          <span>Güncelle</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

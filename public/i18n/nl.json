@@ -238,7 +238,8 @@
       "bodyMeasurements": "Lichaamsmetingen",
       "wallet": "E-Portemonnee",
       "packages": "Pakketten",
-      "profile": "Profiel & instellingen"
+      "profile": "Profiel & instellingen",
+      "adminExitPayments": "Betalingen bij uitgang"
     },
     "badges": {
       "renewal": "Verlenging",
@@ -801,5 +802,24 @@
     "resetLinkSent": "Er is een link voor wachtwoordherstel verzonden naar {{email}}.",
     "tooManyAttemptsWait": "Te veel mislukte pogingen. Wacht {{seconds}} seconden.",
     "lockedButton": "Even geduld ({{seconds}}s)"
+  },
+  "exitPayments": {
+    "title": "Betalingen bij uitgang",
+    "desc": "Beheer van openstaande bonnen en betalingen bij vertrek.",
+    "goToPos": "Snelle kassa",
+    "newTabBtn": "Nieuwe bon openen",
+    "kpiOpenCount": "Openstaande bonnen",
+    "kpiWaitingExit": "Wacht op betaling",
+    "kpiOpenTotal": "Openstaand totaal",
+    "kpiOpenReceivable": "Open saldo",
+    "kpiTodayCollected": "Vandaag ontvangen",
+    "kpiTabsClosedToday": "Bonnen gesloten",
+    "kpiTotalRecords": "Totaal aantal",
+    "kpiAllTimeHistory": "Altijd",
+    "searchPlaceholder": "Zoeken op notitie, klant of product...",
+    "tabOpen": "Openstaand",
+    "tabCollected": "Ontvangen",
+    "tabCancelled": "Geannuleerd",
+    "tabAll": "Alles"
   }
 }

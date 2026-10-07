@@ -240,7 +240,8 @@
       "bodyMeasurements": "Body Measurements",
       "wallet": "E-Wallet",
       "packages": "Packages",
-      "profile": "Profile & Settings"
+      "profile": "Profile & Settings",
+      "adminExitPayments": "Exit Payments (Open Tabs)"
     },
     "badges": {
       "renewal": "Renewal",
@@ -803,5 +804,24 @@
     "resetLinkSent": "A password reset link was sent to {{email}}.",
     "tooManyAttemptsWait": "Too many failed attempts. Please wait {{seconds}} seconds.",
     "lockedButton": "Please wait ({{seconds}}s)"
+  },
+  "exitPayments": {
+    "title": "Exit Payments (Open Tabs)",
+    "desc": "Manage open receipts and pending collections for customers paying upon exit.",
+    "goToPos": "Quick POS",
+    "newTabBtn": "Open Tab",
+    "kpiOpenCount": "Open Tabs",
+    "kpiWaitingExit": "Pending at Exit",
+    "kpiOpenTotal": "Pending Total",
+    "kpiOpenReceivable": "Open Tab Balance",
+    "kpiTodayCollected": "Collected Today",
+    "kpiTabsClosedToday": "Tabs Closed",
+    "kpiTotalRecords": "Total Tabs",
+    "kpiAllTimeHistory": "All Time",
+    "searchPlaceholder": "Search by note, description, customer or product...",
+    "tabOpen": "Open / Pending",
+    "tabCollected": "Collected",
+    "tabCancelled": "Cancelled",
+    "tabAll": "All"
   }
 }

@@ -98,7 +98,7 @@
             </div>
 
             <div class="flex items-baseline justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 w-full">
-              <span class="text-sm font-black text-slate-900 dark:text-white">₺{{ money(prod.price) }}</span>
+              <span class="text-sm font-black text-slate-900 dark:text-white">{{ money(prod.price) }}</span>
               <span class="text-[10px] font-semibold text-slate-400">Stok: {{ prod.stock }}</span>
             </div>
           </button>
@@ -128,7 +128,7 @@
             <option value="">👤 Misafir / Ayaktan Müşteri</option>
             @for (mem of members(); track mem.uid) {
               <option [value]="mem.uid">
-                {{ mem.displayName }} (Bakiye: ₺{{ money(mem.walletBalance || 0) }})
+                {{ mem.displayName }} (Bakiye: {{ money(mem.walletBalance || 0) }})
               </option>
             }
           </select>
@@ -154,7 +154,7 @@
               <div class="flex items-center justify-between text-xs py-1">
                 <div class="min-w-0 pr-2">
                   <p class="font-bold text-slate-800 dark:text-slate-200 truncate m-0">{{ item.product.name }}</p>
-                  <p class="text-[10px] text-slate-400 m-0">₺{{ money(item.product.price) }} × {{ item.quantity }}</p>
+                  <p class="text-[10px] text-slate-400 m-0">{{ money(item.product.price) }} × {{ item.quantity }}</p>
                 </div>
                 
                 <div class="flex items-center gap-2">
@@ -176,7 +176,7 @@
                     </button>
                   </div>
                   <span class="font-black text-slate-900 dark:text-white whitespace-nowrap min-w-[50px] text-right">
-                    ₺{{ money(item.product.price * item.quantity) }}
+                    {{ money(item.product.price * item.quantity) }}
                   </span>
                 </div>
               </div>
@@ -193,7 +193,7 @@
           <div class="space-y-3 pt-2">
             <div class="flex items-baseline justify-between p-3 rounded-xl bg-slate-900 text-white dark:bg-slate-800">
               <span class="text-xs font-bold uppercase tracking-wider text-white/70">Toplam Tutar:</span>
-              <span class="text-3xl font-black tracking-tight">₺{{ money(cartTotal()) }}</span>
+              <span class="text-3xl font-black tracking-tight">{{ money(cartTotal()) }}</span>
             </div>
 
             <!-- Hızlı Nakit Butonları -->
@@ -225,46 +225,70 @@
                 <div class="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
                   <span class="font-bold text-emerald-800 dark:text-emerald-300">Para Üstü:</span>
                   <span class="text-base font-black text-emerald-700 dark:text-emerald-300">
-                    ₺{{ money(changeDue()) }}
+                    {{ money(changeDue()) }}
                   </span>
                 </div>
               }
             </div>
 
-            <!-- Tahsilat Butonları -->
-            <div class="space-y-2 pt-2">
+            <!-- Tahsilat Butonları Grid -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <!-- E-Cüzdan -->
+              <button
+                type="button"
+                [disabled]="isPaying() || (selectedMember() && !canPayWithWallet())"
+                (click)="pay('wallet')"
+                class="p-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+                [title]="selectedMember() ? 'Üyenin E-Cüzdanından Tahsil Et' : 'E-Cüzdan için yukarıdan üye seçiniz'"
+              >
+                <mat-icon class="icon-size-4">wallet</mat-icon>
+                <span>E-Cüzdan</span>
+              </button>
+
+              <!-- Nakit -->
               <button
                 type="button"
                 [disabled]="isPaying()"
                 (click)="pay('cash')"
-                class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                class="p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
               >
-                <mat-icon class="icon-size-5">payments</mat-icon>
-                <span>Nakit Tahsil Et (F1)</span>
+                <mat-icon class="icon-size-4">payments</mat-icon>
+                <span>Nakit</span>
               </button>
 
+              <!-- Kredi Kartı -->
               <button
                 type="button"
                 [disabled]="isPaying()"
                 (click)="pay('card')"
-                class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                class="p-2.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
               >
-                <mat-icon class="icon-size-5">credit_card</mat-icon>
-                <span>Kredi Kartı POS (F2)</span>
+                <mat-icon class="icon-size-4">credit_card</mat-icon>
+                <span>Kredi Kartı</span>
               </button>
 
-              @if (selectedMember()) {
-                <button
-                  type="button"
-                  [disabled]="isPaying() || !canPayWithWallet()"
-                  (click)="pay('wallet')"
-                  class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-40"
-                >
-                  <mat-icon class="icon-size-4">wallet</mat-icon>
-                  <span>E-Cüzdandan Düş (Bakiye: ₺{{ money(selectedMember()?.walletBalance || 0) }})</span>
-                </button>
-              }
+              <!-- Havale/EFT -->
+              <button
+                type="button"
+                [disabled]="isPaying()"
+                (click)="pay('transfer')"
+                class="p-2.5 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+              >
+                <mat-icon class="icon-size-4">account_balance</mat-icon>
+                <span>Havale/EFT</span>
+              </button>
             </div>
+
+            <!-- Çıkışta Ödeyecek (Açık Fiş) Butonu -->
+            <button
+              type="button"
+              [disabled]="isPaying()"
+              (click)="openExitPaymentDialog()"
+              class="w-full mt-2 p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950/60 dark:to-orange-950/60 text-amber-800 dark:text-amber-200 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-40"
+            >
+              <mat-icon class="icon-size-4 text-amber-600 dark:text-amber-400">output</mat-icon>
+              <span>Çıkışta Ödeyecek (Açık Fiş Kaydı)</span>
+            </button>
           </div>
         }
 
@@ -273,3 +297,109 @@
 
   </div>
 </div>
+
+<!-- Çıkışta Ödeme Modal Dialog -->
+@if (showExitPaymentModal()) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <mat-icon class="icon-size-5">output</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Çıkışta Ödeyecek (Açık Fiş)</h3>
+            <p class="text-[11px] text-slate-400 m-0">Üye adı bilinmese de not yazılarak çıkışta tahsilat için kaydedilir.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeExitPaymentDialog()"
+          class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-none bg-transparent cursor-pointer"
+        >
+          <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Seçili Müşteri / Misafir Bilgisi -->
+      <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs flex items-center justify-between">
+        <span class="text-slate-500">Müşteri Durumu:</span>
+        @if (selectedMember()) {
+          <span class="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+            <mat-icon class="icon-size-4">person</mat-icon>
+            {{ selectedMember()?.displayName }}
+          </span>
+        } @else {
+          <span class="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+            <mat-icon class="icon-size-4">person_outline</mat-icon>
+            Misafir / Ayaktan (İsimsiz)
+          </span>
+        }
+      </div>
+
+      <!-- Sepetteki Kalemler Özeti -->
+      <div class="space-y-1.5 max-h-36 overflow-y-auto custom-scroll text-xs">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sepetteki Ürünler:</div>
+        @for (item of cart(); track item.product.id) {
+          <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+            <span class="text-slate-700 dark:text-slate-300 font-medium truncate pr-2">{{ item.quantity }}x {{ item.product.name }}</span>
+            <span class="font-bold text-slate-900 dark:text-white whitespace-nowrap">{{ money(item.product.price * item.quantity) }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Not / Eşkal / Dolap Tanımı (Zorunlu) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Açıklama / Eşkal / Not <span class="text-rose-500">*</span>
+        </label>
+        <textarea
+          [ngModel]="exitPaymentNote()"
+          (ngModelChange)="exitPaymentNote.set($event)"
+          rows="2"
+          placeholder="Örn: Dolap 34, kırmızı tişörtlü sporcu, Ahmet Bey'in misafiri..."
+          class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+        ></textarea>
+        <p class="text-[10px] text-slate-400 mt-1 m-0">Kullanıcı çıkarken bu not ile kolayca bulunup tahsilatı tamamlanabilir.</p>
+      </div>
+
+      <!-- Tahsil Edilecek Tutar (Düzenlenebilir) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Çıkışta Alınacak Tutar (₺)
+        </label>
+        <input
+          type="number"
+          [ngModel]="exitPaymentAmount()"
+          (ngModelChange)="exitPaymentAmount.set($event)"
+          class="w-full px-3 py-2 text-sm font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+        />
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          (click)="closeExitPaymentDialog()"
+          class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer"
+        >
+          Vazgeç
+        </button>
+        <button
+          type="button"
+          [disabled]="savingExitPayment() || !exitPaymentNote().trim()"
+          (click)="submitExitPayment()"
+          class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/20 transition-all cursor-pointer disabled:opacity-50"
+        >
+          @if (savingExitPayment()) {
+            <span class="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          } @else {
+            <mat-icon class="icon-size-4">check</mat-icon>
+          }
+          <span>Çıkışta Ödeyecek Olarak Kaydet</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

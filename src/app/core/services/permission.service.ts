@@ -129,6 +129,7 @@ export class PermissionService {
         '/admin/reminders',
         // MainApi resepsiyona shop:create ve guestMembers:create/update veriyor; ekranlar kapalıydı.
         '/admin/pos',
+        '/admin/exit-payments',
         '/admin/guest-members',
         '/classes',
         '/appointments',

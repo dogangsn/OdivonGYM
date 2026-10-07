@@ -238,7 +238,8 @@
       "bodyMeasurements": "Mesures corporelles",
       "wallet": "Portefeuille",
       "packages": "Forfaits",
-      "profile": "Profil & paramètres"
+      "profile": "Profil & paramètres",
+      "adminExitPayments": "Paiements à la sortie"
     },
     "badges": {
       "renewal": "Renouvellement",
@@ -801,5 +802,24 @@
     "resetLinkSent": "Un lien de réinitialisation a été envoyé à {{email}}.",
     "tooManyAttemptsWait": "Trop de tentatives infructueuses. Veuillez patienter {{seconds}} secondes.",
     "lockedButton": "Veuillez patienter ({{seconds}}s)"
+  },
+  "exitPayments": {
+    "title": "Paiements à la sortie",
+    "desc": "Gestion des additions ouvertes et des paiements en attente à la sortie.",
+    "goToPos": "Caisse POS",
+    "newTabBtn": "Ouvrir une note",
+    "kpiOpenCount": "Notes ouvertes",
+    "kpiWaitingExit": "En attente à la sortie",
+    "kpiOpenTotal": "Total en attente",
+    "kpiOpenReceivable": "Créance ouverte",
+    "kpiTodayCollected": "Encaissé aujourd'hui",
+    "kpiTabsClosedToday": "Notes clôturées",
+    "kpiTotalRecords": "Total notes",
+    "kpiAllTimeHistory": "Historique global",
+    "searchPlaceholder": "Rechercher par note, client ou produit...",
+    "tabOpen": "Ouvertes",
+    "tabCollected": "Encaissées",
+    "tabCancelled": "Annulées",
+    "tabAll": "Toutes"
   }
 }

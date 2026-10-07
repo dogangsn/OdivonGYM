@@ -62,8 +62,14 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
   {
     titleKey: 'sidebar.groups.sales',
     items: [
-      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages', },
+      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages' },
       { icon: 'shopping_bag', labelKey: 'sidebar.items.adminSales', link: '/admin/sales', requiresActiveSaas: true },
+      {
+        icon: 'hourglass_top',
+        labelKey: 'sidebar.items.adminExitPayments',
+        link: '/admin/exit-payments',
+        requiresActiveSaas: true,
+      },
       { icon: 'campaign', labelKey: 'sidebar.items.adminCampaigns', link: '/admin/campaigns', requiresActiveSaas: true },
     ],
   },
