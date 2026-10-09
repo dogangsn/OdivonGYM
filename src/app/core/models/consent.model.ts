@@ -39,6 +39,7 @@ export interface ConsentText {
   contentHtml: string;
 }
 
+
 export interface ConsentLog {
   id: string;
   tenantId: string;
