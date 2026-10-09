@@ -18,13 +18,26 @@ import { AlertService } from '../../../core/services/alert.service';
 import { AdminMembersService } from '../../../admin/members/admin-members.service';
 import { AdminDisciplinesService } from '../../../admin/disciplines/admin-disciplines.service';
 import { WorkoutService } from '../../../features/workout/workout.service';
+import { WorkoutTemplatesService } from '../../../core/services/workout-templates.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
 import { ClassesService } from '../../../features/classes/classes.service';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { DisciplineCategory, DisciplineCode, SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { GymEquipment, GymFacility, MuscleGroup } from '../../../core/models/gym-equipment.model';
 import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../../core/models/workout-plan.model';
+import { WorkoutTemplate } from '../../../core/models/workout-template.model';
 import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
+
+const REGION_SHORT: Record<string, string> = {
+  chest: 'Göğüs',
+  back: 'Sırt',
+  shoulders: 'Omuz',
+  legs: 'Bacak',
+  arms: 'Kol',
+  core: 'Karın',
+};
+
+const LIBRARY_NAMES = new Set(DEFAULT_EXERCISE_LIBRARY.map((exercise) => exercise.name));
 
 export interface MuscleGroupOption {
   key: MuscleGroup;
@@ -55,6 +68,7 @@ export class TrainingWizardModal {
   private readonly membersService = inject(AdminMembersService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly workoutService = inject(WorkoutService);
+  private readonly templatesService = inject(WorkoutTemplatesService);
   protected readonly branchContext = inject(BranchContextService);
   private readonly classesService = inject(ClassesService);
   private readonly snackBar = inject(MatSnackBar);
@@ -66,6 +80,7 @@ export class TrainingWizardModal {
   readonly facilities = toSignal(this.disciplinesService.watchFacilities(), { initialValue: [] as GymFacility[] });
   readonly equipmentList = toSignal(this.disciplinesService.watchEquipment(), { initialValue: [] as GymEquipment[] });
   readonly classSchedules = toSignal(this.classesService.watchSchedules(), { initialValue: [] });
+  readonly workoutTemplates = toSignal(this.templatesService.watchTemplates(), { initialValue: [] as WorkoutTemplate[] });
 
   readonly muscleGroups = MUSCLE_GROUPS;
 
@@ -80,10 +95,12 @@ export class TrainingWizardModal {
   readonly memberSearchTerm = signal('');
   readonly selectedMember = signal<UserProfile | null>(null);
   readonly selectedDiscipline = signal<SportsDiscipline | null>(null);
-  readonly selectedMuscles = signal<MuscleGroup[]>(['chest', 'arms']);
+  readonly selectedTemplateId = signal<string | null>(null);
+  readonly dayMuscles = signal<Record<number, MuscleGroup[]>>({});
+  readonly manualKeys = signal<string[]>([]);
 
   // Egzersiz Oluşturucu
-  readonly currentPlanTitle = signal('4 Haftalık Bölgesel İtiş/Çekiş Programı');
+  readonly currentPlanTitle = signal('');
   readonly currentPlanExercises = signal<Exercise[]>([]);
   readonly activeDay = signal(1);
   readonly extraDays = signal(1);
@@ -144,10 +161,9 @@ export class TrainingWizardModal {
       .slice(0, 8);
   });
 
-  // Seçilen kas gruplarına göre kütüphaneden ve salondaki cihazlardan önerilen egzersizler
   readonly suggestedExercises = computed(() => {
-    const muscles = this.selectedMuscles();
-    if (muscles.length === 0) return DEFAULT_EXERCISE_LIBRARY;
+    const muscles = this.dayMuscles()[this.activeDay()] ?? [];
+    if (muscles.length === 0) return [];
     return DEFAULT_EXERCISE_LIBRARY.filter((ex) => ex.muscleGroup && muscles.includes(ex.muscleGroup));
   });
 
@@ -186,41 +202,58 @@ export class TrainingWizardModal {
 
   selectDiscipline(d: SportsDiscipline): void {
     this.selectedDiscipline.set(d);
-    // Branşa göre varsayılan program başlığı
-    this.currentPlanTitle.set(`${d.name} — Kişiye Özel Eğitim Programı`);
     this.workoutStep.set(3);
   }
 
-  toggleMuscle(muscle: MuscleGroup): void {
-    const curr = [...this.selectedMuscles()];
-    const idx = curr.indexOf(muscle);
-    if (idx > -1) {
-      curr.splice(idx, 1);
-    } else {
-      curr.push(muscle);
+  openCustomDays(): void {
+    this.workoutStep.set(4);
+  }
+
+  applyReadyProgram(template: WorkoutTemplate): void {
+    const exercises = (template.exercises ?? []).map((exercise) => ({
+      ...exercise,
+      dayName: exercise.dayName?.trim() ? exercise.dayName : workoutDayLabel(1),
+    }));
+    const muscles: Record<number, MuscleGroup[]> = {};
+    const manual: string[] = [];
+    for (const exercise of exercises) {
+      const day = workoutDayIndex(exercise.dayName);
+      manual.push(this.manualKey(day, exercise.name));
+      const group = exercise.muscleGroup;
+      if (!group || group === 'fullbody' || !REGION_SHORT[group]) continue;
+      const current = muscles[day] ?? [];
+      if (!current.includes(group)) muscles[day] = [...current, group];
     }
-    this.selectedMuscles.set(curr);
+    const highest = exercises.reduce((max, exercise) => Math.max(max, workoutDayIndex(exercise.dayName)), 1);
+    this.selectedTemplateId.set(template.id);
+    this.currentPlanTitle.set(template.title?.trim() || '');
+    this.planNotes.set(template.description?.trim() || '');
+    this.dayMuscles.set(muscles);
+    this.manualKeys.set(manual);
+    this.currentPlanExercises.set(exercises);
+    this.extraDays.set(highest);
+    this.activeDay.set(1);
+    this.workoutStep.set(5);
   }
 
   isMuscleSelected(muscle: MuscleGroup): boolean {
-    return this.selectedMuscles().includes(muscle);
+    return (this.dayMuscles()[this.activeDay()] ?? []).includes(muscle);
   }
 
-  goToExercisesStep(): void {
-    if (this.selectedMuscles().length === 0) {
-      this.snackBar.open('Lütfen en az bir hedef kas grubu seçin.', 'Tamam', { duration: 3000 });
-      return;
-    }
+  toggleDayMuscle(muscle: MuscleGroup): void {
+    const day = this.activeDay();
+    const current = [...(this.dayMuscles()[day] ?? [])];
+    const index = current.indexOf(muscle);
+    if (index > -1) current.splice(index, 1);
+    else current.push(muscle);
+    this.dayMuscles.set({ ...this.dayMuscles(), [day]: current });
+    this.syncDayFromRegions(day);
+  }
 
-    // Seçilen kas gruplarından varsayılan 4-5 egzersizi otomatik ekleyelim
-    if (this.currentPlanExercises().length === 0) {
-      const initial = this.suggestedExercises().slice(0, 5).map((exercise) => ({
-        ...exercise,
-        dayName: workoutDayLabel(1),
-      }));
-      this.currentPlanExercises.set(initial);
-    }
-    this.workoutStep.set(4);
+  dayHeading(day: number): string {
+    const named = this.exercisesOnDay(day).find((exercise) => this.keepsCustomDayName(exercise.dayName));
+    if (named?.dayName) return named.dayName;
+    return this.dayRegionLabel(day, this.musclesForDay(day));
   }
 
   selectDay(day: number): void {
@@ -242,13 +275,15 @@ export class TrainingWizardModal {
   }
 
   addSuggestedExercise(ex: Exercise): void {
-    const dayName = workoutDayLabel(this.activeDay());
+    const day = this.activeDay();
+    const dayName = this.dayRegionLabel(day, this.musclesForDay(day));
     const list = [...this.currentPlanExercises()];
-    const exists = list.some((item) => item.name === ex.name && workoutDayIndex(item.dayName) === this.activeDay());
-    if (!exists) {
-      list.push({ ...ex, dayName });
-      this.currentPlanExercises.set(list);
-    }
+    const exists = list.some((item) => item.name === ex.name && workoutDayIndex(item.dayName) === day);
+    if (exists) return;
+    list.push({ ...ex, dayName });
+    this.currentPlanExercises.set(list);
+    const key = this.manualKey(day, ex.name);
+    if (!this.manualKeys().includes(key)) this.manualKeys.set([...this.manualKeys(), key]);
   }
 
   removeExercise(index: number): void {
@@ -268,6 +303,7 @@ export class TrainingWizardModal {
       this.snackBar.open('Lütfen programa en az bir egzersiz ekleyin.', 'Tamam', { duration: 3000 });
       return;
     }
+    this.stampDayNames();
     this.workoutStep.set(5);
   }
 
@@ -278,10 +314,13 @@ export class TrainingWizardModal {
       return;
     }
 
+    this.stampDayNames();
+    const title = this.resolvedPlanTitle();
     this.savingWorkout.set(true);
     try {
       await this.workoutService.createPlanForUser(member.uid, {
-        title: this.currentPlanTitle().trim(),
+        templateId: this.selectedTemplateId() ?? undefined,
+        title,
         disciplineId: this.selectedDiscipline()?.id,
         exercises: this.currentPlanExercises(),
         startDate: new Date(this.planStartDate()),
@@ -290,7 +329,7 @@ export class TrainingWizardModal {
       });
 
       this.snackBar.open(
-        `✓ "${this.currentPlanTitle()}" programı ${member.displayName} üyesine başarıyla atandı!`,
+        `✓ "${title}" programı ${member.displayName} üyesine başarıyla atandı!`,
         'Kapat',
         { duration: 4000 },
       );
@@ -306,11 +345,90 @@ export class TrainingWizardModal {
     this.workoutStep.set(1);
     this.selectedMember.set(null);
     this.selectedDiscipline.set(null);
-    this.selectedMuscles.set(['chest', 'arms']);
+    this.selectedTemplateId.set(null);
+    this.dayMuscles.set({});
+    this.manualKeys.set([]);
+    this.currentPlanTitle.set('');
     this.currentPlanExercises.set([]);
     this.activeDay.set(1);
     this.extraDays.set(1);
     this.planNotes.set('');
+  }
+
+  private resolvedPlanTitle(): string {
+    const typed = this.currentPlanTitle().trim();
+    if (typed) return typed;
+    const branch = this.selectedDiscipline()?.name?.trim();
+    return branch ? `${branch} Programı` : 'Antrenman Programı';
+  }
+
+  private dayRegionLabel(day: number, muscles: MuscleGroup[]): string {
+    const names = MUSCLE_GROUPS.filter((group) => muscles.includes(group.key)).map((group) => REGION_SHORT[group.key]);
+    const base = workoutDayLabel(day);
+    return names.length ? `${base}: ${names.join(' & ')}` : base;
+  }
+
+  private musclesForDay(day: number): MuscleGroup[] {
+    const selected = this.dayMuscles()[day] ?? [];
+    if (selected.length > 0) return selected;
+    const found = new Set<MuscleGroup>();
+    for (const exercise of this.exercisesOnDay(day)) {
+      const group = exercise.muscleGroup;
+      if (group && group !== 'fullbody' && REGION_SHORT[group]) found.add(group);
+    }
+    return MUSCLE_GROUPS.map((group) => group.key).filter((key) => found.has(key));
+  }
+
+  private keepsCustomDayName(dayName?: string | null): boolean {
+    const raw = (dayName ?? '').trim();
+    const match = /^(\d+\.\s*Gün)\s*(?::\s*(.*))?$/.exec(raw);
+    if (!match?.[2]) return false;
+    const parts = match[2].split(/\s*&\s*/).map((part) => part.trim()).filter(Boolean);
+    const regionNames = new Set(Object.values(REGION_SHORT));
+    return parts.length > 0 && parts.some((part) => !regionNames.has(part));
+  }
+
+  private manualKey(day: number, name: string): string {
+    return `${day}::${name}`;
+  }
+
+  private syncDayFromRegions(day: number): void {
+    const muscles = this.dayMuscles()[day] ?? [];
+    const label = this.dayRegionLabel(day, muscles);
+    const libraryForDay = DEFAULT_EXERCISE_LIBRARY.filter(
+      (exercise) => !!exercise.muscleGroup && muscles.includes(exercise.muscleGroup),
+    );
+    const wanted = new Set(libraryForDay.map((exercise) => exercise.name));
+    const manual = new Set(this.manualKeys());
+    const rest = this.currentPlanExercises().filter((exercise) => workoutDayIndex(exercise.dayName) !== day);
+    const onDay = this.currentPlanExercises().filter((exercise) => workoutDayIndex(exercise.dayName) === day);
+    const keptManual = onDay
+      .filter((exercise) => manual.has(this.manualKey(day, exercise.name)) || !LIBRARY_NAMES.has(exercise.name))
+      .map((exercise) => ({ ...exercise, dayName: label }));
+    const edited = new Map(
+      onDay
+        .filter(
+          (exercise) =>
+            !manual.has(this.manualKey(day, exercise.name)) &&
+            LIBRARY_NAMES.has(exercise.name) &&
+            wanted.has(exercise.name),
+        )
+        .map((exercise) => [exercise.name, exercise]),
+    );
+    const manualNames = new Set(keptManual.map((exercise) => exercise.name));
+    const autos = libraryForDay
+      .filter((exercise) => !manualNames.has(exercise.name))
+      .map((exercise) => ({ ...(edited.get(exercise.name) ?? exercise), dayName: label }));
+    this.currentPlanExercises.set([...rest, ...autos, ...keptManual]);
+  }
+
+  private stampDayNames(): void {
+    const stamped = this.currentPlanExercises().map((exercise) => {
+      if (this.keepsCustomDayName(exercise.dayName)) return exercise;
+      const day = workoutDayIndex(exercise.dayName);
+      return { ...exercise, dayName: this.dayRegionLabel(day, this.musclesForDay(day)) };
+    });
+    this.currentPlanExercises.set(stamped);
   }
 
   // ---- SETUP TRACK METHODS (Zincirleme Tanımlama) ----
