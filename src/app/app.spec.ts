@@ -1,6 +1,7 @@
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideTransloco } from '@jsverse/transloco';
 import { App } from './app';
 import { AuthService } from './core/auth/auth.service';
 import { ThemeService } from './core/services/theme.service';
@@ -13,6 +14,12 @@ describe('App', () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
+        provideTransloco({
+          config: {
+            defaultLang: 'tr',
+            availableLangs: ['tr'],
+          },
+        }),
         // Gerçek Firebase Auth, tema ve dil servislerine bağlanmadan App kabuğunu test edelim.
         { provide: AuthService, useValue: { ready: signal(true) } },
         { provide: ThemeService, useValue: { mode: signal('light') } },
