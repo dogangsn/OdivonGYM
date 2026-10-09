@@ -2,13 +2,15 @@ export type ConsentType =
   | 'kvkk_general'
   | 'commercial_communication'
   | 'health_biometric'
-  | 'camera_cctv';
+  | 'camera_cctv'
+  | 'cookie_policy';
 
 export const CONSENT_TYPE_LABELS: Record<ConsentType, string> = {
   kvkk_general: 'KVKK Genel Aydınlatma ve Açık Rıza',
   commercial_communication: 'Ticari İleti Onayı (SMS / E-posta)',
   health_biometric: 'Özel Nitelikli Sağlık Verisi Rızası',
   camera_cctv: 'Güvenlik Kameraları Aydınlatma Metni',
+  cookie_policy: 'Çerez Politikası ve Aydınlatma Metni',
 };
 
 export type ConsentChannel =

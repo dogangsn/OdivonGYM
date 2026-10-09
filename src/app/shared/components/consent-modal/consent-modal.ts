@@ -11,7 +11,7 @@ import { ConsentModalService } from './consent-modal.service';
   template: `
     @if (modalService.isOpen() && modalService.text(); as text) {
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+        class="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in"
         (click)="modalService.close()"
       >
         <div

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -13,13 +14,14 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
-
-
+import { CookieService } from '../../../core/services/cookie.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
+    CommonModule,
+    NgClass,
     ReactiveFormsModule,
     RouterLink,
     MatCheckboxModule,
@@ -42,15 +44,20 @@ export class Login {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly theme = inject(ThemeService);
   protected readonly language = inject(LanguageService);
+  protected readonly cookieService = inject(CookieService);
 
   protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
   protected readonly languageNames = LANGUAGE_NAMES;
   protected readonly currentYear = new Date().getFullYear();
 
+  private readonly initialEmail = this.cookieService.getRememberedEmail();
+  private readonly initialRememberMe =
+    this.initialEmail.length > 0 || this.cookieService.isRememberMePreferred();
+
   readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
+    email: [this.initialEmail, [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
-    rememberMe: [true],
+    rememberMe: [this.initialRememberMe],
   });
 
   readonly submitting = signal(false);
@@ -78,6 +85,31 @@ export class Login {
     });
   }
 
+  toggleRememberMe(): void {
+    const nextVal = !this.form.controls.rememberMe.value;
+    this.form.controls.rememberMe.setValue(nextVal);
+    this.cookieService.setRememberMePreferred(nextVal);
+
+    if (nextVal && !this.cookieService.functionalAllowed()) {
+      const ref = this.snackBar.open(
+        this.transloco.translate('cookieConsent.functionalNeededForRemember'),
+        this.transloco.translate('cookieConsent.allow'),
+        { duration: 4500 },
+      );
+      ref.onAction().subscribe(() => {
+        this.cookieService.acceptAll();
+      });
+    }
+  }
+
+  openCookieSettings(): void {
+    this.cookieService.openSettings();
+  }
+
+  openCookiePolicy(): void {
+    this.cookieService.openPolicyModal();
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting() || this.lockSecondsLeft() > 0) {
       this.form.markAllAsTouched();
@@ -91,6 +123,13 @@ export class Login {
       await this.auth.signInWithEmail(email, password, rememberMe);
       await this.auth.waitUntilReady();
       this.failedAttempts.set(0);
+
+      // Beni Hatırla & E-posta yerel hafıza yönetimi
+      if (rememberMe) {
+        this.cookieService.setRememberedEmail(email);
+      } else {
+        this.cookieService.clearRememberedEmail();
+      }
 
       await this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
