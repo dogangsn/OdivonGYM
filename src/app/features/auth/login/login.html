@@ -360,12 +360,15 @@
         <!-- Submit CTA -->
         <button
           type="submit"
-          [disabled]="submitting()"
+          [disabled]="submitting() || lockSecondsLeft() > 0"
           class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-1"
         >
           @if (submitting()) {
             <span class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             <span>{{ 'auth.login.submitting' | transloco }}</span>
+          } @else if (lockSecondsLeft() > 0) {
+            <mat-icon class="icon-size-4">lock_clock</mat-icon>
+            <span>{{ 'loginExtra.lockedButton' | transloco: { seconds: lockSecondsLeft() } }}</span>
           } @else {
             <span>{{ 'auth.login.submit' | transloco }}</span>
             <mat-icon class="icon-size-4">arrow_forward</mat-icon>
@@ -373,106 +376,7 @@
         </button>
       </form>
 
-      <!-- EXECUTIVE DEMO HUB: Tek Tıkla Demo ve Süresi Bitmiş Kullanıcı Giriş Paneli -->
-      <div class="mt-7 pt-5 border-t border-slate-200/90 dark:border-slate-800">
-        <div class="flex items-center justify-between mb-2.5">
-          <div class="flex items-center gap-2">
-            <mat-icon class="text-amber-500 icon-size-4">auto_awesome</mat-icon>
-            <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              {{ 'auth.login.demoTitle' | transloco }}
-            </span>
-          </div>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
-            {{ 'auth.login.demoBadge' | transloco }}
-          </span>
-        </div>
-        
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-          {{ 'auth.login.demoDesc' | transloco }}
-        </p>
 
-        <!-- 2 Demo Seçim Kartı -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <!-- 1. Demo Yönetici (Aktif) -->
-          <button
-            type="button"
-            (click)="fillDemoCredentials(demoProfiles[0])"
-            class="text-left p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden group shadow-2xs"
-            [class.border-emerald-500]="activeDemoKey() === 'active'"
-            [class.ring-2]="activeDemoKey() === 'active'"
-            [class.ring-emerald-500/20]="activeDemoKey() === 'active'"
-            [class.bg-emerald-50/50]="activeDemoKey() === 'active'"
-            [class.dark:bg-emerald-950/30]="activeDemoKey() === 'active'"
-            [class.border-slate-200]="activeDemoKey() !== 'active'"
-            [class.dark:border-slate-800]="activeDemoKey() !== 'active'"
-            [class.bg-white]="activeDemoKey() !== 'active'"
-            [class.dark:bg-slate-900/60]="activeDemoKey() !== 'active'"
-            [class.hover:border-emerald-300]="activeDemoKey() !== 'active'"
-            [class.dark:hover:border-emerald-700]="activeDemoKey() !== 'active'"
-          >
-            <div class="flex items-center justify-between gap-1.5 mb-1.5">
-              <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                <mat-icon class="icon-size-4">verified_user</mat-icon>
-              </div>
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {{ 'auth.login.demoActiveBadge' | transloco }}
-              </span>
-            </div>
-            <div class="font-extrabold text-xs text-slate-900 dark:text-white">
-              {{ 'auth.login.demoActiveTitle' | transloco }}
-            </div>
-            <div class="text-[11px] font-mono font-medium text-emerald-700 dark:text-emerald-300 truncate mt-0.5">
-              demo&#64;odivongym.app
-            </div>
-            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-              {{ 'auth.login.demoActiveDesc' | transloco }}
-            </div>
-          </button>
-
-          <!-- 2. Süresi Bitmiş Hesap (Expired) -->
-          <button
-            type="button"
-            (click)="fillDemoCredentials(demoProfiles[1])"
-            class="text-left p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden group shadow-2xs"
-            [class.border-amber-500]="activeDemoKey() === 'expired'"
-            [class.ring-2]="activeDemoKey() === 'expired'"
-            [class.ring-amber-500/20]="activeDemoKey() === 'expired'"
-            [class.bg-amber-50/50]="activeDemoKey() === 'expired'"
-            [class.dark:bg-amber-950/30]="activeDemoKey() === 'expired'"
-            [class.border-slate-200]="activeDemoKey() !== 'expired'"
-            [class.dark:border-slate-800]="activeDemoKey() !== 'expired'"
-            [class.bg-white]="activeDemoKey() !== 'expired'"
-            [class.dark:bg-slate-900/60]="activeDemoKey() !== 'expired'"
-            [class.hover:border-amber-300]="activeDemoKey() !== 'expired'"
-            [class.dark:hover:border-amber-700]="activeDemoKey() !== 'expired'"
-          >
-            <div class="flex items-center justify-between gap-1.5 mb-1.5">
-              <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
-                <mat-icon class="icon-size-4">history_toggle_off</mat-icon>
-              </div>
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                {{ 'auth.login.demoExpiredBadge' | transloco }}
-              </span>
-            </div>
-            <div class="font-extrabold text-xs text-slate-900 dark:text-white">
-              {{ 'auth.login.demoExpiredTitle' | transloco }}
-            </div>
-            <div class="text-[11px] font-mono font-medium text-amber-700 dark:text-amber-300 truncate mt-0.5">
-              expired&#64;odivongym.app
-            </div>
-            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-              {{ 'auth.login.demoExpiredDesc' | transloco }}
-            </div>
-          </button>
-        </div>
-
-        <div class="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-          <mat-icon class="icon-size-3.5 flex-shrink-0">info</mat-icon>
-          <span>{{ 'auth.login.demoHelperText' | transloco }}</span>
-        </div>
-      </div>
     </div>
 
     <!-- Bottom Copyright -->

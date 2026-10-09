@@ -1,4 +1,4 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, throwError } from 'rxjs';
@@ -37,6 +37,19 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       if (appError.code === ErrorCode.USER_INACTIVE) {
         snackBar.open('Hesabınız pasif durumda', 'Kapat', { duration: 5000 });
         void auth.logOut();
+        return throwError(() => appError);
+      }
+
+      if (appError.status === 429 || appError.code === ErrorCode.RATE_LIMITED) {
+        const retryHeader =
+          error instanceof HttpErrorResponse ? error.headers?.get('Retry-After') : null;
+        const seconds = retryHeader ? parseInt(retryHeader, 10) : 60;
+        const minutes = Math.max(1, Math.ceil((Number.isFinite(seconds) ? seconds : 60) / 60));
+        snackBar.open(
+          `Çok fazla istek gönderildi. Lütfen ${minutes} dakika sonra tekrar deneyin.`,
+          'Kapat',
+          { duration: 8000 },
+        );
         return throwError(() => appError);
       }
 

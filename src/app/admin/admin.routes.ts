@@ -70,6 +70,12 @@ export const adminRoutes: Routes = [
     title: 'Paket & Market Satışı · OdivonGYM',
   },
   {
+    path: 'exit-payments',
+    loadComponent: () =>
+      import('./exit-payments/admin-exit-payments').then((m) => m.AdminExitPayments),
+    title: 'Çıkışta Ödemeler · OdivonGYM',
+  },
+  {
     path: 'pos',
     loadComponent: () => import('./pos/admin-pos').then((m) => m.AdminPos),
     title: 'Hızlı Kasa & POS · OdivonGYM',

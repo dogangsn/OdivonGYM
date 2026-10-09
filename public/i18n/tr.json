@@ -240,7 +240,8 @@
       "bodyMeasurements": "Vücut Ölçümleri",
       "wallet": "E-Cüzdan",
       "packages": "Paketler",
-      "profile": "Profil & Ayarlar"
+      "profile": "Profil & Ayarlar",
+      "adminExitPayments": "Çıkışta Ödemeler"
     },
     "badges": {
       "renewal": "Yenileme",
@@ -799,6 +800,27 @@
   },
   "loginExtra": {
     "needEmailFirst": "Önce e-posta adresini gir, sonra sıfırlama bağlantısı gönderelim.",
-    "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi."
+    "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi.",
+    "tooManyAttemptsWait": "Çok fazla başarısız deneme yaptınız. Lütfen {{seconds}} saniye bekleyin.",
+    "lockedButton": "Lütfen bekleyin ({{seconds}}s)"
+  },
+  "exitPayments": {
+    "title": "Çıkışta Ödemeler",
+    "desc": "Üye adı o an bilinmese de not yazılarak açılan fişler ve çıkışta bekleyen tahsilatların yönetimi.",
+    "goToPos": "Hızlı POS / Kasa",
+    "newTabBtn": "Hızlı Fiş Aç",
+    "kpiOpenCount": "Açık Fiş Sayısı",
+    "kpiWaitingExit": "Çıkışta Tahsilat Bekliyor",
+    "kpiOpenTotal": "Bekleyen Toplam",
+    "kpiOpenReceivable": "Açık Fiş Alacağı",
+    "kpiTodayCollected": "Bugün Tahsil Edilen",
+    "kpiTabsClosedToday": "Fiş Kapatıldı",
+    "kpiTotalRecords": "Toplam Fiş",
+    "kpiAllTimeHistory": "Tüm Zamanlar",
+    "searchPlaceholder": "Not, eşkal, müşteri veya ürün adı ile ara...",
+    "tabOpen": "Açık / Bekleyen",
+    "tabCollected": "Tahsil Edilenler",
+    "tabCancelled": "İptal Edilenler",
+    "tabAll": "Tümü"
   }
 }

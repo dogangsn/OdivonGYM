@@ -16,6 +16,7 @@ import { UserProfile } from '../../core/models/user-profile.model';
 
 import { TranslocoPipe } from '@jsverse/transloco';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
+import { ExitPaymentsService } from '../exit-payments/exit-payments.service';
 
 export interface PosCartItem {
   product: ShopProduct;
@@ -37,6 +38,7 @@ export class AdminPos {
   private readonly membersService = inject(AdminMembersService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  private readonly exitPaymentsService = inject(ExitPaymentsService);
   protected readonly saasSub = inject(SaasSubscriptionService);
 
   protected readonly money = formatMoney;
@@ -238,7 +240,79 @@ export class AdminPos {
     this.cashGiven.set(amt);
   }
 
-  async pay(paymentMethod: 'cash' | 'card' | 'wallet'): Promise<void> {
+  // Çıkışta Ödeyecek (Açık Fiş) Modal State
+  protected readonly showExitPaymentModal = signal(false);
+  protected readonly exitPaymentNote = signal('');
+  protected readonly exitPaymentAmount = signal<number | null>(null);
+  protected readonly savingExitPayment = signal(false);
+
+  openExitPaymentDialog(): void {
+    if (this.cart().length === 0) {
+      this.alertService.toastWarning('Lütfen önce sepete ürün ekleyin.');
+      return;
+    }
+    const member = this.selectedMember();
+    this.exitPaymentAmount.set(this.cartTotal());
+    this.exitPaymentNote.set(member ? `${member.displayName} (Çıkışta Ödeyecek)` : '');
+    this.showExitPaymentModal.set(true);
+  }
+
+  closeExitPaymentDialog(): void {
+    this.showExitPaymentModal.set(false);
+    this.exitPaymentNote.set('');
+    this.exitPaymentAmount.set(null);
+  }
+
+  async submitExitPayment(): Promise<void> {
+    if (this.saasSub.isExpired()) {
+      void this.alertService.error(
+        'SaaS Aboneliği Sona Erdi',
+        'Salonunuzun SaaS lisansı sona erdiği için işlem yapılamaz.',
+      );
+      return;
+    }
+
+    const note = this.exitPaymentNote().trim();
+    if (!note) {
+      this.alertService.toastWarning('Lütfen takip edebilmek için bir açıklama / not veya eşkal yazın (örn. Dolap No, kıyafet tanımı, kişi adı).');
+      return;
+    }
+
+    const items = this.cart();
+    if (items.length === 0 || this.savingExitPayment()) return;
+
+    this.savingExitPayment.set(true);
+    try {
+      const member = this.selectedMember();
+      const amount = this.exitPaymentAmount() ?? this.cartTotal();
+
+      await this.exitPaymentsService.createExitPayment({
+        note,
+        customerName: member ? member.displayName : 'Misafir / Anonim',
+        userId: member ? member.uid : null,
+        totalAmount: amount,
+        items: items.map((i) => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          unitPrice: i.product.price,
+        })),
+      });
+
+      this.clearCart();
+      this.closeExitPaymentDialog();
+      this.alertService.toastSuccess(
+        `Çıkışta ödeme kaydı açıldı! "${note}" tutarı: ${this.money(amount)}. Satış menüsündeki "Çıkışta Ödemeler" ekranından tahsil edebilirsiniz.`,
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kayıt oluşturulamadı.';
+      this.alertService.toastError(msg);
+    } finally {
+      this.savingExitPayment.set(false);
+    }
+  }
+
+  async pay(paymentMethod: 'cash' | 'card' | 'wallet' | 'transfer'): Promise<void> {
     if (this.saasSub.isExpired()) {
       void this.alertService.error(
         'SaaS Aboneliği Sona Erdi',
@@ -251,15 +325,21 @@ export class AdminPos {
     if (items.length === 0 || this.isPaying()) return;
 
     const member = this.selectedMember();
-    if (paymentMethod === 'wallet' && !member) {
-      this.alertService.toastWarning('E-Cüzdan ile ödeme için lütfen bir üye seçin.');
-      return;
+    if (paymentMethod === 'wallet') {
+      if (!member) {
+        this.alertService.toastWarning('E-Cüzdan ile ödeme için lütfen bir müşteri/üye seçin.');
+        return;
+      }
+      if (!this.canPayWithWallet()) {
+        this.alertService.toastWarning(`Seçili üyenin cüzdan bakiyesi yetersiz (Bakiye: ${this.money(member.walletBalance || 0)}).`);
+        return;
+      }
     }
 
     this.isPaying.set(true);
     try {
       const itemsSummary = items
-        .map((i) => `${i.quantity}x ${i.product.name} (₺${this.money(i.product.price)})`)
+        .map((i) => `${i.quantity}x ${i.product.name} (${this.money(i.product.price)})`)
         .join(', ');
 
       await this.shopService.checkout({
@@ -273,9 +353,17 @@ export class AdminPos {
       const change = this.changeDue();
       this.clearCart();
 
-      let msg = `Tahsilat Başarılı! ₺${this.money(total)} (${paymentMethod === 'cash' ? 'Nakit' : paymentMethod === 'card' ? 'Kredi Kartı' : 'E-Cüzdan'})`;
+      let msg = `Tahsilat Başarılı! ${this.money(total)} (${
+        paymentMethod === 'cash'
+          ? 'Nakit'
+          : paymentMethod === 'card'
+            ? 'Kredi Kartı'
+            : paymentMethod === 'transfer'
+              ? 'Havale/EFT'
+              : 'E-Cüzdan'
+      })`;
       if (paymentMethod === 'cash' && change > 0) {
-        msg += ` · Para Üstü: ₺${this.money(change)}`;
+        msg += ` · Para Üstü: ${this.money(change)}`;
       }
 
       this.alertService.toastSuccess(msg);
