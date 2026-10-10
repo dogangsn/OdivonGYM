@@ -50,4 +50,25 @@ export class IdentityApi {
   updateMe(body: { displayName?: string; phone?: string }) {
     return this.api.patch<CurrentUser>('/identity/me', body).pipe(map((r) => r.data));
   }
+
+  verifyEmail(token: string) {
+    return this.api
+      .post<{ success: boolean; email?: string }>(
+        '/identity/verify-email',
+        { token },
+        { skipAuth: true },
+      )
+      .pipe(map((r) => r.data));
+  }
+
+  resendVerification(email: string) {
+    return this.api
+      .post<{ success: boolean }>(
+        '/identity/resend-verification',
+        { email },
+        { skipAuth: true },
+      )
+      .pipe(map((r) => r.data));
+  }
 }
+

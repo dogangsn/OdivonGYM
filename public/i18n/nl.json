@@ -186,6 +186,36 @@
       "registerTitleHighlight": "als ware kampioenen.",
       "registerTitle2": "",
       "registerSubtitle": "Voltooi de installatie in 3 stappen: ledenbeheer, sportdisciplines, trainingsroosters en tourniquetcontrole direct klaar voor gebruik."
+    },
+    "verifyEmail": {
+      "pageTitle": "E-mailverificatie · OdivonGYM",
+      "verifyingTitle": "E-mailadres verifiëren",
+      "verifyingDesc": "Een ogenblik geduld terwijl we uw account activeren...",
+      "successTitle": "E-mail succesvol geverifieerd! 🎉",
+      "successDesc": "Gefeliciteerd! Uw account is geverifieerd en geactiveerd. U kunt nu inloggen.",
+      "goToLogin": "Inloggen",
+      "errorTitle": "Verificatie mislukt ⚠️",
+      "errorDesc": "De verificatielink is ongeldig of verlopen.",
+      "resendPrompt": "U kunt hieronder een nieuwe link aanvragen.",
+      "emailPlaceholder": "Uw e-mailadres",
+      "resendButton": "Nieuwe link verzenden",
+      "resending": "Verzenden...",
+      "resendSuccess": "Er is een nieuwe verificatielink verzonden.",
+      "resendError": "Kon verificatielink niet verzenden.",
+      "backToHome": "Terug naar startpagina"
+    },
+    "registerSuccess": {
+      "badge": "REGISTRATIE VOLTOOID ✉️",
+      "title": "Verificatie-e-mail verzonden!",
+      "greeting": "Beste",
+      "desc": "we hebben een activatielink verzonden naar",
+      "info1": "Controleer uw inbox en eventueel uw spamberichten.",
+      "info2": "Klik op de knop in de e-mail om uw account te activeren.",
+      "info3": "Na verificatie kunt u inloggen op het dashboard.",
+      "resendButton": "Verificatie-e-mail opnieuw verzenden",
+      "resending": "Verzenden...",
+      "resendSuccess": "Verificatie-e-mail opnieuw verzonden!",
+      "loginButton": "Ga naar Inloggen"
     }
   },
   "onboarding": {
@@ -805,7 +835,8 @@
     "generic": "Er is iets misgegaan, probeer het opnieuw.",
     "permissionDenied": "Je hebt geen toestemming voor deze actie.",
     "invalidArgument": "Sommige ingevoerde gegevens ontbreken of zijn ongeldig.",
-    "unauthenticated": "Je sessie is verlopen, log opnieuw in."
+    "unauthenticated": "Je sessie is verlopen, log opnieuw in.",
+    "emailNotVerified": "Verifieer uw e-mailadres om in te loggen. Klik op de link in uw inbox."
   },
   "trialExpired": {
     "titleCancelled": "Uw abonnement is geannuleerd",
@@ -830,7 +861,10 @@
     "needEmailFirst": "Voer eerst je e-mailadres in, daarna sturen we een herstellink.",
     "resetLinkSent": "Er is een link voor wachtwoordherstel verzonden naar {{email}}.",
     "tooManyAttemptsWait": "Te veel mislukte pogingen. Wacht {{seconds}} seconden.",
-    "lockedButton": "Even geduld ({{seconds}}s)"
+    "lockedButton": "Even geduld ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Uw account is nog niet geverifieerd. Klik op de link in uw e-mail.",
+    "resendVerificationButton": "Verificatie-e-mail opnieuw verzenden",
+    "verificationSent": "Verificatie-e-mail is opnieuw verzonden."
   },
   "exitPayments": {
     "title": "Betalingen bij uitgang",

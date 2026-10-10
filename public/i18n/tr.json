@@ -186,6 +186,36 @@
       "registerTitleHighlight": "şampiyonlar gibi",
       "registerTitle2": "yönet.",
       "registerSubtitle": "Kurulumunu 3 adımda tamamla; üye takibi, spor branşları, antrenman takvimleri ve akıllı turnike kontrolünü hemen kullanmaya başla."
+    },
+    "verifyEmail": {
+      "pageTitle": "E-Posta Doğrulama · OdivonGYM",
+      "verifyingTitle": "E-Posta Adresiniz Doğrulanıyor",
+      "verifyingDesc": "Lütfen bekleyin, hesabınız aktifleştiriliyor...",
+      "successTitle": "E-Posta Adresiniz Doğrulandı! 🎉",
+      "successDesc": "Tebrikler! Spor salonu yönetim hesabınız başarıyla doğrulandı ve aktifleştirildi. Artık yönetim paneline giriş yapabilirsiniz.",
+      "goToLogin": "Giriş Yap",
+      "errorTitle": "Doğrulama Başarısız ⚠️",
+      "errorDesc": "Doğrulama bağlantısı geçersiz veya süresi (24 saat) dolmuş olabilir.",
+      "resendPrompt": "Aşağıdaki formu kullanarak yeni bir doğrulama bağlantısı talep edebilirsiniz.",
+      "emailPlaceholder": "E-posta adresiniz",
+      "resendButton": "Yeni Bağlantı Gönder",
+      "resending": "Gönderiliyor...",
+      "resendSuccess": "Yeni doğrulama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin.",
+      "resendError": "Doğrulama bağlantısı gönderilemedi. Lütfen e-posta adresinizi kontrol edin.",
+      "backToHome": "Ana Sayfaya Dön"
+    },
+    "registerSuccess": {
+      "badge": "KAYIT BAŞARILI ✉️",
+      "title": "Doğrulama E-Postası Gönderildi!",
+      "greeting": "Sayın",
+      "desc": "adresine bir aktivasyon bağlantısı gönderdik.",
+      "info1": "Lütfen gelen kutunuzu ve gerekiyorsa spam/gereksiz klasörünüzü kontrol edin.",
+      "info2": "E-postadaki \"E-Posta Adresimi Doğrula\" butonuna tıklayarak hesabınızı aktifleştirin.",
+      "info3": "Doğrulama işlemini tamamladıktan sonra yönetim masasına giriş yapabilirsiniz.",
+      "resendButton": "Tekrar Doğrulama E-postası Gönder",
+      "resending": "Gönderiliyor...",
+      "resendSuccess": "Doğrulama e-postası tekrar gönderildi!",
+      "loginButton": "Giriş Ekranına Git"
     }
   },
   "onboarding": {
@@ -806,7 +836,8 @@
     "generic": "Bir şeyler ters gitti, lütfen tekrar dene.",
     "permissionDenied": "Bu işlem için yetkin yok.",
     "invalidArgument": "Girdiğin bilgilerde eksik veya hatalı bir alan var.",
-    "unauthenticated": "Oturumun sona ermiş, lütfen tekrar giriş yap."
+    "unauthenticated": "Oturumun sona ermiş, lütfen tekrar giriş yap.",
+    "emailNotVerified": "Giriş yapabilmek için lütfen e-posta adresinizi doğrulayın. E-postanıza gönderdiğimiz bağlantıya tıklayın."
   },
   "trialExpired": {
     "titleCancelled": "Aboneliğiniz İptal Edildi",
@@ -831,7 +862,10 @@
     "needEmailFirst": "Önce e-posta adresini gir, sonra sıfırlama bağlantısı gönderelim.",
     "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi.",
     "tooManyAttemptsWait": "Çok fazla başarısız deneme yaptınız. Lütfen {{seconds}} saniye bekleyin.",
-    "lockedButton": "Lütfen bekleyin ({{seconds}}s)"
+    "lockedButton": "Lütfen bekleyin ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Hesabınız henüz doğrulanmamış. Giriş yapabilmek için lütfen e-posta kutunuza gönderilen doğrulama bağlantısına tıklayın.",
+    "resendVerificationButton": "Doğrulama Mailini Tekrar Gönder",
+    "verificationSent": "Doğrulama e-postası tekrar gönderildi. Lütfen gelen kutunuzu ve spam klasörünüzü kontrol edin."
   },
   "exitPayments": {
     "title": "Çıkışta Ödemeler",

@@ -186,6 +186,36 @@
       "registerTitleHighlight": "like champions.",
       "registerTitle2": "",
       "registerSubtitle": "Complete setup in 3 quick steps: member tracking, sports disciplines, training schedules, and smart turnstiles ready from day one."
+    },
+    "verifyEmail": {
+      "pageTitle": "Email Verification · OdivonGYM",
+      "verifyingTitle": "Verifying Your Email",
+      "verifyingDesc": "Please wait while we activate your account...",
+      "successTitle": "Email Verified Successfully! 🎉",
+      "successDesc": "Congratulations! Your gym management account has been verified and activated. You can now sign in.",
+      "goToLogin": "Sign In",
+      "errorTitle": "Verification Failed ⚠️",
+      "errorDesc": "The verification link is invalid or has expired (24 hours).",
+      "resendPrompt": "You can request a new verification link below.",
+      "emailPlaceholder": "Your email address",
+      "resendButton": "Send New Link",
+      "resending": "Sending...",
+      "resendSuccess": "A new verification link has been sent to your email. Please check your inbox.",
+      "resendError": "Could not send verification link. Please check your email address.",
+      "backToHome": "Back to Home"
+    },
+    "registerSuccess": {
+      "badge": "REGISTRATION SUCCESSFUL ✉️",
+      "title": "Verification Email Sent!",
+      "greeting": "Dear",
+      "desc": "we have sent an activation link to",
+      "info1": "Please check your inbox and your spam/junk folder if needed.",
+      "info2": "Click the \"Verify Email\" button in the email to activate your account.",
+      "info3": "Once verified, you will be able to sign in to the dashboard.",
+      "resendButton": "Resend Verification Email",
+      "resending": "Sending...",
+      "resendSuccess": "Verification email has been resent!",
+      "loginButton": "Go to Sign In"
     }
   },
   "onboarding": {
@@ -807,7 +837,8 @@
     "generic": "Something went wrong, please try again.",
     "permissionDenied": "You don't have permission for this action.",
     "invalidArgument": "Some of the information you entered is missing or invalid.",
-    "unauthenticated": "Your session has expired, please log in again."
+    "unauthenticated": "Your session has expired, please log in again.",
+    "emailNotVerified": "Please verify your email address to sign in. Click the link sent to your inbox."
   },
   "trialExpired": {
     "titleCancelled": "Your Subscription Has Been Cancelled",
@@ -832,7 +863,10 @@
     "needEmailFirst": "Enter your email first, then we'll send a reset link.",
     "resetLinkSent": "A password reset link was sent to {{email}}.",
     "tooManyAttemptsWait": "Too many failed attempts. Please wait {{seconds}} seconds.",
-    "lockedButton": "Please wait ({{seconds}}s)"
+    "lockedButton": "Please wait ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Your account is not verified yet. Please click the verification link sent to your email.",
+    "resendVerificationButton": "Resend Verification Email",
+    "verificationSent": "Verification email has been resent. Please check your inbox and spam folder."
   },
   "exitPayments": {
     "title": "Exit Payments (Open Tabs)",

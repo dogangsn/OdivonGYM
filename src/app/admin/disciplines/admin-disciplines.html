@@ -49,11 +49,17 @@
         <mat-icon class="icon-size-4.5">add</mat-icon>
         <span>Yeni Alan / Stüdyo Ekle</span>
       </button>
-      } @else {
+      } @else if (activeTab() === 'stock_categories') {
       <button type="button" (click)="openNewStockCategory()"
         class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-amber-600/20 flex items-center gap-2 transition-all cursor-pointer">
         <mat-icon class="icon-size-4.5">add</mat-icon>
         <span>Yeni Stok Kategorisi Ekle</span>
+      </button>
+      } @else if (activeTab() === 'mail_template') {
+      <button type="button" (click)="saveMailTemplate()" [disabled]="isMailTemplateSaving()"
+        class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-violet-600/20 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+        <mat-icon class="icon-size-4.5">{{ isMailTemplateSaving() ? 'hourglass_top' : 'save' }}</mat-icon>
+        <span>{{ isMailTemplateSaving() ? 'Kaydediliyor...' : 'Şablonu Kaydet' }}</span>
       </button>
       }
     </div>
@@ -191,6 +197,20 @@
       </span>
       }
       @if (activeTab() === 'stock_categories') {
+      <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+      }
+    </button>
+
+    <button type="button" (click)="setTab('mail_template')"
+      class="pb-3 text-xs sm:text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer shrink-0"
+      [class]="activeTab() === 'mail_template' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
+      <mat-icon class="icon-size-4">mark_email_read</mat-icon>
+      <span>Hoş Geldin E-Posta Şablonu</span>
+      <span class="px-2 py-0.2 rounded-full text-xs font-black"
+        [ngClass]="mailTemplate().enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+        {{ mailTemplate().enabled ? 'Aktif' : 'Pasif' }}
+      </span>
+      @if (activeTab() === 'mail_template') {
       <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
       }
     </button>
@@ -770,6 +790,385 @@
     }
   </div>
   }
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 6: HOŞ GELDİN E-POSTA ŞABLONU              -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'mail_template') {
+  <div class="space-y-6">
+    <!-- Header Banner -->
+    <div
+      class="p-6 rounded-3xl bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-violet-700/30">
+      <div class="flex items-start sm:items-center gap-4">
+        <div
+          class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
+          <mat-icon class="icon-size-7 text-white">mark_email_read</mat-icon>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h2 class="text-xl sm:text-2xl font-black text-white m-0 tracking-tight">
+              Yeni Üye Hoş Geldin E-Postası & Turnike Geçiş Şablonu
+            </h2>
+            <span
+              class="px-2.5 py-0.5 rounded-full text-xs font-black"
+              [ngClass]="mailTemplate().enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-700 text-slate-300'">
+              {{ mailTemplate().enabled ? 'Otomatik Gönderim Açık' : 'Gönderim Kapalı' }}
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1.5 mb-0 max-w-2xl leading-relaxed">
+            Yeni üye kaydında üyenin e-posta adresi doluysa; üyelik ve şifre bilgileri, mobil uygulama turnike QR geçiş rehberi ve salon bilgileri ile bu şablon kullanılarak otomatik hoş geldin e-postası iletilir.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 self-end md:self-auto shrink-0">
+        <button type="button" (click)="resetMailTemplateToDefault()"
+          class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all border border-white/15 flex items-center gap-1.5 cursor-pointer"
+          matTooltip="Şablon metinlerini sistemin fabrika varsayılanlarına döndürür">
+          <mat-icon class="icon-size-4 text-violet-300">restart_alt</mat-icon>
+          <span>Varsayılana Sıfırla</span>
+        </button>
+
+        <button type="button" (click)="saveMailTemplate()" [disabled]="isMailTemplateSaving()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-xs sm:text-sm font-bold shadow-lg shadow-violet-500/30 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+          <mat-icon class="icon-size-4.5">{{ isMailTemplateSaving() ? 'hourglass_top' : 'save' }}</mat-icon>
+          <span>{{ isMailTemplateSaving() ? 'Kaydediliyor...' : 'Şablonu Kaydet' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main 2-Column Layout: Form & Live Email Preview -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <!-- Left Column: Settings & Template Form (7 Cols) -->
+      <div class="xl:col-span-7 space-y-6">
+        <form [formGroup]="mailTemplateForm" (ngSubmit)="saveMailTemplate()"
+          class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-2xs space-y-6">
+
+          <!-- 1. Enable/Disable Toggle Card -->
+          <div
+            class="p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-4"
+            [ngClass]="mailTemplateForm.get('enabled')?.value ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                [ngClass]="mailTemplateForm.get('enabled')?.value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'">
+                <mat-icon class="icon-size-5">forward_to_inbox</mat-icon>
+              </div>
+              <div>
+                <div class="text-sm font-black text-slate-900">Otomatik Hoş Geldin E-Postası Gönderimi</div>
+                <div class="text-xs text-slate-500 mt-0.5">
+                  Yeni üye eklendiğinde üyenin e-posta adresine otomatik olarak karşılama maili iletilir.
+                </div>
+              </div>
+            </div>
+
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+              <input type="checkbox" formControlName="enabled" class="sr-only peer" />
+              <div
+                class="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600">
+              </div>
+            </label>
+          </div>
+
+          <!-- 2. Subject & Heading -->
+          <div class="space-y-4 pt-1">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-black uppercase tracking-wider text-slate-700">
+                  E-Posta Konu Başlığı (Subject) *
+                </label>
+                <span class="text-[11px] text-slate-400 font-semibold">Gelen kutusunda görünür</span>
+              </div>
+              <input type="text" formControlName="subject"
+                [placeholder]="'Örn: {{tenantName}} Ailesine Hoş Geldiniz! Giriş ve Turnike QR Kodunuz'"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all" />
+              @if (mailTemplateForm.get('subject')?.touched && mailTemplateForm.get('subject')?.hasError('required')) {
+              <p class="text-xs text-rose-600 font-semibold mt-1 mb-0">E-posta konusu zorunludur.</p>
+              }
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-black uppercase tracking-wider text-slate-700">
+                  Mail İçi Karşılama Başlığı (Heading) *
+                </label>
+                <span class="text-[11px] text-slate-400 font-semibold">Mail gövdesinin ana başlığı</span>
+              </div>
+              <input type="text" formControlName="heading"
+                placeholder="Örn: Aramıza Hoş Geldiniz! 🏋️‍♂️"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all" />
+              @if (mailTemplateForm.get('heading')?.touched && mailTemplateForm.get('heading')?.hasError('required')) {
+              <p class="text-xs text-rose-600 font-semibold mt-1 mb-0">Karşılama başlığı zorunludur.</p>
+              }
+            </div>
+          </div>
+
+          <!-- 3. Dynamic Variables Picker Chips -->
+          <div class="p-4 rounded-2xl bg-violet-50/70 border border-violet-200/80 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black uppercase tracking-wider text-violet-900 flex items-center gap-1.5">
+                <mat-icon class="icon-size-4 text-violet-600">code</mat-icon>
+                <span>Kullanılabilir Değişkenler</span>
+              </span>
+              <span class="text-[11px] font-semibold text-violet-700">Tıklayarak özel mesaja ekleyin</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              @for (v of mailTemplateVariables; track v.key) {
+              <button type="button" (click)="insertVariableIntoField('customMessage', v.key)"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-violet-200 hover:border-violet-400 hover:bg-violet-100/50 text-violet-800 text-xs font-bold transition-all shadow-2xs cursor-pointer group"
+                [matTooltip]="v.description + ' (Örn: ' + v.example + ')'">
+                <span>{{ v.key }}</span>
+                <span class="text-[10px] text-violet-500 font-normal">({{ v.label }})</span>
+                <mat-icon class="icon-size-3.5 text-violet-400 group-hover:text-violet-700">add</mat-icon>
+              </button>
+              }
+            </div>
+          </div>
+
+          <!-- 4. Custom Message Textarea -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-700">
+                Özel Karşılama & Bilgilendirme Metni
+              </label>
+              <span class="text-[11px] text-slate-400 font-semibold">Paragraflar ve değişkenler kullanabilirsiniz</span>
+            </div>
+            <textarea formControlName="customMessage" rows="5"
+              placeholder="Kulübümüze üyeliğiniz başarıyla tamamlanmıştır. Salonumuza giriş yaparken turnikelerdeki temassız QR geçiş sistemini kullanabilir veya mobil uygulamamız üzerinden randevu ve antrenmanlarınızı takip edebilirsiniz."
+              class="w-full p-4 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all leading-relaxed"></textarea>
+            <p class="text-[11px] text-slate-400 mt-1 mb-0">
+              Bu metin e-posta içeriğinde üyenin isminden sonra ana gövde paragrafı olarak yer alır.
+            </p>
+          </div>
+
+          <!-- 5. Content Toggles: Credentials & QR Code -->
+          <div class="space-y-3 pt-2">
+            <span class="block text-xs font-black uppercase tracking-wider text-slate-700">
+              İçerik Modülleri & Kart Tercihleri
+            </span>
+
+            <!-- Include Credentials Toggle -->
+            <div
+              class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
+              [ngClass]="mailTemplateForm.get('includeCredentials')?.value ? 'bg-indigo-50/40 border-indigo-200' : 'bg-white'">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-4.5">lock_open</mat-icon>
+                </div>
+                <div>
+                  <div class="text-xs sm:text-sm font-bold text-slate-900">Giriş ve Parola Bilgisi Kartı</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">
+                    Üyenin kayıtlı e-posta adresini ve oluşturulan ilk giriş parolasını korumalı bilgi kartı olarak ekler.
+                  </div>
+                </div>
+              </div>
+
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" formControlName="includeCredentials" class="sr-only peer" />
+                <div
+                  class="w-11 h-5.5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-indigo-600">
+                </div>
+              </label>
+            </div>
+
+            <!-- Include QR Code & Turnstile Info Toggle -->
+            <div
+              class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
+              [ngClass]="mailTemplateForm.get('includeQrCodeInfo')?.value ? 'bg-cyan-50/40 border-cyan-200' : 'bg-white'">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-4.5">qr_code_scanner</mat-icon>
+                </div>
+                <div>
+                  <div class="text-xs sm:text-sm font-bold text-slate-900">Turnike QR Kod & Mobil Geçiş Rehberi</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">
+                    Salona temassız geçiş için turnike QR okutma adımlarını ve mobil uygulama yönlendirme kartını ekler.
+                  </div>
+                </div>
+              </div>
+
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" formControlName="includeQrCodeInfo" class="sr-only peer" />
+                <div
+                  class="w-11 h-5.5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-cyan-600">
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. Mobile App / Portal URL -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-700">
+                Özel Mobil Uygulama / Web Giriş Linki (Opsiyonel)
+              </label>
+              <span class="text-[11px] text-slate-400 font-semibold">Buton hedef bağlantısı</span>
+            </div>
+            <div class="relative">
+              <mat-icon class="icon-size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2">link</mat-icon>
+              <input type="url" formControlName="mobileAppUrl"
+                placeholder="Örn: https://app.odivongym.com veya boş bırakınız"
+                class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all" />
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 mb-0">
+              Boş bırakırsanız sistemin varsayılan web portalı ve mobil erişim linki otomatik olarak yerleştirilir.
+            </p>
+          </div>
+
+          <!-- Form Footer Buttons -->
+          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+            <button type="button" (click)="resetMailTemplateToDefault()"
+              class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
+              <mat-icon class="icon-size-4 text-slate-400">restart_alt</mat-icon>
+              <span>Fabrika Ayarlarına Dön</span>
+            </button>
+
+            <button type="submit" [disabled]="isMailTemplateSaving()"
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-violet-600/20 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+              <mat-icon class="icon-size-4.5">{{ isMailTemplateSaving() ? 'hourglass_top' : 'save' }}</mat-icon>
+              <span>{{ isMailTemplateSaving() ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Column: Live Interactive Email Mockup (5 Cols) -->
+      <div class="xl:col-span-5 sticky top-6 space-y-4">
+        <!-- Mockup Container -->
+        <div class="bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-800 text-slate-100 font-sans">
+          <!-- Window Header (Mac-style dots + info) -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+              <span class="text-xs font-bold text-slate-400 ml-2">Canlı E-Posta Önizleme</span>
+            </div>
+            <span
+              class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+              [ngClass]="previewState().enabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'">
+              {{ previewState().enabled ? 'Aktif Şablon' : 'Pasif' }}
+            </span>
+          </div>
+
+          <!-- Email Meta Headers -->
+          <div class="space-y-1.5 text-xs pb-4 border-b border-slate-800 mb-4">
+            <div class="flex items-center gap-2 text-slate-400">
+              <span class="font-bold w-14 shrink-0 text-slate-500">Kimden:</span>
+              <span class="text-slate-300 truncate">Odivon GYM &lt;noreply&#64;odivon.com&gt;</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-400">
+              <span class="font-bold w-14 shrink-0 text-slate-500">Kime:</span>
+              <span class="text-slate-300 font-semibold truncate">Ahmet Yılmaz &lt;ahmet.yilmaz&#64;example.com&gt;</span>
+            </div>
+            <div class="flex items-start gap-2 text-slate-400 pt-1">
+              <span class="font-bold w-14 shrink-0 text-slate-500">Konu:</span>
+              <span class="text-white font-bold leading-snug break-words">
+                {{ renderedPreviewSubject() || 'Hoş Geldiniz!' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Email Body Card (Rich Dark Corporate Design) -->
+          <div class="bg-slate-950/80 rounded-2xl border border-slate-800 p-5 sm:p-6 space-y-5">
+            <!-- Brand & Club Banner -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-black text-white text-xs">
+                  OG
+                </div>
+                <div>
+                  <div class="text-xs font-black text-white tracking-wide">Odivon GYM & Fitness</div>
+                  <div class="text-[10px] text-slate-400 font-semibold">Resmi Üyelik Bildirimi</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                Yeni Üye
+              </span>
+            </div>
+
+            <!-- Email Content Header -->
+            <div>
+              <h4 class="text-base sm:text-lg font-black text-white m-0 leading-tight">
+                {{ renderedPreviewHeading() || 'Aramıza Hoş Geldiniz!' }}
+              </h4>
+              <p class="text-xs text-indigo-300 font-bold mt-1.5 mb-0">
+                Sayın Ahmet Yılmaz,
+              </p>
+            </div>
+
+            <!-- Custom Message Body -->
+            <div class="text-xs text-slate-300 leading-relaxed break-words whitespace-pre-line bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/60">
+              {{ renderedPreviewMessage() || 'Kulübümüze üyeliğiniz başarıyla tamamlanmıştır.' }}
+            </div>
+
+            <!-- Credentials Box (Conditional) -->
+            @if (previewState().includeCredentials) {
+            <div class="p-4 rounded-xl bg-gradient-to-br from-indigo-950/70 to-slate-900 border border-indigo-500/30 space-y-2.5">
+              <div class="flex items-center gap-2 text-indigo-400 text-xs font-bold">
+                <mat-icon class="icon-size-4">lock</mat-icon>
+                <span>Giriş Bilgileriniz</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-950/90 p-2.5 rounded-lg border border-slate-800">
+                  <span class="text-[10px] text-slate-500 block uppercase font-bold">E-Posta</span>
+                  <span class="font-bold text-slate-200 truncate block">ahmet.yilmaz&#64;example.com</span>
+                </div>
+                <div class="bg-slate-950/90 p-2.5 rounded-lg border border-slate-800">
+                  <span class="text-[10px] text-slate-500 block uppercase font-bold">Geçici Parola</span>
+                  <span class="font-mono font-black text-emerald-400 block tracking-wider">Pass1234!</span>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-400 mb-0">
+                * Güvenliğiniz için ilk girişinizin ardından şifrenizi profil ayarlarından güncelleyiniz.
+              </p>
+            </div>
+            }
+
+            <!-- Turnstile QR Box (Conditional) -->
+            @if (previewState().includeQrCodeInfo) {
+            <div class="p-4 rounded-xl bg-gradient-to-br from-cyan-950/60 to-slate-900 border border-cyan-500/30 space-y-3">
+              <div class="flex items-center gap-2 text-cyan-300 text-xs font-bold">
+                <mat-icon class="icon-size-4">qr_code_scanner</mat-icon>
+                <span>Temassız Turnike Geçişi & Mobil Uygulama</span>
+              </div>
+              <div class="flex items-center gap-3 bg-slate-950/90 p-3 rounded-lg border border-slate-800">
+                <div class="w-12 h-12 rounded-lg bg-white p-1 shrink-0 flex items-center justify-center">
+                  <mat-icon class="icon-size-8 text-slate-900">qr_code_2</mat-icon>
+                </div>
+                <div class="text-[11px] text-slate-300 leading-snug">
+                  Salonumuza girerken turnike üzerindeki okuyucuya mobil uygulamanızdaki <strong>QR Kodu</strong> göstererek saniyeler içinde geçiş yapabilirsiniz.
+                </div>
+              </div>
+              <div class="text-center pt-1">
+                <a href="javascript:void(0)"
+                  class="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 text-decoration-none pointer-events-none">
+                  <mat-icon class="icon-size-4">smartphone</mat-icon>
+                  <span>Mobil Uygulamayı Aç / İndir</span>
+                </a>
+              </div>
+            </div>
+            }
+
+            <!-- Email Footer -->
+            <div class="pt-3 border-t border-slate-800/80 text-[10px] text-slate-500 text-center space-y-1">
+              <div>© OdivonGYM · Odivon SaaS Spor Kulübü Otomasyonu</div>
+              <div>Bu mesaj üyeliğiniz kapsamında otomatik olarak iletilmiştir.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Tip Card -->
+        <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-start gap-3 text-xs text-indigo-900">
+          <mat-icon class="icon-size-5 text-indigo-600 shrink-0 mt-0.5">info</mat-icon>
+          <div class="leading-relaxed">
+            <strong>İpucu:</strong> Üye kayıt modalında parola girilmemiş olsa bile sistem otomatik olarak güvenli bir geçici şifre üretir ve üyeye bu şablona göre ulaştırır.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   }
 </div>
 

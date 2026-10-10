@@ -186,6 +186,36 @@
       "registerTitleHighlight": "comme des champions.",
       "registerTitle2": "",
       "registerSubtitle": "Configuration en 3 étapes : gestion des membres, disciplines, plannings et contrôle d'accès opérationnels immédiatement."
+    },
+    "verifyEmail": {
+      "pageTitle": "Vérification e-mail · OdivonGYM",
+      "verifyingTitle": "Vérification de votre e-mail",
+      "verifyingDesc": "Veuillez patienter pendant que nous activons votre compte...",
+      "successTitle": "E-mail vérifié avec succès ! 🎉",
+      "successDesc": "Félicitations ! Votre compte est activé. Vous pouvez maintenant vous connecter.",
+      "goToLogin": "Se connecter",
+      "errorTitle": "Échec de la vérification ⚠️",
+      "errorDesc": "Le lien de confirmation est invalide ou a expiré.",
+      "resendPrompt": "Vous pouvez demander un nouveau lien ci-dessous.",
+      "emailPlaceholder": "Votre adresse e-mail",
+      "resendButton": "Envoyer un nouveau lien",
+      "resending": "Envoi...",
+      "resendSuccess": "Un nouveau lien a été envoyé.",
+      "resendError": "Impossible d’envoyer le lien.",
+      "backToHome": "Retour à l’accueil"
+    },
+    "registerSuccess": {
+      "badge": "INSCRIPTION RÉUSSIE ✉️",
+      "title": "E-mail de vérification envoyé !",
+      "greeting": "Cher/Chère",
+      "desc": "nous avons envoyé un lien d’activation à",
+      "info1": "Veuillez vérifier votre boîte de réception et vos spams.",
+      "info2": "Cliquez sur le lien dans l’e-mail pour activer votre compte.",
+      "info3": "Une fois vérifié, vous pourrez vous connecter au tableau de bord.",
+      "resendButton": "Renvoyer l’e-mail de vérification",
+      "resending": "Envoi...",
+      "resendSuccess": "E-mail de vérification renvoyé !",
+      "loginButton": "Se connecter"
     }
   },
   "onboarding": {
@@ -805,7 +835,8 @@
     "generic": "Une erreur est survenue, veuillez réessayer.",
     "permissionDenied": "Vous n'avez pas l'autorisation pour cette action.",
     "invalidArgument": "Certaines informations saisies sont manquantes ou invalides.",
-    "unauthenticated": "Votre session a expiré, veuillez vous reconnecter."
+    "unauthenticated": "Votre session a expiré, veuillez vous reconnecter.",
+    "emailNotVerified": "Veuillez vérifier votre adresse e-mail pour vous connecter."
   },
   "trialExpired": {
     "titleCancelled": "Votre abonnement a été annulé",
@@ -830,7 +861,10 @@
     "needEmailFirst": "Entrez d'abord votre e-mail pour recevoir le lien de réinitialisation.",
     "resetLinkSent": "Un lien de réinitialisation a été envoyé à {{email}}.",
     "tooManyAttemptsWait": "Trop de tentatives infructueuses. Veuillez patienter {{seconds}} secondes.",
-    "lockedButton": "Veuillez patienter ({{seconds}}s)"
+    "lockedButton": "Veuillez patienter ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Votre compte n’est pas encore vérifié. Veuillez cliquer sur le lien envoyé par e-mail.",
+    "resendVerificationButton": "Renvoyer l’e-mail de confirmation",
+    "verificationSent": "L’e-mail de vérification a été renvoyé."
   },
   "exitPayments": {
     "title": "Paiements à la sortie",

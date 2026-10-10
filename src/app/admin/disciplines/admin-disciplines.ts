@@ -35,8 +35,21 @@ import { StockCategoryItem } from '../../core/models/stock-category.model';
 import { ShopProduct } from '../../core/models/shop-product.model';
 import { DocumentDefinitionsService } from '../../core/services/document-definitions.service';
 import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
+import { GymApi } from '../../core/api/gym.api';
+import {
+  GymMailTemplate,
+  DEFAULT_MEMBER_MAIL_TEMPLATE,
+  MAIL_TEMPLATE_VARIABLES,
+  MailTemplateVariable,
+} from '../../core/models/gym-mail-template.model';
 
-export type DisciplinesTab = 'disciplines' | 'muscles' | 'equipment' | 'facilities' | 'stock_categories';
+export type DisciplinesTab =
+  | 'disciplines'
+  | 'muscles'
+  | 'equipment'
+  | 'facilities'
+  | 'stock_categories'
+  | 'mail_template';
 
 export interface MuscleGroupDetail {
   key: MuscleGroup;
@@ -129,11 +142,60 @@ export class AdminDisciplines {
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
   private readonly route = inject(ActivatedRoute);
+  private readonly gymApi = inject(GymApi);
   protected readonly docDefsService = inject(DocumentDefinitionsService);
   protected readonly showDocDefsModal = signal(false);
 
   protected readonly activeTab = signal<DisciplinesTab>('disciplines');
   protected readonly muscleDetails = MUSCLE_DETAILS;
+
+  // Mail Template UI state
+  protected readonly mailTemplate = signal<GymMailTemplate>(DEFAULT_MEMBER_MAIL_TEMPLATE);
+  protected readonly isMailTemplateLoading = signal(false);
+  protected readonly isMailTemplateSaving = signal(false);
+  protected readonly mailTemplateLoaded = signal(false);
+  protected readonly mailTemplateVariables = MAIL_TEMPLATE_VARIABLES;
+
+  protected readonly mailTemplateForm: FormGroup = this.fb.group({
+    enabled: [true],
+    subject: ['', [Validators.required, Validators.minLength(3)]],
+    heading: ['', [Validators.required, Validators.minLength(2)]],
+    customMessage: [''],
+    includeCredentials: [true],
+    includeQrCodeInfo: [true],
+    mobileAppUrl: [''],
+  });
+
+  // Reaktif Canlı Önizleme Durumu
+  protected readonly previewState = signal<{
+    enabled: boolean;
+    subject: string;
+    heading: string;
+    customMessage: string;
+    includeCredentials: boolean;
+    includeQrCodeInfo: boolean;
+    mobileAppUrl: string;
+  }>({
+    enabled: DEFAULT_MEMBER_MAIL_TEMPLATE.enabled,
+    subject: DEFAULT_MEMBER_MAIL_TEMPLATE.subject,
+    heading: DEFAULT_MEMBER_MAIL_TEMPLATE.heading,
+    customMessage: DEFAULT_MEMBER_MAIL_TEMPLATE.customMessage || '',
+    includeCredentials: DEFAULT_MEMBER_MAIL_TEMPLATE.includeCredentials,
+    includeQrCodeInfo: DEFAULT_MEMBER_MAIL_TEMPLATE.includeQrCodeInfo,
+    mobileAppUrl: DEFAULT_MEMBER_MAIL_TEMPLATE.mobileAppUrl || '',
+  });
+
+  protected readonly renderedPreviewSubject = computed(() => {
+    return this.applyPreviewPlaceholders(this.previewState().subject);
+  });
+
+  protected readonly renderedPreviewHeading = computed(() => {
+    return this.applyPreviewPlaceholders(this.previewState().heading);
+  });
+
+  protected readonly renderedPreviewMessage = computed(() => {
+    return this.applyPreviewPlaceholders(this.previewState().customMessage);
+  });
 
   // Live signals from Firestore
   protected readonly disciplines = toSignal(this.disciplinesService.watchDisciplines(), {
@@ -274,17 +336,30 @@ export class AdminDisciplines {
   constructor() {
     const tabParam = this.route.snapshot.queryParamMap.get('tab') as DisciplinesTab;
     const url = this.route.snapshot.url.map((s) => s.path).join('/');
-    if (tabParam && ['disciplines', 'muscles', 'equipment', 'facilities', 'stock_categories'].includes(tabParam)) {
+    if (
+      tabParam &&
+      ['disciplines', 'muscles', 'equipment', 'facilities', 'stock_categories', 'mail_template'].includes(tabParam)
+    ) {
       this.activeTab.set(tabParam);
+      if (tabParam === 'mail_template') {
+        this.loadMailTemplate();
+      }
+    } else if (url.includes('mail-template')) {
+      this.activeTab.set('mail_template');
+      this.loadMailTemplate();
     } else if (url.includes('stock-categories')) {
       this.activeTab.set('stock_categories');
     } else if (url.includes('definitions')) {
       this.activeTab.set('muscles');
     }
+    this.setupMailTemplateFormWatcher();
   }
 
   setTab(tab: DisciplinesTab): void {
     this.activeTab.set(tab);
+    if (tab === 'mail_template' && !this.mailTemplateLoaded()) {
+      this.loadMailTemplate();
+    }
   }
 
   // ==========================================
@@ -758,5 +833,138 @@ export class AdminDisciplines {
     } catch {
       this.alertService.toastError('Kategoriler oluşturulamadı.');
     }
+  }
+
+  // ==========================================
+  // MAIL TEMPLATE ACTIONS & PREVIEW
+  // ==========================================
+
+  private setupMailTemplateFormWatcher(): void {
+    this.mailTemplateForm.valueChanges.subscribe((vals) => {
+      this.previewState.set({
+        enabled: vals.enabled !== false,
+        subject: vals.subject || '',
+        heading: vals.heading || '',
+        customMessage: vals.customMessage || '',
+        includeCredentials: vals.includeCredentials !== false,
+        includeQrCodeInfo: vals.includeQrCodeInfo !== false,
+        mobileAppUrl: vals.mobileAppUrl || '',
+      });
+    });
+  }
+
+  private applyPreviewPlaceholders(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/{{memberName}}/g, 'Ahmet Yılmaz')
+      .replace(/{{tenantName}}/g, 'Odivon GYM & Fitness')
+      .replace(/{{email}}/g, 'ahmet.yilmaz@example.com')
+      .replace(/{{password}}/g, 'Pass1234!')
+      .replace(/{{memberNumber}}/g, 'MEM-00142')
+      .replace(/{{appUrl}}/g, 'https://app.odivongym.com')
+      .replace(/{{loginUrl}}/g, 'https://app.odivongym.com/login');
+  }
+
+  loadMailTemplate(): void {
+    this.isMailTemplateLoading.set(true);
+    this.gymApi.getMailTemplate().subscribe({
+      next: (tpl) => {
+        const data = tpl || DEFAULT_MEMBER_MAIL_TEMPLATE;
+        this.mailTemplate.set(data);
+        this.mailTemplateForm.patchValue({
+          enabled: data.enabled !== false,
+          subject: data.subject || DEFAULT_MEMBER_MAIL_TEMPLATE.subject,
+          heading: data.heading || DEFAULT_MEMBER_MAIL_TEMPLATE.heading,
+          customMessage: data.customMessage ?? DEFAULT_MEMBER_MAIL_TEMPLATE.customMessage,
+          includeCredentials: data.includeCredentials !== false,
+          includeQrCodeInfo: data.includeQrCodeInfo !== false,
+          mobileAppUrl: data.mobileAppUrl || '',
+        });
+        this.previewState.set({
+          enabled: data.enabled !== false,
+          subject: data.subject || DEFAULT_MEMBER_MAIL_TEMPLATE.subject,
+          heading: data.heading || DEFAULT_MEMBER_MAIL_TEMPLATE.heading,
+          customMessage: data.customMessage ?? DEFAULT_MEMBER_MAIL_TEMPLATE.customMessage ?? '',
+          includeCredentials: data.includeCredentials !== false,
+          includeQrCodeInfo: data.includeQrCodeInfo !== false,
+          mobileAppUrl: data.mobileAppUrl || '',
+        });
+        this.mailTemplateLoaded.set(true);
+        this.isMailTemplateLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Mail şablonu yüklenemedi:', err);
+        this.mailTemplateForm.patchValue(DEFAULT_MEMBER_MAIL_TEMPLATE);
+        this.mailTemplateLoaded.set(true);
+        this.isMailTemplateLoading.set(false);
+      },
+    });
+  }
+
+  saveMailTemplate(): void {
+    if (this.mailTemplateForm.invalid) {
+      this.mailTemplateForm.markAllAsTouched();
+      this.alertService.toastError('Lütfen şablon için zorunlu alanları doldurunuz.');
+      return;
+    }
+
+    this.isMailTemplateSaving.set(true);
+    const formVal = this.mailTemplateForm.value;
+    const payload: Partial<GymMailTemplate> = {
+      enabled: formVal.enabled !== false,
+      subject: formVal.subject?.trim(),
+      heading: formVal.heading?.trim(),
+      customMessage: formVal.customMessage?.trim() || '',
+      includeCredentials: formVal.includeCredentials !== false,
+      includeQrCodeInfo: formVal.includeQrCodeInfo !== false,
+      mobileAppUrl: formVal.mobileAppUrl?.trim() || '',
+    };
+
+    this.gymApi.updateMailTemplate(payload).subscribe({
+      next: (updated) => {
+        this.mailTemplate.set(updated);
+        this.isMailTemplateSaving.set(false);
+        this.mailTemplateForm.markAsPristine();
+        this.snackBar.open('Hoş Geldin e-posta şablonu başarıyla kaydedildi.', 'Kapat', {
+          duration: 3500,
+          horizontalPosition: 'end',
+          verticalPosition: 'bottom',
+        });
+      },
+      error: (err) => {
+        this.isMailTemplateSaving.set(false);
+        console.error('Mail şablonu kaydedilemedi:', err);
+        this.alertService.toastError('E-posta şablonu güncellenirken bir hata oluştu.');
+      },
+    });
+  }
+
+  async resetMailTemplateToDefault(): Promise<void> {
+    const ok = await this.alertService.actionConfirm(
+      'Şablonu Sıfırla',
+      'E-posta şablonunu sistem varsayılan ayarlarına döndürmek istediğinize emin misiniz? Değişiklikleri kalıcı yapmak için ardından Kaydet butonuna basmanız gerekmektedir.',
+      'Varsayılana Sıfırla',
+      'warning',
+    );
+    if (!ok) return;
+
+    this.mailTemplateForm.patchValue({
+      enabled: DEFAULT_MEMBER_MAIL_TEMPLATE.enabled,
+      subject: DEFAULT_MEMBER_MAIL_TEMPLATE.subject,
+      heading: DEFAULT_MEMBER_MAIL_TEMPLATE.heading,
+      customMessage: DEFAULT_MEMBER_MAIL_TEMPLATE.customMessage,
+      includeCredentials: DEFAULT_MEMBER_MAIL_TEMPLATE.includeCredentials,
+      includeQrCodeInfo: DEFAULT_MEMBER_MAIL_TEMPLATE.includeQrCodeInfo,
+      mobileAppUrl: '',
+    });
+    this.mailTemplateForm.markAsDirty();
+    this.alertService.toastSuccess('Şablon varsayılan ayarlara sıfırlandı.');
+  }
+
+  insertVariableIntoField(field: 'subject' | 'heading' | 'customMessage', variableKey: string): void {
+    const currentVal = (this.mailTemplateForm.get(field)?.value || '') as string;
+    const newVal = currentVal ? `${currentVal} ${variableKey}` : variableKey;
+    this.mailTemplateForm.get(field)?.setValue(newVal);
+    this.mailTemplateForm.get(field)?.markAsDirty();
   }
 }

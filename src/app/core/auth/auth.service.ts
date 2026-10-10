@@ -145,7 +145,7 @@ export class AuthService {
     country: string;
     phone: string;
     language: string;
-  }): Promise<void> {
+  }): Promise<{ email: string; displayName: string; tenantName: string }> {
     await firstValueFrom(
       this.identity.register({
         email: input.email,
@@ -156,13 +156,33 @@ export class AuthService {
         phone: input.phone,
       }),
     );
-    await this.signInWithEmail(input.email, input.password, true);
+    return {
+      email: input.email,
+      displayName: input.displayName,
+      tenantName: input.tenantName,
+    };
   }
 
   async signInWithEmail(email: string, password: string, remember = true): Promise<void> {
     this.ready.set(false);
     await setPersistence(this.auth, remember ? browserLocalPersistence : browserSessionPersistence);
-    await signInWithEmailAndPassword(this.auth, email, password);
+    const credential = await signInWithEmailAndPassword(this.auth, email, password);
+
+    // E-posta doğrulama kontrolü: Doğrulanmamış hesaplar için oturum sonlandırılır.
+    if (!credential.user.emailVerified) {
+      await credential.user.reload();
+      if (!this.auth.currentUser?.emailVerified) {
+        await signOut(this.auth);
+        this.firebaseUser.set(null);
+        this.userProfile.set(null);
+        this.markReady();
+        const err = new Error('auth/email-not-verified');
+        (err as { code?: string; email?: string }).code = 'auth/email-not-verified';
+        (err as { code?: string; email?: string }).email = email;
+        throw err;
+      }
+    }
+
     await this.waitUntilReady();
   }
 

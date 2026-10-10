@@ -109,3 +109,27 @@ npm test src/modules/identity/identity.service.spec.ts
 # NestJS build kontrolü
 npm run build
 ```
+
+---
+
+## 7. Yeni Üye Karşılama E-Postası (Member Welcome Email)
+
+Yeni bir spor salonu üyesi (`UserProfile`, `GymMember`) sisteme kaydedildiğinde:
+1. Üyenin `email` adresi doluysa sistem otomatik olarak devreye girer.
+2. Kulübün Tanımlamalar (`/admin/definitions?tab=mail_template`) altında belirlediği **Hoş Geldin E-Posta Şablonu** çekilir.
+3. Şablon etkinse (`enabled: true`):
+   - **Kulüp / Salon Adı:** Üyenin kaydolduğu işletmenin adı (`tenantName`).
+   - **Giriş Bilgileri Kartı:** `includeCredentials` açık ise üyenin e-posta adresi ve geçici giriş parolası.
+   - **Turnike QR Geçiş Kartı:** `includeQrCodeInfo` açık ise salona girişte turnikelerdeki temassız QR geçiş adımları ve mobil uygulama linki (`mobileAppUrl` veya `APP_URL`).
+   - **Dinamik Değişkenler:** `{{memberName}}`, `{{tenantName}}`, `{{email}}`, `{{password}}`, `{{memberNumber}}`, `{{appUrl}}`, `{{loginUrl}}`.
+
+### Şablon Yönetimi (Frontend - /admin/definitions):
+- **Arayüz Konumu:** `/admin/definitions` -> **"Hoş Geldin E-Posta Şablonu"** sekmesi.
+- **Özellikler:**
+  - Canlı reaktif e-posta önizlemesi (Live Email Mockup Preview).
+  - Otomatik gönderim Açık/Kapalı toggle.
+  - E-posta konusu (`subject`), Karşılama başlığı (`heading`), Özel mesaj (`customMessage`).
+  - Şifre & QR kod geçiş kartı görünürlük tercihleri.
+  - Tek tıkla değişken ekleme çipleri.
+  - Sistem fabrika varsayılan ayarlarına sıfırlama seçeneği.
+

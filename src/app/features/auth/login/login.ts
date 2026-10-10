@@ -16,6 +16,9 @@ import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 import { CookieService } from '../../../core/services/cookie.service';
 
+import { firstValueFrom } from 'rxjs';
+import { IdentityApi } from '../../../core/api/identity.api';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -38,6 +41,7 @@ import { CookieService } from '../../../core/services/cookie.service';
 export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly identity = inject(IdentityApi);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
@@ -62,18 +66,22 @@ export class Login {
 
   readonly submitting = signal(false);
   readonly resettingPassword = signal(false);
+  readonly resendingVerification = signal(false);
   readonly errorMessage = signal('');
+  readonly unverifiedEmail = signal<string | null>(null);
   readonly failedAttempts = signal(0);
   readonly lockSecondsLeft = signal(0);
   private lockTimer: ReturnType<typeof setInterval> | null = null;
 
-  /** Neden yeniden giriş istendiğini anlatır: sürüm güncellemesi ya da süresi dolan oturum. */
+  /** Neden yeniden giriş istendiğini veya doğrulama durumunu anlatır. */
   readonly infoMessage = signal(
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('updated')
-      ? 'Panel yeni sürüme güncellendi. Güvenliğiniz için lütfen yeniden giriş yapın.'
-      : this.auth.sessionExpired()
-        ? 'Oturum süreniz (30 gün) doldu. Lütfen yeniden giriş yapın.'
-        : '',
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('verified')
+      ? 'E-posta adresiniz başarıyla doğrulandı! Şimdi giriş yapabilirsiniz.'
+      : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('updated')
+        ? 'Panel yeni sürüme güncellendi. Güvenliğiniz için lütfen yeniden giriş yapın.'
+        : this.auth.sessionExpired()
+          ? 'Oturum süreniz (30 gün) doldu. Lütfen yeniden giriş yapın.'
+          : '',
   );
   readonly hidePassword = signal(true);
 
@@ -116,6 +124,7 @@ export class Login {
       return;
     }
     this.errorMessage.set('');
+    this.unverifiedEmail.set(null);
     this.submitting.set(true);
     try {
       const { email, password, rememberMe } = this.form.getRawValue();
@@ -133,17 +142,47 @@ export class Login {
 
       await this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
-      const attempts = this.failedAttempts() + 1;
-      this.failedAttempts.set(attempts);
-      if (attempts >= 5) {
-        this.startLockout(30);
+      const errCode = (error as { code?: string })?.code;
+      if (errCode === 'auth/email-not-verified') {
+        const email = (error as { email?: string })?.email || this.form.controls.email.value;
+        this.unverifiedEmail.set(email);
+        this.errorMessage.set(this.transloco.translate('loginExtra.emailNotVerifiedAlert'));
       } else {
-        this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
+        const attempts = this.failedAttempts() + 1;
+        this.failedAttempts.set(attempts);
+        if (attempts >= 5) {
+          this.startLockout(30);
+        } else {
+          this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
+        }
       }
     } finally {
       this.submitting.set(false);
     }
   }
+
+  async resendVerificationEmail(): Promise<void> {
+    const email = this.unverifiedEmail() || this.form.controls.email.value.trim();
+    if (!email || this.resendingVerification()) return;
+    this.resendingVerification.set(true);
+    try {
+      await firstValueFrom(this.identity.resendVerification(email));
+      this.snackBar.open(
+        this.transloco.translate('loginExtra.verificationSent'),
+        this.transloco.translate('common.close'),
+        { duration: 4500 },
+      );
+    } catch {
+      this.snackBar.open(
+        this.transloco.translate('auth.verifyEmail.resendError'),
+        this.transloco.translate('common.close'),
+        { duration: 4000 },
+      );
+    } finally {
+      this.resendingVerification.set(false);
+    }
+  }
+
 
   private startLockout(seconds: number): void {
     if (this.lockTimer) {

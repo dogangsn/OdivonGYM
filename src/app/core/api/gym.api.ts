@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { GymBranch } from '../models/gym-branch.model';
 import { GymInfo } from '../models/gym-info.model';
+import { GymMailTemplate } from '../models/gym-mail-template.model';
 import { GymPackage } from '../models/gym-package.model';
 import { StaffMember } from '../models/staff.model';
 import { UserProfile } from '../models/user-profile.model';
@@ -109,6 +110,14 @@ export class GymApi {
 
   completeOnboarding(body: unknown) {
     return this.api.post('/gym/onboarding/complete', body).pipe(map((r) => r.data));
+  }
+
+  getMailTemplate() {
+    return this.api.get<GymMailTemplate>('/gym/mail-template').pipe(map((r) => r.data));
+  }
+
+  updateMailTemplate(body: Partial<GymMailTemplate>) {
+    return this.api.put<GymMailTemplate>('/gym/mail-template', body).pipe(map((r) => r.data));
   }
 }
 
