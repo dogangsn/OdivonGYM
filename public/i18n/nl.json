@@ -762,6 +762,8 @@
     "closeTimeLabel": "Sluitingstijd *",
     "phoneLabel": "Contacttelefoon *",
     "cityLabel": "Stad *",
+    "selectCity": "Selecteer stad",
+    "selectCountry": "Landcode",
     "addressLabel": "Adres sportschool *",
     "step2Badge": "Stap 2",
     "step2Title": "Eerste vestiging & Faciliteiten",

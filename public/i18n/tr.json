@@ -763,6 +763,8 @@
     "closeTimeLabel": "Kapanış Saati *",
     "phoneLabel": "İletişim Telefonu *",
     "cityLabel": "Şehir *",
+    "selectCity": "Şehir Seçiniz",
+    "selectCountry": "Ülke Kodu Seç",
     "addressLabel": "Salon Adresi *",
     "step2Badge": "2. Adım",
     "step2Title": "İlk Şubeniz & Tesis Olanakları",

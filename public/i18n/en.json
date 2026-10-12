@@ -764,6 +764,8 @@
     "closeTimeLabel": "Closing Time *",
     "phoneLabel": "Contact Phone *",
     "cityLabel": "City *",
+    "selectCity": "Select City",
+    "selectCountry": "Select Country Code",
     "addressLabel": "Gym Address *",
     "step2Badge": "Step 2",
     "step2Title": "First Branch & Facilities",

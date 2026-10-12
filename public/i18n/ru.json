@@ -762,6 +762,8 @@
     "closeTimeLabel": "Время закрытия *",
     "phoneLabel": "Контактный телефон *",
     "cityLabel": "Город *",
+    "selectCity": "Выберите город",
+    "selectCountry": "Код страны",
     "addressLabel": "Адрес клуба *",
     "step2Badge": "Шаг 2",
     "step2Title": "Первый филиал и удобства",

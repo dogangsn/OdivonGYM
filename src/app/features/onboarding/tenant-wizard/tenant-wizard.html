@@ -206,23 +206,53 @@
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                   {{ 'tenantWizard.phoneLabel' | transloco }}
                 </label>
-                <input
-                  type="tel"
-                  formControlName="phone"
-                  placeholder="+90 216 450 1020"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
-                />
+                <div class="relative flex items-center rounded-xl bg-slate-900/80 border border-slate-700 focus-within:border-indigo-500 transition-all shadow-2xs overflow-hidden">
+                  <div class="relative flex items-center shrink-0 border-r border-slate-700 bg-slate-800/50 pl-3 pr-2 py-2.5 cursor-pointer hover:bg-slate-800/80 transition-colors">
+                    <span class="font-mono text-xs font-bold text-indigo-400 mr-1 select-none">
+                      {{ gymDialCode() }}
+                    </span>
+                    <mat-icon class="text-slate-400 icon-size-3.5 pointer-events-none">expand_more</mat-icon>
+                    <select
+                      [value]="gymCountryCode()"
+                      (change)="gymCountryCode.set($any($event.target).value)"
+                      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      [title]="'tenantWizard.selectCountry' | transloco"
+                    >
+                      @for (c of countries; track c.code) {
+                        <option [value]="c.code" class="bg-slate-900 text-white font-sans">
+                          {{ c.name }} ({{ c.dialCode }})
+                        </option>
+                      }
+                    </select>
+                  </div>
+                  <input
+                    type="tel"
+                    formControlName="phone"
+                    placeholder="539 853 33 01"
+                    class="w-full px-3.5 py-2.5 bg-transparent border-none outline-none text-sm text-white placeholder-slate-500"
+                  />
+                </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                   {{ 'tenantWizard.cityLabel' | transloco }}
                 </label>
-                <input
-                  type="text"
-                  formControlName="city"
-                  placeholder="İstanbul"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
-                />
+                <div class="relative flex items-center rounded-xl bg-slate-900/80 border border-slate-700 focus-within:border-indigo-500 transition-all shadow-2xs">
+                  <select
+                    formControlName="city"
+                    class="w-full px-3.5 py-2.5 text-sm bg-transparent text-white focus:outline-none appearance-none cursor-pointer pr-10"
+                  >
+                    <option value="" disabled class="bg-slate-900 text-slate-400">
+                      {{ 'tenantWizard.selectCity' | transloco }}
+                    </option>
+                    @for (city of cities; track city) {
+                      <option [value]="city" class="bg-slate-900 text-white">
+                        {{ city }}
+                      </option>
+                    }
+                  </select>
+                  <mat-icon class="absolute right-3 text-slate-400 icon-size-4 pointer-events-none">expand_more</mat-icon>
+                </div>
               </div>
             </div>
 
@@ -281,11 +311,32 @@
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                   {{ 'tenantWizard.branchPhoneLabel' | transloco }}
                 </label>
-                <input
-                  type="tel"
-                  formControlName="branchPhone"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
-                />
+                <div class="relative flex items-center rounded-xl bg-slate-900/80 border border-slate-700 focus-within:border-indigo-500 transition-all shadow-2xs overflow-hidden">
+                  <div class="relative flex items-center shrink-0 border-r border-slate-700 bg-slate-800/50 pl-3 pr-2 py-2.5 cursor-pointer hover:bg-slate-800/80 transition-colors">
+                    <span class="font-mono text-xs font-bold text-indigo-400 mr-1 select-none">
+                      {{ branchDialCode() }}
+                    </span>
+                    <mat-icon class="text-slate-400 icon-size-3.5 pointer-events-none">expand_more</mat-icon>
+                    <select
+                      [value]="branchCountryCode()"
+                      (change)="branchCountryCode.set($any($event.target).value)"
+                      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      [title]="'tenantWizard.selectCountry' | transloco"
+                    >
+                      @for (c of countries; track c.code) {
+                        <option [value]="c.code" class="bg-slate-900 text-white font-sans">
+                          {{ c.name }} ({{ c.dialCode }})
+                        </option>
+                      }
+                    </select>
+                  </div>
+                  <input
+                    type="tel"
+                    formControlName="branchPhone"
+                    placeholder="216 450 10 20"
+                    class="w-full px-3.5 py-2.5 bg-transparent border-none outline-none text-sm text-white placeholder-slate-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -373,12 +424,32 @@
                 <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                   {{ 'tenantWizard.trainerPhoneLabel' | transloco }}
                 </label>
-                <input
-                  type="tel"
-                  formControlName="phone"
-                  placeholder="+90 532 000 00 00"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white text-sm focus:border-indigo-500 outline-none"
-                />
+                <div class="relative flex items-center rounded-xl bg-slate-900/80 border border-slate-700 focus-within:border-indigo-500 transition-all shadow-2xs overflow-hidden">
+                  <div class="relative flex items-center shrink-0 border-r border-slate-700 bg-slate-800/50 pl-3 pr-2 py-2.5 cursor-pointer hover:bg-slate-800/80 transition-colors">
+                    <span class="font-mono text-xs font-bold text-indigo-400 mr-1 select-none">
+                      {{ trainerDialCode() }}
+                    </span>
+                    <mat-icon class="text-slate-400 icon-size-3.5 pointer-events-none">expand_more</mat-icon>
+                    <select
+                      [value]="trainerCountryCode()"
+                      (change)="trainerCountryCode.set($any($event.target).value)"
+                      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      [title]="'tenantWizard.selectCountry' | transloco"
+                    >
+                      @for (c of countries; track c.code) {
+                        <option [value]="c.code" class="bg-slate-900 text-white font-sans">
+                          {{ c.name }} ({{ c.dialCode }})
+                        </option>
+                      }
+                    </select>
+                  </div>
+                  <input
+                    type="tel"
+                    formControlName="phone"
+                    placeholder="532 000 00 00"
+                    class="w-full px-3.5 py-2.5 bg-transparent border-none outline-none text-sm text-white placeholder-slate-500"
+                  />
+                </div>
               </div>
             </div>
 

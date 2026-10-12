@@ -762,6 +762,8 @@
     "closeTimeLabel": "Heure de fermeture *",
     "phoneLabel": "Téléphone de contact *",
     "cityLabel": "Ville *",
+    "selectCity": "Sélectionnez une ville",
+    "selectCountry": "Indicatif pays",
     "addressLabel": "Adresse du club *",
     "step2Badge": "Étape 2",
     "step2Title": "Première succursale & Équipements",
