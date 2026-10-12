@@ -1,5 +1,6 @@
 {
   "common": {
+    "success": "Success",
     "or": "or",
     "close": "Close",
     "logout": "Log Out",
@@ -188,6 +189,8 @@
       "registerSubtitle": "Complete setup in 3 quick steps: member tracking, sports disciplines, training schedules, and smart turnstiles ready from day one."
     },
     "verifyEmail": {
+      "badgeSuccess": "Account Verified",
+      "startSetup": "Start Setup",
       "pageTitle": "Email Verification · OdivonGYM",
       "verifyingTitle": "Verifying Your Email",
       "verifyingDesc": "Please wait while we activate your account...",

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -8,6 +8,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Auth, applyActionCode } from '@angular/fire/auth';
 import { firstValueFrom } from 'rxjs';
 import { IdentityApi } from '../../../core/api/identity.api';
+import { AuthService } from '../../../core/auth/auth.service';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 
 type VerificationState = 'loading' | 'success' | 'error' | 'idle';
@@ -32,6 +33,7 @@ export class VerifyEmail implements OnInit {
   private readonly router = inject(Router);
   private readonly identity = inject(IdentityApi);
   private readonly auth = inject(Auth);
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
@@ -41,6 +43,7 @@ export class VerifyEmail implements OnInit {
   readonly errorMessage = signal<string>('');
   readonly resending = signal(false);
   readonly currentYear = new Date().getFullYear();
+  readonly isLoggedIn = computed(() => Boolean(this.authService.profile()));
 
   readonly resendForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

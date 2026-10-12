@@ -1,5 +1,6 @@
 {
   "common": {
+    "success": "Başarılı",
     "or": "veya",
     "close": "Kapat",
     "logout": "Çıkış Yap",
@@ -188,6 +189,8 @@
       "registerSubtitle": "Kurulumunu 3 adımda tamamla; üye takibi, spor branşları, antrenman takvimleri ve akıllı turnike kontrolünü hemen kullanmaya başla."
     },
     "verifyEmail": {
+      "badgeSuccess": "Hesap Doğrulandı",
+      "startSetup": "Kuruluma Başla",
       "pageTitle": "E-Posta Doğrulama · OdivonGYM",
       "verifyingTitle": "E-Posta Adresiniz Doğrulanıyor",
       "verifyingDesc": "Lütfen bekleyin, hesabınız aktifleştiriliyor...",

@@ -17,7 +17,8 @@
     "passive": "Inactief",
     "yes": "Ja",
     "no": "Nee",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "success": "Succes"
   },
   "cookieConsent": {
     "badge": "Privacy & Cookiebeveiliging",
@@ -202,7 +203,9 @@
       "resending": "Verzenden...",
       "resendSuccess": "Er is een nieuwe verificatielink verzonden.",
       "resendError": "Kon verificatielink niet verzenden.",
-      "backToHome": "Terug naar startpagina"
+      "backToHome": "Terug naar startpagina",
+      "badgeSuccess": "Account Geverifieerd",
+      "startSetup": "Start Setup"
     },
     "registerSuccess": {
       "badge": "REGISTRATIE VOLTOOID ✉️",

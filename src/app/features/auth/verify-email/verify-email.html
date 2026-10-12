@@ -55,7 +55,8 @@
 
           <div>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 mb-2">
-              {{ 'common.success' | transloco }}
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              {{ 'auth.verifyEmail.badgeSuccess' | transloco }}
             </span>
             <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
               {{ 'auth.verifyEmail.successTitle' | transloco }}
@@ -64,20 +65,31 @@
               {{ 'auth.verifyEmail.successDesc' | transloco }}
             </p>
             @if (verifiedEmail()) {
-              <div class="mt-3 inline-block px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono">
-                {{ verifiedEmail() }}
+              <div class="mt-3.5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-medium tracking-normal shadow-2xs">
+                <mat-icon class="icon-size-3.5 text-slate-400">alternate_email</mat-icon>
+                <span>{{ verifiedEmail() }}</span>
               </div>
             }
           </div>
 
-          <a
-            routerLink="/auth/login"
-            [queryParams]="{ verified: 'true' }"
-            class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer no-underline"
-          >
-            <span>{{ 'auth.verifyEmail.goToLogin' | transloco }}</span>
-            <mat-icon class="icon-size-4">arrow_forward</mat-icon>
-          </a>
+          @if (isLoggedIn()) {
+            <a
+              routerLink="/onboarding/wizard"
+              class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer no-underline"
+            >
+              <span>{{ 'auth.verifyEmail.startSetup' | transloco }}</span>
+              <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+            </a>
+          } @else {
+            <a
+              routerLink="/auth/login"
+              [queryParams]="{ verified: 'true' }"
+              class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer no-underline"
+            >
+              <span>{{ 'auth.verifyEmail.goToLogin' | transloco }}</span>
+              <mat-icon class="icon-size-4">arrow_forward</mat-icon>
+            </a>
+          }
         </div>
       }
 

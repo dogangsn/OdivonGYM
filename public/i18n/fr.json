@@ -17,7 +17,8 @@
     "passive": "Inactif",
     "yes": "Oui",
     "no": "Non",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "success": "Succès"
   },
   "cookieConsent": {
     "badge": "Confidentialité & Cookies",
@@ -202,7 +203,9 @@
       "resending": "Envoi...",
       "resendSuccess": "Un nouveau lien a été envoyé.",
       "resendError": "Impossible d’envoyer le lien.",
-      "backToHome": "Retour à l’accueil"
+      "backToHome": "Retour à l’accueil",
+      "badgeSuccess": "Compte Vérifié",
+      "startSetup": "Démarrer la configuration"
     },
     "registerSuccess": {
       "badge": "INSCRIPTION RÉUSSIE ✉️",
