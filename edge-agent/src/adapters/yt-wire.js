@@ -76,9 +76,17 @@ function parseLogPage(res) {
 /** Ham log kaydı → sözleşmedeki alanlar. */
 function readLogRecord(raw) {
   const io = raw.ioMode == null ? null : Number(raw.ioMode);
+  const isCardMode = raw.verifyMode === 'card' || raw.verifyMode === 1;
+  const card =
+    raw.card != null && raw.card !== ''
+      ? String(raw.card)
+      : isCardMode && raw.userId && !raw.name
+        ? String(raw.userId)
+        : null;
+  const userId = isCardMode && card === String(raw.userId) ? null : raw.userId != null && raw.userId !== '' ? String(raw.userId) : null;
   return {
-    userId: raw.userId != null && raw.userId !== '' ? String(raw.userId) : null,
-    card: raw.card != null && raw.card !== '' ? String(raw.card) : null,
+    userId,
+    card,
     time: raw.time ?? null,
     verifyMode: raw.verifyMode ?? null,
     ioMode: io,

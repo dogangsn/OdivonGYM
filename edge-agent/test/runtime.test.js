@@ -164,3 +164,40 @@ test('heartbeat cihaz erişilebilirliğini ve kuyruk derinliğini bildirir', asy
     { gateId: 'g1', reachable: true, queueDepth: 0 },
   );
 });
+
+test('flushOnTick false iken tick olayları göndermez, flushEvents gönderir', async (t) => {
+  const { dev, store, api, runtime } = await setup(t);
+  runtime.flushOnTick = false;
+  await runtime.tick();
+  dev.addLogs(10, istanbulToday());
+  await runtime.tick();
+  assert.equal(store.queueDepth(), 10);
+  assert.equal(api.logs.size, 0);
+
+  await runtime.flushEvents();
+  assert.equal(store.queueDepth(), 0);
+  assert.equal(api.logs.size, 10);
+});
+
+test('tanımsız kart okutulduğunda flushOnTick false olsa bile anında MainApiye gönderilir', async (t) => {
+  const { dev, store, api, runtime } = await setup(t);
+  runtime.flushOnTick = false;
+  await runtime.tick();
+
+  // Tanımsız bir kart kaydı ekle (userId yok, card var)
+  dev.state.logs.push({
+    time: `${istanbulToday()}120000`,
+    userId: null,
+    card: '0004928172',
+    verifyMode: 'card',
+    ioMode: 0,
+  });
+
+  await runtime.tick();
+  assert.equal(store.queueDepth(), 0);
+  assert.equal(api.logs.size, 1);
+  const sent = [...api.logs.values()][0];
+  assert.equal(sent.card, '0004928172');
+});
+
+

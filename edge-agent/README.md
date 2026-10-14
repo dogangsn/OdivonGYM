@@ -13,7 +13,7 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 ## Ne yapar?
 
 - Her cihazı **5 saniyede bir** tarar, tüm log sayfalarını okur, yeni kayıtları yerel
-  SQLite kuyruğuna (`data/agent.db`) alır ve MainApi'ye toplu gönderir. İnternet
+  SQLite kuyruğuna (`data/agent.db`) alır; kayıtlar MainApi'ye 10 dakikada bir (600 sn) gönderilir. İnternet
   kesilirse kayıtlar kuyrukta bekler, bağlantı gelince gönderilir; tekrarlar hem
   yerelde hem MainApi'de ayıklanır.
 - MainApi'deki **istenen yetki durumunu** (üye numarası, kart, bitiş günü, açık/kapalı)

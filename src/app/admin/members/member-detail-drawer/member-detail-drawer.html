@@ -2393,13 +2393,21 @@
 
     <div class="space-y-3">
       <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-          RFID / Kart Seri Numarası <span class="text-rose-500">*</span>
-        </label>
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">
+            RFID / Kart Seri Numarası <span class="text-rose-500">*</span>
+          </label>
+          <button type="button" (click)="fetchLatestTurnstileCard()" [disabled]="fetchingTurnstileCard()"
+            class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+            matTooltip="Turnikeye okuttuğunuz son kartı çeker">
+            <mat-icon class="icon-size-3.5">nfc</mat-icon>
+            <span>{{ fetchingTurnstileCard() ? 'Aranıyor...' : 'Turnikeden Getir' }}</span>
+          </button>
+        </div>
         <input type="text" [value]="cardRfid()" (input)="cardRfid.set($any($event.target).value)"
           placeholder="Örn: 0004928172"
           class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono font-bold bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        <p class="text-[11px] text-slate-400 mt-1 mb-0">Kart okuyucuya okutarak ya da elle girerek kaydedin.</p>
+        <p class="text-[11px] text-slate-400 mt-1 mb-0">Kartı turnikeye okutup "Turnikeden Getir"e tıklayabilir veya elle girebilirsiniz.</p>
       </div>
 
       <div>

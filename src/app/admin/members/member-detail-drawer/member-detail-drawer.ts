@@ -53,6 +53,7 @@ import {
 import { MemberBodyState } from './member-body.state';
 import { MemberMeasurementsTab, MemberWaterTab } from './member-body-tabs';
 import { firstValueFrom } from 'rxjs';
+import { AccessApi } from '../../../core/api/access.api';
 import { ConsentApi } from '../../../core/api/consent.api';
 import { ConsentModal } from '../../../shared/components/consent-modal/consent-modal';
 import { ConsentModalService } from '../../../shared/components/consent-modal/consent-modal.service';
@@ -137,6 +138,7 @@ export class MemberDetailDrawer {
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly docDefsService = inject(DocumentDefinitionsService);
   private readonly packagesService = inject(AdminPackagesService);
+  private readonly accessApi = inject(AccessApi);
 
   readonly open = input(false);
   readonly member = input<UserProfile | null>(null);
@@ -1251,6 +1253,26 @@ export class MemberDetailDrawer {
     this.cardFee.set(m?.cardDepositFee || 150);
     this.cardPaid.set(m?.cardDepositPaid ?? false);
     this.showCardModal.set(true);
+  }
+
+  protected readonly fetchingTurnstileCard = signal(false);
+
+  async fetchLatestTurnstileCard(): Promise<void> {
+    this.fetchingTurnstileCard.set(true);
+    try {
+      const logs = await firstValueFrom(this.accessApi.listLogs({ limit: 50 }));
+      const unassigned = logs.find((l) => !l.userId && !!l.card);
+      if (unassigned?.card) {
+        this.cardRfid.set(unassigned.card);
+        this.alertService.toastSuccess(`Turnikeden okunan son kart alındı: ${unassigned.card}`);
+      } else {
+        this.alertService.toastInfo('Son 30 dakikada turnikeden okutulmuş yeni/tanımsız bir kart bulunamadı. Lütfen kartı turnikeye okutup tekrar deneyin.');
+      }
+    } catch {
+      this.alertService.toastError('Turnike kayıtları alınamadı.');
+    } finally {
+      this.fetchingTurnstileCard.set(false);
+    }
   }
 
   async saveCardAssignment(): Promise<void> {

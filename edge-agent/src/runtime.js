@@ -18,13 +18,15 @@ const { asDeviceError } = require('./adapters/errors');
 const EVENT_BATCH_SIZE = 500;
 
 class AgentRuntime {
-  constructor({ client, store, credentials = {}, logger = console, agentVersion, adapterFactory = createAdapter }) {
+  constructor({ client, store, credentials = {}, logger = console, agentVersion, adapterFactory = createAdapter, flushOnTick = true }) {
     this.client = client;
     this.store = store;
     this.credentials = credentials;
     this.log = logger;
     this.agentVersion = agentVersion;
     this.adapterFactory = adapterFactory;
+    this.flushOnTick = flushOnTick;
+    this.pendingImmediateFlush = false;
     this.devices = new Map(); // gateId → { config, adapter, reachable, lastError, lastEventAt, deviceTime, lock }
     this.stopped = false;
     this.revoked = false;
@@ -83,7 +85,10 @@ class AgentRuntime {
     }
 
     await Promise.all([...this.devices.values()].map((device) => this.pollDevice(device, items)));
-    await this.flushEvents();
+    if (this.flushOnTick || this.pendingImmediateFlush || this.store.queueDepth() >= EVENT_BATCH_SIZE) {
+      this.pendingImmediateFlush = false;
+      await this.flushEvents();
+    }
   }
 
   async pollDevice(device, allItems) {
@@ -139,7 +144,15 @@ class AgentRuntime {
       if (deviceTime) device.deviceTime = deviceTime;
       const added = this.store.enqueueEvents(gateId, events, nextCursor);
       if (events.length > 0) device.lastEventAt = events[events.length - 1].time;
-      if (added > 0) this.log.info(`📥 ${device.config.name}: ${added} yeni geçiş kaydı kuyruğa alındı.`);
+      if (added > 0) {
+        this.log.info(`📥 ${device.config.name}: ${added} yeni geçiş kaydı kuyruğa alındı.`);
+        // Senaryo B: Tanımsız bir kart turnikeye okutulduğunda 10 dk beklenmez, hemen gönderilir.
+        const unassignedCard = events.find((e) => e.card && (!e.userId || e.userId === '0'));
+        if (unassignedCard) {
+          this.log.info(`⚡ ${device.config.name}: Tanımsız kart okutuldu (${unassignedCard.card}), hemen gönderiliyor.`);
+          this.pendingImmediateFlush = true;
+        }
+      }
     } catch (raw) {
       const err = asDeviceError(raw);
       this.markUnreachable(device, err);

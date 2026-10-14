@@ -198,7 +198,7 @@ Etki: `gymAccessAgents.lastHeartbeatAt = now`; her cihaz için `reachable` ise
 ## 4. Agent davranışı (OdivonGYM/edge-agent)
 
 - Her cihaz 5 sn'de bir taranır; tüm log sayfaları okunur, yeni kayıtlar yerel
-  SQLite (`agent.db`) kuyruğuna alınır, sonra MainApi'ye toplu gönderilir.
+  SQLite (`agent.db`) kuyruğuna alınır; kayıtlar MainApi'ye 10 dakikada bir (600 sn) toplu gönderilir.
   İnternet yoksa kuyruk diskte kalır; gönderim başarılı olunca silinir.
 - Her iş öğesi cihaza uygulanır (aynı cihaza istekler sıralı gider), cihazdan `GetUserInfo` ile geri okunur; alanlar
   eşleşirse `verified: true` ile `applied` onayı gönderilir. Eşleşmezse `error`.

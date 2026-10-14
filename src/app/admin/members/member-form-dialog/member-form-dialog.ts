@@ -2,8 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom, map } from 'rxjs';
+import { AccessApi } from '../../../core/api/access.api';
 import { ConsentApi } from '../../../core/api/consent.api';
 import { ConsentModal } from '../../../shared/components/consent-modal/consent-modal';
 import { ConsentModalService } from '../../../shared/components/consent-modal/consent-modal.service';
@@ -58,7 +60,7 @@ function addDays(dateStr: string, days: number): string {
 @Component({
   selector: 'app-member-form-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, ConsentModal],
+  imports: [ReactiveFormsModule, MatIconModule, MatTooltipModule, ConsentModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-form-dialog.html',
   styleUrl: './member-form-dialog.scss',
@@ -69,6 +71,7 @@ export class MemberFormDialog {
   private readonly staffService = inject(AdminStaffService);
   private readonly packagesService = inject(AdminPackagesService);
   private readonly consentApi = inject(ConsentApi);
+  private readonly accessApi = inject(AccessApi);
   protected readonly consentModal = inject(ConsentModalService);
   protected readonly branchContext = inject(BranchContextService);
   private readonly transloco = inject(TranslocoService);
@@ -78,6 +81,26 @@ export class MemberFormDialog {
   readonly open = input(false);
   readonly member = input<UserProfile | null>(null);
   readonly closed = output<boolean>();
+
+  protected readonly fetchingTurnstileCard = signal(false);
+
+  async fetchLatestTurnstileCard(): Promise<void> {
+    this.fetchingTurnstileCard.set(true);
+    try {
+      const logs = await firstValueFrom(this.accessApi.listLogs({ limit: 50 }));
+      const unassigned = logs.find((l) => !l.userId && !!l.card);
+      if (unassigned?.card) {
+        this.form.patchValue({ rfidCardNumber: unassigned.card });
+        this.alertService.toastSuccess(`Turnikeden okunan son kart alındı: ${unassigned.card}`);
+      } else {
+        this.alertService.toastInfo('Son 30 dakikada turnikeden okutulmuş yeni/tanımsız bir kart bulunamadı. Lütfen kartı turnikeye okutup tekrar deneyin.');
+      }
+    } catch {
+      this.alertService.toastError('Turnike kayıtları alınamadı.');
+    } finally {
+      this.fetchingTurnstileCard.set(false);
+    }
+  }
 
   protected readonly custom = CUSTOM;
   protected readonly customLabel = CUSTOM_LABEL;

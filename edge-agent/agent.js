@@ -37,6 +37,7 @@ function loadConfig() {
     agentName: config.agentName || os.hostname(),
     credentials: config.credentials || {},
     pollIntervalMs: Math.max(2, config.pollIntervalSeconds ?? 5) * 1000,
+    eventFlushIntervalMs: Math.max(10, config.eventFlushIntervalSeconds ?? 600) * 1000,
     heartbeatIntervalMs: Math.max(5, config.heartbeatIntervalSeconds ?? 15) * 1000,
     dataDir: path.resolve(ROOT, config.dataDir || './data'),
   };
@@ -83,15 +84,17 @@ async function run(config) {
     credentials: config.credentials,
     agentVersion: AGENT_VERSION,
     logger: console,
+    flushOnTick: false,
   });
 
   console.log('====================================================');
   console.log(`   ODIVON GYM EDGE AGENT v${AGENT_VERSION}`);
   console.log('====================================================');
-  console.log(`🆔 Agent        : ${identity.agentId}`);
-  console.log(`🌐 MainApi      : ${client.baseUrl}`);
-  console.log(`⏱️ Tarama        : ${config.pollIntervalMs / 1000} sn`);
-  console.log(`📦 Bekleyen olay: ${store.queueDepth()}`);
+  console.log(`🆔 Agent            : ${identity.agentId}`);
+  console.log(`🌐 MainApi          : ${client.baseUrl}`);
+  console.log(`⏱️ Cihaz & İş Tarama: ${config.pollIntervalMs / 1000} sn`);
+  console.log(`📤 Geçiş Gönderimi  : ${config.eventFlushIntervalMs / 1000} sn (${Math.round(config.eventFlushIntervalMs / 60000)} dk)`);
+  console.log(`📦 Bekleyen olay    : ${store.queueDepth()}`);
   console.log('----------------------------------------------------');
 
   const loop = (intervalMs, fn) => {
@@ -113,13 +116,17 @@ async function run(config) {
 
   const timers = [
     loop(config.pollIntervalMs, () => runtime.tick()),
+    loop(config.eventFlushIntervalMs, () => runtime.flushEvents()),
     loop(config.heartbeatIntervalMs, () => runtime.heartbeat()),
     setInterval(() => store.prune(), 6 * 60 * 60 * 1000),
   ];
 
-  const shutdown = () => {
+  const shutdown = async () => {
     console.log('\n🛑 Edge Agent kapatılıyor...');
     timers.forEach(clearInterval);
+    try {
+      await runtime.flushEvents();
+    } catch {}
     runtime.stop();
     store.close();
     process.exit(0);
