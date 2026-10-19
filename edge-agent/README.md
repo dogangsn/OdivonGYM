@@ -68,6 +68,12 @@ Bu, Windows Görev Zamanlayıcı'da **"Odivon Edge Agent"** görevini kurar:
 Kurulumdan sonra `baslat.bat` yalnızca görevi çalıştırır; pencere açık kalmak zorunda değildir.
 Yönetici izni verilmezse agent eskisi gibi pencerede çalışır. Kaldırmak için: `servis-kur.bat kaldir`.
 
+### Durdurma
+
+`durdur.bat` dosyasına çift tıklayın (yönetici izni ister). Agent'ı kapatır ve "Odivon Edge Agent"
+görevini siler; bilgisayar açılınca artık kendiliğinden başlamaz. `data/` klasörü (eşleştirme kimliği,
+bekleyen kayıtlar) silinmez; yeniden başlatmak için `baslat.bat` yeterlidir.
+
 ## Eski agent'tan geçiş
 
 Eski sürüm Firestore'a doğrudan yazıyordu. Yeni agent doğrulandıktan sonra:
