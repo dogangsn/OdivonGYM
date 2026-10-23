@@ -18,7 +18,10 @@
     "passive": "Passive",
     "yes": "Yes",
     "no": "No",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "cookieSettings": "Cookie Preferences"
   },
   "cookieConsent": {
     "badge": "Privacy & Cookie Security",

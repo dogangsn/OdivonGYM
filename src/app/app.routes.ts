@@ -15,6 +15,25 @@ export const routes: Routes = [
   },
 
   {
+    path: 'terms',
+    loadComponent: () => import('./features/legal/terms/terms').then((m) => m.Terms),
+    title: 'Kullanım Şartları · OdivonGYM',
+    data: {
+      description: 'OdivonGYM SaaS Hizmet ve Kullanım Koşulları Sözleşmesi.',
+      keywords: 'kullanım şartları, üyelik sözleşmesi, odivon lisans, saas şartları',
+    },
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./features/legal/privacy/privacy').then((m) => m.Privacy),
+    title: 'Gizlilik Politikası ve KVKK · OdivonGYM',
+    data: {
+      description: 'OdivonGYM 6698 Sayılı KVKK ve GDPR uyumlu Gizlilik Politikası ve Aydınlatma Metni.',
+      keywords: 'gizlilik politikası, kvkk aydınlatma, çerez politikası, veri güvenliği',
+    },
+  },
+
+  {
     path: 'onboarding/trial-expired',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -42,7 +61,6 @@ export const routes: Routes = [
       import('./features/onboarding/tenant-wizard/tenant-wizard').then((m) => m.TenantWizard),
     title: 'Salon Kurulum Sihirbazı · OdivonGYM',
   },
-
 
   {
     path: '',
@@ -123,5 +141,22 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '**', redirectTo: 'dashboard' },
+  {
+    path: '404',
+    loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+    title: '404 - Sayfa Bulunamadı · OdivonGYM',
+    data: {
+      description: 'Aradığınız sayfa bulunamadı.',
+      robots: 'noindex, follow',
+    },
+  },
+  {
+    path: '**',
+    loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+    title: '404 - Sayfa Bulunamadı · OdivonGYM',
+    data: {
+      description: 'Aradığınız sayfa bulunamadı.',
+      robots: 'noindex, follow',
+    },
+  },
 ];

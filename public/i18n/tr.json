@@ -18,7 +18,10 @@
     "passive": "Pasif",
     "yes": "Evet",
     "no": "Hayır",
-    "loading": "Yükleniyor…"
+    "loading": "Yükleniyor…",
+    "terms": "Kullanım Şartları",
+    "privacy": "Gizlilik Politikası",
+    "cookieSettings": "Çerez Tercihleri"
   },
   "cookieConsent": {
     "badge": "KVKK & Çerez Güvenliği",

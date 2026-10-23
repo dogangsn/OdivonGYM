@@ -8,6 +8,8 @@ import { GymLoader } from './shared/components/gym-loader/gym-loader';
 import { UpdateBanner } from './shared/components/update-banner/update-banner';
 import { CookieConsentBanner } from './shared/components/cookie-consent-banner/cookie-consent-banner';
 import { VersionService } from './core/version/version.service';
+import { SeoService } from './core/services/seo.service';
+import { AnalyticsService } from './core/services/analytics.service';
 
 @Component({
   selector: 'app-root',
@@ -21,23 +23,16 @@ export class App {
   protected readonly auth = inject(AuthService);
   protected readonly httpLoading = inject(HttpLoadingService);
 
-  // `providedIn: 'root'` servisleri Angular'da LAZY kurulur — sadece bir yer
-  // onu `inject()` ederse yaşar. ThemeService'i sadece Shell/Sidebar
-  // kullandığı için login/register gibi Shell dışı sayfalarda hiç
-  // kurulmuyordu ve kullanıcının seçtiği tema (localStorage'da doğru
-  // duruyor olsa bile) `<html>` sınıfına asla uygulanmıyordu — sonuç:
-  // auth sayfaları her zaman OS/tarayıcı varsayılanına düşüyordu. Kök
-  // component'te inject ederek uygulama açılır açılmaz, her sayfada
-  // kurulmasını garantiliyoruz.
+  // Tema, Dil, Sürüm ve SEO servisleri kök bileşende erkenden başlatılır.
   private readonly theme = inject(ThemeService);
-  // Aynı gerekçe: LanguageService de root component'te erkenden inject
-  // edilmezse, henüz hiçbir Shell/auth sayfası onu kullanmadan Transloco
-  // aktif dili hiç set etmemiş olur.
   private readonly language = inject(LanguageService);
-  // Yeni sürüm yayınlandığında açık sekmeleri uyarır (service worker + /version.json).
   private readonly version = inject(VersionService);
+  private readonly seo = inject(SeoService);
+  // Çerez onayına duyarlı GA4 Analitik servisi
+  private readonly analytics = inject(AnalyticsService);
 
   constructor() {
     this.version.start();
+    this.seo.init();
   }
 }

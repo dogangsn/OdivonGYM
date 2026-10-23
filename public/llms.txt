@@ -1,0 +1,29 @@
+# OdivonGYM - AI & LLM Index
+
+> OdivonGYM is a next-generation SaaS gym and athlete management platform engineered for fitness centers, martial arts clubs, crossfit boxes, and sports studios.
+
+## Project Overview
+- **Product Name**: OdivonGYM
+- **Core Platform**: Cloud-native SaaS (Angular 20 Standalone Frontend + NestJS Microservices Backend + Firestore Realtime Database)
+- **Primary Domain**: https://gym.odivon.com
+- **API Base**: https://mainapi.odivon.com/api/v1
+- **Target Audience**: Gym owners, fitness coaches, personal trainers, studio operators, and athletic club members.
+
+## Key Capabilities & Modules
+- **Access Control & Hardware Telemetry**: Real-time turnstile relay integration, QR-code entry pass, face-recognition biometric kiosk, edge-agent daemon for offline/LAN door access.
+- **Member Management**: Comprehensive member profiles, biometric & body measurement logs, multi-tenant RBAC permissions.
+- **Classes & PT Appointments**: Interactive calendar, personal trainer slot booking, capacity-managed group sessions.
+- **Billing & Subscriptions**: Integrated iyzico payment gateway, automated invoice & e-archive (GİB e-Fatura) delivery, in-app digital member wallet.
+- **Athlete Workout & Nutrition**: Tailored exercise routine assignment, set/rep tracking, water consumption telemetry.
+
+## Core Navigation & Endpoints
+- [Home / Dashboard](https://gym.odivon.com/dashboard): Central member & coach portal.
+- [Login](https://gym.odivon.com/auth/login): Secure member & staff authentication.
+- [Register](https://gym.odivon.com/auth/register): 14-day free trial instant club registration.
+- [Terms of Service](https://gym.odivon.com/terms): Complete SaaS licensing and platform usage terms.
+- [Privacy Policy & KVKK](https://gym.odivon.com/privacy): KVKK (Law No. 6698) and GDPR compliance notice.
+
+## Additional Documentation
+- [Full LLM Specification](https://gym.odivon.com/llms-full.txt): Deep technical specification, architecture, and API schemas.
+- [Sitemap](https://gym.odivon.com/sitemap.xml): Machine-readable XML sitemap.
+- [Robots Directive](https://gym.odivon.com/robots.txt): Crawler and AI agent guidelines.

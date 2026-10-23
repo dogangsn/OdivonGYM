@@ -521,9 +521,13 @@
           </div>
         </div>
 
-        <!-- Terms Notice -->
+        <!-- Terms Notice with Clickable Links -->
         <p class="text-[11px] text-slate-400 dark:text-slate-500 text-center leading-relaxed pt-1 m-0">
-          {{ 'auth.register.termsNotice' | transloco }}
+          Kayıt olarak
+          <a routerLink="/terms" target="_blank" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline no-underline">Kullanım Koşulları</a>
+          ve
+          <a routerLink="/privacy" target="_blank" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline no-underline">KVKK Aydınlatma Metnini</a>
+          kabul etmiş sayılırsınız.
         </p>
 
         <!-- Submit CTA -->
@@ -545,9 +549,23 @@
     </div>
 
 
-    <!-- Bottom Copyright -->
-    <div class="text-center mt-5 text-xs text-slate-400">
-      © {{ currentYear }} OdivonGYM. {{ 'auth.login.allRightsReserved' | transloco }}
+    <!-- Bottom Copyright & Legal Links -->
+    <div class="text-center mt-5 text-xs text-slate-400 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      <span>© {{ currentYear }} OdivonGYM. {{ 'auth.login.allRightsReserved' | transloco }}</span>
+      <span class="hidden sm:inline text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/terms"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Kullanım Şartları
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/privacy"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Gizlilik & KVKK
+      </a>
     </div>
   </section>
 </div>

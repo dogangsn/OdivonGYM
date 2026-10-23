@@ -416,8 +416,8 @@
         <!-- Submit CTA -->
         <button
           type="submit"
-          [disabled]="submitting() || lockSecondsLeft() > 0"
           class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-1"
+          [disabled]="submitting() || lockSecondsLeft() > 0"
         >
           @if (submitting()) {
             <span class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -431,6 +431,17 @@
           }
         </button>
 
+        <!-- Clear Secondary CTA: 14 Gün Ücretsiz Deneme -->
+        <div class="pt-2">
+          <a
+            routerLink="/auth/register"
+            class="w-full py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/40 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-center gap-2 transition-all no-underline shadow-2xs"
+          >
+            <mat-icon class="icon-size-4 text-amber-500">verified</mat-icon>
+            <span>Yeni Salon İçin 14 Gün Ücretsiz Deneme Başlat</span>
+          </a>
+        </div>
+
         <!-- Çerez ve Güvenlik Bilgilendirme Notu -->
         <p class="text-[11px] text-slate-400 dark:text-slate-500 text-center m-0 pt-1 leading-snug">
           {{ 'cookieConsent.loginHint' | transloco }}
@@ -439,10 +450,24 @@
 
     </div>
 
-    <!-- Bottom Copyright & Cookie Preferences -->
-    <div class="text-center mt-6 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3.5">
+    <!-- Bottom Copyright, Legal & Cookie Preferences -->
+    <div class="text-center mt-6 text-xs text-slate-400 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
       <span>© {{ currentYear }} OdivonGYM. {{ 'auth.login.allRightsReserved' | transloco }}</span>
       <span class="hidden sm:inline text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/terms"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Kullanım Şartları
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/privacy"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Gizlilik & KVKK
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">·</span>
       <button
         type="button"
         (click)="openCookieSettings()"
@@ -450,14 +475,6 @@
       >
         <mat-icon class="icon-size-3.5">cookie</mat-icon>
         <span>{{ 'cookieConsent.footerLink' | transloco }}</span>
-      </button>
-      <span class="hidden sm:inline text-slate-300 dark:text-slate-700">·</span>
-      <button
-        type="button"
-        (click)="openCookiePolicy()"
-        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:underline cursor-pointer bg-transparent border-none p-0 transition-colors"
-      >
-        <span>{{ 'cookieConsent.policyLink' | transloco }}</span>
       </button>
     </div>
   </section>

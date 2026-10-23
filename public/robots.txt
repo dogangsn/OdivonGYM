@@ -1,0 +1,51 @@
+# OdivonGYM - Robots Directive
+# https://gym.odivon.com
+
+User-agent: *
+Allow: /
+Allow: /auth/login
+Allow: /auth/register
+Allow: /terms
+Allow: /privacy
+Allow: /404
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /sitemap.xml
+Allow: /favicon.ico
+Allow: /favicon.svg
+
+# Disallow private/authenticated dashboard and administrative paths
+Disallow: /dashboard
+Disallow: /workout
+Disallow: /classes
+Disallow: /appointments
+Disallow: /water
+Disallow: /measurements
+Disallow: /wallet
+Disallow: /packages
+Disallow: /profile
+Disallow: /admin/
+Disallow: /onboarding/
+Disallow: /subscription-result
+Disallow: /payment-result
+Disallow: /api/
+
+# Friendly directives for LLM & Search Indexers
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard
+
+# Sitemaps
+Sitemap: https://gym.odivon.com/sitemap.xml
+Host: https://gym.odivon.com
