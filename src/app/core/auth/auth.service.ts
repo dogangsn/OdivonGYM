@@ -168,18 +168,30 @@ export class AuthService {
     await setPersistence(this.auth, remember ? browserLocalPersistence : browserSessionPersistence);
     const credential = await signInWithEmailAndPassword(this.auth, email, password);
 
-    // E-posta doğrulama kontrolü: Doğrulanmamış hesaplar için oturum sonlandırılır.
+    // E-posta doğrulama kontrolü: Yalnızca yeni SaaS salon sahibi kayıtları için zorunludur.
+    // Oluşturulan kullanıcı kartları, sporcu üyeler ve personeller için mail doğrulama zorunlu değildir.
     if (!credential.user.emailVerified) {
       await credential.user.reload();
       if (!this.auth.currentUser?.emailVerified) {
-        await signOut(this.auth);
-        this.firebaseUser.set(null);
-        this.userProfile.set(null);
-        this.markReady();
-        const err = new Error('auth/email-not-verified');
-        (err as { code?: string; email?: string }).code = 'auth/email-not-verified';
-        (err as { code?: string; email?: string }).email = email;
-        throw err;
+        const tokenResult = await credential.user.getIdTokenResult().catch(() => null);
+        const claims = tokenResult?.claims ?? {};
+        const isBypassed =
+          claims['accountType'] === 'gym_member' ||
+          claims['role'] === 'user' ||
+          claims['role'] === 'trainer' ||
+          claims['role'] === 'receptionist' ||
+          (Boolean(claims['tenantId']) && claims['role'] !== 'owner');
+
+        if (!isBypassed) {
+          await signOut(this.auth);
+          this.firebaseUser.set(null);
+          this.userProfile.set(null);
+          this.markReady();
+          const err = new Error('auth/email-not-verified');
+          (err as { code?: string; email?: string }).code = 'auth/email-not-verified';
+          (err as { code?: string; email?: string }).email = email;
+          throw err;
+        }
       }
     }
 

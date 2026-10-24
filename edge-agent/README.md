@@ -13,13 +13,18 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 ## Ne yapar?
 
 - Her cihazı **5 saniyede bir** tarar, tüm log sayfalarını okur, yeni kayıtları yerel
-  SQLite kuyruğuna (`data/agent.db`) alır; kayıtlar MainApi'ye 10 dakikada bir (600 sn) gönderilir. İnternet
+  SQLite kuyruğuna (`data/agent.db`) alır; kayıtlar MainApi'ye 5 saniyede bir gönderilir. İnternet
   kesilirse kayıtlar kuyrukta bekler, bağlantı gelince gönderilir; tekrarlar hem
   yerelde hem MainApi'de ayıklanır.
 - MainApi'deki **istenen yetki durumunu** (üye numarası, kart, bitiş günü, açık/kapalı)
   cihaza uygular, cihazdan **geri okuyup doğrular**; doğrulanmadan "uygulandı" demez.
 - 15 saniyede bir heartbeat gönderir; paneldeki "çevrimiçi" bilgisi buradan gelir.
 - Cihazın bildirmediği "izin verildi / reddedildi" sonucunu tahmin etmez.
+- `192.168.1.2` üzerindeki `K4E_2Y1Kbc011_2.9` firmware'inin geçiş logunda kart numarası
+  ayrı bir alan olarak yoktur. 24.10.2026 tarihinde tanımsız test kartı reddedildiğinde
+  `GetLogDataPage` toplamı 42 olarak kaldı; bu cihazın mevcut API'si reddedilen kartın
+  numarasını vermedi. Kartı resepsiyondaki USB okuyucuyla okutun veya üreticinin ayrı
+  bir ham kart okuma protokolü/SDK'sını doğrulayın.
 - Uzaktan kapı açma YT için kapalıdır (`SetDoorStatus=open` kalıcı açık kalabilir).
 
 ## Desteklenen protokoller

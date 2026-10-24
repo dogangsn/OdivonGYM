@@ -37,7 +37,7 @@ function loadConfig() {
     agentName: config.agentName || os.hostname(),
     credentials: config.credentials || {},
     pollIntervalMs: Math.max(2, config.pollIntervalSeconds ?? 5) * 1000,
-    eventFlushIntervalMs: Math.max(10, config.eventFlushIntervalSeconds ?? 600) * 1000,
+    eventFlushIntervalMs: Math.max(2, config.eventFlushIntervalSeconds ?? 5) * 1000,
     heartbeatIntervalMs: Math.max(5, config.heartbeatIntervalSeconds ?? 15) * 1000,
     dataDir: path.resolve(ROOT, config.dataDir || './data'),
   };

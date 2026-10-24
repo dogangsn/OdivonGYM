@@ -146,7 +146,7 @@ class AgentRuntime {
       if (events.length > 0) device.lastEventAt = events[events.length - 1].time;
       if (added > 0) {
         this.log.info(`📥 ${device.config.name}: ${added} yeni geçiş kaydı kuyruğa alındı.`);
-        // Senaryo B: Tanımsız bir kart turnikeye okutulduğunda 10 dk beklenmez, hemen gönderilir.
+        // Cihaz ayrı kart numarası bildirdiyse ilgili olayı hemen gönder.
         const unassignedCard = events.find((e) => e.card && (!e.userId || e.userId === '0'));
         if (unassignedCard) {
           this.log.info(`⚡ ${device.config.name}: Tanımsız kart okutuldu (${unassignedCard.card}), hemen gönderiliyor.`);

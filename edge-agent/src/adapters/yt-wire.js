@@ -76,14 +76,10 @@ function parseLogPage(res) {
 /** Ham log kaydı → sözleşmedeki alanlar. */
 function readLogRecord(raw) {
   const io = raw.ioMode == null ? null : Number(raw.ioMode);
-  const isCardMode = raw.verifyMode === 'card' || raw.verifyMode === 1;
-  const card =
-    raw.card != null && raw.card !== ''
-      ? String(raw.card)
-      : isCardMode && raw.userId && !raw.name
-        ? String(raw.userId)
-        : null;
-  const userId = isCardMode && card === String(raw.userId) ? null : raw.userId != null && raw.userId !== '' ? String(raw.userId) : null;
+  // Bu firmware kartlı geçişte de userId döndürür; userId kart numarası değildir.
+  // Yalnızca cihaz ayrı bir kart alanı verdiyse kart numarası olarak aktar.
+  const card = raw.card != null && raw.card !== '' ? String(raw.card) : null;
+  const userId = raw.userId != null && raw.userId !== '' ? String(raw.userId) : null;
   return {
     userId,
     card,

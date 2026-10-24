@@ -198,8 +198,16 @@ Etki: `gymAccessAgents.lastHeartbeatAt = now`; her cihaz için `reachable` ise
 ## 4. Agent davranışı (OdivonGYM/edge-agent)
 
 - Her cihaz 5 sn'de bir taranır; tüm log sayfaları okunur, yeni kayıtlar yerel
-  SQLite (`agent.db`) kuyruğuna alınır; kayıtlar MainApi'ye 10 dakikada bir (600 sn) toplu gönderilir.
+  SQLite (`agent.db`) kuyruğuna alınır; kayıtlar MainApi'ye 5 saniyede bir gönderilir.
   İnternet yoksa kuyruk diskte kalır; gönderim başarılı olunca silinir.
+- `192.168.1.2` üzerindeki Perkotek YT-32 firmware `K4E_2Y1Kbc011_2.9` logları kart numarasını
+  ayrı alan olarak döndürmez. 24.10.2026 canlı testinde reddedilen tanımsız kart yeni
+  `GetLogDataPage` kaydı üretmedi (öncesi ve sonrası `allLogCount: 42`). Bu API üzerinden
+  tanımsız kart numarası tespit edilemez; kart için ayrı USB okuyucu veya doğrulanmış
+  üretici ham okuma arayüzü gerekir.
+- Cihazın TCP/5005 portu açık ve ikili çerçeveli yanıt veriyor. Bu portun SDK protokolü
+  ve tanımsız kartı doğrulama öncesinde bildiren bir callback sunup sunmadığı henüz
+  belgelenmedi; üreticiden YT-32 firmware sürümüne uygun SDK/protokol belgesi gerekir.
 - Her iş öğesi cihaza uygulanır (aynı cihaza istekler sıralı gider), cihazdan `GetUserInfo` ile geri okunur; alanlar
   eşleşirse `verified: true` ile `applied` onayı gönderilir. Eşleşmezse `error`.
 - `enabled: false` ⇒ `DeleteUserInfo`; geri okumada kullanıcı yoksa doğrulanmış sayılır.

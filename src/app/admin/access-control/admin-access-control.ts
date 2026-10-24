@@ -287,12 +287,16 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         </div>
       }
 
-      <!-- 3. Canlı Resepsiyon Kart / Barkod Okutma Çubuğu (Physical USB/Handheld Scanner Listener) -->
+      <!-- 3. Resepsiyon USB okuyucu: QR geçişi veya RFID kart atama -->
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+        <div class="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0">
+          <button type="button" (click)="scannerMode.set('qr'); barcodeInput = ''" [class.bg-emerald-600]="scannerMode() === 'qr'" [class.text-white]="scannerMode() === 'qr'" class="px-3 py-2 text-xs font-bold cursor-pointer">QR geçiş</button>
+          <button type="button" (click)="scannerMode.set('card'); barcodeInput = ''" [class.bg-indigo-600]="scannerMode() === 'card'" [class.text-white]="scannerMode() === 'card'" class="px-3 py-2 text-xs font-bold cursor-pointer">Kartı üyeye ata</button>
+        </div>
         <div class="relative flex-1 w-full">
           <input
             type="text"
-            placeholder="Fiziksel USB Barkod/QR Okuyucu ile Okutun veya Kart/QR Kodu Girin (Enter)..."
+            [placeholder]="scannerMode() === 'card' ? 'USB RFID okuyucuyla kartı okutun veya numarasını yazın (Enter)' : 'QR / barkod okuyucuyla okutun veya kodu yazın (Enter)'"
             class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             [(ngModel)]="barcodeInput"
             (keydown.enter)="onBarcodeScanned()"
@@ -305,8 +309,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
           [disabled]="!barcodeInput.trim() || scanning()"
           class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
         >
-          <mat-icon class="icon-size-4">{{ scanning() ? 'sync' : 'bolt' }}</mat-icon>
-          <span>{{ scanning() ? 'Doğrulanıyor...' : 'Kodu Doğrula / Geçiş İzni Ver' }}</span>
+          <mat-icon class="icon-size-4">{{ scanning() ? 'sync' : scannerMode() === 'card' ? 'credit_card' : 'bolt' }}</mat-icon>
+          <span>{{ scannerMode() === 'card' ? 'Kartı üyeye ata' : scanning() ? 'Doğrulanıyor...' : 'QR geçişini doğrula' }}</span>
         </button>
       </div>
 
@@ -1133,13 +1137,13 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                       <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Üye Geldiğinde Kart Numarası Nasıl Öğrenilir & Atanır?</h4>
                     </div>
                     <p class="m-0 text-slate-600 dark:text-slate-300">
-                      <b>1. Yöntem (Önerilen - Masaüstü USB Okuyucu):</b> Resepsiyon PC'sine takılan standart bir USB RFID okuyucu ile üye kayıt formundaki "RFID / Kart Numarası" alanına tıklayıp kartı okutun; kart numarası otomatik yazılır.
+                      <b>1. Yöntem (Önerilen - Masaüstü USB Okuyucu):</b> Resepsiyon PC'sine klavye gibi çalışan bir USB RFID okuyucu bağlayın. Yukarıdaki "Kartı üyeye ata" modunu açıp kartı okutun; gelen numarayı üyeye seçerek atayın. Okuyucunun verdiği numaranın cihazın kullandığı kart biçimiyle eşleştiğini test edin.
                     </p>
                     <p class="m-0 text-slate-600 dark:text-slate-300">
-                      <b>2. Yöntem (Turnike Üzerinden Tespit):</b> Masada USB okuyucu yoksa, yeni kartı turnikeye okutun. Turnike geçişi reddeder ve kart numarası Geçiş Kontrol tablosunda <b>Tanımsız Kart</b> olarak listelenir. Kart numarasını tek tıkla kopyalayıp yeni üye formuna yapıştırın.
+                      <b>2. Yöntem (Cihaz destekliyorsa):</b> Turnike tanımsız kartın numarasını geçiş olayında ayrı bir alan olarak bildirirse kart burada görünür ve üyeye atanabilir. Test edilen YT cihazı reddedilen tanımsız kartı loglamıyor; bu cihazda USB okuyucu veya üreticinin doğrulanmış ham kart okuma protokolü gerekir.
                     </p>
                     <p class="m-0 text-slate-500 dark:text-slate-400 text-[11px]">
-                      <b>Senkronizasyon Süresi:</b> Yeni üye yetkileri cihaza 5 saniyede yüklenir; turnikeden geçenlerin geçmiş logları ise sunucuya 10 dakikada bir (<code>eventFlushIntervalSeconds: 600</code>) toplu aktarılır.
+                      <b>Senkronizasyon Süresi:</b> Agent cihazı ve yeni üye yetkilerini 5 saniyede bir kontrol eder; yeni geçiş kayıtlarını MainApi'ye 5 saniyede bir gönderir. Görünme süresi cihaz ve ağ yanıtına bağlıdır.
                     </p>
                   </div>
                   <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
@@ -1359,7 +1363,7 @@ export class AdminAccessControl implements OnInit {
         mainApiUrl: environment.apiBaseUrl.startsWith('http') ? environment.apiBaseUrl : 'https://mainapi.odivon.com/api/v1',
         agentName: 'Resepsiyon PC',
         pollIntervalSeconds: 5,
-        eventFlushIntervalSeconds: 600,
+        eventFlushIntervalSeconds: 5,
         heartbeatIntervalSeconds: 15,
         dataDir: './data',
         credentials,
@@ -1620,6 +1624,7 @@ export class AdminAccessControl implements OnInit {
 
   // Reception Barcode / RFID Reader
   protected barcodeInput = '';
+  protected readonly scannerMode = signal<'qr' | 'card'>('qr');
 
 
   // Add Gate SlideOver state
@@ -1927,6 +1932,17 @@ export class AdminAccessControl implements OnInit {
   protected async onBarcodeScanned(): Promise<void> {
     const code = this.barcodeInput.trim();
     if (!code || this.scanning()) return;
+
+    if (this.scannerMode() === 'card') {
+      const existing = this.members().find((member) => member.rfidCardNumber?.trim() === code);
+      if (existing) {
+        this.alertService.toastError(`Bu kart zaten ${existing.displayName} üyesine atanmış.`);
+        return;
+      }
+      this.openAssignCardDialog(code);
+      this.barcodeInput = '';
+      return;
+    }
 
     this.scanning.set(true);
     try {

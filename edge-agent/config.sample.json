@@ -2,7 +2,7 @@
   "mainApiUrl": "https://mainapi.odivon.com/api/v1",
   "agentName": "Resepsiyon PC",
   "pollIntervalSeconds": 5,
-  "eventFlushIntervalSeconds": 600,
+  "eventFlushIntervalSeconds": 5,
   "heartbeatIntervalSeconds": 15,
   "dataDir": "./data",
   "credentials": {
