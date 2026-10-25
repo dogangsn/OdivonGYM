@@ -70,5 +70,11 @@ export class IdentityApi {
       )
       .pipe(map((r) => r.data));
   }
+
+  changePassword(body: { currentPassword?: string; newPassword: string }) {
+    return this.api
+      .post<{ success: boolean; message: string }>('/identity/change-password', body)
+      .pipe(map((r) => r.data));
+  }
 }
 

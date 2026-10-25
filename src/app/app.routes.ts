@@ -123,6 +123,11 @@ export const routes: Routes = [
         title: 'Profil · OdivonGYM',
       },
       {
+        path: 'support',
+        loadComponent: () => import('./features/support/support').then((m) => m.Support),
+        title: 'Müşteri Talepleri & Destek · OdivonGYM',
+      },
+      {
         path: 'suppliers',
         redirectTo: 'admin/suppliers',
         pathMatch: 'full',

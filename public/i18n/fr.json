@@ -157,7 +157,8 @@
       "pill3": "Forfaits & Facturation",
       "stat1Label": "Membres actifs",
       "stat2Label": "Cours hebdomadaires",
-      "footer": "© {{year}} OdivonGYM. Tous droits réservés."
+      "footer": "© {{year}} OdivonGYM. Tous droits réservés.",
+      "stat3Label": "Taux de satisfaction"
     },
     "sportsShowcase": {
       "badge": "Performance, Entraînement & Écosystème Athlétique",
@@ -301,7 +302,10 @@
       "wallet": "Portefeuille",
       "packages": "Forfaits",
       "profile": "Profil & paramètres",
-      "adminExitPayments": "Paiements à la sortie"
+      "adminExitPayments": "Paiements à la sortie",
+      "support": "Support & Demandes",
+      "adminProgramRequests": "Demandes de programmes",
+      "adminSmsSettings": "Fournisseur SMS & Paramètres"
     },
     "badges": {
       "renewal": "Renouvellement",
@@ -359,7 +363,13 @@
     "closeMenu": "Fermer le menu",
     "defaultMemberName": "Membre",
     "menuProfile": "Profil",
-    "menuLogout": "Se déconnecter"
+    "menuLogout": "Se déconnecter",
+    "support": "Support & Demandes",
+    "searchPlaceholder": "Rechercher dans le menu",
+    "collapseAll": "Tout réduire",
+    "expandAll": "Tout développer",
+    "noResults": "Aucun élément de menu trouvé",
+    "clearSearch": "Effacer la recherche"
   },
   "shell": {
     "menu": "Menu",
@@ -415,7 +425,8 @@
     "notif3Title": "Niveau de stock critique",
     "notif3Msg": "Le stock d'Optimum Gold Whey Protein (Chocolat) est bas : plus que 2 unités.",
     "notif4Title": "Facture électronique émise",
-    "notif4Msg": "La facture électronique certifiée #ODV20260001 a été validée avec succès."
+    "notif4Msg": "La facture électronique certifiée #ODV20260001 a été validée avec succès.",
+    "menuChangePassword": "Changer le mot de passe"
   },
   "dashboard": {
     "greetingNight": "Bonne nuit",
@@ -889,5 +900,86 @@
     "tabCollected": "Encaissées",
     "tabCancelled": "Annulées",
     "tabAll": "Toutes"
+  },
+  "support": {
+    "headerBadge": "CENTRE D'ASSISTANCE & DE SUPPORT CLIENT",
+    "title": "Soumission de Demande & Suivi",
+    "subtitle": "Signalez un incident technique, un problème de tourniquet, une suspension d'abonnement ou une suggestion. Suivez l'avancement pas à pas grâce à votre numéro unique.",
+    "quickTrackBtn": "Rechercher par Numéro",
+    "tabs": {
+      "create": "Créer une Demande",
+      "track": "Suivre l'État",
+      "history": "Mes Anciennes Demandes"
+    },
+    "create": {
+      "categoryTitle": "Sélectionnez une Catégorie",
+      "categoryDesc": "Veuillez choisir la catégorie correspondant le mieux à votre demande.",
+      "ticketDetailsTitle": "Détails de la Demande & Contact",
+      "ticketDetailsDesc": "Renseignez toutes les informations utiles pour une résolution rapide.",
+      "subject": "Objet / Titre",
+      "subjectPlaceholder": "ex: Le lecteur du tourniquet ne répond pas au QR code",
+      "description": "Description Détaillée",
+      "descriptionPlaceholder": "Détaillez le problème, l'appareil ou l'heure de l'incident…",
+      "fullName": "Nom et Prénom",
+      "fullNamePlaceholder": "Votre nom complet",
+      "email": "Adresse E-mail",
+      "emailPlaceholder": "exemple@odivon.com",
+      "phone": "Numéro de Téléphone",
+      "phonePlaceholder": "+33 6 XX XX XX XX",
+      "priority": "Niveau de Priorité",
+      "priorityNormal": "Normal (Demande ou question de routine)",
+      "priorityUrgent": "Urgent (Bloque une opération ou un passage)",
+      "priorityCritical": "Critique (Matériel bloqué ou arrêt système)",
+      "submitBtn": "Envoyer la Demande & Obtenir le Numéro",
+      "submitting": "Envoi en cours…",
+      "successTitle": "Demande Enregistrée avec Succès !",
+      "successDesc": "Votre demande a été transmise à notre équipe support. Vous pouvez suivre son avancement avec votre numéro de suivi.",
+      "trackingNoLabel": "Votre Numéro de Suivi",
+      "copyTrackingNo": "Copier",
+      "copied": "Copié !",
+      "trackNowBtn": "Suivre la Demande",
+      "createNewBtn": "Soumettre une Autre Demande"
+    },
+    "track": {
+      "title": "Suivi de votre Demande",
+      "subtitle": "Saisissez votre numéro au format TK-XXXXXX pour connaître l'état actuel de votre dossier.",
+      "inputPlaceholder": "ex: TK-2026-A1B2C3",
+      "queryBtn": "Rechercher",
+      "querying": "Recherche…",
+      "recentTitle": "Dernière Demande Créée",
+      "notFound": "Aucun ticket de support trouvé avec ce numéro.",
+      "notFoundHint": "Veuillez vérifier votre numéro (TK-YYYY-XXXXXX) et réessayer."
+    },
+    "history": {
+      "title": "Historique de vos Demandes",
+      "subtitle": "Toutes les demandes et réclamations ouvertes avec ce compte.",
+      "refresh": "Actualiser",
+      "empty": "Vous n'avez aucune demande en cours pour le moment.",
+      "openNew": "Créer votre Première Demande"
+    },
+    "status": {
+      "received": "Reçu / Transmis",
+      "in_review": "En Cours d'Examen",
+      "in_progress": "En Traitement",
+      "resolved": "Résolu",
+      "closed": "Fermé",
+      "rejected": "Refusé"
+    },
+    "categories": {
+      "technical_support": "Support Technique & Système",
+      "technical_support_desc": "Application, connexion réseau, écran figé ou anomalie logicielle.",
+      "turnstile_access": "Tourniquet & Contrôle d'Accès",
+      "turnstile_access_desc": "Lecture QR code impossible, assignation de badge ou refus d'accès.",
+      "membership_freeze": "Abonnement & Suspension",
+      "membership_freeze_desc": "Prolongation d'abonnement, suspension temporaire ou résiliation.",
+      "billing_payment": "Paiement, Caisse & Facture",
+      "billing_payment_desc": "Paiements échelonnés, débits bancaires, facturation ou remboursements.",
+      "feature_request": "Suggestions & Idées",
+      "feature_request_desc": "Nouvelles fonctionnalités ou idées pour améliorer votre salle.",
+      "general_inquiry": "Questions Générales & Infos",
+      "general_inquiry_desc": "Horaires d'ouverture, cours collectifs ou séances de coaching.",
+      "complaint_suggestion": "Réclamation & Qualité de Service",
+      "complaint_suggestion_desc": "Retours concernant la propreté, les équipements ou le personnel."
+    }
   }
 }

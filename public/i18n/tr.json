@@ -160,7 +160,8 @@
       "pill3": "Paket & Ödeme Yönetimi",
       "stat1Label": "Aktif Üye",
       "stat2Label": "Haftalık Ders",
-      "footer": "© {{year}} OdivonGYM. Tüm hakları saklıdır."
+      "footer": "© {{year}} OdivonGYM. Tüm hakları saklıdır.",
+      "stat3Label": "Memnuniyet Oranı"
     },
     "sportsShowcase": {
       "badge": "Performans, Antrenman & Sporcu Ekosistemi",
@@ -306,7 +307,8 @@
       "wallet": "E-Cüzdan",
       "packages": "Paketler",
       "profile": "Profil & Ayarlar",
-      "adminExitPayments": "Çıkışta Ödemeler"
+      "adminExitPayments": "Çıkışta Ödemeler",
+      "support": "Müşteri Talepleri & Destek"
     },
     "badges": {
       "renewal": "Yenileme",
@@ -359,6 +361,7 @@
     "adminStaff": "Personel & Roller",
     "adminGymInfo": "Salon Bilgileri",
     "adminSubscription": "Paket & Lisans",
+    "support": "Destek & Taleplerim",
     "searchPlaceholder": "Menüde ara",
     "collapseAll": "Tüm grupları kapat",
     "expandAll": "Tüm grupları aç",
@@ -406,6 +409,7 @@
     "menuGymInfo": "Salon Bilgileri",
     "menuDigitalCard": "Dijital Turnike Kartım",
     "menuProfile": "Profil & Ayarlar",
+    "menuChangePassword": "Şifremi Değiştir",
     "menuLogout": "Çıkış Yap",
     "expiredBannerTitle": "SaaS Lisans Süresi Doldu",
     "expiredBannerDesc": "Turnike geçişleri, hızlı POS satışı ve operasyonel modüller askıya alındı. Kesintisiz yönetim için paketinizi yenileyin.",
@@ -898,5 +902,86 @@
     "tabCollected": "Tahsil Edilenler",
     "tabCancelled": "İptal Edilenler",
     "tabAll": "Tümü"
+  },
+  "support": {
+    "headerBadge": "MÜŞTERİ DESTEK & İLETİŞİM MERKEZİ",
+    "title": "Talep İletme & Durum Takibi",
+    "subtitle": "Teknik aksaklıklar, turnike kartı, üyelik dondurma veya önerilerinizi iletin. Üretilen benzersiz takip numarası ile talebinizi adım adım izleyin.",
+    "quickTrackBtn": "Takip No ile Sorgula",
+    "tabs": {
+      "create": "Yeni Talep Oluştur",
+      "track": "Durum Sorgula",
+      "history": "Geçmiş Taleplerim"
+    },
+    "create": {
+      "categoryTitle": "Talep Kategorisi Seçin",
+      "categoryDesc": "Lütfen bildiriminizin konusunu en iyi anlatan kategoriyi belirleyin.",
+      "ticketDetailsTitle": "Talep Detayları & İletişim Bilgileri",
+      "ticketDetailsDesc": "Sorunu hızlıca çözebilmemiz için lütfen gerekli bilgileri eksiksiz doldurun.",
+      "subject": "Talep Konusu / Başlık",
+      "subjectPlaceholder": "Örn: Turnikeden geçerken QR okuyucu yanıt vermedi",
+      "description": "Detaylı Açıklama",
+      "descriptionPlaceholder": "Karşılaştığınız sorunu, cihaz veya saat bilgisini ve yaşadığınız adımları detaylandırın…",
+      "fullName": "Ad Soyad",
+      "fullNamePlaceholder": "Adınız ve soyadınız",
+      "email": "E-posta Adresi",
+      "emailPlaceholder": "ornek@odivon.com",
+      "phone": "Telefon Numarası",
+      "phonePlaceholder": "05XX XXX XX XX",
+      "priority": "Öncelik Derecesi",
+      "priorityNormal": "Normal (Rutin talep veya soru)",
+      "priorityUrgent": "Acil (İşlemi veya geçişi engelleyen durum)",
+      "priorityCritical": "Kritik (Donanım/Turnike kilitlendi veya sistem çalışmıyor)",
+      "submitBtn": "Talebi Gönder ve Takip No Oluştur",
+      "submitting": "Gönderiliyor…",
+      "successTitle": "Talebiniz Başarıyla Alındı!",
+      "successDesc": "Talebiniz destek ekibimize iletilmiştir. Durum güncellemelerini takip numaranızla sorgulayabilirsiniz.",
+      "trackingNoLabel": "Takip Numaranız",
+      "copyTrackingNo": "Kopyala",
+      "copied": "Kopyalandı!",
+      "trackNowBtn": "Talebi Hemen Takip Et",
+      "createNewBtn": "Yeni Bir Talep Daha Gönder"
+    },
+    "track": {
+      "title": "Talep Durumu Sorgulama",
+      "subtitle": "Size iletilen TK-XXXXXX formatındaki takip numarasını girerek talebinizin güncel aşamasını öğrenin.",
+      "inputPlaceholder": "Örn: TK-2026-A1B2C3",
+      "queryBtn": "Sorgula",
+      "querying": "Sorgulanıyor…",
+      "recentTitle": "Son Oluşturduğunuz Talep",
+      "notFound": "Bu takip numarasına ait bir destek talebi bulunamadı.",
+      "notFoundHint": "Lütfen takip numaranızı (TK-YYYY-XXXXXX) kontrol edip tekrar deneyin."
+    },
+    "history": {
+      "title": "Geçmiş Destek Talepleriniz",
+      "subtitle": "Bu hesap üzerinden açtığınız tüm destek ve bildirim kayıtları.",
+      "refresh": "Yenile",
+      "empty": "Henüz açılmış bir destek talebiniz bulunmuyor.",
+      "openNew": "İlk Talebinizi Oluşturun"
+    },
+    "status": {
+      "received": "Alındı / İletildi",
+      "in_review": "İnceleniyor",
+      "in_progress": "İşlemde",
+      "resolved": "Çözüldü",
+      "closed": "Kapatıldı",
+      "rejected": "Reddedildi"
+    },
+    "categories": {
+      "technical_support": "Teknik Destek & Sistem",
+      "technical_support_desc": "Uygulama, bağlantı, ekran donması veya yazılımsal sorunlar.",
+      "turnstile_access": "Turnike & Geçiş Kontrol",
+      "turnstile_access_desc": "QR kod okumama, kart tanımlama, geçiş engeli ve turnike arızaları.",
+      "membership_freeze": "Üyelik & Dondurma",
+      "membership_freeze_desc": "Üyelik süresi uzatma, paket dondurma, transfer veya iptal talepleri.",
+      "billing_payment": "Ödeme, Kasa & Fatura",
+      "billing_payment_desc": "Taksit ödemeleri, kart çekimi, e-fatura sorgulama veya iade konuları.",
+      "feature_request": "Öneri & Yeni İstek",
+      "feature_request_desc": "Salonda veya uygulamada görmek istediğiniz yeni fikirler.",
+      "general_inquiry": "Genel Soru & Bilgi",
+      "general_inquiry_desc": "Çalışma saatleri, grup dersleri veya antrenör seansları hakkında.",
+      "complaint_suggestion": "Şikayet & Hizmet Bildirimi",
+      "complaint_suggestion_desc": "Hizmet kalitesi, salon düzeni veya personel ile ilgili geri bildirim."
+    }
   }
 }

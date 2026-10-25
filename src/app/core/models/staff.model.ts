@@ -24,6 +24,9 @@ export interface StaffMember {
   commissionRate?: number; // %
   notes?: string;
   avatarUrl?: string;
+  password?: string;
+  sendWelcomeEmail?: boolean;
+  userId?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

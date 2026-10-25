@@ -20,6 +20,8 @@ import { MemberQrModal } from '../../components/member-qr-modal/member-qr-modal'
 import { MemberQrService } from '../../components/member-qr-modal/member-qr.service';
 import { TrainingWizardModal } from '../../components/training-wizard-modal/training-wizard-modal';
 import { AiAssistantModal } from '../../components/ai-assistant-modal/ai-assistant-modal';
+import { ChangePasswordModal } from '../../components/change-password-modal/change-password-modal';
+import { ChangePasswordService } from '../../components/change-password-modal/change-password.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 
@@ -103,6 +105,7 @@ export interface ShellNotification {
     MemberQrModal,
     TrainingWizardModal,
     AiAssistantModal,
+    ChangePasswordModal,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
@@ -117,6 +120,7 @@ export class Shell {
   protected readonly branchContext = inject(BranchContextService);
   protected readonly wizard = inject(TrainingWizardService);
   protected readonly aiService = inject(AiAssistantService);
+  protected readonly changePasswordService = inject(ChangePasswordService);
   protected readonly features = FEATURES;
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
@@ -225,6 +229,10 @@ export class Shell {
 
   openQrModal(): void {
     this.qrService.open();
+  }
+
+  openChangePasswordModal(): void {
+    this.changePasswordService.open();
   }
 
   setLanguage(lang: SupportedLanguage): void {

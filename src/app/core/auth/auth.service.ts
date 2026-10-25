@@ -2,14 +2,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Auth,
+  EmailAuthProvider,
   User,
   authState,
   browserLocalPersistence,
   browserSessionPersistence,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
 } from '@angular/fire/auth';
 import { firstValueFrom, from, of, switchMap, tap } from 'rxjs';
 import { IdentityApi } from '../api/identity.api';
@@ -200,6 +203,36 @@ export class AuthService {
 
   async sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(this.auth, email);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const user = this.auth.currentUser ?? this.firebaseUser();
+    if (!user || !user.email) {
+      throw new Error('Aktif kullanıcı oturumu bulunamadı.');
+    }
+
+    // 1. Mevcut şifreyi doğrulamak ve Firebase oturumunu tazelemek için yeniden kimlik doğrula
+    try {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+    } catch (err: any) {
+      if (err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
+        const customErr = new Error('Mevcut şifreniz hatalı. Lütfen kontrol edip tekrar deneyin.');
+        (customErr as any).code = 'INVALID_CURRENT_PASSWORD';
+        throw customErr;
+      }
+      throw err;
+    }
+
+    // 2. Firebase Auth üzerinde şifreyi güncelle
+    await updatePassword(user, newPassword);
+
+    // 3. Backend API ile senkronize et
+    try {
+      await firstValueFrom(this.identity.changePassword({ currentPassword, newPassword }));
+    } catch (e) {
+      console.warn('Backend password sync notice:', e);
+    }
   }
 
   /** Signs out a sign-in older than the session limit; returns the user if it may continue. */

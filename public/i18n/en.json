@@ -160,7 +160,8 @@
       "pill3": "Packages & Payments",
       "stat1Label": "Active Members",
       "stat2Label": "Weekly Classes",
-      "footer": "© {{year}} OdivonGYM. All rights reserved."
+      "footer": "© {{year}} OdivonGYM. All rights reserved.",
+      "stat3Label": "Satisfaction Rate"
     },
     "sportsShowcase": {
       "badge": "Performance, Training & Athlete Ecosystem",
@@ -306,7 +307,8 @@
       "wallet": "E-Wallet",
       "packages": "Packages",
       "profile": "Profile & Settings",
-      "adminExitPayments": "Exit Payments (Open Tabs)"
+      "adminExitPayments": "Exit Payments (Open Tabs)",
+      "support": "Support & Requests"
     },
     "badges": {
       "renewal": "Renewal",
@@ -359,6 +361,7 @@
     "adminStaff": "Staff & Roles",
     "adminGymInfo": "Gym Info",
     "adminSubscription": "Package & License",
+    "support": "Support & Requests",
     "searchPlaceholder": "Search menu",
     "collapseAll": "Collapse all groups",
     "expandAll": "Expand all groups",
@@ -406,6 +409,7 @@
     "menuGymInfo": "Gym Information",
     "menuDigitalCard": "My Digital Turnstile Card",
     "menuProfile": "Profile & Settings",
+    "menuChangePassword": "Change Password",
     "menuLogout": "Log Out",
     "expiredBannerTitle": "SaaS License Expired",
     "expiredBannerDesc": "Turnstile access, POS cashier, and operational modules suspended. Renew your license for uninterrupted management.",
@@ -899,5 +903,86 @@
     "tabCollected": "Collected",
     "tabCancelled": "Cancelled",
     "tabAll": "All"
+  },
+  "support": {
+    "headerBadge": "CUSTOMER SUPPORT & HELP CENTER",
+    "title": "Submit Request & Status Tracking",
+    "subtitle": "Submit technical issues, turnstile access, membership freeze, or suggestions. Track your request step-by-step with your unique tracking number.",
+    "quickTrackBtn": "Search by Tracking No",
+    "tabs": {
+      "create": "Create New Request",
+      "track": "Track Status",
+      "history": "My Past Requests"
+    },
+    "create": {
+      "categoryTitle": "Select Request Category",
+      "categoryDesc": "Please select the category that best describes your request.",
+      "ticketDetailsTitle": "Request Details & Contact Information",
+      "ticketDetailsDesc": "Please provide complete details so we can resolve your issue quickly.",
+      "subject": "Subject / Summary",
+      "subjectPlaceholder": "e.g. Turnstile QR code reader did not respond",
+      "description": "Detailed Description",
+      "descriptionPlaceholder": "Describe the issue, device/time details, and steps taken…",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Your full name",
+      "email": "Email Address",
+      "emailPlaceholder": "sample@odivon.com",
+      "phone": "Phone Number",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "priority": "Priority Level",
+      "priorityNormal": "Normal (Routine inquiry or request)",
+      "priorityUrgent": "Urgent (Blocking access or operation)",
+      "priorityCritical": "Critical (Hardware locked or total outage)",
+      "submitBtn": "Submit Request & Generate Tracking No",
+      "submitting": "Submitting…",
+      "successTitle": "Your Request Has Been Received!",
+      "successDesc": "Your request has been forwarded to our support team. You can check status updates anytime using your tracking number.",
+      "trackingNoLabel": "Your Tracking Number",
+      "copyTrackingNo": "Copy",
+      "copied": "Copied!",
+      "trackNowBtn": "Track Request Now",
+      "createNewBtn": "Submit Another Request"
+    },
+    "track": {
+      "title": "Query Request Status",
+      "subtitle": "Enter the tracking number in TK-XXXXXX format provided to check the latest progress.",
+      "inputPlaceholder": "e.g. TK-2026-A1B2C3",
+      "queryBtn": "Search",
+      "querying": "Searching…",
+      "recentTitle": "Recently Created Request",
+      "notFound": "No support ticket found for this tracking number.",
+      "notFoundHint": "Please check your tracking number (TK-YYYY-XXXXXX) and try again."
+    },
+    "history": {
+      "title": "Your Past Support Requests",
+      "subtitle": "All support requests and inquiries submitted under this account.",
+      "refresh": "Refresh",
+      "empty": "You do not have any open support requests yet.",
+      "openNew": "Create Your First Request"
+    },
+    "status": {
+      "received": "Received / Forwarded",
+      "in_review": "In Review",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "categories": {
+      "technical_support": "Technical Support & System",
+      "technical_support_desc": "App, connection, screen freeze, or software issues.",
+      "turnstile_access": "Turnstile & Access Control",
+      "turnstile_access_desc": "QR code reading issues, card setup, access blocking, or gate faults.",
+      "membership_freeze": "Membership & Freeze",
+      "membership_freeze_desc": "Membership extension, package freeze, transfer, or cancellation requests.",
+      "billing_payment": "Payment, POS & Invoicing",
+      "billing_payment_desc": "Installment payments, card charges, e-invoice lookup, or refunds.",
+      "feature_request": "Feedback & Feature Request",
+      "feature_request_desc": "Ideas or new features you'd like to see in the club or app.",
+      "general_inquiry": "General Inquiry & Info",
+      "general_inquiry_desc": "Working hours, group classes, or trainer sessions.",
+      "complaint_suggestion": "Complaints & Service Quality",
+      "complaint_suggestion_desc": "Feedback regarding service quality, club cleanliness, or staff."
+    }
   }
 }

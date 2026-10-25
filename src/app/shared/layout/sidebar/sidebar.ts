@@ -127,6 +127,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
       { icon: 'business', labelKey: 'sidebar.items.adminGymInfo', link: '/admin/gym-info' },
       { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription', badgeKey: 'sidebar.badges.plan', badgeClass: 'badge-purple' },
       { icon: 'sms', labelKey: 'sidebar.items.adminSmsSettings', link: '/admin/sms-settings' },
+      { icon: 'support_agent', labelKey: 'sidebar.items.support', link: '/support' },
     ],
 
   },
@@ -160,6 +161,7 @@ const MEMBER_GROUPS: NavGroup[] = [
       { icon: 'account_balance_wallet', labelKey: 'sidebar.items.wallet', link: '/wallet' },
       { icon: 'card_membership', labelKey: 'sidebar.items.packages', link: '/packages' },
       { icon: 'person', labelKey: 'sidebar.items.profile', link: '/profile' },
+      { icon: 'support_agent', labelKey: 'sidebar.items.support', link: '/support' },
     ],
   },
 ];

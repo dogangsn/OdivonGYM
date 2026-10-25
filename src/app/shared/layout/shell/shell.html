@@ -386,6 +386,10 @@
               <span>{{ 'shell.menuGymInfo' | transloco }}</span>
             </button>
           }
+          <button mat-menu-item (click)="openChangePasswordModal()">
+            <mat-icon class="text-indigo-600">lock_reset</mat-icon>
+            <span>{{ 'shell.menuChangePassword' | transloco }}</span>
+          </button>
           <button mat-menu-item (click)="logOut()">
             <mat-icon class="text-rose-500">logout</mat-icon>
             <span class="text-rose-600 font-semibold">{{ 'shell.menuLogout' | transloco }}</span>
@@ -464,5 +468,8 @@
     @if (features.aiAssistant) {
       <app-ai-assistant-modal />
     }
+
+    <!-- ŞİFRE DEĞİŞTİRME MODALI -->
+    <app-change-password-modal />
   </div>
 </div>

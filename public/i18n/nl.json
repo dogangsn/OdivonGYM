@@ -157,7 +157,8 @@
       "pill3": "Pakketten & Betalingen",
       "stat1Label": "Actieve leden",
       "stat2Label": "Wekelijkse lessen",
-      "footer": "© {{year}} OdivonGYM. Alle rechten voorbehouden."
+      "footer": "© {{year}} OdivonGYM. Alle rechten voorbehouden.",
+      "stat3Label": "Tevredenheid"
     },
     "sportsShowcase": {
       "badge": "Prestaties, Training & Atleet Ecosysteem",
@@ -301,7 +302,10 @@
       "wallet": "E-Portemonnee",
       "packages": "Pakketten",
       "profile": "Profiel & instellingen",
-      "adminExitPayments": "Betalingen bij uitgang"
+      "adminExitPayments": "Betalingen bij uitgang",
+      "support": "Ondersteuning & Verzoeken",
+      "adminProgramRequests": "Programmaverzoeken",
+      "adminSmsSettings": "SMS-provider & instellingen"
     },
     "badges": {
       "renewal": "Verlenging",
@@ -359,7 +363,13 @@
     "closeMenu": "Menu sluiten",
     "defaultMemberName": "Lid",
     "menuProfile": "Profiel",
-    "menuLogout": "Uitloggen"
+    "menuLogout": "Uitloggen",
+    "support": "Ondersteuning & Verzoeken",
+    "searchPlaceholder": "Zoek in menu",
+    "collapseAll": "Alles inklappen",
+    "expandAll": "Alles uitklappen",
+    "noResults": "Geen menu-item gevonden",
+    "clearSearch": "Zoekopdracht wissen"
   },
   "shell": {
     "menu": "Menu",
@@ -415,7 +425,8 @@
     "notif3Title": "Kritiek voorraadniveau",
     "notif3Msg": "Optimum Gold Whey Protein (Chocola) is bijna op: nog slechts 2 stuks.",
     "notif4Title": "E-Factuur opgesteld",
-    "notif4Msg": "Fiscaal goedgekeurde factuur #ODV20260001 is succesvol verzegeld."
+    "notif4Msg": "Fiscaal goedgekeurde factuur #ODV20260001 is succesvol verzegeld.",
+    "menuChangePassword": "Wachtwoord wijzigen"
   },
   "dashboard": {
     "greetingNight": "Goedenacht",
@@ -889,5 +900,86 @@
     "tabCollected": "Ontvangen",
     "tabCancelled": "Geannuleerd",
     "tabAll": "Alles"
+  },
+  "support": {
+    "headerBadge": "KLANTENSERVICE & HELPCOMMUNICATIE",
+    "title": "Verzoek Indienen & Status Volgen",
+    "subtitle": "Dien technische storingen, draaikruistoegang, bevriezing van het lidmaatschap of suggesties in. Volg uw verzoek stap voor stap met uw unieke trackingnummer.",
+    "quickTrackBtn": "Zoeken op Trackingnummer",
+    "tabs": {
+      "create": "Nieuw Verzoek Indienen",
+      "track": "Status Controleren",
+      "history": "Mijn Eerdere Verzoeken"
+    },
+    "create": {
+      "categoryTitle": "Kies een Categorie",
+      "categoryDesc": "Selecteer de categorie die uw verzoek het beste omschrijft.",
+      "ticketDetailsTitle": "Details & Contactgegevens",
+      "ticketDetailsDesc": "Vul alle gegevens zo volledig mogelijk in voor een snelle afhandeling.",
+      "subject": "Onderwerp",
+      "subjectPlaceholder": "bijv. Draaikruis reageert niet op QR-code",
+      "description": "Gedetailleerde Beschrijving",
+      "descriptionPlaceholder": "Beschrijf het probleem, apparaat- of tijdsgegevens en eventuele stappen…",
+      "fullName": "Volledige Naam",
+      "fullNamePlaceholder": "Uw voor- en achternaam",
+      "email": "E-mailadres",
+      "emailPlaceholder": "voorbeeld@odivon.com",
+      "phone": "Telefoonnummer",
+      "phonePlaceholder": "+31 6 XX XX XX XX",
+      "priority": "Prioriteit",
+      "priorityNormal": "Normaal (Reguliere vraag of melding)",
+      "priorityUrgent": "Dringend (Verhindert toegang of handeling)",
+      "priorityCritical": "Kritiek (Hardware vergrendeld of totale storing)",
+      "submitBtn": "Verzoek Verzenden & Volgnummer Ontvangen",
+      "submitting": "Verzenden…",
+      "successTitle": "Uw Verzoek is Succesvol Ontvangen!",
+      "successDesc": "Uw verzoek is doorgestuurd naar ons supportteam. U kunt de voortgang op elk moment volgen.",
+      "trackingNoLabel": "Uw Trackingnummer",
+      "copyTrackingNo": "Kopiëren",
+      "copied": "Gekopieerd!",
+      "trackNowBtn": "Nu Verzoek Volgen",
+      "createNewBtn": "Nog een Verzoek Indienen"
+    },
+    "track": {
+      "title": "Verzoekstatus Opvragen",
+      "subtitle": "Voer het verstrekte trackingnummer in TK-XXXXXX formaat in om de huidige voortgang te bekijken.",
+      "inputPlaceholder": "bijv. TK-2026-A1B2C3",
+      "queryBtn": "Zoeken",
+      "querying": "Zoeken…",
+      "recentTitle": "Recent Aangemaakt Verzoek",
+      "notFound": "Geen ondersteuningsverzoek gevonden met dit trackingnummer.",
+      "notFoundHint": "Controleer uw trackingnummer (TK-YYYY-XXXXXX) en probeer het opnieuw."
+    },
+    "history": {
+      "title": "Uw Eerdere Verzoeken",
+      "subtitle": "Alle meldingen en verzoeken ingediend via dit account.",
+      "refresh": "Vernieuwen",
+      "empty": "U heeft nog geen actieve ondersteuningsverzoeken.",
+      "openNew": "Dien Uw Eerste Verzoek In"
+    },
+    "status": {
+      "received": "Ontvangen / Doorgestuurd",
+      "in_review": "In Beoordeling",
+      "in_progress": "In Behandeling",
+      "resolved": "Opgelost",
+      "closed": "Gesloten",
+      "rejected": "Afgewezen"
+    },
+    "categories": {
+      "technical_support": "Technische Ondersteuning",
+      "technical_support_desc": "App, netwerk, vastlopende schermen of softwarefouten.",
+      "turnstile_access": "Draaikruis & Toegangscontrole",
+      "turnstile_access_desc": "QR-code problemen, kaartregistratie of doorgangsstoringen.",
+      "membership_freeze": "Lidmaatschap & Bevriezing",
+      "membership_freeze_desc": "Verlenging, pauzeren, overdragen of opzeggen van pakketten.",
+      "billing_payment": "Betaling, Kassa & Factuur",
+      "billing_payment_desc": "Termijnbetalingen, pinnen, e-facturen of restitutieverzoeken.",
+      "feature_request": "Suggestie & Verbetering",
+      "feature_request_desc": "Nieuwe functies of ideeën die u graag in de club wilt zien.",
+      "general_inquiry": "Algemene Vragen & Info",
+      "general_inquiry_desc": "Openingstijden, groepslessen of informatie over trainers.",
+      "complaint_suggestion": "Klacht & Kwaliteit",
+      "complaint_suggestion_desc": "Feedback over hygiëne, clubinrichting of dienstverlening."
+    }
   }
 }

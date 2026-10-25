@@ -61,4 +61,9 @@ export class AdminStaffService {
     const nextStatus: StaffStatus = currentStatus === 'active' ? 'inactive' : 'active';
     await this.updateStaff(id, { status: nextStatus });
   }
+
+  async resendInvite(id: string): Promise<string> {
+    const res = await firstValueFrom(this.api.resendStaffInvite(id));
+    return res.message;
+  }
 }

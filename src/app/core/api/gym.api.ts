@@ -96,6 +96,12 @@ export class GymApi {
     return this.api.delete<{ id: string }>(`/gym/staff/${id}`).pipe(map((r) => r.data));
   }
 
+  resendStaffInvite(id: string) {
+    return this.api
+      .post<{ success: boolean; message: string }>(`/gym/staff/${id}/resend-invite`, {})
+      .pipe(map((r) => r.data));
+  }
+
   getInfo() {
     return this.api.get<GymInfo | null>('/gym/info').pipe(map((r) => r.data));
   }
