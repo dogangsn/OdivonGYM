@@ -187,6 +187,9 @@ export class Sidebar {
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly version = inject(VersionService);
 
+  /** Menü içi canlı arama filtresi */
+  readonly menuSearch = signal<string>('');
+
   /** Kullanıcının açık/kapalı yaptığı menü gruplarının reaktif durumu */
   private readonly groupStates = signal<Record<string, boolean>>({});
 
@@ -194,6 +197,10 @@ export class Sidebar {
     const custom = this.groupStates()[group.titleKey];
     if (custom !== undefined) {
       return custom;
+    }
+    // Arama yapılıyorsa eşleşen tüm gruplar açık gelsin
+    if (this.menuSearch().trim().length > 0) {
+      return true;
     }
     // Varsayılan olarak sadece "Genel" grubu açık gelsin
     return group.titleKey === 'sidebar.groups.general';
@@ -207,6 +214,39 @@ export class Sidebar {
       ...prev,
       [group.titleKey]: !current,
     }));
+  }
+
+  /** Açıkta en az bir grup var mı (Tümünü kapat vs. Tümünü aç aksiyonu ve ikonu için) */
+  readonly anyGroupOpen = computed(() => {
+    const currentGroups = this.groups();
+    return currentGroups.some((group) => this.isGroupOpen(group));
+  });
+
+  /** Sağ kutucuk: Grupların hepsini kapat / hepsini aç toggle aksiyonu */
+  toggleAllGroups(): void {
+    const currentGroups = this.groups();
+    const anyOpen = currentGroups.some((group) => this.isGroupOpen(group));
+    const newStates: Record<string, boolean> = {};
+
+    for (const group of currentGroups) {
+      // Eğer en az biri açıksa hepsini kapat (false), hepsi kapalıysa hepsini aç (true)
+      newStates[group.titleKey] = !anyOpen;
+    }
+
+    this.groupStates.set(newStates);
+  }
+
+  onSearchChange(query: string): void {
+    this.menuSearch.set(query);
+    if (query.trim().length > 0) {
+      // Arama yapıldığında kullanıcı önceden tek tek kapattıysa bile eşleşen gruplar açılsın
+      this.groupStates.set({});
+    }
+  }
+
+  clearSearch(): void {
+    this.menuSearch.set('');
+    this.groupStates.set({});
   }
 
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */
@@ -240,16 +280,13 @@ export class Sidebar {
   protected readonly groups = computed<NavGroup[]>(() => {
     const role = this.permissions.currentRole();
     const expired = this.isExpired();
+    const query = this.menuSearch().trim().toLocaleLowerCase('tr');
 
-    if (role === 'user') {
-      return MEMBER_GROUPS.filter((group) => group.items.length > 0);
-    }
-
-    const baseGroups = ADMIN_OPERATIONAL_GROUPS;
+    const baseGroups = role === 'user' ? MEMBER_GROUPS : ADMIN_OPERATIONAL_GROUPS;
 
     return baseGroups.map((group) => {
       let allowedItems = group.items;
-      if (role !== 'owner' && role !== 'admin') {
+      if (role !== 'user' && role !== 'owner' && role !== 'admin') {
         allowedItems = allowedItems.filter((item) => this.permissions.canAccessRoute(item.link));
       }
 
@@ -285,9 +322,23 @@ export class Sidebar {
         return item;
       });
 
+      // Menü arama filtresi
+      let filteredItems = mappedItems;
+      if (query.length > 0) {
+        const groupTitle = (group.titleKey.includes('.') ? this.transloco.translate(group.titleKey) : group.titleKey).toLocaleLowerCase('tr');
+        const groupMatches = groupTitle.includes(query);
+
+        filteredItems = mappedItems.filter((item) => {
+          if (groupMatches) return true;
+          const itemLabel = (item.labelKey.includes('.') ? this.transloco.translate(item.labelKey) : item.labelKey).toLocaleLowerCase('tr');
+          const itemLink = item.link.toLowerCase();
+          return itemLabel.includes(query) || itemLink.includes(query);
+        });
+      }
+
       return {
         ...group,
-        items: mappedItems,
+        items: filteredItems,
       };
     }).filter((group) => group.items.length > 0);
   });
