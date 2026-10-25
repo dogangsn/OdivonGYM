@@ -984,5 +984,180 @@
       "complaint_suggestion": "Complaints & Service Quality",
       "complaint_suggestion_desc": "Feedback regarding service quality, club cleanliness, or staff."
     }
+  },
+  "members": {
+    "title": "Member Records",
+    "subtitle": "Search, filter, update membership status or add new members.",
+    "newMember": "New Member",
+    "missingTenantTitle": "Account not linked to a gym.",
+    "missingTenantDesc": "This admin account was created prior to multi-tenant structure; tenantId is missing in profile. Member list appears empty.",
+    "activeMembers": "Active Members",
+    "archived": "Archived",
+    "archivedBadge": "Archived",
+    "archiveNotice": "Archived members are deactivated at turnstiles and can be restored with a single click.",
+    "searchPlaceholder": "Search by name, email, phone, member no or branch...",
+    "branch": "Branch",
+    "branchFilterAll": "All Branches",
+    "loading": "Loading…",
+    "balance": "Balance",
+    "untilDate": "Until {{date}}",
+    "perPage": "Per Page:",
+    "firstPage": "First Page",
+    "prevPage": "Previous Page",
+    "nextPage": "Next Page",
+    "lastPage": "Last Page",
+    "noMatchFound": "No matching members found",
+    "noMatchDesc": "No records found matching \"{{term}}\".",
+    "noArchivedFound": "No Archived Members",
+    "noArchivedDesc": "There are no members in the archive.",
+    "noMembersFound": "No Members Found Yet",
+    "noMembersDesc": "Start by registering a new member.",
+    "addFirstMember": "+ Add First Member",
+    "table": {
+      "member": "Member",
+      "branch": "Branch",
+      "contact": "Contact",
+      "gender": "Gender",
+      "status": "Status",
+      "package": "Package",
+      "registerDate": "Registration Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "unspecified": "Unspecified"
+    },
+    "actions": {
+      "archive": "Archive Member",
+      "unarchive": "Unarchive & Activate",
+      "delete": "Delete member profile"
+    },
+    "wallet": {
+      "title": "Balance",
+      "current": "Current balance",
+      "transaction": "Transaction",
+      "deposit": "Top-up Balance",
+      "debit": "Deduct Balance",
+      "amount": "Amount",
+      "paymentMethod": "Payment Method",
+      "cash": "Cash",
+      "card": "Credit/Debit Card",
+      "transfer": "Bank Transfer",
+      "description": "Description",
+      "save": "Save"
+    }
+  },
+  "packages": {
+    "title": "Package & Pricing Management",
+    "subtitle": "Manage gym-wide memberships, staff/trainer-specific PT packages, commission rates, and access rules.",
+    "addNew": "+ Add New Package",
+    "filterAll": "All Packages",
+    "filterClub": "Club Wide",
+    "filterStaff": "Staff Specific",
+    "allTrainers": "All Trainers",
+    "searchPlaceholder": "Search by package name, staff, or barcode...",
+    "loading": "Loading…",
+    "table": {
+      "package": "Package & Scope",
+      "category": "Category",
+      "duration": "Duration",
+      "sessions": "Sessions & Access",
+      "pricing": "Price & Earnings",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "sessionsUnlimited": "Unlimited",
+    "daysUnit": "Days",
+    "drawer": {
+      "scopeTitle": "Package Scope & Differentiation",
+      "scopeClub": "Club-Wide Package",
+      "scopeStaff": "Staff / PT Specific",
+      "staffConfig": "Trainer & Commission Config",
+      "selectStaff": "-- Select Staff --",
+      "addStaffRate": "Add Staff Rate",
+      "staff": "Staff Member",
+      "price": "Price",
+      "commission": "Commission (%)",
+      "durationConfig": "Duration Config",
+      "unit": "Unit",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "accounting": {
+    "title": "Accounting & Cash Register",
+    "subtitle": "Cash ledger movements, end-of-day Z report reconciliations, and expense analytics.",
+    "tabs": {
+      "ledger": "Cash Ledger (Income & Expense)",
+      "dailyClose": "Daily Close & Z-Report",
+      "analytics": "Expense & Category Analytics"
+    },
+    "actions": {
+      "manageCategories": "Manage Categories",
+      "newEntry": "New Ledger Entry",
+      "refreshLive": "Refresh Live Cash",
+      "closeDay": "Close Day & Reconcile",
+      "exportCsv": "Export Excel / CSV"
+    }
+  },
+  "staff": {
+    "badge": "Roles & Permissions Engine",
+    "title": "Staff & User Roles",
+    "subtitle": "Gym owner (patron), general manager, coach, and receptionist job descriptions and access control.",
+    "newStaff": "Add New Staff Member",
+    "simulation": "Simulation",
+    "endSimulation": "Exit Simulation",
+    "kpi": {
+      "totalStaff": "Total Team",
+      "allBranches": "All branches registered",
+      "activeTrainers": "Active Coaches",
+      "reception": "Reception & Desk",
+      "management": "Management"
+    }
+  },
+  "branches": {
+    "title": "Branches & Facilities",
+    "subtitle": "Manage gym branches: Branch logo, open days, hours, and capacity.",
+    "newBranch": "Add New Branch"
+  },
+  "guestMembers": {
+    "title": "Guest & Lead Tracking",
+    "subtitle": "Manage prospective member surveys, interests, and follow-ups in one place.",
+    "newGuest": "New Guest Record"
+  },
+  "programRequests": {
+    "title": "Program Requests",
+    "subtitle": "Member requests for custom workout routines. Assignment closes request upon plan creation."
+  },
+  "reports": {
+    "title": "Reports & Analytics",
+    "subtitle": "Financial summaries, member churn, facility occupancy, and KPI metrics."
+  },
+  "gymInfo": {
+    "title": "Club & Gym Information",
+    "subtitle": "Club contact details, commercial title, logo, and general gym settings."
+  },
+  "products": {
+    "title": "Product & Stock Management",
+    "subtitle": "Track cafe items, supplements, apparel, and retail barcode products."
+  },
+  "eInvoice": {
+    "title": "Invoicing & E-Invoice Management",
+    "subtitle": "Official e-invoice and e-archive issuance, cancellations, and tax compliance."
+  },
+  "suppliers": {
+    "title": "Suppliers & Vendor Accounts",
+    "subtitle": "Supplier balances, payables, stock procurement, and purchase receipts."
   }
 }

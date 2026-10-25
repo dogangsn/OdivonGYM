@@ -23,10 +23,12 @@ import { GymBranch } from '../../core/models/gym-branch.model';
 
 type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator' | 'payroll';
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-staff',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-staff.html',
   styleUrl: './admin-staff.scss',

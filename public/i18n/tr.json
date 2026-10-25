@@ -983,5 +983,180 @@
       "complaint_suggestion": "Şikayet & Hizmet Bildirimi",
       "complaint_suggestion_desc": "Hizmet kalitesi, salon düzeni veya personel ile ilgili geri bildirim."
     }
+  },
+  "members": {
+    "title": "Üye Kayıtları",
+    "subtitle": "Tüm üyeleri ara, filtrele, üyelik durumunu değiştir veya yeni üye ekle.",
+    "newMember": "Yeni Üye",
+    "missingTenantTitle": "Hesabın bir salona bağlı değil.",
+    "missingTenantDesc": "Bu admin hesabı çok-kiracılı yapıdan önce oluşturulmuş; profilinde tenantId yok. Bu yüzden üye listesi boş görünüyor.",
+    "activeMembers": "Aktif Üyeler",
+    "archived": "Arşivdekiler",
+    "archivedBadge": "Arşivde",
+    "archiveNotice": "Arşivdeki üyeler turnike geçişlerinde pasif kalır, istendiğinde tek tıkla geri aktif edilebilir.",
+    "searchPlaceholder": "Ad, e-posta, telefon, üye no veya şube ara...",
+    "branch": "Şube",
+    "branchFilterAll": "Tüm Şubeler",
+    "loading": "Yükleniyor…",
+    "balance": "Bakiye",
+    "untilDate": "{{date}}'e kadar",
+    "perPage": "Sayfa Başına:",
+    "firstPage": "İlk Sayfa",
+    "prevPage": "Önceki Sayfa",
+    "nextPage": "Sonraki Sayfa",
+    "lastPage": "Son Sayfa",
+    "noMatchFound": "Eşleşen üye bulunamadı",
+    "noMatchDesc": "\"{{term}}\" ile eşleşen bir kayıt yok.",
+    "noArchivedFound": "Arşivde Üye Yok",
+    "noArchivedDesc": "Arşive kaldırılmış üye bulunmuyor.",
+    "noMembersFound": "Henüz Üye Bulunamadı",
+    "noMembersDesc": "Yeni bir üye ekleyerek hemen başlayabilirsiniz.",
+    "addFirstMember": "+ İlk Üyeyi Ekle",
+    "table": {
+      "member": "Üye",
+      "branch": "Şube",
+      "contact": "İletişim",
+      "gender": "Cinsiyet",
+      "status": "Durum",
+      "package": "Paket",
+      "registerDate": "Kayıt Tarihi",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "trial": "Deneme",
+      "active": "Aktif",
+      "expired": "Süresi Bitti",
+      "cancelled": "İptal"
+    },
+    "gender": {
+      "female": "Kadın",
+      "male": "Erkek",
+      "unspecified": "Belirtilmemiş"
+    },
+    "actions": {
+      "archive": "Üyeyi Arşive Kaldır",
+      "unarchive": "Arşivden Çıkar ve Aktifleştir",
+      "delete": "Üye profilini sil"
+    },
+    "wallet": {
+      "title": "Bakiye",
+      "current": "Mevcut bakiye",
+      "transaction": "İşlem",
+      "deposit": "Bakiye Yükle",
+      "debit": "Bakiye Düş",
+      "amount": "Tutar (₺)",
+      "paymentMethod": "Ödeme Yöntemi",
+      "cash": "Nakit",
+      "card": "Kart",
+      "transfer": "Havale",
+      "description": "Açıklama",
+      "save": "Kaydet"
+    }
+  },
+  "packages": {
+    "title": "Paket & Fiyatlandırma Yönetimi",
+    "subtitle": "Salon geneli üyelikler ile personele/eğitmene özel abonelik & PT paketlerini, prim oranlarını ve kurallarını yönetin.",
+    "addNew": "+ Yeni Paket Ekle",
+    "filterAll": "Tüm Paketler",
+    "filterClub": "Salon Geneli",
+    "filterStaff": "Personele Özel",
+    "allTrainers": "Tüm Eğitmenler",
+    "searchPlaceholder": "Paket adı, personel veya barkod ara...",
+    "loading": "Yükleniyor…",
+    "table": {
+      "package": "Paket & Kapsam",
+      "category": "Kategori",
+      "duration": "Süre",
+      "sessions": "Seans & Erişim",
+      "pricing": "Fiyat & Hakediş",
+      "status": "Durum",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "active": "Satışta",
+      "inactive": "Pasif"
+    },
+    "sessionsUnlimited": "Sınırsız",
+    "daysUnit": "Gün",
+    "drawer": {
+      "scopeTitle": "Paket Kapsamı & Ayrımı",
+      "scopeClub": "Salon Geneli Paket",
+      "scopeStaff": "Personele / PT'ye Özel",
+      "staffConfig": "Eğitmen & Prim Yapılandırması",
+      "selectStaff": "-- Personel Seçiniz --",
+      "addStaffRate": "Personel Tarifesi Ekle",
+      "staff": "Personel",
+      "price": "Fiyat (₺)",
+      "commission": "Prim (%)",
+      "durationConfig": "Süre Yapılandırması",
+      "unit": "Birim",
+      "save": "Kaydet",
+      "cancel": "Vazgeç"
+    }
+  },
+  "accounting": {
+    "title": "Muhasebe & Kasa Yönetimi",
+    "subtitle": "Kasa hareketleri, gün sonu Z raporu kasa mutabakatı ve detaylı gider analitiği.",
+    "tabs": {
+      "ledger": "Kasa Defteri (Gelir & Gider)",
+      "dailyClose": "Günü Kapat & Z Raporu",
+      "analytics": "Gider & Kategori Analitiği"
+    },
+    "actions": {
+      "manageCategories": "Kategorileri Yönet",
+      "newEntry": "Yeni Kayıt Ekle",
+      "refreshLive": "Canlı Kasayı Yenile",
+      "closeDay": "Günü Kapat & Sayım Yap",
+      "exportCsv": "Excel / CSV İndir"
+    }
+  },
+  "staff": {
+    "badge": "Rol & Yetki Altyapısı",
+    "title": "Personel & Kullanıcı Rolleri",
+    "subtitle": "Salon sahibi (patron), genel müdür, antrenör ve resepsiyon görev tanımları, yetkilendirme ve çalışma şartları.",
+    "newStaff": "Yeni Personel Tanımla",
+    "simulation": "Simülasyon",
+    "endSimulation": "Simülasyonu Bitir",
+    "kpi": {
+      "totalStaff": "Toplam Ekip",
+      "allBranches": "Tüm şubeler kayıtlı",
+      "activeTrainers": "Aktif Eğitmenler",
+      "reception": "Resepsiyon & Kasa",
+      "management": "Yönetim & Müdür"
+    }
+  },
+  "branches": {
+    "title": "Şubeler & Tesisler",
+    "subtitle": "Salon şubelerini yönetin: Şube logosu, açık olduğu günler, çalışma saatleri ve kapasite.",
+    "newBranch": "Yeni Şube Ekle"
+  },
+  "guestMembers": {
+    "title": "Misafir Üye & Ziyaretçi Takibi",
+    "subtitle": "Salonu gezmeye gelen potansiyel üyelerin anket, ilgi ve takip süreçlerini tek panelden yönetin.",
+    "newGuest": "Yeni Misafir Kaydı"
+  },
+  "programRequests": {
+    "title": "Program Talepleri",
+    "subtitle": "Üyenin antrenörden istediği programlar. Atama mevcut antrenman kaydıyla talebi kapatır."
+  },
+  "reports": {
+    "title": "Raporlar & Analizler",
+    "subtitle": "Finansal özetler, üye sirkülasyonu, doluluk oranları ve salon performans metrikleri."
+  },
+  "gymInfo": {
+    "title": "Kulüp & Salon Bilgileri",
+    "subtitle": "Kulüp iletişim bilgileri, ticari unvan, logo ve genel salon ayarları."
+  },
+  "products": {
+    "title": "Ürün & Stok Yönetimi",
+    "subtitle": "Kafe, suplement, ekipman ve perakende satış ürünlerinin takibi ve barkod yönetimi."
+  },
+  "eInvoice": {
+    "title": "Fatura & E-Fatura / E-Arşiv Yönetimi",
+    "subtitle": "GİB uyumlu e-fatura ve e-arşiv fatura kesimi, iptal/iade ve muhasebe entegrasyonu."
+  },
+  "suppliers": {
+    "title": "Tedarikçi & Cari Hesap Yönetimi",
+    "subtitle": "Tedarikçi borç-alacak takibi, hammadde ve ürün alım faturaları."
   }
 }

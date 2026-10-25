@@ -1,7 +1,7 @@
 <div class="font-sans space-y-6">
   <!-- 1. Header -->
-  <app-page-header title="Fatura & E-Fatura / E-Arşiv Yönetimi" icon="receipt_long"
-    description="GİB standartlarında (UBL-TR 2.1) e-Arşiv ve e-Fatura düzenleyin; üyelik ve hizmet satışlarını faturalandırın, resmi fatura görüntüleyicisi ile yazdırın ve XML dışa aktarın.">
+  <app-page-header title="eInvoice.title" icon="receipt_long"
+    description="eInvoice.subtitle">
     <div actions class="flex flex-wrap items-center gap-2">
       @if (invoices().length === 0) {
       <button type="button" (click)="seedSampleInvoices()" [disabled]="seeding()"

@@ -35,9 +35,9 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
     <div class="font-sans space-y-6">
       <!-- 1. Page Header -->
       <app-page-header
-        title="Turnike & Geçiş Kontrol"
+        title="accessControl.title"
         icon="nfc"
-        description="Turnike ve kart okuyucuları izle, geçiş kayıtlarını denetle, üye yetkilerinin cihazlara uygulanmasını takip et."
+        description="accessControl.desc"
       >
         <div actions class="flex items-center gap-2">
           <button

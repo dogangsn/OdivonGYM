@@ -15,9 +15,9 @@ import { AuthService } from '../../core/auth/auth.service';
   template: `
     <div class="font-sans">
       <app-page-header
-        title="Salon Bilgileri"
+        title="gymInfo.title"
         icon="business"
-        description="Salon adı, iletişim bilgileri, üyelik kuralları ve genel ayarlar."
+        description="gymInfo.subtitle"
       />
 
       @if (loading()) {

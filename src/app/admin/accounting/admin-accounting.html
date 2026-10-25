@@ -1,33 +1,33 @@
 <div class="font-sans space-y-6">
   <!-- Page Header -->
   <app-page-header
-    title="Muhasebe & Kasa Yönetimi"
+    title="accounting.title"
     icon="account_balance"
-    description="Kasa hareketleri, gün sonu Z raporu kasa mutabakatı ve detaylı gider analitiği."
+    description="accounting.subtitle"
   >
     <div actions class="flex items-center gap-2">
       @if (activeTab() === 'ledger') {
         <button type="button" class="odv-btn-soft" (click)="openCategoryModal()">
           <mat-icon class="icon-size-4">category</mat-icon>
-          <span>Kategorileri Yönet</span>
+          <span>{{ 'accounting.actions.manageCategories' | transloco }}</span>
         </button>
         <button type="button" class="odv-btn-primary" (click)="openForm()">
           <mat-icon class="icon-size-4.5">add</mat-icon>
-          <span>Yeni Kayıt Ekle</span>
+          <span>{{ 'accounting.actions.newEntry' | transloco }}</span>
         </button>
       } @else if (activeTab() === 'daily-close') {
-        <button type="button" class="odv-btn-soft" (click)="loadPreClosePreview()" title="Verileri Yenile">
+        <button type="button" class="odv-btn-soft" (click)="loadPreClosePreview()" [title]="'common.filter' | transloco">
           <mat-icon class="icon-size-4">refresh</mat-icon>
-          <span>Canlı Kasayı Yenile</span>
+          <span>{{ 'accounting.actions.refreshLive' | transloco }}</span>
         </button>
         <button type="button" class="odv-btn-primary" (click)="openDailyCloseDrawer()">
           <mat-icon class="icon-size-4.5">point_of_sale</mat-icon>
-          <span>Günü Kapat & Sayım Yap</span>
+          <span>{{ 'accounting.actions.closeDay' | transloco }}</span>
         </button>
       } @else if (activeTab() === 'analytics') {
         <button type="button" class="odv-btn-soft" (click)="exportAnalyticsCsv()">
           <mat-icon class="icon-size-4">file_download</mat-icon>
-          <span>Excel / CSV İndir</span>
+          <span>{{ 'accounting.actions.exportCsv' | transloco }}</span>
         </button>
       }
     </div>
@@ -46,7 +46,7 @@
       "
     >
       <mat-icon class="icon-size-4">receipt_long</mat-icon>
-      <span>Kasa Defteri (Gelir & Gider)</span>
+      <span>{{ 'accounting.tabs.ledger' | transloco }}</span>
     </button>
 
     <button
@@ -60,7 +60,7 @@
       "
     >
       <mat-icon class="icon-size-4">point_of_sale</mat-icon>
-      <span>Gün Sonu Kapanışı (Z Raporu)</span>
+      <span>{{ 'accounting.tabs.dailyClose' | transloco }}</span>
       @if (preClosePreview()?.isAlreadyClosed) {
         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
       } @else {
@@ -79,7 +79,7 @@
       "
     >
       <mat-icon class="icon-size-4">query_stats</mat-icon>
-      <span>Gider & Kârlılık Analitiği (P&L)</span>
+      <span>{{ 'accounting.tabs.analytics' | transloco }}</span>
     </button>
   </div>
 

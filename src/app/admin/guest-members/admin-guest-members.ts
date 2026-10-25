@@ -43,21 +43,23 @@ const VISIT_REASONS = [
   'Doktor / Sağlık Yönlendirmesi',
 ];
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-guest-members',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, LeadFunnelReport, ReferralProgram],
+  imports: [FormsModule, ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, LeadFunnelReport, ReferralProgram, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans">
       <app-page-header
-        title="Misafir Üye & Ziyaretçi Takibi"
+        title="guestMembers.title"
         icon="contact_support"
-        description="Salonu gezmeye gelen potansiyel üyelerin anket, ilgi ve takip süreçlerini tek panelden yönetin."
+        description="guestMembers.subtitle"
       >
         <button actions type="button" class="odv-btn-primary" (click)="openForm()">
           <mat-icon class="icon-size-4.5">person_add</mat-icon>
-          Yeni Misafir Kaydı
+          {{ 'guestMembers.newGuest' | transloco }}
         </button>
       </app-page-header>
 

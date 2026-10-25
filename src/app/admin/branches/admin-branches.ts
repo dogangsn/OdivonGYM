@@ -24,18 +24,20 @@ const STATUS_CLASS: Record<GymBranch['status'], string> = {
   closed: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
 };
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-branches',
   standalone: true,
-  imports: [CommonModule, PageHeader, MatIconModule, MatTooltipModule, BranchFormDialog],
+  imports: [CommonModule, PageHeader, MatIconModule, MatTooltipModule, BranchFormDialog, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <app-page-header
-          title="Şubeler & Tesisler"
+          title="branches.title"
           icon="store"
-          description="Salon şubelerini yönetin: Şube logosu, açık olduğu günler, çalışma saatleri ve kapasite."
+          description="branches.subtitle"
         />
         <button
           type="button"
@@ -43,7 +45,7 @@ const STATUS_CLASS: Record<GymBranch['status'], string> = {
           class="odv-btn-primary self-start text-xs sm:text-sm"
         >
           <mat-icon class="icon-size-4.5">add</mat-icon>
-          <span>Yeni Şube Ekle</span>
+          <span>{{ 'branches.newBranch' | transloco }}</span>
         </button>
       </div>
 

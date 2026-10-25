@@ -3,17 +3,17 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight m-0">
-        Üye Kayıtları
+        {{ 'members.title' | transloco }}
       </h1>
       <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 mb-0">
-        Tüm üyeleri ara, filtrele, üyelik durumunu değiştir veya yeni üye ekle.
+        {{ 'members.subtitle' | transloco }}
       </p>
     </div>
     <div class="flex items-center gap-3">
       <button type="button" (click)="openNewMemberDrawer()"
         class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
         <mat-icon class="icon-size-4.5" [svgIcon]="'heroicons_solid:user-plus'"></mat-icon>
-        <span>Yeni Üye</span>
+        <span>{{ 'members.newMember' | transloco }}</span>
       </button>
     </div>
   </div>
@@ -21,11 +21,9 @@
   @if (missingTenant()) {
   <div
     class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200 text-sm">
-    <p class="m-0 font-bold">Hesabın bir salona bağlı değil.</p>
+    <p class="m-0 font-bold">{{ 'members.missingTenantTitle' | transloco }}</p>
     <p class="m-0 mt-1">
-      Bu admin hesabı çok-kiracılı yapıdan önce oluşturulmuş; profilinde <code>tenantId</code> yok. Bu yüzden üye
-      listesi boş
-      görünüyor ve yeni üye/paket/ürün kaydedilemiyor. Sistem yöneticisinden hesabın bir salona bağlanmasını iste.
+      {{ 'members.missingTenantDesc' | transloco }}
     </p>
   </div>
   }
@@ -48,7 +46,7 @@
           [class.dark:text-slate-400]="showArchived()"
         >
           <mat-icon class="icon-size-4">groups</mat-icon>
-          <span>Aktif Üyeler</span>
+          <span>{{ 'members.activeMembers' | transloco }}</span>
           <span
             class="px-2 py-0.5 rounded-full text-[11px] font-bold"
             [class.bg-indigo-50]="!showArchived()"
@@ -77,7 +75,7 @@
           [class.dark:text-slate-400]="!showArchived()"
         >
           <mat-icon class="icon-size-4">archive</mat-icon>
-          <span>Arşivdekiler</span>
+          <span>{{ 'members.archived' | transloco }}</span>
           <span
             class="px-2 py-0.5 rounded-full text-[11px] font-bold"
             [class.bg-amber-50]="showArchived()"
@@ -97,7 +95,7 @@
       @if (showArchived()) {
         <div class="px-3.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
           <mat-icon class="icon-size-4 shrink-0">info</mat-icon>
-          <span>Arşivdeki üyeler turnike geçişlerinde pasif kalır, istendiğinde tek tıkla geri aktif edilebilir.</span>
+          <span>{{ 'members.archiveNotice' | transloco }}</span>
         </div>
       }
     </div>
@@ -109,17 +107,17 @@
         <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5"
           [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
         <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)"
-          placeholder="Ad, e-posta, telefon, üye no veya şube ara…"
+          [placeholder]="'members.searchPlaceholder' | transloco"
           class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all" />
       </div>
 
       <!-- Şube Filtresi -->
       <div class="flex items-center gap-2">
         <label
-          class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">Şube:</label>
+          class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline">{{ 'members.branch' | transloco }}:</label>
         <select [ngModel]="selectedBranchFilter()" (ngModelChange)="onBranchChange($event)"
           class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 font-semibold cursor-pointer transition-all">
-          <option value="">Tüm Şubeler</option>
+          <option value="">{{ 'members.branchFilterAll' | transloco }}</option>
           @for (b of branches(); track b.id) {
           <option [value]="b.id">{{ b.name }}</option>
           }
@@ -132,21 +130,21 @@
   <div
     class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
     @if (loading()) {
-    <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400">Yükleniyor…</p>
+    <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400">{{ 'members.loading' | transloco }}</p>
     } @else {
     <div class="overflow-x-auto custom-scroll">
       <table class="w-full text-left border-collapse">
         <thead>
           <tr
             class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            <th class="py-3.5 px-6">Üye</th>
-            <th class="py-3.5 px-6">Şube</th>
-            <th class="py-3.5 px-6">İletişim</th>
-            <th class="py-3.5 px-6">Cinsiyet</th>
-            <th class="py-3.5 px-6">Durum</th>
-            <th class="py-3.5 px-6">Paket</th>
-            <th class="py-3.5 px-6">Kayıt Tarihi</th>
-            <th class="py-3.5 px-6 text-right">İşlemler</th>
+            <th class="py-3.5 px-6">{{ 'members.table.member' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.branch' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.contact' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.gender' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.status' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.package' | transloco }}</th>
+            <th class="py-3.5 px-6">{{ 'members.table.registerDate' | transloco }}</th>
+            <th class="py-3.5 px-6 text-right">{{ 'members.table.actions' | transloco }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
@@ -159,7 +157,7 @@
                 @if (member.photoURL) {
                   <img
                     [src]="member.photoURL"
-                    [alt]="member.displayName || 'Üye'"
+                    [alt]="member.displayName || ('members.table.member' | transloco)"
                     class="w-8 h-8 rounded-full object-cover flex-shrink-0 group-hover:scale-105 transition-transform border border-slate-200 dark:border-slate-700 shadow-2xs"
                   />
                 } @else {
@@ -172,7 +170,7 @@
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <p
                       class="font-bold text-slate-900 dark:text-white m-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {{ member.displayName || 'Üye' }}
+                      {{ member.displayName || ('members.table.member' | transloco) }}
                     </p>
                     @if (member.memberNumber) {
                       <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold border border-slate-200 dark:border-slate-700">
@@ -181,7 +179,7 @@
                     }
                     @if (member.isArchived) {
                       <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60">
-                        Arşivde
+                        {{ 'members.archivedBadge' | transloco }}
                       </span>
                     }
                   </div>
@@ -193,10 +191,10 @@
                       class="text-[11px] font-medium"
                       [class]="(member.walletBalance ?? 0) < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'"
                     >
-                      Bakiye: {{ money(member.walletBalance) }}
+                      {{ 'members.balance' | transloco }}: {{ money(member.walletBalance) }}
                     </span>
                     @if (member.rfidCardNumber) {
-                      <span class="text-[10px] font-mono text-slate-400 flex items-center gap-0.5" title="RFID Kart Numarası">
+                      <span class="text-[10px] font-mono text-slate-400 flex items-center gap-0.5" title="RFID">
                         <mat-icon class="icon-size-3">credit_card</mat-icon>
                         {{ member.rfidCardNumber }}
                       </span>
@@ -209,7 +207,7 @@
               <span
                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {{ member.branchName || 'Merkez Şube' }}
+                {{ member.branchName || ('members.branch' | transloco) }}
               </span>
             </td>
             <td class="py-3 px-6 max-w-[220px]">
@@ -221,24 +219,24 @@
               }
             </td>
             <td class="py-3 px-6 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-              {{ genderLabel[member.gender ?? 'unspecified'] }}
+              {{ ('members.gender.' + (member.gender ?? 'unspecified')) | transloco }}
             </td>
             <td class="py-3 px-6" (click)="$event.stopPropagation()">
               <select [ngModel]="member.membershipStatus" (ngModelChange)="changeStatus(member, $event)" [class]="
                       'px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ' +
                       statusBadgeClass[member.membershipStatus]
                     ">
-                <option value="trial">Deneme</option>
-                <option value="active">Aktif</option>
-                <option value="expired">Süresi Bitti</option>
-                <option value="cancelled">İptal</option>
+                <option value="trial">{{ 'members.status.trial' | transloco }}</option>
+                <option value="active">{{ 'members.status.active' | transloco }}</option>
+                <option value="expired">{{ 'members.status.expired' | transloco }}</option>
+                <option value="cancelled">{{ 'members.status.cancelled' | transloco }}</option>
               </select>
             </td>
             <td class="py-3 px-6 whitespace-nowrap">
               @if (member.packageLabel) {
               <p class="font-semibold text-slate-700 dark:text-slate-200 m-0">{{ member.packageLabel }}</p>
               @if (member.membershipEndsAt) {
-              <p class="text-[11px] text-slate-400 m-0">{{ formatDate(member.membershipEndsAt) }}'e kadar</p>
+              <p class="text-[11px] text-slate-400 m-0">{{ 'members.untilDate' | transloco: { date: formatDate(member.membershipEndsAt) } }}</p>
               }
               } @else {
               <span class="text-slate-400">—</span>
@@ -248,28 +246,28 @@
               {{ formatDate(member.createdAt) }}
             </td>
             <td class="py-3 px-6 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
-              <button type="button" (click)="openWallet(member)" [matTooltip]="'Bakiye yükle / düş'"
+              <button type="button" (click)="openWallet(member)" [matTooltip]="'members.wallet.title' | transloco"
                 class="odv-icon-btn mr-1">
                 <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>
               </button>
-              <button type="button" (click)="openEditDrawer(member)" [matTooltip]="'Üye bilgilerini düzenle'"
+              <button type="button" (click)="openEditDrawer(member)" [matTooltip]="'common.edit' | transloco"
                 class="odv-icon-btn mr-1">
                 <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
               </button>
               <!-- Arşive Kaldır / Arşivden Çıkar Butonu -->
               @if (!member.isArchived) {
-                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'Üyeyi Arşive Kaldır'"
+                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'members.actions.archive' | transloco"
                   class="odv-icon-btn text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 mr-1">
                   <mat-icon class="icon-size-4">archive</mat-icon>
                 </button>
               } @else {
-                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'Arşivden Çıkar ve Aktifleştir'"
+                <button type="button" (click)="toggleArchive(member)" [matTooltip]="'members.actions.unarchive' | transloco"
                   class="odv-icon-btn text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 mr-1">
                   <mat-icon class="icon-size-4">unarchive</mat-icon>
                 </button>
               }
               @if (member.role !== 'admin') {
-              <button type="button" (click)="deleteMember(member)" [matTooltip]="'Üye profilini sil'"
+              <button type="button" (click)="deleteMember(member)" [matTooltip]="'members.actions.delete' | transloco"
                 class="odv-icon-btn odv-icon-btn-danger">
                 <mat-icon class="icon-size-4">delete</mat-icon>
               </button>
@@ -286,26 +284,26 @@
                 </div>
                 <h4 class="text-base font-bold text-slate-900 dark:text-white m-0">
                   @if (searchTerm()) {
-                  Eşleşen üye bulunamadı
+                  {{ 'members.noMatchFound' | transloco }}
                   } @else if (showArchived()) {
-                  Arşivde Üye Yok
+                  {{ 'members.noArchivedFound' | transloco }}
                   } @else {
-                  Henüz Üye Bulunamadı
+                  {{ 'members.noMembersFound' | transloco }}
                   }
                 </h4>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
                   @if (searchTerm()) {
-                  "{{ searchTerm() }}" ile eşleşen bir kayıt yok.
+                  {{ 'members.noMatchDesc' | transloco: { term: searchTerm() } }}
                   } @else if (showArchived()) {
-                  Arşive kaldırılmış üye bulunmuyor.
+                  {{ 'members.noArchivedDesc' | transloco }}
                   } @else {
-                  Yeni bir üye ekleyerek hemen başlayabilirsiniz.
+                  {{ 'members.noMembersDesc' | transloco }}
                   }
                 </p>
                 @if (!searchTerm() && !showArchived()) {
                 <button type="button" (click)="openNewMemberDrawer()"
                   class="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer">
-                  + İlk Üyeyi Ekle
+                  {{ 'members.addFirstMember' | transloco }}
                 </button>
                 }
               </div>
@@ -329,7 +327,7 @@
         <div class="flex items-center gap-3">
           <!-- Page Size Selector -->
           <div class="flex items-center gap-2">
-            <label class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">Sayfa Başına:</label>
+            <label class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">{{ 'members.perPage' | transloco }}</label>
             <select
               [ngModel]="pageSize()"
               (ngModelChange)="onPageSizeChange($event)"
@@ -349,7 +347,7 @@
               (click)="goToPage(1)"
               [disabled]="currentPage() === 1"
               class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-              matTooltip="İlk Sayfa"
+              [matTooltip]="'members.firstPage' | transloco"
             >
               <mat-icon class="icon-size-4">first_page</mat-icon>
             </button>
@@ -360,7 +358,7 @@
               (click)="prevPage()"
               [disabled]="currentPage() === 1"
               class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-              matTooltip="Önceki Sayfa"
+              [matTooltip]="'members.prevPage' | transloco"
             >
               <mat-icon class="icon-size-4">chevron_left</mat-icon>
             </button>
@@ -393,7 +391,7 @@
               (click)="nextPage()"
               [disabled]="currentPage() === totalPages()"
               class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-              matTooltip="Sonraki Sayfa"
+              [matTooltip]="'members.nextPage' | transloco"
             >
               <mat-icon class="icon-size-4">chevron_right</mat-icon>
             </button>
@@ -404,7 +402,7 @@
               (click)="goToPage(totalPages())"
               [disabled]="currentPage() === totalPages()"
               class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-              matTooltip="Son Sayfa"
+              [matTooltip]="'members.lastPage' | transloco"
             >
               <mat-icon class="icon-size-4">last_page</mat-icon>
             </button>
@@ -421,33 +419,33 @@
 <app-member-detail-drawer [open]="viewingMember() !== null" [member]="viewingMember()" (closed)="closeDetailDrawer()"
   (editRequested)="onDetailEditRequested($event)" (walletRequested)="onDetailWalletRequested($event)" />
 
-<app-slide-over [open]="walletMember() !== null" [title]="'Bakiye — ' + (walletMember()?.displayName ?? '')"
-  submitLabel="Kaydet" [submitting]="walletSubmitting()" [errorMessage]="walletError()" (closed)="closeWallet()"
+<app-slide-over [open]="walletMember() !== null" [title]="('members.wallet.title' | transloco) + ' — ' + (walletMember()?.displayName ?? '')"
+  [submitLabel]="'members.wallet.save' | transloco" [submitting]="walletSubmitting()" [errorMessage]="walletError()" (closed)="closeWallet()"
   (submitted)="submitWallet()">
   <div [formGroup]="walletForm" class="space-y-4">
     <p class="m-0 text-sm text-slate-600 dark:text-slate-300">
-      Mevcut bakiye: <strong>{{ money(walletMember()?.walletBalance) }}</strong>
+      {{ 'members.wallet.current' | transloco }}: <strong>{{ money(walletMember()?.walletBalance) }}</strong>
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <app-field label="İşlem" [required]="true">
+      <app-field [label]="'members.wallet.transaction' | transloco" [required]="true">
         <select formControlName="type" class="odv-input">
-          <option value="deposit">Bakiye Yükle</option>
-          <option value="debit">Bakiye Düş</option>
+          <option value="deposit">{{ 'members.wallet.deposit' | transloco }}</option>
+          <option value="debit">{{ 'members.wallet.debit' | transloco }}</option>
         </select>
       </app-field>
-      <app-field label="Tutar (₺)" [required]="true"
+      <app-field [label]="'members.wallet.amount' | transloco" [required]="true"
         [error]="walletErr('amount', { required: 'Tutar gerekli.', min: 'Sıfırdan büyük olmalı.' })">
         <input type="number" min="0.01" step="0.01" formControlName="amount" class="odv-input" />
       </app-field>
-      <app-field label="Ödeme Yöntemi">
+      <app-field [label]="'members.wallet.paymentMethod' | transloco">
         <select formControlName="paymentMethod" class="odv-input">
-          <option value="cash">Nakit</option>
-          <option value="card">Kart</option>
-          <option value="transfer">Havale</option>
+          <option value="cash">{{ 'members.wallet.cash' | transloco }}</option>
+          <option value="card">{{ 'members.wallet.card' | transloco }}</option>
+          <option value="transfer">{{ 'members.wallet.transfer' | transloco }}</option>
         </select>
       </app-field>
     </div>
-    <app-field label="Açıklama" [required]="true" [error]="walletErr('description', { required: 'Açıklama gerekli.' })">
+    <app-field [label]="'members.wallet.description' | transloco" [required]="true" [error]="walletErr('description', { required: 'Açıklama gerekli.' })">
       <input type="text" formControlName="description" class="odv-input" />
     </app-field>
   </div>

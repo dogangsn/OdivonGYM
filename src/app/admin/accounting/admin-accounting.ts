@@ -27,10 +27,12 @@ const PAYMENT_LABEL: Record<string, string> = {
   wallet: 'E-Cüzdan',
 };
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-accounting',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field],
+  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-accounting.html',
 })

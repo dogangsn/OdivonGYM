@@ -981,5 +981,180 @@
       "complaint_suggestion": "Réclamation & Qualité de Service",
       "complaint_suggestion_desc": "Retours concernant la propreté, les équipements ou le personnel."
     }
+  },
+  "members": {
+    "title": "Gestion des Adhérents",
+    "subtitle": "Recherchez, filtrez, modifiez le statut d'adhésion ou ajoutez de nouveaux membres.",
+    "newMember": "Nouvel Adhérent",
+    "missingTenantTitle": "Compte non rattaché à une salle.",
+    "missingTenantDesc": "Ce compte admin a été créé avant la structure multi-établissements; tenantId absent.",
+    "activeMembers": "Membres Actifs",
+    "archived": "Archivés",
+    "archivedBadge": "Archivé",
+    "archiveNotice": "Les membres archivés sont désactivés aux tourniquets et peuvent être réactivés en un clic.",
+    "searchPlaceholder": "Rechercher par nom, e-mail, téléphone ou agence...",
+    "branch": "Agence",
+    "branchFilterAll": "Toutes les Agences",
+    "loading": "Chargement…",
+    "balance": "Solde",
+    "untilDate": "Jusqu'au {{date}}",
+    "perPage": "Par Page:",
+    "firstPage": "Première Page",
+    "prevPage": "Page Précédente",
+    "nextPage": "Page Suivante",
+    "lastPage": "Dernière Page",
+    "noMatchFound": "Aucun adhérent trouvé",
+    "noMatchDesc": "Aucun résultat ne correspond à \"{{term}}\".",
+    "noArchivedFound": "Aucun membre archivé",
+    "noArchivedDesc": "Il n'y a aucun membre dans l'archive.",
+    "noMembersFound": "Aucun membre enregistré",
+    "noMembersDesc": "Commencez dès maintenant en ajoutant un premier adhérent.",
+    "addFirstMember": "+ Ajouter un Membre",
+    "table": {
+      "member": "Adhérent",
+      "branch": "Agence",
+      "contact": "Contact",
+      "gender": "Genre",
+      "status": "Statut",
+      "package": "Formule",
+      "registerDate": "Date d'Inscription",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Essai",
+      "active": "Actif",
+      "expired": "Expiré",
+      "cancelled": "Résilié"
+    },
+    "gender": {
+      "female": "Femme",
+      "male": "Homme",
+      "unspecified": "Non spécifié"
+    },
+    "actions": {
+      "archive": "Archiver le membre",
+      "unarchive": "Désarchiver et Réactiver",
+      "delete": "Supprimer le profil"
+    },
+    "wallet": {
+      "title": "Portefeuille",
+      "current": "Solde actuel",
+      "transaction": "Opération",
+      "deposit": "Recharger le Solde",
+      "debit": "Débiter le Solde",
+      "amount": "Montant",
+      "paymentMethod": "Moyen de Paiement",
+      "cash": "Espèces",
+      "card": "Carte Bancaire",
+      "transfer": "Virement",
+      "description": "Motif / Description",
+      "save": "Enregistrer"
+    }
+  },
+  "packages": {
+    "title": "Formules & Tarification",
+    "subtitle": "Gérez les abonnements de salle, les formules PT spécifiques aux coachs et les commissions.",
+    "addNew": "+ Nouvelle Formule",
+    "filterAll": "Toutes les Formules",
+    "filterClub": "Club Entier",
+    "filterStaff": "Spécifique Coach",
+    "allTrainers": "Tous les Coachs",
+    "searchPlaceholder": "Nom de formule, coach ou code-barres...",
+    "loading": "Chargement…",
+    "table": {
+      "package": "Formule & Accès",
+      "category": "Catégorie",
+      "duration": "Durée",
+      "sessions": "Séances & Accès",
+      "pricing": "Tarif & Rémunération",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "En vente",
+      "inactive": "Inactif"
+    },
+    "sessionsUnlimited": "Illimité",
+    "daysUnit": "jours",
+    "drawer": {
+      "scopeTitle": "Portée de la Formule",
+      "scopeClub": "Formule Club Entier",
+      "scopeStaff": "Spécifique Coach / PT",
+      "staffConfig": "Configuration Coachs & Commissions",
+      "selectStaff": "-- Sélectionner un Collaborateur --",
+      "addStaffRate": "Ajouter un Tarif Collaborateur",
+      "staff": "Collaborateur",
+      "price": "Prix",
+      "commission": "Commission (%)",
+      "durationConfig": "Configuration de Durée",
+      "unit": "Unité",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    }
+  },
+  "accounting": {
+    "title": "Comptabilité & Caisse",
+    "subtitle": "Flux de trésorerie, clôtures journalières (rapport Z) et analyse des dépenses.",
+    "tabs": {
+      "ledger": "Livre de Caisse (Recettes & Dépenses)",
+      "dailyClose": "Clôture Journalière & Rapport Z",
+      "analytics": "Analyse des Dépenses"
+    },
+    "actions": {
+      "manageCategories": "Gérer les Catégories",
+      "newEntry": "Nouvelle Écriture",
+      "refreshLive": "Actualiser la Caisse",
+      "closeDay": "Clôturer & Compter",
+      "exportCsv": "Exporter Excel / CSV"
+    }
+  },
+  "staff": {
+    "badge": "Gestion des Rôles & Accès",
+    "title": "Personnel & Rôles",
+    "subtitle": "Propriétaire de salle, directeur, coachs sportifs et réceptionnistes.",
+    "newStaff": "Nouveau Collaborateur",
+    "simulation": "Simulation",
+    "endSimulation": "Quitter la Simulation",
+    "kpi": {
+      "totalStaff": "Équipe Totale",
+      "allBranches": "Toutes agences confondues",
+      "activeTrainers": "Coachs Actifs",
+      "reception": "Réception & Accueil",
+      "management": "Direction"
+    }
+  },
+  "branches": {
+    "title": "Succursales & Installations",
+    "subtitle": "Gérez les succursales : logo, jours d'ouverture, horaires et capacité.",
+    "newBranch": "Ajouter une succursale"
+  },
+  "guestMembers": {
+    "title": "Suivi des Invités & Prospects",
+    "subtitle": "Gérez les prospects, enquêtes et relances depuis un tableau de bord unique.",
+    "newGuest": "Nouvel invité"
+  },
+  "programRequests": {
+    "title": "Demandes de Programme",
+    "subtitle": "Demandes d'entraînement des membres auprès des entraîneurs."
+  },
+  "reports": {
+    "title": "Rapports & Analyses",
+    "subtitle": "Résumés financiers, attrition des membres, taux d'occupation et KPI."
+  },
+  "gymInfo": {
+    "title": "Informations du Club & Salle",
+    "subtitle": "Coordonnées du club, raison sociale, logo et paramètres généraux."
+  },
+  "products": {
+    "title": "Gestion des Produits & Stocks",
+    "subtitle": "Suivi du bar, des compléments, du textile et des codes-barres."
+  },
+  "eInvoice": {
+    "title": "Facturation & Factures Électroniques",
+    "subtitle": "Émission de factures électroniques conformes, avoirs et comptabilité."
+  },
+  "suppliers": {
+    "title": "Fournisseurs & Comptes Tiers",
+    "subtitle": "Soldes fournisseurs, factures d'achat et approvisionnement de stock."
   }
 }

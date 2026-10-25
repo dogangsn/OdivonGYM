@@ -981,5 +981,180 @@
       "complaint_suggestion": "Klacht & Kwaliteit",
       "complaint_suggestion_desc": "Feedback over hygiëne, clubinrichting of dienstverlening."
     }
+  },
+  "members": {
+    "title": "Ledenadministratie",
+    "subtitle": "Zoek, filter, beheer lidmaatschapsstatus of voeg nieuwe leden toe.",
+    "newMember": "Nieuw Lid",
+    "missingTenantTitle": "Account niet gekoppeld aan een sportschool.",
+    "missingTenantDesc": "Dit account is aangemaakt vóór multi-tenant ondersteuning; tenantId ontbreekt in profiel.",
+    "activeMembers": "Actieve Leden",
+    "archived": "Gearchiveerd",
+    "archivedBadge": "Archief",
+    "archiveNotice": "Gearchiveerde leden worden geblokkeerd bij draaikruisen en kunnen met één klik worden hersteld.",
+    "searchPlaceholder": "Zoek op naam, e-mail, telefoon of vestiging...",
+    "branch": "Vestiging",
+    "branchFilterAll": "Alle Vestigingen",
+    "loading": "Laden…",
+    "balance": "Saldo",
+    "untilDate": "Tot {{date}}",
+    "perPage": "Per Pagina:",
+    "firstPage": "Eerste Pagina",
+    "prevPage": "Vorige Pagina",
+    "nextPage": "Volgende Pagina",
+    "lastPage": "Laatste Pagina",
+    "noMatchFound": "Geen leden gevonden",
+    "noMatchDesc": "Geen resultaten gevonden voor \"{{term}}\".",
+    "noArchivedFound": "Geen gearchiveerde leden",
+    "noArchivedDesc": "Er bevinden zich geen leden in het archief.",
+    "noMembersFound": "Nog geen leden toegevoegd",
+    "noMembersDesc": "Begin met het toevoegen van uw eerste lid.",
+    "addFirstMember": "+ Eerste Lid Toevoegen",
+    "table": {
+      "member": "Lid",
+      "branch": "Vestiging",
+      "contact": "Contact",
+      "gender": "Geslacht",
+      "status": "Status",
+      "package": "Pakket",
+      "registerDate": "Inschrijfdatum",
+      "actions": "Acties"
+    },
+    "status": {
+      "trial": "Proef",
+      "active": "Actief",
+      "expired": "Verlopen",
+      "cancelled": "Geannuleerd"
+    },
+    "gender": {
+      "female": "Vrouw",
+      "male": "Man",
+      "unspecified": "Niet gespecificeerd"
+    },
+    "actions": {
+      "archive": "Lid Archiveren",
+      "unarchive": "Dearchiveren & Activeren",
+      "delete": "Profiel verwijderen"
+    },
+    "wallet": {
+      "title": "Saldo",
+      "current": "Huidig saldo",
+      "transaction": "Transactie",
+      "deposit": "Saldo Opwaarderen",
+      "debit": "Saldo Afboeken",
+      "amount": "Bedrag",
+      "paymentMethod": "Betaalmethode",
+      "cash": "Contant",
+      "card": "Pinpas / Creditcard",
+      "transfer": "Bankoverschrijving",
+      "description": "Omschrijving",
+      "save": "Opslaan"
+    }
+  },
+  "packages": {
+    "title": "Pakketten & Prijzen",
+    "subtitle": "Beheer clubbrede lidmaatschappen, trainer-specifieke PT-pakketten en provisies.",
+    "addNew": "+ Nieuw Pakket",
+    "filterAll": "Alle Pakketten",
+    "filterClub": "Clubbreed",
+    "filterStaff": "Trainer Specifiek",
+    "allTrainers": "Alle Trainers",
+    "searchPlaceholder": "Zoek op pakketnaam, personeel of barcode...",
+    "loading": "Laden…",
+    "table": {
+      "package": "Pakket & Bereik",
+      "category": "Categorie",
+      "duration": "Duur",
+      "sessions": "Sessies & Toegang",
+      "pricing": "Prijs & Opbrengst",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "status": {
+      "active": "Actief",
+      "inactive": "Inactief"
+    },
+    "sessionsUnlimited": "Onbeperkt",
+    "daysUnit": "dagen",
+    "drawer": {
+      "scopeTitle": "Pakketbereik",
+      "scopeClub": "Clubbreed Pakket",
+      "scopeStaff": "Personeel / PT Specifiek",
+      "staffConfig": "Trainer & Provisieconfiguratie",
+      "selectStaff": "-- Selecteer Medewerker --",
+      "addStaffRate": "Tarief Toevoegen",
+      "staff": "Medewerker",
+      "price": "Prijs",
+      "commission": "Provisie (%)",
+      "durationConfig": "Geldigheidsduur",
+      "unit": "Eenheid",
+      "save": "Opslaan",
+      "cancel": "Annuleren"
+    }
+  },
+  "accounting": {
+    "title": "Boekhouding & Kassa",
+    "subtitle": "Kassabewegingen, dagafsluitingen (Z-rapporten) en gedetailleerde kostenanalyses.",
+    "tabs": {
+      "ledger": "Kassaboek (Inkomsten & Uitgaven)",
+      "dailyClose": "Dagafsluiting & Z-Rapport",
+      "analytics": "Kosten & Categorie-analyse"
+    },
+    "actions": {
+      "manageCategories": "Beheer Categorieën",
+      "newEntry": "Nieuwe Boeking",
+      "refreshLive": "Vernieuwen",
+      "closeDay": "Dag Afsluiten & Tellen",
+      "exportCsv": "Excel / CSV Exporteren"
+    }
+  },
+  "staff": {
+    "badge": "Rollen & Bevoegdheden",
+    "title": "Personeel & Rollen",
+    "subtitle": "Eigenaar, vestigingsmanager, fitnesstrainers en receptiemedewerkers.",
+    "newStaff": "Nieuwe Medewerker",
+    "simulation": "Simulatie",
+    "endSimulation": "Simulatie Beëindigen",
+    "kpi": {
+      "totalStaff": "Totaal Team",
+      "allBranches": "Alle vestigingen geregistreerd",
+      "activeTrainers": "Actieve Trainers",
+      "reception": "Receptie & Balie",
+      "management": "Management"
+    }
+  },
+  "branches": {
+    "title": "Vestigingen & Faciliteiten",
+    "subtitle": "Beheer vestigingen: logo, openingsdagen, uren en capaciteit.",
+    "newBranch": "Nieuwe vestiging"
+  },
+  "guestMembers": {
+    "title": "Gastleden & Lead Tracking",
+    "subtitle": "Beheer potentiële leden, enquêtes en opvolging in één dashboard.",
+    "newGuest": "Nieuwe gast"
+  },
+  "programRequests": {
+    "title": "Programma-aanvragen",
+    "subtitle": "Aanvragen van leden voor trainingsschema's door coaches."
+  },
+  "reports": {
+    "title": "Rapporten & Analyse",
+    "subtitle": "Financiële overzichten, verloop, bezettingsgraad en prestatiemetingen."
+  },
+  "gymInfo": {
+    "title": "Club- en Gymgegevens",
+    "subtitle": "Clubcontactgegevens, bedrijfsnaam, logo en algemene instellingen."
+  },
+  "products": {
+    "title": "Product- & Voorraadbeheer",
+    "subtitle": "Beheer café-artikelen, supplementen, kleding en barcodes."
+  },
+  "eInvoice": {
+    "title": "Facturatie & E-facturatie",
+    "subtitle": "Officiële e-facturatie, creditfacturen en fiscale rapportage."
+  },
+  "suppliers": {
+    "title": "Leveranciers & Crediteuren",
+    "subtitle": "Leverancierssaldi, inkoopfacturen en voorraadaankopen."
   }
 }

@@ -16,9 +16,9 @@ import { DocumentDefinitionsService } from '../../core/services/document-definit
 import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
 
 const STATUS_LABEL: Record<GymPackage['status'], string> = {
-  active: 'Satışta',
-  inactive: 'Pasif',
-  archived: 'Arşiv',
+  active: 'packages.status.active',
+  inactive: 'packages.status.inactive',
+  archived: 'common.status',
 };
 
 const STATUS_CLASS: Record<GymPackage['status'], string> = {
@@ -37,21 +37,23 @@ const DAYS_OF_WEEK = [
   { id: 7, label: 'Pazar', short: 'Paz' },
 ];
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-packages',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, MatIconModule, PageHeader, SlideOver, Field, DocumentDefinitionsModal],
+  imports: [ReactiveFormsModule, FormsModule, MatIconModule, PageHeader, SlideOver, Field, DocumentDefinitionsModal, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-5">
       <app-page-header
-        title="Paket & Fiyatlandırma Yönetimi"
+        title="packages.title"
         icon="sell"
-        description="Salon geneli üyelikler ile personele/eğitmene özel abonelik & PT paketlerini, prim oranlarını ve kurallarını yönetin."
+        description="packages.subtitle"
       >
         <button actions type="button" class="odv-btn-primary" (click)="openForm()">
           <mat-icon class="icon-size-4.5">add</mat-icon>
-          Yeni Paket Ekle
+          {{ 'packages.addNew' | transloco }}
         </button>
       </app-page-header>
 
@@ -67,7 +69,7 @@ const DAYS_OF_WEEK = [
               ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
           >
-            <span>Tüm Paketler</span>
+            <span>{{ 'packages.filterAll' | transloco }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
               [class]="activeScopeTab() === 'all' ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
               {{ counts().all }}
@@ -83,7 +85,7 @@ const DAYS_OF_WEEK = [
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
           >
             <mat-icon class="icon-size-3.5 text-indigo-500">fitness_center</mat-icon>
-            <span>Salon Geneli</span>
+            <span>{{ 'packages.filterClub' | transloco }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
               [class]="activeScopeTab() === 'gym' ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
               {{ counts().gym }}
@@ -99,7 +101,7 @@ const DAYS_OF_WEEK = [
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
           >
             <mat-icon class="icon-size-3.5 text-purple-500">person</mat-icon>
-            <span>Personele Özel</span>
+            <span>{{ 'packages.filterStaff' | transloco }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
               [class]="activeScopeTab() === 'trainer' ? 'bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
               {{ counts().trainer }}
@@ -115,7 +117,7 @@ const DAYS_OF_WEEK = [
               (ngModelChange)="selectedTrainerFilter.set($event)"
               class="odv-input py-2 text-xs max-w-[180px]"
             >
-              <option value="all">Tüm Eğitmenler</option>
+              <option value="all">{{ 'packages.allTrainers' | transloco }}</option>
               @for (t of trainers(); track t.id) {
                 <option [value]="t.id">{{ t.displayName }}</option>
               }
@@ -129,7 +131,7 @@ const DAYS_OF_WEEK = [
               [ngModel]="searchQuery()"
               (ngModelChange)="searchQuery.set($event)"
               class="odv-input pl-9 py-2 text-xs w-full"
-              placeholder="Paket adı, personel veya barkod ara…"
+              [placeholder]="'packages.searchPlaceholder' | transloco"
             />
           </div>
         </div>
@@ -137,7 +139,7 @@ const DAYS_OF_WEEK = [
 
       <div class="odv-card overflow-hidden">
         @if (loading()) {
-          <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+          <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">{{ 'packages.loading' | transloco }}</p>
         } @else if (packages().length === 0) {
           <div class="py-16 text-center">
             <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400 mb-3">
@@ -145,28 +147,28 @@ const DAYS_OF_WEEK = [
             </div>
             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 m-0">
               @if (searchQuery() || activeScopeTab() !== 'all' || selectedTrainerFilter() !== 'all') {
-                Seçilen filtrelere uygun paket bulunamadı.
+                {{ 'members.noMatchFound' | transloco }}
               } @else {
-                Henüz paket eklenmedi.
+                {{ 'members.noMembersFound' | transloco }}
               }
             </p>
             <p class="text-xs text-slate-400 mt-1 mb-4">
-              Yeni bir salon üyeliği veya personele özel antrenör paketi tanımlayabilirsiniz.
+              {{ 'packages.subtitle' | transloco }}
             </p>
-            <button type="button" class="odv-btn-soft" (click)="openForm()">+ Yeni Paket Ekle</button>
+            <button type="button" class="odv-btn-soft" (click)="openForm()">{{ 'packages.addNew' | transloco }}</button>
           </div>
         } @else {
           <div class="overflow-x-auto custom-scroll">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-                  <th class="odv-th">Paket & Kapsam</th>
-                  <th class="odv-th">Kategori</th>
-                  <th class="odv-th">Süre</th>
-                  <th class="odv-th">Seans & Erişim</th>
-                  <th class="odv-th">Fiyat & Hakediş</th>
-                  <th class="odv-th">Durum</th>
-                  <th class="odv-th text-right">İşlemler</th>
+                  <th class="odv-th">{{ 'packages.table.package' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.category' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.duration' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.sessions' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.pricing' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.status' | transloco }}</th>
+                  <th class="odv-th text-right">{{ 'packages.table.actions' | transloco }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
@@ -208,7 +210,7 @@ const DAYS_OF_WEEK = [
                         } @else {
                           <span class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
                             <mat-icon class="icon-size-3 text-indigo-600">fitness_center</mat-icon>
-                            <span>Salon Geneli</span>
+                            <span>{{ 'packages.filterClub' | transloco }}</span>
                           </span>
                         }
 
@@ -242,13 +244,13 @@ const DAYS_OF_WEEK = [
                     <!-- Süre -->
                     <td class="odv-td text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       <span class="font-semibold">{{ p.durationValue || p.durationDays }} {{ getDurationLabel(p) }}</span>
-                      <span class="text-[11px] text-slate-400 block">({{ p.durationDays }} gün)</span>
+                      <span class="text-[11px] text-slate-400 block">({{ p.durationDays }} {{ 'packages.daysUnit' | transloco }})</span>
                     </td>
 
                     <!-- Seans & Erişim -->
                     <td class="odv-td text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       <span class="font-semibold block">
-                        {{ p.isUnlimitedSessions ? 'Sınırsız Giriş' : (p.sessionCount ? p.sessionCount + ' Seans' : 'Sınırsız') }}
+                        {{ p.isUnlimitedSessions ? ('packages.sessionsUnlimited' | transloco) : (p.sessionCount ? p.sessionCount + ' Seans' : ('packages.sessionsUnlimited' | transloco)) }}
                       </span>
                       <span class="text-[11px] text-slate-400 block">
                         {{ p.checkInStartTime || '06:00' }} - {{ p.checkInEndTime || '23:00' }}
@@ -273,15 +275,15 @@ const DAYS_OF_WEEK = [
 
                     <!-- Durum -->
                     <td class="odv-td">
-                      <span class="odv-badge" [class]="statusClass[p.status]">{{ statusLabel[p.status] }}</span>
+                      <span class="odv-badge" [class]="statusClass[p.status]">{{ statusLabel[p.status] | transloco }}</span>
                     </td>
 
                     <!-- İşlemler -->
                     <td class="odv-td text-right whitespace-nowrap">
-                      <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(p)">
+                      <button type="button" class="odv-icon-btn" [title]="'common.edit' | transloco" (click)="openForm(p)">
                         <mat-icon class="icon-size-4">edit</mat-icon>
                       </button>
-                      <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" title="Sil" (click)="remove(p)">
+                      <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" [title]="'common.delete' | transloco" (click)="remove(p)">
                         <mat-icon class="icon-size-4">delete</mat-icon>
                       </button>
                     </td>
