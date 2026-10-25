@@ -160,6 +160,11 @@ export class Support implements OnInit {
       return;
     }
 
+    if (description.length < 5) {
+      this.alert.toastWarning('Lütfen talebinizi biraz daha detaylandırın (Açıklama en az 5 karakter olmalıdır).');
+      return;
+    }
+
     this.isSubmitting.set(true);
     try {
       const cat = this.selectedCategoryItem;
@@ -181,11 +186,29 @@ export class Support implements OnInit {
       );
 
       this.submittedTicket.set(created);
+      this.myTicketsList.update((prev) => [created, ...prev.filter((t) => t.id !== created.id)]);
       this.alert.toastSuccess(`Talebiniz alındı! Takip No: ${created.trackingNumber}`);
       this.resetForm();
     } catch (err: any) {
       console.error('Talep oluşturma hatası:', err);
-      this.alert.toastError('Talep iletilirken bir hata oluştu. Lütfen tekrar deneyin.');
+      const rawMsg = err?.error?.error?.message || err?.error?.message || err?.message;
+      let displayMsg = 'Talep iletilirken bir hata oluştu. Lütfen tekrar deneyin.';
+      if (Array.isArray(rawMsg)) {
+        displayMsg = rawMsg.map((m: string) => {
+          if (m.includes('description must be longer than')) return 'Açıklama alanı en az 5 karakter olmalıdır.';
+          if (m.includes('email must be an email')) return 'Lütfen geçerli bir e-posta adresi girin.';
+          return m;
+        }).join('\n');
+      } else if (typeof rawMsg === 'string') {
+        if (rawMsg.includes('description must be longer than')) {
+          displayMsg = 'Açıklama alanı en az 5 karakter olmalıdır.';
+        } else if (rawMsg.includes('email must be an email')) {
+          displayMsg = 'Lütfen geçerli bir e-posta adresi girin.';
+        } else {
+          displayMsg = rawMsg;
+        }
+      }
+      this.alert.toastError(displayMsg);
     } finally {
       this.isSubmitting.set(false);
     }
@@ -235,7 +258,7 @@ export class Support implements OnInit {
   async loadMyTickets(): Promise<void> {
     this.isLoadingHistory.set(true);
     try {
-      const email = this.auth.profile()?.email;
+      const email = this.auth.email() || this.email().trim() || undefined;
       const list = await firstValueFrom(this.ticketApi.myTickets(email));
       this.myTicketsList.set(list || []);
     } catch (err) {

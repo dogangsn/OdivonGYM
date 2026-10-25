@@ -219,7 +219,16 @@
 
         <!-- 4. Detaylı Açıklama -->
         <div>
-          <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.description' | transloco }} *</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-bold text-slate-700 text-xs">{{ 'support.create.description' | transloco }} *</label>
+            <span class="text-[11px]" [class]="description().trim().length >= 5 ? 'text-slate-400' : 'text-amber-600 font-semibold'">
+              @if (description().trim().length < 5) {
+                En az 5 karakter gerekli ({{ 5 - description().trim().length }} karakter kaldı)
+              } @else {
+                {{ description().trim().length }} karakter
+              }
+            </span>
+          </div>
           <textarea
             rows="5"
             [ngModel]="description()"
@@ -237,7 +246,7 @@
           <button
             type="button"
             (click)="submitTicket()"
-            [disabled]="isSubmitting() || !subject().trim() || !description().trim() || !fullName().trim() || !email().trim()"
+            [disabled]="isSubmitting() || !subject().trim() || description().trim().length < 5 || !fullName().trim() || !email().trim()"
             class="px-6 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 text-xs flex items-center gap-2"
           >
             @if (isSubmitting()) {
@@ -435,7 +444,7 @@
                 {{ trackedTicket()?.adminNote }}
               </p>
               <div class="text-right text-[10px] font-semibold text-indigo-600">
-                Son Güncelleme: {{ trackedTicket()?.updatedAt | date:'d MMMM y, HH:mm':'':'tr-TR' }}
+                Son Güncelleme: {{ trackedTicket()?.updatedAt | date:'dd.MM.yyyy, HH:mm' }}
               </div>
             </div>
           }
@@ -460,7 +469,7 @@
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-sm font-bold text-slate-900 m-0">Tarafınızdan Açılan Talepler</h3>
-          <p class="text-xs text-slate-500 m-0">{{ auth.profile()?.email }} hesabına ait tüm kayıtlar.</p>
+          <p class="text-xs text-slate-500 m-0">{{ auth.email() || email() }} hesabına ait tüm kayıtlar.</p>
         </div>
         <button
           type="button"
@@ -515,7 +524,7 @@
                       <span class="text-[11px] text-slate-500">{{ ticket.categoryLabel }}</span>
                     </td>
                     <td class="py-3.5 px-4 text-slate-500 text-[11px]">
-                      {{ ticket.createdAt | date:'d MMM y, HH:mm':'':'tr-TR' }}
+                      {{ ticket.createdAt | date:'dd.MM.yyyy, HH:mm' }}
                     </td>
                     <td class="py-3.5 px-4">
                       <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold border" [ngClass]="getPriorityBadge(ticket.priority).class">

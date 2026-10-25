@@ -35,6 +35,8 @@ export class AuthService {
   /** Set when the last sign-out was forced because the session was too old (login page message). */
   readonly sessionExpired = signal(false);
   readonly isAuthenticated = computed(() => this.firebaseUser() !== null);
+  readonly user = computed(() => this.firebaseUser());
+  readonly email = computed(() => this.userProfile()?.email || this.firebaseUser()?.email || '');
   readonly profile = computed(() => this.userProfile());
   readonly membershipStatus = computed<MembershipStatus | null>(
     () => this.userProfile()?.membershipStatus ?? null,
