@@ -590,8 +590,8 @@ export class AdminAccounting implements OnInit {
 
       const res = await this.service.getExpenseAnalytics({ startDate: startStr, endDate: endStr });
       this.expenseAnalytics.set(res);
-    } catch {
-      this.alertService.toastError('Gider analitiği verileri alınamadı.');
+    } catch (err) {
+      console.warn('Gider analitiği verileri alınamadı:', err);
     } finally {
       this.loadingAnalytics.set(false);
     }

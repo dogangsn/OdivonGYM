@@ -138,6 +138,11 @@ div.swal2-container {
     pointer-events: none !important;
   }
 
+  &.swal2-top-end {
+    padding-top: 72px !important;
+    padding-right: 16px !important;
+  }
+
   .swal2-toast {
     pointer-events: auto !important;
   }
