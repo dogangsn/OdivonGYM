@@ -27,6 +27,10 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
   `GetLogDataPage` toplamı 42 olarak kaldı; bu cihazın mevcut API'si reddedilen kartın
   numarasını vermedi. Kartı resepsiyondaki USB okuyucuyla okutun veya üreticinin ayrı
   bir ham kart okuma protokolü/SDK'sını doğrulayın.
+- Kimliği reddedilirse (agent iptal edildi ya da başka bir kopya eşleştirildi) durmaz: pencerede
+  çalışıyorsa yeni eşleştirme kodunu sorar; arka planda çalışıyorsa kodu agent klasöründeki
+  `eslestirme-kodu.txt` dosyasına yazmanızı bekler. Eşleşince kaldığı yerden devam eder.
+  Kodu bilerek değiştirmek için `yeniden-eslestir.bat` çalıştırın.
 - Uzaktan kapı açma YT için kapalıdır (`SetDoorStatus=open` kalıcı açık kalabilir).
 
 ## Desteklenen protokoller

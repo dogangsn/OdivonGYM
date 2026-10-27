@@ -34,6 +34,7 @@ class AgentRuntime {
     flushOnTick = true,
     eventFlushDelayMs = 5000,
     now = () => Date.now(),
+    onRevoked = null,
   }) {
     this.client = client;
     this.store = store;
@@ -47,6 +48,7 @@ class AgentRuntime {
     this.now = now;
     this.flushDueAt = null;
     this.nextWorkAt = 0;
+    this.onRevoked = onRevoked;
     this.devices = new Map(); // gateId → { config, adapter, reachable, lastError, lastEventAt, deviceTime, lock }
     this.stopped = false;
     this.revoked = false;
@@ -265,12 +267,25 @@ class AgentRuntime {
     if (!err?.isAuthError) return false;
     if (!this.revoked) {
       this.revoked = true;
-      this.log.error(
-        '⛔ MainApi bu agent kimliğini kabul etmiyor (iptal edilmiş olabilir). ' +
-          'Admin panelinden yeni eşleştirme kodu alıp `npm run enroll -- KOD` ile yeniden eşleştirin.',
-      );
+      this.log.error('⛔ MainApi bu agent kimliğini kabul etmiyor (iptal edilmiş ya da başka bir kopya yeniden eşleştirilmiş olabilir).');
+      if (this.onRevoked) {
+        // Cihaz logları kuyrukta beklemeye devam eder; yeni kimlikle gönderilir.
+        Promise.resolve()
+          .then(() => this.onRevoked())
+          .catch((error) => this.log.error(`❌ Yeniden eşleştirme başarısız: ${error.message}`));
+      } else {
+        this.log.error('Admin panelinden yeni eşleştirme kodu alıp `npm run enroll -- KOD` ile yeniden eşleştirin.');
+      }
     }
     return true;
+  }
+
+  /** Yeni kimlikle çalışmaya devam eder (yeniden eşleştirme sonrası). */
+  resume(client) {
+    this.client = client;
+    this.revoked = false;
+    this.nextWorkAt = 0;
+    this.pendingImmediateFlush = this.store.queueDepth() > 0;
   }
 
   stop() {

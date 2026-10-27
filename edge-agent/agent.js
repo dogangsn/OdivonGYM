@@ -13,6 +13,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const readline = require('node:readline');
 const { MainApiClient } = require('./src/mainapi-client');
 const { Store } = require('./src/store');
 const { AgentRuntime } = require('./src/runtime');
@@ -51,36 +52,90 @@ function identityPath(config) {
   return path.join(config.dataDir, 'identity.json');
 }
 
-async function enroll(config, code) {
-  if (!code) fail('Kullanım: npm run enroll -- EŞLEŞTİRME_KODU');
+/** Kod ile MainApi'ye kaydolur ve kimliği diske yazar. Hata olursa fırlatır. */
+async function enrollWithCode(config, code) {
   fs.mkdirSync(config.dataDir, { recursive: true });
   const result = await MainApiClient.enroll({
     baseUrl: config.mainApiUrl,
-    code: code.trim().toUpperCase(),
+    code: String(code).trim().toUpperCase(),
     name: config.agentName,
     hostname: os.hostname(),
     agentVersion: AGENT_VERSION,
-  }).catch((err) => fail(`Eşleştirme başarısız: ${err.message}`));
-  fs.writeFileSync(
-    identityPath(config),
-    JSON.stringify({ agentId: result.agentId, token: result.token, tenantId: result.tenantId, mainApiUrl: config.mainApiUrl }, null, 2),
-    { encoding: 'utf8', mode: 0o600 },
-  );
+  });
+  const identity = { agentId: result.agentId, token: result.token, tenantId: result.tenantId, mainApiUrl: config.mainApiUrl };
+  fs.writeFileSync(identityPath(config), JSON.stringify(identity, null, 2), { encoding: 'utf8', mode: 0o600 });
   console.log(`✅ Agent eşleştirildi (${result.agentId}). ${result.gateIds?.length ?? 0} cihaz atandı.`);
+  return identity;
+}
+
+async function enroll(config, code) {
+  if (!code) fail('Kullanım: npm run enroll -- EŞLEŞTİRME_KODU');
+  await enrollWithCode(config, code).catch((err) => fail(`Eşleştirme başarısız: ${err.message}`));
   console.log('👉 Şimdi `npm start` ile başlatın.');
 }
 
-async function run(config) {
-  const file = identityPath(config);
-  if (!fs.existsSync(file)) {
-    fail('Agent henüz eşleştirilmemiş. Admin panelinden eşleştirme kodu alıp `npm run enroll -- KOD` çalıştırın.');
+/** Pencerede çalışıyorsa koddan sorar; arka planda çalışıyorsa agent klasörüne konan kod dosyasını bekler. */
+const CODE_FILE = path.join(ROOT, 'eslestirme-kodu.txt');
+
+function askLine(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => rl.question(question, (answer) => {
+    rl.close();
+    resolve(answer);
+  }));
+}
+
+async function waitForCodeFile() {
+  for (;;) {
+    try {
+      const code = fs.readFileSync(CODE_FILE, 'utf8').trim();
+      fs.rmSync(CODE_FILE, { force: true });
+      if (code) return code;
+    } catch {
+      /* dosya henüz yok */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   }
-  const identity = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const client = new MainApiClient({
+}
+
+/** Geçerli bir kod girilene kadar sorar ve eşleştirir. */
+async function pairInteractively(config) {
+  const interactive = Boolean(process.stdin.isTTY);
+  if (!interactive) {
+    console.log(`👉 Admin panelinden yeni eşleştirme kodu alın ve "${CODE_FILE}" dosyasına yazıp kaydedin; agent kendisi eşleşecek.`);
+  }
+  for (;;) {
+    const code = interactive ? await askLine('🔑 Admin panelindeki yeni eşleştirme kodunu girin: ') : await waitForCodeFile();
+    if (!code.trim()) continue;
+    try {
+      return await enrollWithCode(config, code);
+    } catch (err) {
+      const hint = err.status
+        ? 'Kod 10 dk geçerli ve tek kullanımlık; panelden yeni kod alıp tekrar deneyin.'
+        : 'MainApi\'ye ulaşılamadı; internet bağlantısını kontrol edip kodu tekrar girin.';
+      console.error(`❌ Eşleştirme başarısız: ${err.message}. ${hint}`);
+    }
+  }
+}
+
+function clientFor(config, identity) {
+  return new MainApiClient({
     baseUrl: identity.mainApiUrl || config.mainApiUrl,
     agentId: identity.agentId,
     token: identity.token,
   });
+}
+
+async function run(config) {
+  const file = identityPath(config);
+  let identity;
+  if (fs.existsSync(file)) {
+    identity = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } else {
+    console.log('ℹ️ Agent henüz eşleştirilmemiş.');
+    identity = await pairInteractively(config);
+  }
+  const client = clientFor(config, identity);
   const store = new Store(path.join(config.dataDir, 'agent.db'));
   const runtime = new AgentRuntime({
     client,
@@ -90,6 +145,12 @@ async function run(config) {
     logger: console,
     flushOnTick: false,
     eventFlushDelayMs: config.eventFlushDelayMs,
+    // Kimlik reddedilirse (iptal / başka kopyayla yeniden eşleştirme) yeni kod sorulur ve kaldığı yerden devam edilir.
+    onRevoked: async () => {
+      const next = await pairInteractively(config);
+      runtime.resume(clientFor(config, next));
+      console.log(`🆔 Yeni agent kimliği: ${next.agentId}. Çalışmaya devam ediliyor.`);
+    },
   });
 
   console.log('====================================================');

@@ -253,3 +253,31 @@ test('iş sorgusu sunucunun önerdiği aralıkla yapılır, geçişler kısa bek
   assert.equal(batches, 1);
   assert.equal(workCalls, 2); // 30 sn doldu
 });
+
+test('kimlik reddedilince yeni kod istenir ve yeni kimlikle kaldığı yerden devam edilir', async (t) => {
+  const { dev, store, api } = await setup(t);
+  let asked = 0;
+  let runtime;
+  runtime = new AgentRuntime({
+    client: api,
+    store,
+    credentials: { [dev.host]: { username: 'admin', password: 'secret' } },
+    agentVersion: 'test',
+    logger: silent,
+    onRevoked: async () => {
+      asked += 1;
+      api.revoked = false; // yeni kimlik kabul ediliyor
+      runtime.resume(api);
+    },
+  });
+  await runtime.tick();
+  dev.addLogs(3, istanbulToday());
+  api.revoked = true;
+  await runtime.tick();
+  await runtime.tick(); // ikinci hata yeniden sormaz
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(asked, 1);
+  assert.equal(runtime.revoked, false);
+  await runtime.tick();
+  assert.equal(api.logs.size, 3);
+});

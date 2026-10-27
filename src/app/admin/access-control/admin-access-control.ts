@@ -1143,7 +1143,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                       <b>2. Yöntem (Cihaz destekliyorsa):</b> Turnike tanımsız kartın numarasını geçiş olayında ayrı bir alan olarak bildirirse kart burada görünür ve üyeye atanabilir. Test edilen YT cihazı reddedilen tanımsız kartı loglamıyor; bu cihazda USB okuyucu veya üreticinin doğrulanmış ham kart okuma protokolü gerekir.
                     </p>
                     <p class="m-0 text-slate-500 dark:text-slate-400 text-[11px]">
-                      <b>Senkronizasyon Süresi:</b> Agent cihazı ve yeni üye yetkilerini 5 saniyede bir kontrol eder; yeni geçiş kayıtlarını MainApi'ye 5 saniyede bir gönderir. Görünme süresi cihaz ve ağ yanıtına bağlıdır.
+                      <b>Senkronizasyon Süresi:</b> Agent cihazı 5 saniyede bir okur, yeni üye yetkilerini en geç 30 saniyede cihaza yazar; yeni geçiş kayıtlarını ilk geçişten 5 saniye sonra MainApi'ye gönderir (geçiş yoksa istek atmaz). Görünme süresi cihaz ve ağ yanıtına bağlıdır.
                     </p>
                   </div>
                   <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
@@ -1363,8 +1363,8 @@ export class AdminAccessControl implements OnInit {
         mainApiUrl: environment.apiBaseUrl.startsWith('http') ? environment.apiBaseUrl : 'https://mainapi.odivon.com/api/v1',
         agentName: 'Resepsiyon PC',
         pollIntervalSeconds: 5,
-        eventFlushIntervalSeconds: 5,
-        heartbeatIntervalSeconds: 15,
+        eventFlushDelaySeconds: 5,
+        heartbeatIntervalSeconds: 60,
         dataDir: './data',
         credentials,
       },
