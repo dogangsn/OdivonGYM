@@ -65,7 +65,7 @@ export class Register {
       country: [DEFAULT_COUNTRY_CODE, [Validators.required]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9\s]{7,14}$/)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
     },
     { validators: passwordsMatchValidator },
