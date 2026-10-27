@@ -130,11 +130,16 @@ class AgentRuntime {
     const label = `${item.name || item.userId} (${device.config.name}, v${item.version})`;
     let ack;
     try {
-      const { verified } = await device.adapter.applyUser(item);
+      const { verified, detail } = await device.adapter.applyUser(item);
       this.markReachable(device);
       ack = verified
         ? { version: item.version, result: 'applied', verified: true }
-        : { version: item.version, result: 'error', verified: false, error: 'Cihazdan geri okuma doğrulanamadı.' };
+        : {
+            version: item.version,
+            result: 'error',
+            verified: false,
+            error: `Cihazdan geri okuma doğrulanamadı${detail ? ` (${detail})` : ''}.`.slice(0, 500),
+          };
     } catch (raw) {
       const err = asDeviceError(raw);
       if (err.transient) {
