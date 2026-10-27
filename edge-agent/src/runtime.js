@@ -3,9 +3,12 @@
 /**
  * Agent çalışma döngüsü.
  *
- *  - Her `pollIntervalMs`'de: MainApi'den iş + cihaz listesi alınır, iş öğeleri
- *    cihazlara uygulanır, cihaz logları okunup yerel kuyruğa alınır, kuyruk
- *    MainApi'ye toplu gönderilir.
+ *  - Her `pollIntervalMs`'de (yerel ağ, ücretsiz): cihaz logları okunup yerel
+ *    kuyruğa alınır.
+ *  - MainApi'den iş + cihaz listesi, sunucunun `pollAfterMs` önerisiyle alınır
+ *    (boştayken 30 sn, iş geldikçe hemen tekrar).
+ *  - Yeni geçiş olunca `eventFlushDelayMs` (varsayılan 5 sn) toplanıp tek pakette gönderilir;
+ *    olay yoksa MainApi'ye istek atılmaz.
  *  - Her `heartbeatIntervalMs`'de: cihaz erişilebilirliği MainApi'ye bildirilir.
  *
  * MainApi'ye ulaşılamazsa son bilinen cihaz listesiyle log okumaya devam edilir;
@@ -16,9 +19,22 @@ const { createAdapter } = require('./adapters');
 const { asDeviceError } = require('./adapters/errors');
 
 const EVENT_BATCH_SIZE = 500;
+/** Sunucu önerisinin sınırları; öneri yoksa (eski MainApi) her turda sorulur. */
+const MIN_WORK_POLL_MS = 2000;
+const MAX_WORK_POLL_MS = 60000;
 
 class AgentRuntime {
-  constructor({ client, store, credentials = {}, logger = console, agentVersion, adapterFactory = createAdapter, flushOnTick = true }) {
+  constructor({
+    client,
+    store,
+    credentials = {},
+    logger = console,
+    agentVersion,
+    adapterFactory = createAdapter,
+    flushOnTick = true,
+    eventFlushDelayMs = 5000,
+    now = () => Date.now(),
+  }) {
     this.client = client;
     this.store = store;
     this.credentials = credentials;
@@ -27,6 +43,10 @@ class AgentRuntime {
     this.adapterFactory = adapterFactory;
     this.flushOnTick = flushOnTick;
     this.pendingImmediateFlush = false;
+    this.eventFlushDelayMs = eventFlushDelayMs;
+    this.now = now;
+    this.flushDueAt = null;
+    this.nextWorkAt = 0;
     this.devices = new Map(); // gateId → { config, adapter, reachable, lastError, lastEventAt, deviceTime, lock }
     this.stopped = false;
     this.revoked = false;
@@ -74,18 +94,23 @@ class AgentRuntime {
   async tick() {
     if (this.revoked) return;
     let items = [];
-    try {
-      const work = await this.client.getWork();
-      this.setDevices(work.devices ?? []);
-      this.store.saveDevices(work.devices ?? []);
-      items = work.items ?? [];
-    } catch (err) {
-      if (this.handleAuthError(err)) return;
-      this.log.warn(`⚠️ MainApi'ye ulaşılamadı (iş alınamadı): ${err.message}`);
+    if (this.now() >= this.nextWorkAt) {
+      try {
+        const work = await this.client.getWork();
+        this.setDevices(work.devices ?? []);
+        this.store.saveDevices(work.devices ?? []);
+        items = work.items ?? [];
+        this.nextWorkAt = this.now() + workPollDelay(work.pollAfterMs);
+      } catch (err) {
+        if (this.handleAuthError(err)) return;
+        this.log.warn(`⚠️ MainApi'ye ulaşılamadı (iş alınamadı): ${err.message}`);
+        this.nextWorkAt = this.now() + MIN_WORK_POLL_MS * 5;
+      }
     }
 
     await Promise.all([...this.devices.values()].map((device) => this.pollDevice(device, items)));
-    if (this.flushOnTick || this.pendingImmediateFlush || this.store.queueDepth() >= EVENT_BATCH_SIZE) {
+    const flushDue = this.flushDueAt !== null && this.now() >= this.flushDueAt;
+    if (this.flushOnTick || this.pendingImmediateFlush || flushDue || this.store.queueDepth() >= EVENT_BATCH_SIZE) {
       this.pendingImmediateFlush = false;
       await this.flushEvents();
     }
@@ -146,6 +171,7 @@ class AgentRuntime {
       if (events.length > 0) device.lastEventAt = events[events.length - 1].time;
       if (added > 0) {
         this.log.info(`📥 ${device.config.name}: ${added} yeni geçiş kaydı kuyruğa alındı.`);
+        if (this.flushDueAt === null) this.flushDueAt = this.now() + this.eventFlushDelayMs;
         // Cihaz ayrı kart numarası bildirdiyse ilgili olayı hemen gönder.
         const unassignedCard = events.find((e) => e.card && (!e.userId || e.userId === '0'));
         if (unassignedCard) {
@@ -163,7 +189,10 @@ class AgentRuntime {
   async flushEvents() {
     for (;;) {
       const batch = this.store.peekEvents(EVENT_BATCH_SIZE);
-      if (batch.length === 0) return;
+      if (batch.length === 0) {
+        this.flushDueAt = null;
+        return;
+      }
       try {
         const result = await this.client.sendEvents(batch.map((row) => row.event));
         // Reddedilenler de silinir: sunucu kalıcı olarak kabul etmiyor (ör. cihaz agent'tan alındı).
@@ -174,9 +203,14 @@ class AgentRuntime {
       } catch (err) {
         if (this.handleAuthError(err)) return;
         this.log.warn(`⚠️ Olaylar gönderilemedi, kuyrukta bekliyor (${this.store.queueDepth()}): ${err.message}`);
+        // Hemen her turda tekrar denenmez; bir sonraki deneme gecikmeyle ya da periyodik gönderimle.
+        this.flushDueAt = this.now() + Math.max(this.eventFlushDelayMs, 60000);
         return;
       }
-      if (batch.length < EVENT_BATCH_SIZE) return;
+      if (batch.length < EVENT_BATCH_SIZE) {
+        this.flushDueAt = null;
+        return;
+      }
     }
   }
 
@@ -243,6 +277,13 @@ class AgentRuntime {
     this.stopped = true;
     for (const device of this.devices.values()) device.adapter.close();
   }
+}
+
+function workPollDelay(pollAfterMs) {
+  const ms = Number(pollAfterMs);
+  if (!Number.isFinite(ms) || pollAfterMs == null) return 0;
+  if (ms <= 0) return 0;
+  return Math.min(MAX_WORK_POLL_MS, Math.max(MIN_WORK_POLL_MS, ms));
 }
 
 module.exports = { AgentRuntime };

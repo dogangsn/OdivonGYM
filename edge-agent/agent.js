@@ -37,8 +37,12 @@ function loadConfig() {
     agentName: config.agentName || os.hostname(),
     credentials: config.credentials || {},
     pollIntervalMs: Math.max(2, config.pollIntervalSeconds ?? 5) * 1000,
-    eventFlushIntervalMs: Math.max(2, config.eventFlushIntervalSeconds ?? 5) * 1000,
-    heartbeatIntervalMs: Math.max(5, config.heartbeatIntervalSeconds ?? 15) * 1000,
+    // Yeni geçişler bu kadar toplanıp gönderilir; olay yoksa istek atılmaz.
+    eventFlushDelayMs: Math.max(2, config.eventFlushDelaySeconds ?? 5) * 1000,
+    // Gönderilemeyen olaylar için yedek periyodik deneme (en çok 10 dk).
+    eventFlushIntervalMs: Math.min(600, Math.max(60, config.eventFlushIntervalSeconds ?? 600)) * 1000,
+    // MainApi her heartbeat'te yazma yapar; 60 sn'den sık gönderilmez.
+    heartbeatIntervalMs: Math.max(60, config.heartbeatIntervalSeconds ?? 60) * 1000,
     dataDir: path.resolve(ROOT, config.dataDir || './data'),
   };
 }
@@ -85,6 +89,7 @@ async function run(config) {
     agentVersion: AGENT_VERSION,
     logger: console,
     flushOnTick: false,
+    eventFlushDelayMs: config.eventFlushDelayMs,
   });
 
   console.log('====================================================');
@@ -92,8 +97,10 @@ async function run(config) {
   console.log('====================================================');
   console.log(`🆔 Agent            : ${identity.agentId}`);
   console.log(`🌐 MainApi          : ${client.baseUrl}`);
-  console.log(`⏱️ Cihaz & İş Tarama: ${config.pollIntervalMs / 1000} sn`);
-  console.log(`📤 Geçiş Gönderimi  : ${config.eventFlushIntervalMs / 1000} sn (${Math.round(config.eventFlushIntervalMs / 60000)} dk)`);
+  console.log(`⏱️ Cihaz Tarama    : ${config.pollIntervalMs / 1000} sn`);
+  console.log(`⏱️ İş Sorgusu      : sunucu önerisiyle (boştayken 30 sn)`);
+  console.log(`📤 Geçiş Gönderimi  : yeni geçişten ${config.eventFlushDelayMs / 1000} sn sonra`);
+  console.log(`💓 Heartbeat        : ${config.heartbeatIntervalMs / 1000} sn`);
   console.log(`📦 Bekleyen olay    : ${store.queueDepth()}`);
   console.log('----------------------------------------------------');
 

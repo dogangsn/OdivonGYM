@@ -1448,7 +1448,7 @@ export class AdminAccessControl implements OnInit {
         cardDepositFee: member.cardDepositFee || 0,
         cardDepositPaid: member.cardDepositPaid || false,
       });
-      this.alertService.toastSuccess(`Kart ${card}, ${member.displayName} adlı üyeye başarıyla atandı! Turnike 5 sn içinde güncellenecektir.`);
+      this.alertService.toastSuccess(`Kart ${card}, ${member.displayName} adlı üyeye başarıyla atandı! Turnike en geç 30 sn içinde güncellenecektir.`);
       this.closeAssignCardDialog();
       this.dismissUnassignedCard(card);
       this.accessService.refresh();

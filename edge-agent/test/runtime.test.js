@@ -201,3 +201,55 @@ test('tanımsız kart okutulduğunda flushOnTick false olsa bile anında MainApi
 });
 
 
+
+test('iş sorgusu sunucunun önerdiği aralıkla yapılır, geçişler kısa beklemeyle toplu gönderilir', async (t) => {
+  const { dev, store, api } = await setup(t);
+  let clock = 1_000_000;
+  let workCalls = 0;
+  const getWork = api.getWork;
+  api.getWork = async () => {
+    workCalls += 1;
+    return { ...(await getWork()), pollAfterMs: 30_000 };
+  };
+  let batches = 0;
+  const sendEvents = api.sendEvents;
+  api.sendEvents = async (events) => {
+    batches += 1;
+    return sendEvents(events);
+  };
+  const runtime = new AgentRuntime({
+    client: api,
+    store,
+    credentials: { [dev.host]: { username: 'admin', password: 'secret' } },
+    agentVersion: 'test',
+    logger: silent,
+    flushOnTick: false,
+    eventFlushDelayMs: 20_000,
+    now: () => clock,
+  });
+
+  await runtime.tick();
+  assert.equal(workCalls, 1);
+  dev.addLogs(3, istanbulToday());
+  clock += 5_000;
+  await runtime.tick(); // okundu, henüz gönderilmedi
+  assert.equal(store.queueDepth(), 3);
+  assert.equal(batches, 0);
+  assert.equal(workCalls, 1);
+
+  dev.addLogs(2, istanbulToday());
+  clock += 10_000;
+  await runtime.tick();
+  assert.equal(batches, 0);
+
+  clock += 10_000; // ilk geçişten 25 sn sonra
+  await runtime.tick();
+  assert.equal(batches, 1);
+  assert.equal(api.logs.size, 5);
+  assert.equal(store.queueDepth(), 0);
+
+  clock += 10_000; // olay yok: istek yok
+  await runtime.tick();
+  assert.equal(batches, 1);
+  assert.equal(workCalls, 2); // 30 sn doldu
+});
