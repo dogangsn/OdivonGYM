@@ -52,6 +52,7 @@ import {
 } from '../../../core/models/workout-template.model';
 import { MemberBodyState } from './member-body.state';
 import { MemberMeasurementsTab, MemberWaterTab } from './member-body-tabs';
+import { MemberHistoryTab } from './member-history-tab';
 import { firstValueFrom } from 'rxjs';
 import { AccessApi } from '../../../core/api/access.api';
 import { ConsentApi } from '../../../core/api/consent.api';
@@ -88,7 +89,8 @@ export type MemberDetailTab =
   | 'wallet'
   | 'access'
   | 'overview'
-  | 'consents';
+  | 'consents'
+  | 'history';
 
 const STATUS_LABEL: Record<MembershipStatus, string> = {
   trial: 'Deneme',
@@ -120,6 +122,7 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
     CdkDragHandle,
     MemberMeasurementsTab,
     MemberWaterTab,
+    MemberHistoryTab,
   ],
   providers: [MemberBodyState],
   changeDetection: ChangeDetectionStrategy.OnPush,

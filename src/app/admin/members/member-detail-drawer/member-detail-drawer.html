@@ -425,10 +425,27 @@
           <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
         }
       </button>
+
+      <button type="button" (click)="setTab('history')"
+        class="pb-3 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer shrink-0"
+        [class]="activeTab() === 'history' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
+        <mat-icon class="icon-size-4">history</mat-icon>
+        <span>Geçmiş</span>
+        @if (activeTab() === 'history') {
+          <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+        }
+      </button>
     </div>
 
     <!-- 4. Scrollable Tab Content Body -->
     <div class="flex-1 overflow-y-auto p-5 sm:p-6 custom-scroll">
+      <!-- ============================================== -->
+      <!-- GEÇMİŞ: üyede yapılan tüm değişiklikler        -->
+      <!-- ============================================== -->
+      @if (activeTab() === 'history' && member()?.uid) {
+      <app-member-history-tab [memberId]="member()!.uid" />
+      }
+
       <!-- ============================================== -->
       <!-- TAB 1: KİLO & VÜCUT ÖLÇÜMLERİ                  -->
       <!-- ============================================== -->

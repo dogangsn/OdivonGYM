@@ -11,6 +11,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { toAppError } from '../../shared/models/app-error.model';
 import { formatDateTime } from '../../shared/ui/ui-utils';
+import { auditChangeRows } from '../../core/api/audit-format';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminStaffService } from '../staff/admin-staff.service';
 
@@ -32,47 +33,8 @@ const MODULES: { id: string; label: string }[] = [
   { id: 'info', label: 'Salon bilgileri' },
   { id: 'saas', label: 'SaaS abonelik' },
   { id: 'mobile', label: 'Üye uygulaması' },
+  { id: 'payments', label: 'Online ödeme' },
 ];
-
-const FIELD_LABELS: Record<string, string> = {
-  displayName: 'Ad soyad',
-  email: 'E-posta',
-  phone: 'Telefon',
-  nationalId: 'T.C. kimlik no',
-  gender: 'Cinsiyet',
-  birthDate: 'Doğum tarihi',
-  membershipStatus: 'Üyelik durumu',
-  membershipStartsAt: 'Üyelik başlangıcı',
-  membershipEndsAt: 'Üyelik bitişi',
-  packageLabel: 'Paket',
-  packagePrice: 'Paket fiyatı',
-  walletBalance: 'Cüzdan bakiyesi',
-  memberNumber: 'Üye no',
-  trainerId: 'Antrenör',
-  trainerName: 'Antrenör',
-  branchId: 'Şube',
-  branchName: 'Şube',
-  branchIds: 'Şubeler',
-  branchNames: 'Şubeler',
-  notes: 'Not',
-  price: 'Fiyat',
-  durationDays: 'Süre (gün)',
-  status: 'Durum',
-  stock: 'Stok',
-  amount: 'Tutar',
-  totalAmount: 'Toplam tutar',
-  paidAmount: 'Ödenen',
-  remainingAmount: 'Kalan borç',
-  installments: 'Taksitler',
-  payments: 'Ödemeler',
-  role: 'Rol',
-  title: 'Unvan',
-  monthlySalary: 'Maaş',
-  commissionRate: 'Prim oranı',
-  isArchived: 'Arşivde',
-  deletedAt: 'Silinme',
-  rfidCardNumber: 'Kart no',
-};
 
 const VERB_CLASS: Record<GymAuditLog['verb'], string> = {
   create: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
@@ -176,7 +138,7 @@ const VERB_LABEL: Record<GymAuditLog['verb'], string> = {
                 <td class="odv-td whitespace-nowrap">{{ dateTime(log.createdAt) }}</td>
                 <td class="odv-td">
                   <div class="font-bold text-slate-900 dark:text-white">{{ actorName(log) }}</div>
-                  <div class="text-[11px] text-slate-400">{{ log.actorType === 'member' ? 'Üye' : roleLabel(log.actorRole) }} · {{ log.ip }}</div>
+                  <div class="text-[11px] text-slate-400">{{ log.actorType === 'member' ? 'Üye' : log.actorType === 'system' ? 'Sistem' : roleLabel(log.actorRole) }} · {{ log.ip || '—' }}</div>
                 </td>
                 <td class="odv-td">
                   <span class="odv-badge mr-1" [class]="verbClass[log.verb]">{{ verbLabel[log.verb] }}</span>
@@ -365,6 +327,7 @@ export class AdminAuditLog {
 
   protected actorName(log: GymAuditLog): string {
     if (log.actorType === 'member') return this.memberName(log.actorId);
+    if (log.actorType === 'system') return 'Online ödeme (otomatik)';
     return this.staffByEmail().get(log.actorEmail?.toLowerCase()) ?? log.actorEmail;
   }
 
@@ -377,12 +340,11 @@ export class AdminAuditLog {
   }
 
   protected changeRows(log: GymAuditLog) {
-    return Object.entries(log.changes ?? {}).map(([field, change]) => ({
-      field,
-      label: FIELD_LABELS[field] ?? field,
-      from: display(change.from),
-      to: display(change.to),
-    }));
+    // Üye dışı işlemlerde (paket satışı, borç ödemesi…) üyenin kaydındaki değişiklik ayrı tutulur.
+    const memberRows = Object.entries(log.memberChanges ?? {}).flatMap(([userId, changes]) =>
+      auditChangeRows(changes).map((row) => ({ ...row, field: `${userId}.${row.field}`, label: `${this.memberName(userId)} · ${row.label}` })),
+    );
+    return [...auditChangeRows(log.changes), ...memberRows];
   }
 
   protected pretty(value: unknown): string {
@@ -394,12 +356,4 @@ function daysAgo(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function display(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'boolean') return value ? 'Evet' : 'Hayır';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return formatDateTime(value);
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
 }
