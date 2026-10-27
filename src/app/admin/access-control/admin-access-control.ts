@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -1462,6 +1462,11 @@ export class AdminAccessControl implements OnInit {
   protected readonly gates = toSignal(this.accessService.watchGates(), { initialValue: [] });
   protected readonly agents = toSignal(this.accessService.watchAgents(), { initialValue: [] });
   private readonly syncSummary = toSignal(this.accessService.watchSyncSummary(), { initialValue: {} as DeviceSyncSummary });
+  // Senkron listesi açıkken sayılar değişirse (ör. üyenin bitiş tarihi düzenlendi) liste kendiliğinden yenilenir.
+  private readonly refreshOpenSyncList = effect(() => {
+    this.syncSummary();
+    if (untracked(() => this.syncGate())) void untracked(() => this.loadSyncItems(true));
+  });
   protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
   private readonly logs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
 
@@ -1501,18 +1506,19 @@ export class AdminAccessControl implements OnInit {
     await this.loadSyncItems();
   }
 
-  private async loadSyncItems(): Promise<void> {
+  private async loadSyncItems(quiet = false): Promise<void> {
     const gate = this.syncGate();
     if (!gate?.id) return;
-    this.syncLoading.set(true);
+    if (!quiet) this.syncLoading.set(true);
     try {
       const filter = this.syncFilter();
-      const items = await this.accessService.listSync(gate.id, filter === 'all' || filter === 'pending' ? undefined : filter);
+      // MainApi "pending" süzgecine agent'ın alıp henüz onaylamadıklarını (delivered) da katar; liste son değişene göre sıralı gelir.
+      const items = await this.accessService.listSync(gate.id, filter === 'all' ? undefined : filter);
       this.syncItems.set(filter === 'pending' ? items.filter((i) => i.status === 'pending' || i.status === 'delivered') : items);
     } catch {
-      this.alertService.toastError('Senkron durumu alınamadı.');
+      if (!quiet) this.alertService.toastError('Senkron durumu alınamadı.');
     } finally {
-      this.syncLoading.set(false);
+      if (!quiet) this.syncLoading.set(false);
     }
   }
 
