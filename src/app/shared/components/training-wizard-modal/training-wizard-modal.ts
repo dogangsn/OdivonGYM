@@ -25,6 +25,7 @@ import { UserProfile } from '../../../core/models/user-profile.model';
 import { DisciplineCategory, DisciplineCode, SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { GymEquipment, GymFacility, MuscleGroup } from '../../../core/models/gym-equipment.model';
 import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../../core/models/workout-plan.model';
+import { ExerciseCatalogService } from '../../../core/services/exercise-catalog.service';
 import { WorkoutTemplate } from '../../../core/models/workout-template.model';
 import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
 
@@ -68,6 +69,7 @@ export class TrainingWizardModal {
   private readonly membersService = inject(AdminMembersService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly workoutService = inject(WorkoutService);
+  private readonly exerciseCatalog = inject(ExerciseCatalogService);
   private readonly templatesService = inject(WorkoutTemplatesService);
   protected readonly branchContext = inject(BranchContextService);
   private readonly classesService = inject(ClassesService);
@@ -164,7 +166,7 @@ export class TrainingWizardModal {
   readonly suggestedExercises = computed(() => {
     const muscles = this.dayMuscles()[this.activeDay()] ?? [];
     if (muscles.length === 0) return [];
-    return DEFAULT_EXERCISE_LIBRARY.filter((ex) => ex.muscleGroup && muscles.includes(ex.muscleGroup));
+    return this.exerciseCatalog.presets().filter((ex) => ex.muscleGroup && muscles.includes(ex.muscleGroup));
   });
 
   constructor() {

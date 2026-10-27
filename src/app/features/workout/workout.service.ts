@@ -8,20 +8,27 @@ import { AuthService } from '../../core/auth/auth.service';
 import { CreateWorkoutPlanInput, Exercise, UpdateWorkoutPlanInput, WorkoutPlan } from '../../core/models/workout-plan.model';
 
 function cleanExercises(exercises: Exercise[]): Exercise[] {
-  return exercises.map((e) => {
-    const out: Exercise = { name: e.name };
-    if (e.id) out.id = e.id;
-    if (e.muscleGroup) out.muscleGroup = e.muscleGroup;
-    if (e.equipmentName) out.equipmentName = e.equipmentName;
-    if (e.dayName) out.dayName = e.dayName;
-    if (e.sets !== undefined) out.sets = e.sets;
-    if (e.reps !== undefined) out.reps = e.reps;
-    if (e.weight !== undefined) out.weight = e.weight;
-    if (e.restSeconds !== undefined) out.restSeconds = e.restSeconds;
-    if (e.duration !== undefined) out.duration = e.duration;
-    if (e.notes) out.notes = e.notes;
-    return out;
-  });
+  return exercises.map((e) => cleanExercise(e, true));
+}
+
+/** Bilinen alanlar; süper set bir seviye korunur (API de bir seviyeye izin verir). */
+function cleanExercise(e: Exercise, withSuperSet: boolean): Exercise {
+  const out: Exercise = { name: e.name };
+  if (e.id) out.id = e.id;
+  if (e.exerciseId) out.exerciseId = e.exerciseId;
+  if (e.muscleGroup) out.muscleGroup = e.muscleGroup;
+  if (e.equipmentName) out.equipmentName = e.equipmentName;
+  if (e.dayName) out.dayName = e.dayName;
+  if (e.sets !== undefined) out.sets = e.sets;
+  if (e.reps !== undefined) out.reps = e.reps;
+  if (e.weight !== undefined) out.weight = e.weight;
+  if (e.restSeconds !== undefined) out.restSeconds = e.restSeconds;
+  if (e.duration !== undefined) out.duration = e.duration;
+  if (e.notes) out.notes = e.notes;
+  if (e.setTargets?.length) out.setTargets = e.setTargets.map((target) => ({ ...target }));
+  if (e.supersetGroup) out.supersetGroup = e.supersetGroup;
+  if (withSuperSet && e.superSet?.name) out.superSet = cleanExercise(e.superSet, false);
+  return out;
 }
 
 @Injectable({ providedIn: 'root' })

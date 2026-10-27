@@ -25,8 +25,8 @@ import {
   WorkoutPlan,
   CreateWorkoutPlanInput,
   Exercise,
-  DEFAULT_EXERCISE_LIBRARY,
 } from '../../../core/models/workout-plan.model';
+import { ExerciseCatalogService } from '../../../core/services/exercise-catalog.service';
 import {
   MemberDocument,
   CreateMemberDocumentInput,
@@ -127,6 +127,7 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
 })
 export class MemberDetailDrawer {
   private readonly membersService = inject(AdminMembersService);
+  private readonly exerciseCatalog = inject(ExerciseCatalogService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly templatesService = inject(WorkoutTemplatesService);
   private readonly snackBar = inject(MatSnackBar);
@@ -502,7 +503,8 @@ export class MemberDetailDrawer {
   protected readonly equipmentList = signal<GymEquipment[]>([]);
 
   // Static options & labels
-  protected readonly defaultExerciseLibrary = DEFAULT_EXERCISE_LIBRARY;
+  /** API egzersiz kataloğu (sistem + salon); yüklenemezse sabit kütüphane. */
+  protected readonly defaultExerciseLibrary = computed(() => this.exerciseCatalog.presets());
   protected readonly muscleGroupLabels: Record<string, string> = MUSCLE_GROUP_LABELS;
   protected readonly docTypeLabels: Record<string, string> = DOCUMENT_TYPE_LABELS;
   protected readonly docStatusLabels: Record<string, string> = DOCUMENT_STATUS_LABELS;
@@ -784,8 +786,8 @@ export class MemberDetailDrawer {
 
   getAvailableLibraryExercises(): Exercise[] {
     const muscle = this.filterExerciseMuscle();
-    if (muscle === 'all') return this.defaultExerciseLibrary;
-    return this.defaultExerciseLibrary.filter((e) => e.muscleGroup === muscle);
+    if (muscle === 'all') return this.defaultExerciseLibrary();
+    return this.defaultExerciseLibrary().filter((e) => e.muscleGroup === muscle);
   }
 
   addExerciseFromLibrary(ex: Exercise): void {
@@ -803,8 +805,8 @@ export class MemberDetailDrawer {
 
   getAvailableLibrarySuperSetExercises(): Exercise[] {
     const muscle = this.superSetFilterMuscle();
-    if (muscle === 'all') return this.defaultExerciseLibrary;
-    return this.defaultExerciseLibrary.filter((e) => e.muscleGroup === muscle);
+    if (muscle === 'all') return this.defaultExerciseLibrary();
+    return this.defaultExerciseLibrary().filter((e) => e.muscleGroup === muscle);
   }
 
   openAddSuperSetModal(index: number): void {

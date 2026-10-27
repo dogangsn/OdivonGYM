@@ -4,7 +4,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { ProgramRequest, ProgramRequestsApi } from '../../core/api/program-requests.api';
 import { AlertService } from '../../core/services/alert.service';
-import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../core/models/workout-plan.model';
+import { Exercise } from '../../core/models/workout-plan.model';
+import { ExerciseCatalogService } from '../../core/services/exercise-catalog.service';
 import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../core/models/workout-day';
 import { WorkoutService } from '../../features/workout/workout.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
@@ -22,7 +23,7 @@ export class AdminProgramRequests {
   private readonly workouts = inject(WorkoutService);
   private readonly alerts = inject(AlertService);
 
-  protected readonly presets = DEFAULT_EXERCISE_LIBRARY;
+  protected readonly presets = inject(ExerciseCatalogService).presets;
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly requests = signal<ProgramRequest[]>([]);
@@ -82,7 +83,7 @@ export class AdminProgramRequests {
   }
 
   protected addPreset(name: string): void {
-    const preset = this.presets.find((item) => item.name === name);
+    const preset = this.presets().find((item) => item.name === name);
     if (!preset) return;
     this.exercises.update((list) => [...list, { ...preset, dayName: workoutDayLabel(this.activeDay()) }]);
   }

@@ -72,7 +72,7 @@
           Hazır hareket
           <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" (change)="addPreset($any($event.target).value); $any($event.target).value = ''">
             <option value="">Seç ve ekle</option>
-            @for (preset of presets; track preset.name) {
+            @for (preset of presets(); track preset.exerciseId ?? preset.name) {
               <option [value]="preset.name">{{ preset.name }}</option>
             }
           </select>

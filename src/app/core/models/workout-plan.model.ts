@@ -3,6 +3,8 @@ import { MuscleGroup } from './gym-equipment.model';
 
 export interface Exercise {
   id?: string;
+  /** Egzersiz kataloğundaki kayıt (`sys-ex-*` sistem veya salon egzersizi); geçmiş/PR eşleşmesi için. */
+  exerciseId?: string;
   name: string;
   muscleGroup?: MuscleGroup; // 'chest' | 'back' | 'shoulders' | 'legs' | 'arms' | 'core' | 'fullbody'
   equipmentName?: string; // Örn: "Chest Press Makinesi" veya "Barbell"
@@ -14,6 +16,29 @@ export interface Exercise {
   duration?: number; // seconds
   notes?: string; // Antrenör direktifi (Örn: "Zirvede 1 sn sıkıştır")
   superSet?: Exercise; // Bu harekete bağlı süper set hareketi
+  /** Set bazlı hedefler (ısınma / normal / drop); yoksa sets × reps × weight geçerlidir. */
+  setTargets?: SetTarget[];
+  /** Aynı gruptaki hareketler arka arkaya yapılır (mobil süper set). */
+  supersetGroup?: string;
+}
+
+export interface SetTarget {
+  reps?: number | string;
+  weight?: number;
+  type: 'normal' | 'warmup' | 'drop';
+}
+
+/**
+ * Yapılandırılmış program günü. API her plan/şablonda `days` ile birlikte eski düz
+ * `exercises` listesini (`dayName` ile) döner; ikisinden biri gönderilince diğeri türetilir
+ * (OdivonMainApi `workout-plan.normalize.ts`).
+ */
+export interface WorkoutDay {
+  id: string;
+  name: string;
+  order: number;
+  focus?: string;
+  exercises: Exercise[];
 }
 
 export interface WorkoutPlan {
@@ -28,6 +53,7 @@ export interface WorkoutPlan {
   title: string; // Örn: "4 Günlük Bölgesel Split Programı"
   description?: string;
   exercises: Exercise[];
+  days?: WorkoutDay[];
   startDate: Timestamp;
   endDate?: Timestamp | null;
   status: 'active' | 'paused' | 'completed' | 'archived';

@@ -27,7 +27,8 @@ import {
   MuscleGroup,
 } from '../../core/models/gym-equipment.model';
 import { DOCUMENT_TYPE_LABELS, DocumentType } from '../../core/models/member-document.model';
-import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../core/models/workout-plan.model';
+import { Exercise } from '../../core/models/workout-plan.model';
+import { ExerciseCatalogService } from '../../core/services/exercise-catalog.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 import { AdminShopService } from '../shop/admin-shop.service';
@@ -128,6 +129,7 @@ export class AdminDisciplines {
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
+  private readonly exerciseCatalog = inject(ExerciseCatalogService);
   private readonly route = inject(ActivatedRoute);
   protected readonly docDefsService = inject(DocumentDefinitionsService);
   protected readonly showDocDefsModal = signal(false);
@@ -168,8 +170,9 @@ export class AdminDisciplines {
     description: [''],
   });
 
-  // Exercises
-  protected readonly exerciseLibrary = signal<Exercise[]>(DEFAULT_EXERCISE_LIBRARY);
+  // Exercises: API kataloğu (sistem `sys-ex-*` salt okunur + salonun kendi egzersizleri)
+  protected readonly exerciseLibrary = this.exerciseCatalog.presets;
+  protected readonly isSavingExercise = signal(false);
   protected readonly selectedMuscleFilter = signal<MuscleGroup | 'all'>('all');
   protected readonly exerciseSearch = signal('');
   protected readonly exerciseModalOpen = signal(false);
@@ -320,7 +323,12 @@ export class AdminDisciplines {
     this.exerciseModalOpen.set(false);
   }
 
-  saveExercise(): void {
+  /** Yalnızca salonun eklediği egzersizler silinebilir; sistem kataloğu salt okunur. */
+  canRemoveExercise(ex: Exercise): boolean {
+    return Boolean(ex.exerciseId && !ex.exerciseId.startsWith('sys-ex-'));
+  }
+
+  async saveExercise(): Promise<void> {
     if (this.exerciseForm.invalid) {
       this.exerciseForm.markAllAsTouched();
       return;
@@ -334,23 +342,37 @@ export class AdminDisciplines {
       return;
     }
 
-    const newEx: Exercise = {
-      name,
-      muscleGroup: val.muscleGroup as MuscleGroup,
-      equipmentName: val.equipmentName?.trim() || '',
-      sets: Number(val.sets) || 3,
-      reps: val.reps || 10,
-      restSeconds: Number(val.restSeconds) || 60,
-      notes: val.notes?.trim() || '',
-    };
-    this.exerciseLibrary.update((list) => [newEx, ...list]);
-    this.alertService.toastSuccess('Egzersiz kütüphaneye eklendi.');
-    this.closeExerciseModal();
+    const reps = String(val.reps ?? '').trim();
+    this.isSavingExercise.set(true);
+    try {
+      await this.exerciseCatalog.create({
+        name,
+        muscleGroup: val.muscleGroup as MuscleGroup,
+        equipment: 'other',
+        equipmentName: val.equipmentName?.trim() || undefined,
+        defaultSets: Number(val.sets) || 3,
+        defaultReps: /^\d+$/.test(reps) ? Number(reps) : reps || 10,
+        defaultRestSeconds: Number(val.restSeconds) || 60,
+        instructions: val.notes?.trim() ? [val.notes.trim()] : undefined,
+      });
+      this.alertService.toastSuccess('Egzersiz kütüphaneye eklendi; tüm program editörlerinde ve mobil uygulamada görünür.');
+      this.closeExerciseModal();
+    } catch (error) {
+      this.alertService.toastError((error as Error)?.message || 'Egzersiz kaydedilemedi.');
+    } finally {
+      this.isSavingExercise.set(false);
+    }
   }
 
-  removeExercise(exToRemove: Exercise): void {
-    this.exerciseLibrary.update((list) => list.filter((e) => e !== exToRemove));
-    this.snackBar.open('Egzersiz kütüphaneden kaldırıldı.', 'Tamam', { duration: 2500 });
+  async removeExercise(exToRemove: Exercise): Promise<void> {
+    if (!this.canRemoveExercise(exToRemove) || !exToRemove.exerciseId) return;
+    if (!(await this.alertService.deleteConfirm(exToRemove.name))) return;
+    try {
+      await this.exerciseCatalog.remove(exToRemove.exerciseId);
+      this.snackBar.open('Egzersiz kütüphaneden kaldırıldı.', 'Tamam', { duration: 2500 });
+    } catch (error) {
+      this.alertService.toastError((error as Error)?.message || 'Egzersiz silinemedi.');
+    }
   }
 
   // ==========================================

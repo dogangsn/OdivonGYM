@@ -450,7 +450,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
-            @for (ex of filteredExercises(); track ex.name) {
+            @for (ex of filteredExercises(); track ex.exerciseId ?? ex.name) {
             <tr class="hover:bg-slate-50/80 transition-colors">
               <td class="py-3.5 px-4 font-bold text-slate-900">
                 <div>{{ ex.name }}</div>
@@ -475,11 +475,15 @@
                 {{ ex.restSeconds || 60 }} sn
               </td>
               <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                @if (canRemoveExercise(ex)) {
                 <button type="button" (click)="removeExercise(ex)"
                   class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 inline-flex items-center justify-center transition-colors cursor-pointer"
                   title="Kütüphaneden Sil">
                   <mat-icon class="icon-size-4">delete</mat-icon>
                 </button>
+                } @else {
+                <span class="text-[11px] text-slate-400 font-semibold" title="Odivon sistem kataloğu">Sistem</span>
+                }
               </td>
             </tr>
             }
@@ -1117,9 +1121,9 @@
           class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer">
           Vazgeç
         </button>
-        <button type="submit"
-          class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer">
-          Egzersizi Kaydet
+        <button type="submit" [disabled]="isSavingExercise()"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer disabled:opacity-60">
+          {{ isSavingExercise() ? 'Kaydediliyor…' : 'Egzersizi Kaydet' }}
         </button>
       </div>
     </form>

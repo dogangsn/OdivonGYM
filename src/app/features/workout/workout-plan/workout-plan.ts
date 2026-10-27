@@ -17,11 +17,8 @@ import {
   todayInput,
 } from '../../../shared/ui/ui-utils';
 import { WorkoutService } from '../workout.service';
-import {
-  DEFAULT_EXERCISE_LIBRARY,
-  Exercise,
-  WorkoutPlan as PlanModel,
-} from '../../../core/models/workout-plan.model';
+import { Exercise, WorkoutPlan as PlanModel } from '../../../core/models/workout-plan.model';
+import { ExerciseCatalogService } from '../../../core/services/exercise-catalog.service';
 import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../core/models/gym-equipment.model';
 import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
 
@@ -400,7 +397,7 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
             <span class="text-xs font-bold text-indigo-950 flex-shrink-0">⚡ Kütüphaneden Ekle:</span>
             <select #presetSelect class="odv-input !text-xs !py-1 flex-1 bg-white" (change)="addPresetExercise(presetSelect.value); presetSelect.value = ''">
               <option value="">-- Hazır Egzersiz Seçin --</option>
-              @for (preset of exercisePresets; track preset.name) {
+              @for (preset of exercisePresets(); track preset.exerciseId ?? preset.name) {
                 <option [value]="preset.name">
                   [{{ muscleGroupLabels[preset.muscleGroup!] }}] {{ preset.name }} ({{ preset.sets }}x{{ preset.reps }})
                 </option>
@@ -479,6 +476,7 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
 export class WorkoutPlan {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(WorkoutService);
+  private readonly exerciseCatalog = inject(ExerciseCatalogService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
   private readonly destroyRef = inject(DestroyRef);
@@ -487,7 +485,7 @@ export class WorkoutPlan {
   protected readonly statusClass = STATUS_CLASS;
   protected readonly muscleBadges = MUSCLE_BADGES;
   protected readonly muscleGroupLabels = MUSCLE_GROUP_LABELS;
-  protected readonly exercisePresets = DEFAULT_EXERCISE_LIBRARY;
+  protected readonly exercisePresets = this.exerciseCatalog.presets;
   protected readonly date = formatDate;
 
   private readonly data = toSignal(this.service.watchPlans(), { initialValue: null });
@@ -553,6 +551,7 @@ export class WorkoutPlan {
 
   private newExercise(ex?: Exercise) {
     return this.fb.group({
+      exerciseId: [ex?.exerciseId ?? ''],
       name: [ex?.name ?? ''],
       muscleGroup: [ex?.muscleGroup ?? ''],
       equipmentName: [ex?.equipmentName ?? ''],
@@ -686,7 +685,7 @@ export class WorkoutPlan {
 
   protected addPresetExercise(presetName: string): void {
     if (!presetName) return;
-    const found = DEFAULT_EXERCISE_LIBRARY.find((e) => e.name === presetName);
+    const found = this.exercisePresets().find((e) => e.name === presetName);
     if (found) {
       this.exercises.push(this.newExercise(found));
     }
@@ -737,6 +736,7 @@ export class WorkoutPlan {
     const exercises: Exercise[] = v.exercises
       .filter((e) => (e.name ?? '').trim())
       .map((e) => ({
+        exerciseId: e.exerciseId || undefined,
         name: (e.name ?? '').trim(),
         muscleGroup: (e.muscleGroup as MuscleGroup) || undefined,
         equipmentName: (e.equipmentName ?? '').trim() || undefined,
