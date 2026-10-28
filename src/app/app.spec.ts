@@ -21,7 +21,7 @@ describe('App', () => {
           },
         }),
         // Gerçek Firebase Auth, tema ve dil servislerine bağlanmadan App kabuğunu test edelim.
-        { provide: AuthService, useValue: { ready: signal(true) } },
+        { provide: AuthService, useValue: { ready: signal(true), user: signal(null) } },
         { provide: ThemeService, useValue: { mode: signal('light') } },
         { provide: LanguageService, useValue: { current: signal('tr') } },
       ],

@@ -124,12 +124,9 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
     CdkDragHandle,
     MemberMeasurementsTab,
     MemberWaterTab,
-<<<<<<< Updated upstream
     MemberHistoryTab,
-=======
     ExercisePicker,
     WorkoutDayTabs,
->>>>>>> Stashed changes
   ],
   providers: [MemberBodyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
