@@ -11,6 +11,13 @@ rem ============================================================
 
 set "TASK=Odivon Edge Agent"
 
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+  echo [HATA] Node.js bulunamadi. https://nodejs.org adresinden Node.js 22.13 veya uzerini kurun.
+  pause
+  exit /b 1
+)
+
 rem Arka planda (SYSTEM) calisan agent'i kapatmak icin yonetici izni gerekir
 net session >nul 2>&1
 if %errorlevel% neq 0 (
@@ -28,7 +35,7 @@ echo.
 set "KOD="
 set /p KOD="Admin panelindeki yeni eslestirme kodunu girin: "
 if "%KOD%"=="" goto ask
-call npm run enroll -- %KOD%
+node --disable-warning=ExperimentalWarning agent.js enroll "%KOD%"
 if %errorlevel% neq 0 (
   echo [HATA] Eslestirme basarisiz. Kod 10 dk gecerli ve tek kullanimlik; panelden yeni kod alin.
   goto ask
@@ -43,5 +50,5 @@ if %errorlevel% equ 0 (
 )
 
 echo [BILGI] Agent bu pencerede baslatiliyor. Pencereyi acik birakin.
-call npm start
+node --disable-warning=ExperimentalWarning agent.js
 pause

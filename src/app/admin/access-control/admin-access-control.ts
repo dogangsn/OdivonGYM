@@ -1010,7 +1010,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                     </div>
                     <div>
                       <span class="font-extrabold text-sm sm:text-base block">OdivonGYM Edge Agent (Windows)</span>
-                      <span class="text-xs text-slate-300 mt-0.5 block">Node.js 22.13+ gerekir; cihaz sürücüleri ilk çalıştırmada otomatik kurulur. Firebase anahtarı gerekmez.</span>
+                      <span class="text-xs text-slate-300 mt-0.5 block">Yalnızca Node.js 22.13+ gerekir; npm, internet ve Firebase anahtarı gerekmez.</span>
                     </div>
                   </div>
                   <a

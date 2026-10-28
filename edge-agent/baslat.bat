@@ -17,21 +17,25 @@ if not exist "config.json" (
     exit /b
 )
 
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [HATA] Node.js bulunamadi. https://nodejs.org adresinden Node.js 22.13 veya uzerini kurun.
+    echo         Kurulumdan sonra bu pencereyi kapatip baslat.bat dosyasini yeniden calistirin.
+    pause
+    exit /b 1
+)
+
 if not exist "node_modules\zkteco-js\package.json" (
-    echo [BILGI] Edge Agent bagimliliklari kuruluyor...
-    call npm ci --omit=dev
-    if errorlevel 1 (
-        echo [HATA] npm bagimliliklari kurulamadi.
-        pause
-        exit /b 1
-    )
-    echo.
+    echo [HATA] ZK cihaz surucusu pakette bulunamadi.
+    echo         Agent ZIP dosyasini panelden yeniden indirin ve tum dosyalari ayiklayin.
+    pause
+    exit /b 1
 )
 
 if exist "data\identity.json" goto run
 echo [BILGI] Agent henuz eslestirilmemis.
 set /p KOD="Admin panelindeki eslestirme kodunu girin: "
-call npm run enroll -- %KOD%
+node --disable-warning=ExperimentalWarning agent.js enroll "%KOD%"
 if not exist "data\identity.json" (
     pause
     exit /b
@@ -62,5 +66,5 @@ if %errorlevel% equ 0 (
 echo [UYARI] Otomatik baslatma kurulamadi; agent bu pencerede calisacak.
 echo [BILGI] Edge Agent baslatiliyor. Pencereyi acik birakin veya kucultun.
 echo.
-call npm start
+node --disable-warning=ExperimentalWarning agent.js
 pause

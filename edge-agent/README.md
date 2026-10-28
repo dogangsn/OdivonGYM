@@ -43,9 +43,9 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 
 ## Kurulum (Windows)
 
-1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)).
-2. Bu klasörü salon bilgisayarına kopyalayın. `baslat.bat` gerekli npm paketlerini
-   ilk çalıştırmada otomatik kurar (`npm ci --omit=dev`).
+1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)). npm ayrıca
+   kullanılmaz; gerekli cihaz sürücüsü indirilen ZIP'in içindedir.
+2. İndirilen ZIP'i salon bilgisayarında bir klasöre tamamen çıkartın.
 3. `config.sample.json` dosyasını `config.json` olarak kopyalayın ve cihaz bilgilerini girin:
    ```json
    {
@@ -69,8 +69,8 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
    ile tek kullanımlık kodu alın (10 dk geçerli).
 5. `baslat.bat` dosyasına çift tıklayın; ilk açılışta kodu sorar. Komut satırından:
    ```cmd
-   npm run enroll -- KOD
-   npm start
+   node --disable-warning=ExperimentalWarning agent.js enroll KOD
+   node --disable-warning=ExperimentalWarning agent.js
    ```
 
 Agent kimliği `data/identity.json` dosyasındadır; bu dosyayı paylaşmayın. Agent panelden
