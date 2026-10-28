@@ -8,6 +8,8 @@
   "credentials": {
     "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" },
     "192.168.1.202": {
+      "driver": "zkemkeeper-com",
+      "machineNumber": 1,
       "commKey": 0,
       "timeoutMs": 10000,
       "udpInPort": 4000,

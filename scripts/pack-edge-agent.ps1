@@ -13,9 +13,11 @@ $archiveItems = @(
   'servis-kur.bat',
   'durdur.bat',
   'yeniden-eslestir.bat',
+  'zkemkeeper-kur.bat',
   'config.sample.json',
   'src',
-  'node_modules\zkteco-js'
+  'node_modules\zkteco-js',
+  'vendor\zkemkeeper'
 )
 
 $missingItems = $archiveItems | Where-Object { -not (Test-Path -LiteralPath (Join-Path $agentRoot $_)) }

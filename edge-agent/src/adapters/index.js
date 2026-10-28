@@ -13,11 +13,15 @@
 
 const { createYtHttpDigestAdapter } = require('./yt-http-digest');
 const { createZkTcpAdapter } = require('./zk-tcp-4370');
+const { createZkemkeeperComAdapter } = require('./zkemkeeper-com');
 const { createUnsupportedAdapter } = require('./unsupported');
 
 const FACTORIES = {
   'yt-http-digest': createYtHttpDigestAdapter,
-  'zk-tcp-4370': createZkTcpAdapter,
+  'zk-tcp-4370': (device, credentials) =>
+    credentials?.driver === 'zkemkeeper-com'
+      ? createZkemkeeperComAdapter(device, credentials)
+      : createZkTcpAdapter(device, credentials),
   'vendor-sdk': (device) => createUnsupportedAdapter(device, 'Üretici SDK adapteri henüz eklenmedi.'),
 };
 

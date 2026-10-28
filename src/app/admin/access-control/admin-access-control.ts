@@ -1087,6 +1087,10 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2 text-xs text-slate-600 dark:text-slate-300">
                   <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">3. Başlatın</h4>
                   <p class="m-0">
+                    ZK TCP / 4370 cihazı kullanıyorsanız önce <b>zkemkeeper-kur.bat</b> dosyasını bir kez yönetici olarak
+                    çalıştırın. Bu adım eski cihazın 32-bit üretici SDK'sını Windows'a kaydeder.
+                  </p>
+                  <p class="m-0">
                     <b>baslat.bat</b> dosyasına çift tıklayın; ilk açılışta eşleştirme kodunu sorar. Ardından yönetici izni
                     isteyip agent'ı Windows açılışında otomatik başlayacak şekilde kurar (kimse oturum açmasa bile çalışır,
                     kapanırsa 1 dakikada yeniden başlar). Pencereyi kapatabilirsiniz.
@@ -1363,6 +1367,8 @@ export class AdminAccessControl implements OnInit {
             gate.host!,
             gate.protocol === 'zk-tcp-4370'
               ? {
+                  driver: 'zkemkeeper-com',
+                  machineNumber: 1,
                   commKey: 0,
                   timeoutMs: 10000,
                   udpInPort: 4000,

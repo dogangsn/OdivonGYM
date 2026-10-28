@@ -1,6 +1,6 @@
 {
   "name": "odivon-gym-edge-agent",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "private": true,
   "description": "OdivonGYM geçiş cihazları için yerel köprü (MainApi ↔ cihaz). Firebase'e bağlanmaz.",
   "main": "agent.js",
