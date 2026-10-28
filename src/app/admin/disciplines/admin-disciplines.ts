@@ -730,7 +730,6 @@ export class AdminDisciplines {
   // ==========================================
   // STOK & ÜRÜN KATEGORİLERİ ACTIONS
   // ==========================================
-
   getProductCountByCategory(catKey?: string, catName?: string, catId?: string): number {
     const products = this.shopProducts() ?? [];
     if (!products.length) return 0;
