@@ -5,16 +5,17 @@ import { firstValueFrom } from 'rxjs';
 import { ProgramRequest, ProgramRequestsApi } from '../../core/api/program-requests.api';
 import { AlertService } from '../../core/services/alert.service';
 import { Exercise } from '../../core/models/workout-plan.model';
-import { ExerciseCatalogService } from '../../core/services/exercise-catalog.service';
-import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../core/models/workout-day';
+import { WorkoutDayState } from '../../core/models/workout-day-state';
 import { WorkoutService } from '../../features/workout/workout.service';
+import { ExercisePicker } from '../../shared/components/exercise-picker/exercise-picker';
 import { PageHeader } from '../../shared/components/page-header/page-header';
+import { WorkoutDayTabs } from '../../shared/components/workout-day-tabs/workout-day-tabs';
 import { toAppError } from '../../shared/models/app-error.model';
 
 @Component({
   selector: 'app-admin-program-requests',
   standalone: true,
-  imports: [FormsModule, MatIconModule, PageHeader],
+  imports: [FormsModule, MatIconModule, PageHeader, ExercisePicker, WorkoutDayTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-program-requests.html',
 })
@@ -23,7 +24,6 @@ export class AdminProgramRequests {
   private readonly workouts = inject(WorkoutService);
   private readonly alerts = inject(AlertService);
 
-  protected readonly presets = inject(ExerciseCatalogService).presets;
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly requests = signal<ProgramRequest[]>([]);
@@ -32,8 +32,16 @@ export class AdminProgramRequests {
   protected readonly description = signal('');
   protected readonly rejectNote = signal('');
   protected readonly exercises = signal<Exercise[]>([]);
-  protected readonly activeDay = signal(1);
-  protected readonly extraDays = signal(1);
+  protected readonly days = new WorkoutDayState(
+    () => this.exercises().map((exercise) => exercise.dayName),
+    (map) =>
+      this.exercises.update((list) =>
+        list.flatMap((item) => {
+          const dayName = map(item.dayName);
+          return dayName === null ? [] : [{ ...item, dayName }];
+        }),
+      ),
+  );
 
   constructor() {
     void this.reload();
@@ -57,41 +65,22 @@ export class AdminProgramRequests {
     this.description.set(request.goal);
     this.rejectNote.set('');
     this.exercises.set([]);
-    this.activeDay.set(1);
-    this.extraDays.set(1);
+    this.days.reset();
   }
 
-  protected dayNumbers(): number[] {
-    return workoutDayNumbers(
-      this.exercises().map((exercise) => exercise.dayName),
-      Math.max(this.extraDays(), this.activeDay()),
-    );
-  }
-
-  protected addDay(): void {
-    const next = this.dayNumbers().length + 1;
-    this.extraDays.set(next);
-    this.activeDay.set(next);
-  }
-
-  protected onDay(exercise: Exercise): boolean {
-    return workoutDayIndex(exercise.dayName) === this.activeDay();
-  }
 
   protected close(): void {
     this.selected.set(null);
   }
 
-  protected addPreset(name: string): void {
-    const preset = this.presets().find((item) => item.name === name);
-    if (!preset) return;
-    this.exercises.update((list) => [...list, { ...preset, dayName: workoutDayLabel(this.activeDay()) }]);
+  protected addPreset(preset: Exercise): void {
+    this.exercises.update((list) => [...list, { ...preset, dayName: this.days.label() }]);
   }
 
   protected addBlank(): void {
     this.exercises.update((list) => [
       ...list,
-      { name: '', dayName: workoutDayLabel(this.activeDay()), sets: 3, reps: 10, restSeconds: 60 },
+      { name: '', dayName: this.days.label(), sets: 3, reps: 10, restSeconds: 60 },
     ]);
   }
 

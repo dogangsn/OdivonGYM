@@ -37,7 +37,9 @@ import {
 } from '../../../core/models/member-document.model';
 import { ClassSchedule } from '../../../core/models/class-schedule.model';
 import { MuscleGroup, MUSCLE_GROUP_LABELS, GymEquipment } from '../../../core/models/gym-equipment.model';
-import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
+import { WorkoutDayState } from '../../../core/models/workout-day-state';
+import { ExercisePicker } from '../../../shared/components/exercise-picker/exercise-picker';
+import { WorkoutDayTabs } from '../../../shared/components/workout-day-tabs/workout-day-tabs';
 import { SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { AdminMembersService } from '../admin-members.service';
 import { AdminDisciplinesService } from '../../disciplines/admin-disciplines.service';
@@ -122,7 +124,12 @@ const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
     CdkDragHandle,
     MemberMeasurementsTab,
     MemberWaterTab,
+<<<<<<< Updated upstream
     MemberHistoryTab,
+=======
+    ExercisePicker,
+    WorkoutDayTabs,
+>>>>>>> Stashed changes
   ],
   providers: [MemberBodyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -286,7 +293,6 @@ export class MemberDetailDrawer {
   protected readonly workoutPlanStartDate = signal(new Date().toISOString().substring(0, 10));
   protected readonly workoutPlanDisciplineId = signal<string>('');
   protected readonly currentPlanExercises = signal<Exercise[]>([]);
-  protected readonly filterExerciseMuscle = signal<MuscleGroup | 'all'>('all');
   protected readonly totalSuperSetsCount = computed(() =>
     this.currentPlanExercises().filter((e) => !!e.superSet).length,
   );
@@ -735,11 +741,10 @@ export class MemberDetailDrawer {
     this.currentPlanExercises.set(
       clonedExercises.map((exercise) => ({
         ...exercise,
-        dayName: exercise.dayName?.trim() || workoutDayLabel(1),
+        dayName: exercise.dayName?.trim() || '1. Gün',
       })),
     );
-    this.activeWorkoutDay.set(1);
-    this.extraWorkoutDays.set(this.planDayNumbers().length);
+    this.workoutDays.reset();
     this.snackBar.open(
       `"${template.title || 'Şablon'}" şablonu yüklendi! (${clonedExercises.length} egzersiz hazır)`,
       'Tamam',
@@ -780,19 +785,12 @@ export class MemberDetailDrawer {
     if (this.showAddWorkoutPlanForm()) {
       this.selectedTemplateId.set('');
       this.currentPlanExercises.set([]);
-      this.activeWorkoutDay.set(1);
-      this.extraWorkoutDays.set(1);
+      this.workoutDays.reset();
       this.workoutPlanTitle.set('4 Günlük Bölgesel Split Programı');
       this.workoutPlanNotes.set('');
       this.workoutPlanStartDate.set(new Date().toISOString().substring(0, 10));
       this.workoutPlanDisciplineId.set('');
     }
-  }
-
-  getAvailableLibraryExercises(): Exercise[] {
-    const muscle = this.filterExerciseMuscle();
-    if (muscle === 'all') return this.defaultExerciseLibrary();
-    return this.defaultExerciseLibrary().filter((e) => e.muscleGroup === muscle);
   }
 
   addExerciseFromLibrary(ex: Exercise): void {
@@ -802,7 +800,7 @@ export class MemberDetailDrawer {
       {
         ...ex,
         id: `ex-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        dayName: workoutDayLabel(this.activeWorkoutDay()),
+        dayName: this.workoutDays.label(),
       },
     ]);
     this.snackBar.open(`"${ex.name}" programa eklendi!`, 'Tamam', { duration: 1500 });
@@ -928,7 +926,7 @@ export class MemberDetailDrawer {
       weight: this.newExWeight() ? Number(this.newExWeight()) : undefined,
       restSeconds: Number(this.newExRest()) || 60,
       notes: this.newExNotes().trim() || undefined,
-      dayName: workoutDayLabel(this.activeWorkoutDay()),
+      dayName: this.workoutDays.label(),
       superSet,
     };
 
@@ -949,25 +947,17 @@ export class MemberDetailDrawer {
     );
   }
 
-  readonly activeWorkoutDay = signal(1);
-  readonly extraWorkoutDays = signal(1);
-
-  planDayNumbers(): number[] {
-    return workoutDayNumbers(
-      this.currentPlanExercises().map((exercise) => exercise.dayName),
-      Math.max(this.extraWorkoutDays(), this.activeWorkoutDay()),
-    );
-  }
-
-  addWorkoutDay(): void {
-    const next = this.planDayNumbers().length + 1;
-    this.extraWorkoutDays.set(next);
-    this.activeWorkoutDay.set(next);
-  }
-
-  isOnActiveWorkoutDay(exercise: Exercise): boolean {
-    return workoutDayIndex(exercise.dayName) === this.activeWorkoutDay();
-  }
+  /** Gün sekmeleri (ad, ekleme, silme); günler `dayName` içinde tutulur ("2. Gün: Çekiş"). */
+  readonly workoutDays = new WorkoutDayState(
+    () => this.currentPlanExercises().map((exercise) => exercise.dayName),
+    (map) =>
+      this.currentPlanExercises.update((list) =>
+        list.flatMap((item) => {
+          const dayName = map(item.dayName);
+          return dayName === null ? [] : [{ ...item, dayName }];
+        }),
+      ),
+  );
 
   removeExerciseFromPlan(index: number): void {
     this.currentPlanExercises.update((list) => list.filter((_, i) => i !== index));

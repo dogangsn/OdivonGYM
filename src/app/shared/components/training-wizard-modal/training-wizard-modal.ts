@@ -27,7 +27,16 @@ import { GymEquipment, GymFacility, MuscleGroup } from '../../../core/models/gym
 import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../../core/models/workout-plan.model';
 import { ExerciseCatalogService } from '../../../core/services/exercise-catalog.service';
 import { WorkoutTemplate } from '../../../core/models/workout-template.model';
-import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
+import {
+  shiftAfterRemovedDay,
+  shiftPendingNames,
+  WorkoutDayTab,
+  workoutDayIndex,
+  workoutDayLabel,
+  workoutDayName,
+  workoutDayNumbers,
+} from '../../../core/models/workout-day';
+import { WorkoutDayTabs } from '../workout-day-tabs/workout-day-tabs';
 
 const REGION_SHORT: Record<string, string> = {
   chest: 'Göğüs',
@@ -59,7 +68,7 @@ export const MUSCLE_GROUPS: MuscleGroupOption[] = [
 @Component({
   selector: 'app-training-wizard-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, WorkoutDayTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './training-wizard-modal.html',
   styleUrl: './training-wizard-modal.scss',
@@ -100,6 +109,8 @@ export class TrainingWizardModal {
   readonly selectedTemplateId = signal<string | null>(null);
   readonly dayMuscles = signal<Record<number, MuscleGroup[]>>({});
   readonly manualKeys = signal<string[]>([]);
+  /** Antrenörün verdiği gün adları ("İtiş"); yoksa gün, seçilen bölgelerden adlandırılır. */
+  readonly customDayNames = signal<Record<number, string>>({});
 
   // Egzersiz Oluşturucu
   readonly currentPlanTitle = signal('');
@@ -111,6 +122,13 @@ export class TrainingWizardModal {
       this.currentPlanExercises().map((exercise) => exercise.dayName),
       Math.max(this.extraDays(), this.activeDay()),
     ),
+  );
+  readonly dayTabs = computed<WorkoutDayTab[]>(() =>
+    this.dayNumbers().map((day) => ({
+      day,
+      name: workoutDayName(this.dayHeading(day)),
+      count: this.exercisesOnDay(day).length,
+    })),
   );
   readonly planStartDate = signal(new Date().toISOString().substring(0, 10));
   readonly planEndDate = signal(
@@ -253,6 +271,8 @@ export class TrainingWizardModal {
   }
 
   dayHeading(day: number): string {
+    const custom = this.customDayNames()[day];
+    if (custom) return workoutDayLabel(day, custom);
     const named = this.exercisesOnDay(day).find((exercise) => this.keepsCustomDayName(exercise.dayName));
     if (named?.dayName) return named.dayName;
     return this.dayRegionLabel(day, this.musclesForDay(day));
@@ -268,6 +288,41 @@ export class TrainingWizardModal {
     this.activeDay.set(next);
   }
 
+  /** Boş ad bölge adına döner; verilen ad o günün tüm hareketlerine yazılır. */
+  renameDay(day: number, name: string): void {
+    const names = { ...this.customDayNames() };
+    if (name) names[day] = name;
+    else delete names[day];
+    this.customDayNames.set(names);
+    const label = this.dayLabelFor(day);
+    this.currentPlanExercises.update((list) =>
+      list.map((exercise) => (workoutDayIndex(exercise.dayName) === day ? { ...exercise, dayName: label } : exercise)),
+    );
+  }
+
+  /** Günü ve hareketlerini siler; sonraki günler (bölgeleri ve adlarıyla) bir öne kayar. */
+  removeDay(day: number): void {
+    const remaining = Math.max(1, this.dayNumbers().length - 1);
+    this.currentPlanExercises.update((list) =>
+      list.flatMap((exercise) => {
+        const dayName = shiftAfterRemovedDay(exercise.dayName, day);
+        return dayName === null ? [] : [{ ...exercise, dayName }];
+      }),
+    );
+    this.dayMuscles.set(shiftPendingNames(this.dayMuscles(), day));
+    this.customDayNames.set(shiftPendingNames(this.customDayNames(), day));
+    this.manualKeys.set(
+      this.manualKeys().flatMap((key) => {
+        const [rawDay, name] = key.split('::');
+        const keyDay = Number(rawDay);
+        if (keyDay === day) return [];
+        return [keyDay > day ? this.manualKey(keyDay - 1, name) : key];
+      }),
+    );
+    this.extraDays.set(remaining);
+    this.activeDay.set(Math.min(day, remaining));
+  }
+
   isOnActiveDay(exercise: Exercise): boolean {
     return workoutDayIndex(exercise.dayName) === this.activeDay();
   }
@@ -278,7 +333,7 @@ export class TrainingWizardModal {
 
   addSuggestedExercise(ex: Exercise): void {
     const day = this.activeDay();
-    const dayName = this.dayRegionLabel(day, this.musclesForDay(day));
+    const dayName = this.dayLabelFor(day);
     const list = [...this.currentPlanExercises()];
     const exists = list.some((item) => item.name === ex.name && workoutDayIndex(item.dayName) === day);
     if (exists) return;
@@ -354,6 +409,7 @@ export class TrainingWizardModal {
     this.currentPlanExercises.set([]);
     this.activeDay.set(1);
     this.extraDays.set(1);
+    this.customDayNames.set({});
     this.planNotes.set('');
   }
 
@@ -362,6 +418,12 @@ export class TrainingWizardModal {
     if (typed) return typed;
     const branch = this.selectedDiscipline()?.name?.trim();
     return branch ? `${branch} Programı` : 'Antrenman Programı';
+  }
+
+  /** Antrenörün adı varsa o, yoksa seçilen bölgeler ("1. Gün: Göğüs & Kol"). */
+  private dayLabelFor(day: number): string {
+    const custom = this.customDayNames()[day];
+    return custom ? workoutDayLabel(day, custom) : this.dayRegionLabel(day, this.musclesForDay(day));
   }
 
   private dayRegionLabel(day: number, muscles: MuscleGroup[]): string {
@@ -396,7 +458,8 @@ export class TrainingWizardModal {
 
   private syncDayFromRegions(day: number): void {
     const muscles = this.dayMuscles()[day] ?? [];
-    const label = this.dayRegionLabel(day, muscles);
+    const custom = this.customDayNames()[day];
+    const label = custom ? workoutDayLabel(day, custom) : this.dayRegionLabel(day, muscles);
     const libraryForDay = DEFAULT_EXERCISE_LIBRARY.filter(
       (exercise) => !!exercise.muscleGroup && muscles.includes(exercise.muscleGroup),
     );
@@ -428,7 +491,7 @@ export class TrainingWizardModal {
     const stamped = this.currentPlanExercises().map((exercise) => {
       if (this.keepsCustomDayName(exercise.dayName)) return exercise;
       const day = workoutDayIndex(exercise.dayName);
-      return { ...exercise, dayName: this.dayRegionLabel(day, this.musclesForDay(day)) };
+      return { ...exercise, dayName: this.dayLabelFor(day) };
     });
     this.currentPlanExercises.set(stamped);
   }

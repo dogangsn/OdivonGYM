@@ -20,7 +20,17 @@ import { WorkoutService } from '../workout.service';
 import { Exercise, WorkoutPlan as PlanModel } from '../../../core/models/workout-plan.model';
 import { ExerciseCatalogService } from '../../../core/services/exercise-catalog.service';
 import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../core/models/gym-equipment.model';
-import { workoutDayIndex, workoutDayLabel, workoutDayNumbers } from '../../../core/models/workout-day';
+import { workoutDayIndex, workoutDayLabel, workoutDayName } from '../../../core/models/workout-day';
+import { WorkoutDayState } from '../../../core/models/workout-day-state';
+import { ExercisePicker } from '../../../shared/components/exercise-picker/exercise-picker';
+import { WorkoutDayTabs } from '../../../shared/components/workout-day-tabs/workout-day-tabs';
+
+/** Formda alanı olmayan ama kaydederken korunması gereken hareket bilgileri (başka editörden gelir). */
+type ExerciseExtras = Pick<Exercise, 'superSet' | 'setTargets' | 'supersetGroup'>;
+
+function extrasOf(ex?: Exercise): ExerciseExtras {
+  return { superSet: ex?.superSet, setTargets: ex?.setTargets, supersetGroup: ex?.supersetGroup };
+}
 
 const STATUS_LABEL: Record<PlanModel['status'], string> = {
   active: 'Aktif',
@@ -49,7 +59,7 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
 @Component({
   selector: 'app-workout-plan',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field],
+  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, ExercisePicker, WorkoutDayTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="font-sans space-y-6 pb-20">
@@ -383,31 +393,26 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
             </button>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 mb-3">
-            @for (day of dayNumbers(); track day) {
-              <button type="button" class="px-3 py-1.5 rounded-xl text-xs font-black border" [class]="activeDay() === day ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200'" (click)="activeDay.set(day)">
-                {{ day }}. Gün
-              </button>
-            }
-            <button type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-dashed border-indigo-300 text-indigo-700" (click)="addPlanDay()">+ Gün</button>
+          <div class="mb-3 space-y-1">
+            <app-workout-day-tabs
+              [tabs]="days.tabs()"
+              [active]="days.active()"
+              (select)="days.active.set($event)"
+              (add)="days.add()"
+              (rename)="days.rename($event.day, $event.name)"
+              (remove)="days.remove($event)"
+            />
+            <p class="m-0 text-[11px] text-slate-400">Günler sırayla yapılır; kalemle günü adlandır (ör. İtiş, Bacak).</p>
           </div>
 
-          <!-- Hızlı Kütüphane Seçici -->
-          <div class="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl mb-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <span class="text-xs font-bold text-indigo-950 flex-shrink-0">⚡ Kütüphaneden Ekle:</span>
-            <select #presetSelect class="odv-input !text-xs !py-1 flex-1 bg-white" (change)="addPresetExercise(presetSelect.value); presetSelect.value = ''">
-              <option value="">-- Hazır Egzersiz Seçin --</option>
-              @for (preset of exercisePresets(); track preset.exerciseId ?? preset.name) {
-                <option [value]="preset.name">
-                  [{{ muscleGroupLabels[preset.muscleGroup!] }}] {{ preset.name }} ({{ preset.sets }}x{{ preset.reps }})
-                </option>
-              }
-            </select>
+          <div class="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl mb-3 space-y-2">
+            <span class="text-xs font-bold text-indigo-950">⚡ Katalogdan ekle</span>
+            <app-exercise-picker [maxHeight]="220" (pick)="addPresetExercise($event)" />
           </div>
 
           <div formArrayName="exercises" class="space-y-3">
             @for (ex of exercises.controls; track ex; let i = $index) {
-              @if (exerciseDay(i) === activeDay()) {
+              @if (isOnActiveDay(i)) {
               <div [formGroupName]="i" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative">
                 <!-- Üst Satır: Gün Adı, Kas Grubu, Silme -->
                 <div class="flex items-center justify-between gap-2">
@@ -433,7 +438,7 @@ const MUSCLE_BADGES: Record<MuscleGroup, { label: string; class: string }> = {
 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <input type="text" formControlName="equipmentName" placeholder="Makine / Sehpa" class="odv-input !text-xs !px-2.5 col-span-2" />
-                  <span class="text-[11px] font-bold text-indigo-600 self-center">{{ activeDay() }}. Gün</span>
+                  <span class="text-[11px] font-bold text-indigo-600 self-center">{{ dayLabelAt(i) }}</span>
                 </div>
 
                 <div class="grid grid-cols-4 gap-2">
@@ -485,7 +490,6 @@ export class WorkoutPlan {
   protected readonly statusClass = STATUS_CLASS;
   protected readonly muscleBadges = MUSCLE_BADGES;
   protected readonly muscleGroupLabels = MUSCLE_GROUP_LABELS;
-  protected readonly exercisePresets = this.exerciseCatalog.presets;
   protected readonly date = formatDate;
 
   private readonly data = toSignal(this.service.watchPlans(), { initialValue: null });
@@ -523,8 +527,6 @@ export class WorkoutPlan {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly exercisesError = signal('');
-  protected readonly activeDay = signal(1);
-  protected readonly extraDays = signal(1);
 
   protected readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required]],
@@ -536,6 +538,23 @@ export class WorkoutPlan {
     notes: [''],
     exercises: this.fb.array([this.newExercise()]),
   });
+
+  private readonly exerciseValues = toSignal(this.form.controls.exercises.valueChanges, {
+    initialValue: this.form.controls.exercises.getRawValue(),
+  });
+
+  /** Gün sekmeleri; günler her satırın `dayName` alanında tutulur ("2. Gün: Çekiş"). */
+  protected readonly days: WorkoutDayState = new WorkoutDayState(
+    () => this.exerciseValues().map((exercise) => exercise.dayName),
+    (map) => {
+      for (let index = this.exercises.length - 1; index >= 0; index--) {
+        const control = this.exercises.at(index).get('dayName');
+        const dayName = map(control?.value);
+        if (dayName === null) this.exercises.removeAt(index);
+        else control?.setValue(dayName);
+      }
+    },
+  );
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -555,12 +574,14 @@ export class WorkoutPlan {
       name: [ex?.name ?? ''],
       muscleGroup: [ex?.muscleGroup ?? ''],
       equipmentName: [ex?.equipmentName ?? ''],
-      dayName: [ex?.dayName?.trim() || workoutDayLabel(this.activeDay())],
+      // `days` alan tanımından sonra kurulur; ilk boş satır 1. güne düşer.
+      dayName: [ex?.dayName?.trim() || (this.days?.label() ?? workoutDayLabel(1))],
       sets: [ex?.sets ?? (4 as number | null)],
       reps: [ex?.reps ?? (12 as number | string | null)],
       weight: [ex?.weight ?? (null as number | null)],
       restSeconds: [ex?.restSeconds ?? 60],
       notes: [ex?.notes ?? ''],
+      extras: [extrasOf(ex)],
     });
   }
 
@@ -668,27 +689,16 @@ export class WorkoutPlan {
   }
 
   // --- Form & Kütüphane ---
-  protected dayNumbers(): number[] {
-    const fromForm = this.exercises.controls.map((_, index) => this.exerciseDay(index));
-    return workoutDayNumbers(fromForm.map((day) => workoutDayLabel(day)), Math.max(this.extraDays(), this.activeDay()));
+  protected isOnActiveDay(index: number): boolean {
+    return this.days.isActive(String(this.exercises.at(index).get('dayName')?.value ?? ''));
   }
 
-  protected exerciseDay(index: number): number {
-    return workoutDayIndex(String(this.exercises.at(index).get('dayName')?.value ?? ''));
+  protected dayLabelAt(index: number): string {
+    return String(this.exercises.at(index).get('dayName')?.value ?? '');
   }
 
-  protected addPlanDay(): void {
-    const next = this.dayNumbers().length + 1;
-    this.extraDays.set(next);
-    this.activeDay.set(next);
-  }
-
-  protected addPresetExercise(presetName: string): void {
-    if (!presetName) return;
-    const found = this.exercisePresets().find((e) => e.name === presetName);
-    if (found) {
-      this.exercises.push(this.newExercise(found));
-    }
+  protected addPresetExercise(preset: Exercise): void {
+    this.exercises.push(this.newExercise(preset));
   }
 
   protected addExercise(): void {
@@ -712,13 +722,11 @@ export class WorkoutPlan {
       description: plan?.description ?? '',
       notes: plan?.notes ?? '',
     });
-    this.activeDay.set(1);
-    this.extraDays.set(1);
     this.exercises.clear();
     for (const ex of plan?.exercises?.length ? plan.exercises : [undefined]) {
       this.exercises.push(this.newExercise(ex));
     }
-    this.extraDays.set(this.dayNumbers().length);
+    this.days.reset();
     this.drawerOpen.set(true);
   }
 
@@ -740,12 +748,13 @@ export class WorkoutPlan {
         name: (e.name ?? '').trim(),
         muscleGroup: (e.muscleGroup as MuscleGroup) || undefined,
         equipmentName: (e.equipmentName ?? '').trim() || undefined,
-        dayName: workoutDayLabel(workoutDayIndex(e.dayName)),
+        dayName: workoutDayLabel(workoutDayIndex(e.dayName), workoutDayName(e.dayName)),
         sets: optionalNumber(e.sets),
         reps: e.reps != null && e.reps !== '' ? e.reps : undefined,
         weight: optionalNumber(e.weight),
         restSeconds: optionalNumber(e.restSeconds),
         notes: (e.notes ?? '').trim() || undefined,
+        ...(e.extras as ExerciseExtras | null),
       }));
 
     if (exercises.length === 0) {
