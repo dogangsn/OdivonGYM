@@ -213,13 +213,18 @@ Etki: `gymAccessAgents.lastHeartbeatAt = now`; her cihaz için `reachable` ise
 - `enabled: false` ⇒ `DeleteUserInfo`; geri okumada kullanıcı yoksa doğrulanmış sayılır.
 - Kapı açma (`doorOpen`) YT için **kapalıdır**; `SetDoorStatus=open` kalıcı açık
   konuma geçebileceğinden kullanılmaz.
+- ZK TCP/4370 adaptörü ilk bağlantıda cihazdaki mevcut hareketleri indirir ve ardından
+  gerçek zamanlı olay aboneliğini açık tutar. Cihaz olayları izin/red sonucunu güvenilir
+  vermediğinden `result: null` gönderilir. Üye/kart yazma ve kapı açma kapalıdır.
+- ZK cihazında `CommKey` sıfırdan farklıysa saf TCP adaptörü bağlantıyı reddeder;
+  CommKey kapatılmalı veya üretici SDK köprüsü kullanılmalıdır.
 
 ## 5. Protokol yetenekleri (sunucu tablosu)
 
 | protocol | events | userSync | doorOpen | adapterStatus |
 | --- | --- | --- | --- | --- |
 | `yt-http-digest` | ✓ | ✓ | ✗ | `hardware_pending` (fiziksel test geçince `ready`) |
-| `zk-tcp-4370` | ✗ | ✗ | ✗ | `not_validated` |
+| `zk-tcp-4370` | ✓ | ✗ | ✗ | `hardware_pending` |
 | `vendor-sdk` | ✗ | ✗ | ✗ | `not_validated` |
 
 ## 6. Güvenlik notları

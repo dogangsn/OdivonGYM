@@ -6,6 +6,13 @@
   "heartbeatIntervalSeconds": 60,
   "dataDir": "./data",
   "credentials": {
-    "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" }
+    "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" },
+    "192.168.1.202": {
+      "commKey": 0,
+      "timeoutMs": 10000,
+      "udpInPort": 4000,
+      "maxChunkBytes": 65472,
+      "directionByState": { "0": "in", "1": "out" }
+    }
   }
 }

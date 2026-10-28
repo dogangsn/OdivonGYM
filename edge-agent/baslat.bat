@@ -17,6 +17,17 @@ if not exist "config.json" (
     exit /b
 )
 
+if not exist "node_modules\zkteco-js\package.json" (
+    echo [BILGI] Edge Agent bagimliliklari kuruluyor...
+    call npm ci --omit=dev
+    if errorlevel 1 (
+        echo [HATA] npm bagimliliklari kurulamadi.
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
 if exist "data\identity.json" goto run
 echo [BILGI] Agent henuz eslestirilmemis.
 set /p KOD="Admin panelindeki eslestirme kodunu girin: "

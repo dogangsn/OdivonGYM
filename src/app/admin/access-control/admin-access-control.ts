@@ -155,7 +155,9 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 @if (gate.adapterStatus === 'hardware_pending') {
                   <span
                     class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
-                    matTooltip="Cihazın bitiş tarihini gerçekten uyguladığı donanım testinde doğrulanmadan canlı kullanıma alınmamalı."
+                    [matTooltip]="gate.capabilities?.userSync
+                      ? 'Cihazın bitiş tarihini gerçekten uyguladığı donanım testinde doğrulanmadan canlı kullanıma alınmamalı.'
+                      : 'Olay okuma adaptörü gerçek cihazda bağlantı ve yön eşlemesiyle doğrulanmalı.'"
                   >
                     Donanım testi bekliyor
                   </span>

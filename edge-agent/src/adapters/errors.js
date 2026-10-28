@@ -15,13 +15,19 @@ class DeviceError extends Error {
 
 function asDeviceError(err) {
   if (err instanceof DeviceError) return err;
+  // zkteco-js hataları Error'dan türemeyen ve birkaç kez iç içe sarılabilen
+  // `{ err, command, ip }` nesneleridir.
+  let source = err;
+  for (let depth = 0; depth < 5 && source?.err; depth++) source = source.err;
+  const message = source?.message ?? err?.message ?? String(source ?? err);
+  const code = source?.code ?? err?.code ?? err?.cause?.code ?? '';
   const transient =
-    err?.name === 'TimeoutError' ||
-    err?.name === 'AbortError' ||
+    source?.name === 'TimeoutError' ||
+    source?.name === 'AbortError' ||
     /ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|fetch failed/i.test(
-      `${err?.message} ${err?.cause?.code ?? ''}`,
+      `${message} ${code}`,
     );
-  return new DeviceError(err?.message ?? String(err), { transient, cause: err });
+  return new DeviceError(message, { transient, cause: err });
 }
 
 module.exports = { DeviceError, asDeviceError };

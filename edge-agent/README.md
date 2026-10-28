@@ -38,26 +38,35 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 | Protokol | Durum |
 | --- | --- |
 | `yt-http-digest` | Olay okuma + kart/üye no/bitiş günü senkronu. **Donanım testi gerekli.** |
-| `zk-tcp-4370` | Tanımlı, henüz doğrulanmadı (cihaza hiçbir şey yazmaz). |
+| `zk-tcp-4370` | Geçmiş + gerçek zamanlı olay okuma. Üye/kart yazma kapalı; donanım testi gerekli. |
 | `vendor-sdk` | Tanımlı, henüz eklenmedi. |
 
 ## Kurulum (Windows)
 
-1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)). Ek paket gerekmez.
-2. Bu klasörü salon bilgisayarına kopyalayın.
+1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)).
+2. Bu klasörü salon bilgisayarına kopyalayın. `baslat.bat` gerekli npm paketlerini
+   ilk çalıştırmada otomatik kurar (`npm ci --omit=dev`).
 3. `config.sample.json` dosyasını `config.json` olarak kopyalayın ve cihaz bilgilerini girin:
    ```json
    {
      "mainApiUrl": "https://mainapi.odivon.com/api/v1",
      "agentName": "Resepsiyon PC",
-     "credentials": {
-       "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" }
-     }
+      "credentials": {
+        "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" },
+        "192.168.1.202": {
+          "commKey": 0,
+          "directionByState": { "0": "in", "1": "out" }
+        }
+      }
    }
    ```
-   Cihaz parolası yalnızca bu bilgisayarda durur; MainApi'ye gönderilmez.
-4. Admin panelinde **Geçiş Kontrol → Cihazlar**'da cihazı ekleyin (protokol: YT HTTP Digest,
-   IP adresi), ardından **Agent eşleştir** ile tek kullanımlık kodu alın (10 dk geçerli).
+   Cihaz parolası yalnızca bu bilgisayarda durur; MainApi'ye gönderilmez. ZK cihazında
+   `CommKey` kapalıysa `0` kullanın. Cihazın `state` değerleri gerçekten giriş/çıkış
+   yönünü ifade ediyorsa `directionByState` ile eşleyin; iki ayrı okuyucu varsa yönü
+   panelde cihaz bazında **Giriş** / **Çıkış** seçmek daha güvenlidir.
+4. Admin panelinde **Geçiş Kontrol → Cihazlar**'da cihazı ekleyin (YT için `YT HTTP Digest`,
+   ZKTeco için `ZK TCP / 4370` ve cihazın yerel IP adresi), ardından **Agent eşleştir**
+   ile tek kullanımlık kodu alın (10 dk geçerli).
 5. `baslat.bat` dosyasına çift tıklayın; ilk açılışta kodu sorar. Komut satırından:
    ```cmd
    npm run enroll -- KOD

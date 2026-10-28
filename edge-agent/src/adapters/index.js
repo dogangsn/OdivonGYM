@@ -12,11 +12,12 @@
  */
 
 const { createYtHttpDigestAdapter } = require('./yt-http-digest');
+const { createZkTcpAdapter } = require('./zk-tcp-4370');
 const { createUnsupportedAdapter } = require('./unsupported');
 
 const FACTORIES = {
   'yt-http-digest': createYtHttpDigestAdapter,
-  'zk-tcp-4370': (device) => createUnsupportedAdapter(device, 'ZK TCP/4370 adapteri henüz gerçek cihazla doğrulanmadı.'),
+  'zk-tcp-4370': createZkTcpAdapter,
   'vendor-sdk': (device) => createUnsupportedAdapter(device, 'Üretici SDK adapteri henüz eklenmedi.'),
 };
 

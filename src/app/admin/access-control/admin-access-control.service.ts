@@ -40,7 +40,7 @@ export const DEVICE_PROTOCOLS: { value: DeviceProtocol; label: string; hint: str
   {
     value: 'zk-tcp-4370',
     label: 'ZK TCP / 4370',
-    hint: 'Tanımlı, henüz gerçek cihazla doğrulanmadı. Cihaza hiçbir şey yazılmaz.',
+    hint: 'Geçmiş ve canlı geçiş olaylarını okur. Üye/kart yazma ve kapı açma güvenlik için kapalıdır.',
     defaultPort: 4370,
   },
   {
