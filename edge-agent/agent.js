@@ -71,7 +71,7 @@ async function enrollWithCode(config, code) {
 async function enroll(config, code) {
   if (!code) fail('Kullanım: npm run enroll -- EŞLEŞTİRME_KODU');
   await enrollWithCode(config, code).catch((err) => fail(`Eşleştirme başarısız: ${err.message}`));
-  console.log('👉 Şimdi `npm start` ile başlatın.');
+  console.log('👉 Agent başlatılmaya hazır.');
 }
 
 /** Pencerede çalışıyorsa koddan sorar; arka planda çalışıyorsa agent klasörüne konan kod dosyasını bekler. */

@@ -119,3 +119,34 @@ test('zkteco-js iç içe ağ hataları geçici cihaz hatasına çevrilir', () =>
   assert.equal(error.message, 'connect failed');
   assert.equal(error.transient, true);
 });
+
+test('TCP 4370 reddedilirse cihazın UDP 4370 kanalına geçer', async () => {
+  const { driver, factory } = setupDriver();
+  const state = { udpSocketCreated: 0, udpConnected: 0 };
+  driver.createSocket = async () => {
+    throw { err: { err: Object.assign(new Error('TCP refused'), { code: 'ECONNREFUSED' }) } };
+  };
+  driver.zudp = {
+    socket: null,
+    async createSocket() {
+      state.udpSocketCreated += 1;
+      this.socket = {};
+    },
+    async connect() {
+      state.udpConnected += 1;
+    },
+  };
+
+  const adapter = createZkTcpAdapter(
+    { gateId: 'g1', protocol: 'zk-tcp-4370', host: '192.168.1.10', port: 4370, direction: 'in' },
+    { udpInPort: 4000 },
+    { driverFactory: factory },
+  );
+  const result = await adapter.readEvents(null);
+
+  assert.equal(state.udpSocketCreated, 1);
+  assert.equal(state.udpConnected, 1);
+  assert.equal(driver.connectionType, 'udp');
+  assert.equal(result.events.length, 1);
+  adapter.close();
+});

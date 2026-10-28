@@ -75,7 +75,7 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
       });
       driver = current;
       try {
-        await current.createSocket(markDisconnected, markDisconnected);
+        await openSocketWithUdpFallback(current, markDisconnected);
         connected = true;
 
         // ZK cihazı tek komut kanalı kullanır; aynı sokette paralel komut gönderme.
@@ -167,6 +167,31 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
   };
 }
 
+/**
+ * zkteco-js 1.7.2 TCP reddedildiğinde UDP'ye geçmeyi amaçlıyor; ancak hata birkaç
+ * kat sarıldığı için ECONNREFUSED kodunu göremiyor. Cihaz yalnızca UDP/4370
+ * dinliyorsa burada kontrollü olarak UDP kanalını açıyoruz.
+ */
+async function openSocketWithUdpFallback(driver, onDisconnect) {
+  try {
+    await driver.createSocket(onDisconnect, onDisconnect);
+  } catch (error) {
+    if (!hasErrorCode(error, 'ECONNREFUSED') || !driver?.zudp) throw error;
+    if (!driver.zudp.socket) await driver.zudp.createSocket(onDisconnect, onDisconnect);
+    await driver.zudp.connect();
+    driver.connectionType = 'udp';
+  }
+}
+
+function hasErrorCode(error, expectedCode) {
+  let current = error;
+  for (let depth = 0; depth < 6 && current; depth++) {
+    if (current.code === expectedCode) return true;
+    current = current.err ?? current.cause;
+  }
+  return false;
+}
+
 function recordsOf(result) {
   if (Array.isArray(result)) return result;
   return Array.isArray(result?.data) ? result.data : [];
@@ -209,4 +234,5 @@ module.exports = {
   createZkTcpAdapter,
   normalizeTime,
   resolveDirection,
+  openSocketWithUdpFallback,
 };
