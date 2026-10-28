@@ -38,6 +38,22 @@ function deviceName(name) {
     .slice(0, MAX_NAME_LENGTH);
 }
 
+/** Tarihleri yalnızca rakamlarıyla karşılaştır (cihaz "2026-10-31" ya da "20261031" döndürebilir). */
+function sameDay(a, b) {
+  const digits = (v) => String(v ?? '').replace(/\D/g, '');
+  return digits(a) === digits(b);
+}
+
+/** Geri okunan kayıt istenenle eşleşmiyorsa neyin farklı olduğunu söyler. */
+function describeMismatch(desired, after) {
+  if (!after) return 'cihazda kullanıcı bulunamadı';
+  const diffs = [];
+  if (String(after.userId) !== String(desired.userId)) diffs.push(`kimlik ${after.userId} ≠ ${desired.userId}`);
+  if (!sameCard(after.card, desired.card)) diffs.push(`kart "${after.card}" ≠ "${desired.card}"`);
+  if (!sameDay(after.vaildEnd, desired.vaildEnd)) diffs.push(`bitiş "${after.vaildEnd}" ≠ "${desired.vaildEnd}"`);
+  return diffs.length ? diffs.join(', ') : null;
+}
+
 /** Kart numaralarını karşılaştırmak için baştaki sıfırları yok say. */
 function sameCard(a, b) {
   const norm = (v) => String(v ?? '').trim().replace(/^0+(?=.)/, '');
@@ -212,12 +228,8 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
       }
 
       const after = await getUser(item.userId);
-      const verified =
-        !!after &&
-        after.userId === desired.userId &&
-        sameCard(after.card, desired.card) &&
-        after.vaildEnd === desired.vaildEnd;
-      return { verified };
+      const mismatch = describeMismatch(desired, after);
+      return mismatch ? { verified: false, detail: mismatch } : { verified: true };
     },
 
     close() {},

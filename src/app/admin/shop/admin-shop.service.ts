@@ -45,9 +45,10 @@ export class AdminShopService {
 
   async seedDefaultCategoriesIfEmpty(_tenantIdParam?: string): Promise<void> {
     const existing = await firstValueFrom(this.api.listCategories());
-    const keys = new Set(existing.map((c) => c.key));
+    const keys = new Set(existing.map((c) => (c.key || '').trim().toLowerCase()).filter(Boolean));
+    const names = new Set(existing.map((c) => (c.name || '').trim().toLowerCase()).filter(Boolean));
     for (const cat of DEFAULT_STOCK_CATEGORIES) {
-      if (keys.has(cat.key)) continue;
+      if (keys.has(cat.key.toLowerCase()) || names.has(cat.name.toLowerCase())) continue;
       await this.createCategory(cat);
     }
   }

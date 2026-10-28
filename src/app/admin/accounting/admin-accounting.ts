@@ -27,10 +27,12 @@ const PAYMENT_LABEL: Record<string, string> = {
   wallet: 'E-Cüzdan',
 };
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-accounting',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field],
+  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-accounting.html',
 })
@@ -588,8 +590,8 @@ export class AdminAccounting implements OnInit {
 
       const res = await this.service.getExpenseAnalytics({ startDate: startStr, endDate: endStr });
       this.expenseAnalytics.set(res);
-    } catch {
-      this.alertService.toastError('Gider analitiği verileri alınamadı.');
+    } catch (err) {
+      console.warn('Gider analitiği verileri alınamadı:', err);
     } finally {
       this.loadingAnalytics.set(false);
     }

@@ -1,9 +1,9 @@
 <div class="font-sans space-y-6">
   <!-- 1. Header -->
   <app-page-header
-    title="Ürün & Stok Yönetimi"
+    title="products.title"
     icon="inventory_2"
-    description="Protein tozları, vitamin barlar, içecekler ve spor ekipmanı stok seviyeleri ve fiyat takibi."
+    description="products.subtitle"
   >
     <div actions class="flex items-center gap-2">
       <button type="button" class="odv-btn-primary" (click)="openCreate()">
@@ -59,7 +59,7 @@
       <div>
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Stok Değeri</span>
         <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
-          ₺{{ money(totalStockValue()) }}
+          {{ money(totalStockValue()) }}
         </div>
         <div class="text-xs font-semibold text-emerald-500 mt-0.5">
           Satış Değeri Toplamı
@@ -114,7 +114,7 @@
             class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
             [class]="selectedCategory() === c.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
           >
-            <span>{{ c.icon }}</span>
+            <span class="text-sm shrink-0">{{ c.icon }}</span>
             <span>{{ c.label }}</span>
           </button>
         }
@@ -143,7 +143,7 @@
                 <p class="font-bold text-slate-900 dark:text-white m-0">{{ p.name }}</p>
                 <div class="flex items-center gap-1.5 mt-1">
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
-                    <span>{{ getCategoryIcon(p.category) }}</span>
+                    <span class="text-xs shrink-0">{{ getCategoryIcon(p.category) }}</span>
                     <span>{{ getCategoryLabel(p.category) }}</span>
                   </span>
                   @if (p.supplier) {
@@ -194,10 +194,10 @@
                 </div>
               </td>
               <td class="odv-td font-black text-slate-900 dark:text-white whitespace-nowrap">
-                ₺{{ money(p.price) }}
+                {{ money(p.price) }}
               </td>
               <td class="odv-td text-slate-500 whitespace-nowrap">
-                ₺{{ money(p.cost || 0) }}
+                {{ money(p.cost || 0) }}
               </td>
               <td class="odv-td whitespace-nowrap">
                 <span
@@ -293,7 +293,7 @@
                 : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80'"
             >
               <div class="flex items-center gap-2 min-w-0">
-                <span class="text-base shrink-0">{{ cat.icon || '📦' }}</span>
+                <span class="text-base shrink-0">{{ getCategoryIcon(cat.key || cat.name) }}</span>
                 <div class="min-w-0">
                   <p class="text-xs font-bold text-slate-900 dark:text-white truncate m-0 leading-tight">
                     {{ cat.name }}

@@ -20,8 +20,11 @@ import { MemberQrModal } from '../../components/member-qr-modal/member-qr-modal'
 import { MemberQrService } from '../../components/member-qr-modal/member-qr.service';
 import { TrainingWizardModal } from '../../components/training-wizard-modal/training-wizard-modal';
 import { AiAssistantModal } from '../../components/ai-assistant-modal/ai-assistant-modal';
+import { ChangePasswordModal } from '../../components/change-password-modal/change-password-modal';
+import { ChangePasswordService } from '../../components/change-password-modal/change-password.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
+import { AppLockService } from '../../../core/services/app-lock.service';
 
 import { FormsModule } from '@angular/forms';
 
@@ -103,6 +106,7 @@ export interface ShellNotification {
     MemberQrModal,
     TrainingWizardModal,
     AiAssistantModal,
+    ChangePasswordModal,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
@@ -117,9 +121,11 @@ export class Shell {
   protected readonly branchContext = inject(BranchContextService);
   protected readonly wizard = inject(TrainingWizardService);
   protected readonly aiService = inject(AiAssistantService);
+  protected readonly changePasswordService = inject(ChangePasswordService);
   protected readonly features = FEATURES;
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
+  protected readonly lockService = inject(AppLockService);
   private readonly router = inject(Router);
 
   protected readonly languageNames = LANGUAGE_NAMES;
@@ -227,6 +233,10 @@ export class Shell {
     this.qrService.open();
   }
 
+  openChangePasswordModal(): void {
+    this.changePasswordService.open();
+  }
+
   setLanguage(lang: SupportedLanguage): void {
     this.language.setLanguage(lang);
   }
@@ -244,5 +254,13 @@ export class Shell {
   async logOut(): Promise<void> {
     await this.auth.logOut();
     await this.router.navigateByUrl('/auth/login');
+  }
+
+  lockApp(): void {
+    this.lockService.lock();
+  }
+
+  openLockPinSetup(): void {
+    this.lockService.openSetupModal();
   }
 }

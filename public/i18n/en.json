@@ -1,5 +1,6 @@
 {
   "common": {
+    "success": "Success",
     "or": "or",
     "close": "Close",
     "logout": "Log Out",
@@ -17,7 +18,39 @@
     "passive": "Passive",
     "yes": "Yes",
     "no": "No",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "cookieSettings": "Cookie Preferences"
+  },
+  "cookieConsent": {
+    "badge": "Privacy & Cookie Security",
+    "bannerTitle": "Cookie Policy & Privacy Consent",
+    "bannerDesc": "OdivonGYM uses cookies and local storage to provide secure sign-in, remember your credentials with 'Remember Me', and optimize overall performance.",
+    "readPolicyInline": "Read Cookie Policy",
+    "customize": "Customize Preferences",
+    "essentialOnly": "Essential Only",
+    "acceptAll": "Accept All",
+    "settingsTitle": "Cookie Permission Preferences",
+    "settingsDesc": "Manage the categories of cookies utilized on our platform in compliance with privacy regulations.",
+    "essentialTitle": "Essential Cookies (Security & Core)",
+    "essentialDesc": "Required for secure authentication (Firebase Auth), CSRF protection, and platform stability. Cannot be disabled.",
+    "alwaysActive": "Always Active",
+    "required": "Required",
+    "functionalTitle": "Functional Cookies (Remember Me & Preferences)",
+    "functionalDesc": "Remembers your email address with 'Remember Me', retains session duration, and saves your preferred language and theme.",
+    "recommended": "Recommended",
+    "analyticsTitle": "Analytics & Performance Cookies",
+    "analyticsDesc": "Helps us assess response times and platform reliability using anonymized telemetry.",
+    "optional": "Optional",
+    "readFullPolicy": "Read Full Cookie & Privacy Disclosure",
+    "savePreferences": "Save Preferences",
+    "rememberMeTooltip": "Securely keeps your email and session remembered for 30 days on trusted devices.",
+    "functionalNeededForRemember": "Functional cookies must be enabled to use 'Remember Me'.",
+    "allow": "Allow",
+    "footerLink": "Cookie Preferences",
+    "policyLink": "Cookie Policy",
+    "loginHint": "By signing in, you consent to essential cookies required for session and security."
   },
   "auth": {
     "login": {
@@ -127,7 +160,8 @@
       "pill3": "Packages & Payments",
       "stat1Label": "Active Members",
       "stat2Label": "Weekly Classes",
-      "footer": "© {{year}} OdivonGYM. All rights reserved."
+      "footer": "© {{year}} OdivonGYM. All rights reserved.",
+      "stat3Label": "Satisfaction Rate"
     },
     "sportsShowcase": {
       "badge": "Performance, Training & Athlete Ecosystem",
@@ -157,6 +191,38 @@
       "registerTitleHighlight": "like champions.",
       "registerTitle2": "",
       "registerSubtitle": "Complete setup in 3 quick steps: member tracking, sports disciplines, training schedules, and smart turnstiles ready from day one."
+    },
+    "verifyEmail": {
+      "badgeSuccess": "Account Verified",
+      "startSetup": "Start Setup",
+      "pageTitle": "Email Verification · OdivonGYM",
+      "verifyingTitle": "Verifying Your Email",
+      "verifyingDesc": "Please wait while we activate your account...",
+      "successTitle": "Email Verified Successfully! 🎉",
+      "successDesc": "Congratulations! Your gym management account has been verified and activated. You can now sign in.",
+      "goToLogin": "Sign In",
+      "errorTitle": "Verification Failed ⚠️",
+      "errorDesc": "The verification link is invalid or has expired (24 hours).",
+      "resendPrompt": "You can request a new verification link below.",
+      "emailPlaceholder": "Your email address",
+      "resendButton": "Send New Link",
+      "resending": "Sending...",
+      "resendSuccess": "A new verification link has been sent to your email. Please check your inbox.",
+      "resendError": "Could not send verification link. Please check your email address.",
+      "backToHome": "Back to Home"
+    },
+    "registerSuccess": {
+      "badge": "REGISTRATION SUCCESSFUL ✉️",
+      "title": "Verification Email Sent!",
+      "greeting": "Dear",
+      "desc": "we have sent an activation link to",
+      "info1": "Please check your inbox and your spam/junk folder if needed.",
+      "info2": "Click the \"Verify Email\" button in the email to activate your account.",
+      "info3": "Once verified, you will be able to sign in to the dashboard.",
+      "resendButton": "Resend Verification Email",
+      "resending": "Sending...",
+      "resendSuccess": "Verification email has been resent!",
+      "loginButton": "Go to Sign In"
     }
   },
   "onboarding": {
@@ -241,7 +307,8 @@
       "wallet": "E-Wallet",
       "packages": "Packages",
       "profile": "Profile & Settings",
-      "adminExitPayments": "Exit Payments (Open Tabs)"
+      "adminExitPayments": "Exit Payments (Open Tabs)",
+      "support": "Support & Requests"
     },
     "badges": {
       "renewal": "Renewal",
@@ -294,6 +361,12 @@
     "adminStaff": "Staff & Roles",
     "adminGymInfo": "Gym Info",
     "adminSubscription": "Package & License",
+    "support": "Support & Requests",
+    "searchPlaceholder": "Search menu",
+    "collapseAll": "Collapse all groups",
+    "expandAll": "Expand all groups",
+    "noResults": "No matching menu found",
+    "clearSearch": "Clear Search",
     "expand": "Expand",
     "collapse": "Collapse",
     "closeMenu": "Close menu",
@@ -336,6 +409,7 @@
     "menuGymInfo": "Gym Information",
     "menuDigitalCard": "My Digital Turnstile Card",
     "menuProfile": "Profile & Settings",
+    "menuChangePassword": "Change Password",
     "menuLogout": "Log Out",
     "expiredBannerTitle": "SaaS License Expired",
     "expiredBannerDesc": "Turnstile access, POS cashier, and operational modules suspended. Renew your license for uninterrupted management.",
@@ -702,6 +776,8 @@
     "closeTimeLabel": "Closing Time *",
     "phoneLabel": "Contact Phone *",
     "cityLabel": "City *",
+    "selectCity": "Select City",
+    "selectCountry": "Select Country Code",
     "addressLabel": "Gym Address *",
     "step2Badge": "Step 2",
     "step2Title": "First Branch & Facilities",
@@ -778,7 +854,8 @@
     "generic": "Something went wrong, please try again.",
     "permissionDenied": "You don't have permission for this action.",
     "invalidArgument": "Some of the information you entered is missing or invalid.",
-    "unauthenticated": "Your session has expired, please log in again."
+    "unauthenticated": "Your session has expired, please log in again.",
+    "emailNotVerified": "Please verify your email address to sign in. Click the link sent to your inbox."
   },
   "trialExpired": {
     "titleCancelled": "Your Subscription Has Been Cancelled",
@@ -803,7 +880,10 @@
     "needEmailFirst": "Enter your email first, then we'll send a reset link.",
     "resetLinkSent": "A password reset link was sent to {{email}}.",
     "tooManyAttemptsWait": "Too many failed attempts. Please wait {{seconds}} seconds.",
-    "lockedButton": "Please wait ({{seconds}}s)"
+    "lockedButton": "Please wait ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Your account is not verified yet. Please click the verification link sent to your email.",
+    "resendVerificationButton": "Resend Verification Email",
+    "verificationSent": "Verification email has been resent. Please check your inbox and spam folder."
   },
   "exitPayments": {
     "title": "Exit Payments (Open Tabs)",
@@ -823,5 +903,261 @@
     "tabCollected": "Collected",
     "tabCancelled": "Cancelled",
     "tabAll": "All"
+  },
+  "support": {
+    "headerBadge": "CUSTOMER SUPPORT & HELP CENTER",
+    "title": "Submit Request & Status Tracking",
+    "subtitle": "Submit technical issues, turnstile access, membership freeze, or suggestions. Track your request step-by-step with your unique tracking number.",
+    "quickTrackBtn": "Search by Tracking No",
+    "tabs": {
+      "create": "Create New Request",
+      "track": "Track Status",
+      "history": "My Past Requests"
+    },
+    "create": {
+      "categoryTitle": "Select Request Category",
+      "categoryDesc": "Please select the category that best describes your request.",
+      "ticketDetailsTitle": "Request Details & Contact Information",
+      "ticketDetailsDesc": "Please provide complete details so we can resolve your issue quickly.",
+      "subject": "Subject / Summary",
+      "subjectPlaceholder": "e.g. Turnstile QR code reader did not respond",
+      "description": "Detailed Description",
+      "descriptionPlaceholder": "Describe the issue, device/time details, and steps taken…",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Your full name",
+      "email": "Email Address",
+      "emailPlaceholder": "sample@odivon.com",
+      "phone": "Phone Number",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "priority": "Priority Level",
+      "priorityNormal": "Normal (Routine inquiry or request)",
+      "priorityUrgent": "Urgent (Blocking access or operation)",
+      "priorityCritical": "Critical (Hardware locked or total outage)",
+      "submitBtn": "Submit Request & Generate Tracking No",
+      "submitting": "Submitting…",
+      "successTitle": "Your Request Has Been Received!",
+      "successDesc": "Your request has been forwarded to our support team. You can check status updates anytime using your tracking number.",
+      "trackingNoLabel": "Your Tracking Number",
+      "copyTrackingNo": "Copy",
+      "copied": "Copied!",
+      "trackNowBtn": "Track Request Now",
+      "createNewBtn": "Submit Another Request"
+    },
+    "track": {
+      "title": "Query Request Status",
+      "subtitle": "Enter the tracking number in TK-XXXXXX format provided to check the latest progress.",
+      "inputPlaceholder": "e.g. TK-2026-A1B2C3",
+      "queryBtn": "Search",
+      "querying": "Searching…",
+      "recentTitle": "Recently Created Request",
+      "notFound": "No support ticket found for this tracking number.",
+      "notFoundHint": "Please check your tracking number (TK-YYYY-XXXXXX) and try again."
+    },
+    "history": {
+      "title": "Your Past Support Requests",
+      "subtitle": "All support requests and inquiries submitted under this account.",
+      "refresh": "Refresh",
+      "empty": "You do not have any open support requests yet.",
+      "openNew": "Create Your First Request"
+    },
+    "status": {
+      "received": "Received / Forwarded",
+      "in_review": "In Review",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "categories": {
+      "technical_support": "Technical Support & System",
+      "technical_support_desc": "App, connection, screen freeze, or software issues.",
+      "turnstile_access": "Turnstile & Access Control",
+      "turnstile_access_desc": "QR code reading issues, card setup, access blocking, or gate faults.",
+      "membership_freeze": "Membership & Freeze",
+      "membership_freeze_desc": "Membership extension, package freeze, transfer, or cancellation requests.",
+      "billing_payment": "Payment, POS & Invoicing",
+      "billing_payment_desc": "Installment payments, card charges, e-invoice lookup, or refunds.",
+      "feature_request": "Feedback & Feature Request",
+      "feature_request_desc": "Ideas or new features you'd like to see in the club or app.",
+      "general_inquiry": "General Inquiry & Info",
+      "general_inquiry_desc": "Working hours, group classes, or trainer sessions.",
+      "complaint_suggestion": "Complaints & Service Quality",
+      "complaint_suggestion_desc": "Feedback regarding service quality, club cleanliness, or staff."
+    }
+  },
+  "members": {
+    "title": "Member Records",
+    "subtitle": "Search, filter, update membership status or add new members.",
+    "newMember": "New Member",
+    "missingTenantTitle": "Account not linked to a gym.",
+    "missingTenantDesc": "This admin account was created prior to multi-tenant structure; tenantId is missing in profile. Member list appears empty.",
+    "activeMembers": "Active Members",
+    "archived": "Archived",
+    "archivedBadge": "Archived",
+    "archiveNotice": "Archived members are deactivated at turnstiles and can be restored with a single click.",
+    "searchPlaceholder": "Search by name, email, phone, member no or branch...",
+    "branch": "Branch",
+    "branchFilterAll": "All Branches",
+    "loading": "Loading…",
+    "balance": "Balance",
+    "untilDate": "Until {{date}}",
+    "perPage": "Per Page:",
+    "firstPage": "First Page",
+    "prevPage": "Previous Page",
+    "nextPage": "Next Page",
+    "lastPage": "Last Page",
+    "noMatchFound": "No matching members found",
+    "noMatchDesc": "No records found matching \"{{term}}\".",
+    "noArchivedFound": "No Archived Members",
+    "noArchivedDesc": "There are no members in the archive.",
+    "noMembersFound": "No Members Found Yet",
+    "noMembersDesc": "Start by registering a new member.",
+    "addFirstMember": "+ Add First Member",
+    "table": {
+      "member": "Member",
+      "branch": "Branch",
+      "contact": "Contact",
+      "gender": "Gender",
+      "status": "Status",
+      "package": "Package",
+      "registerDate": "Registration Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "unspecified": "Unspecified"
+    },
+    "actions": {
+      "archive": "Archive Member",
+      "unarchive": "Unarchive & Activate",
+      "delete": "Delete member profile"
+    },
+    "wallet": {
+      "title": "Balance",
+      "current": "Current balance",
+      "transaction": "Transaction",
+      "deposit": "Top-up Balance",
+      "debit": "Deduct Balance",
+      "amount": "Amount",
+      "paymentMethod": "Payment Method",
+      "cash": "Cash",
+      "card": "Credit/Debit Card",
+      "transfer": "Bank Transfer",
+      "description": "Description",
+      "save": "Save"
+    }
+  },
+  "packages": {
+    "title": "Package & Pricing Management",
+    "subtitle": "Manage gym-wide memberships, staff/trainer-specific PT packages, commission rates, and access rules.",
+    "addNew": "+ Add New Package",
+    "filterAll": "All Packages",
+    "filterClub": "Club Wide",
+    "filterStaff": "Staff Specific",
+    "allTrainers": "All Trainers",
+    "searchPlaceholder": "Search by package name, staff, or barcode...",
+    "loading": "Loading…",
+    "table": {
+      "package": "Package & Scope",
+      "category": "Category",
+      "duration": "Duration",
+      "sessions": "Sessions & Access",
+      "pricing": "Price & Earnings",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "sessionsUnlimited": "Unlimited",
+    "daysUnit": "Days",
+    "drawer": {
+      "scopeTitle": "Package Scope & Differentiation",
+      "scopeClub": "Club-Wide Package",
+      "scopeStaff": "Staff / PT Specific",
+      "staffConfig": "Trainer & Commission Config",
+      "selectStaff": "-- Select Staff --",
+      "addStaffRate": "Add Staff Rate",
+      "staff": "Staff Member",
+      "price": "Price",
+      "commission": "Commission (%)",
+      "durationConfig": "Duration Config",
+      "unit": "Unit",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "accounting": {
+    "title": "Accounting & Cash Register",
+    "subtitle": "Cash ledger movements, end-of-day Z report reconciliations, and expense analytics.",
+    "tabs": {
+      "ledger": "Cash Ledger (Income & Expense)",
+      "dailyClose": "Daily Close & Z-Report",
+      "analytics": "Expense & Category Analytics"
+    },
+    "actions": {
+      "manageCategories": "Manage Categories",
+      "newEntry": "New Ledger Entry",
+      "refreshLive": "Refresh Live Cash",
+      "closeDay": "Close Day & Reconcile",
+      "exportCsv": "Export Excel / CSV"
+    }
+  },
+  "staff": {
+    "badge": "Roles & Permissions Engine",
+    "title": "Staff & User Roles",
+    "subtitle": "Gym owner (patron), general manager, coach, and receptionist job descriptions and access control.",
+    "newStaff": "Add New Staff Member",
+    "simulation": "Simulation",
+    "endSimulation": "Exit Simulation",
+    "kpi": {
+      "totalStaff": "Total Team",
+      "allBranches": "All branches registered",
+      "activeTrainers": "Active Coaches",
+      "reception": "Reception & Desk",
+      "management": "Management"
+    }
+  },
+  "branches": {
+    "title": "Branches & Facilities",
+    "subtitle": "Manage gym branches: Branch logo, open days, hours, and capacity.",
+    "newBranch": "Add New Branch"
+  },
+  "guestMembers": {
+    "title": "Guest & Lead Tracking",
+    "subtitle": "Manage prospective member surveys, interests, and follow-ups in one place.",
+    "newGuest": "New Guest Record"
+  },
+  "programRequests": {
+    "title": "Program Requests",
+    "subtitle": "Member requests for custom workout routines. Assignment closes request upon plan creation."
+  },
+  "reports": {
+    "title": "Reports & Analytics",
+    "subtitle": "Financial summaries, member churn, facility occupancy, and KPI metrics."
+  },
+  "gymInfo": {
+    "title": "Club & Gym Information",
+    "subtitle": "Club contact details, commercial title, logo, and general gym settings."
+  },
+  "products": {
+    "title": "Product & Stock Management",
+    "subtitle": "Track cafe items, supplements, apparel, and retail barcode products."
+  },
+  "eInvoice": {
+    "title": "Invoicing & E-Invoice Management",
+    "subtitle": "Official e-invoice and e-archive issuance, cancellations, and tax compliance."
+  },
+  "suppliers": {
+    "title": "Suppliers & Vendor Accounts",
+    "subtitle": "Supplier balances, payables, stock procurement, and purchase receipts."
   }
 }

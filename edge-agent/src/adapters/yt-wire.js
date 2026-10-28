@@ -76,9 +76,13 @@ function parseLogPage(res) {
 /** Ham log kaydı → sözleşmedeki alanlar. */
 function readLogRecord(raw) {
   const io = raw.ioMode == null ? null : Number(raw.ioMode);
+  // Bu firmware kartlı geçişte de userId döndürür; userId kart numarası değildir.
+  // Yalnızca cihaz ayrı bir kart alanı verdiyse kart numarası olarak aktar.
+  const card = raw.card != null && raw.card !== '' ? String(raw.card) : null;
+  const userId = raw.userId != null && raw.userId !== '' ? String(raw.userId) : null;
   return {
-    userId: raw.userId != null && raw.userId !== '' ? String(raw.userId) : null,
-    card: raw.card != null && raw.card !== '' ? String(raw.card) : null,
+    userId,
+    card,
     time: raw.time ?? null,
     verifyMode: raw.verifyMode ?? null,
     ioMode: io,

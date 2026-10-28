@@ -13,13 +13,24 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 ## Ne yapar?
 
 - Her cihazı **5 saniyede bir** tarar, tüm log sayfalarını okur, yeni kayıtları yerel
-  SQLite kuyruğuna (`data/agent.db`) alır ve MainApi'ye toplu gönderir. İnternet
+  SQLite kuyruğuna (`data/agent.db`) alır; yeni geçiş olunca 5 sn toplanıp tek pakette MainApi'ye
+  gönderilir (olay yoksa istek atılmaz). İnternet
   kesilirse kayıtlar kuyrukta bekler, bağlantı gelince gönderilir; tekrarlar hem
   yerelde hem MainApi'de ayıklanır.
+- MainApi'ye yeni iş olup olmadığını sunucunun önerdiği aralıkla sorar (boştayken 30 sn).
 - MainApi'deki **istenen yetki durumunu** (üye numarası, kart, bitiş günü, açık/kapalı)
   cihaza uygular, cihazdan **geri okuyup doğrular**; doğrulanmadan "uygulandı" demez.
-- 15 saniyede bir heartbeat gönderir; paneldeki "çevrimiçi" bilgisi buradan gelir.
+- 60 saniyede bir heartbeat gönderir; paneldeki "çevrimiçi" bilgisi buradan gelir.
 - Cihazın bildirmediği "izin verildi / reddedildi" sonucunu tahmin etmez.
+- `192.168.1.2` üzerindeki `K4E_2Y1Kbc011_2.9` firmware'inin geçiş logunda kart numarası
+  ayrı bir alan olarak yoktur. 24.10.2026 tarihinde tanımsız test kartı reddedildiğinde
+  `GetLogDataPage` toplamı 42 olarak kaldı; bu cihazın mevcut API'si reddedilen kartın
+  numarasını vermedi. Kartı resepsiyondaki USB okuyucuyla okutun veya üreticinin ayrı
+  bir ham kart okuma protokolü/SDK'sını doğrulayın.
+- Kimliği reddedilirse (agent iptal edildi ya da başka bir kopya eşleştirildi) durmaz: pencerede
+  çalışıyorsa yeni eşleştirme kodunu sorar; arka planda çalışıyorsa kodu agent klasöründeki
+  `eslestirme-kodu.txt` dosyasına yazmanızı bekler. Eşleşince kaldığı yerden devam eder.
+  Kodu bilerek değiştirmek için `yeniden-eslestir.bat` çalıştırın.
 - Uzaktan kapı açma YT için kapalıdır (`SetDoorStatus=open` kalıcı açık kalabilir).
 
 ## Desteklenen protokoller
@@ -67,6 +78,12 @@ Bu, Windows Görev Zamanlayıcı'da **"Odivon Edge Agent"** görevini kurar:
 
 Kurulumdan sonra `baslat.bat` yalnızca görevi çalıştırır; pencere açık kalmak zorunda değildir.
 Yönetici izni verilmezse agent eskisi gibi pencerede çalışır. Kaldırmak için: `servis-kur.bat kaldir`.
+
+### Durdurma
+
+`durdur.bat` dosyasına çift tıklayın (yönetici izni ister). Agent'ı kapatır ve "Odivon Edge Agent"
+görevini siler; bilgisayar açılınca artık kendiliğinden başlamaz. `data/` klasörü (eşleştirme kimliği,
+bekleyen kayıtlar) silinmez; yeniden başlatmak için `baslat.bat` yeterlidir.
 
 ## Eski agent'tan geçiş
 

@@ -10,8 +10,11 @@ import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { IdentityApi } from '../../../core/api/identity.api';
 import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, SupportedLanguage, findCountry } from '../../../core/data/countries';
@@ -44,7 +47,9 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 export class Register {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly identity = inject(IdentityApi);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
   protected readonly language = inject(LanguageService);
 
@@ -60,16 +65,18 @@ export class Register {
       country: [DEFAULT_COUNTRY_CODE, [Validators.required]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9\s]{7,14}$/)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
     },
     { validators: passwordsMatchValidator },
   );
 
   readonly submitting = signal(false);
+  readonly resending = signal(false);
   readonly errorMessage = signal('');
   readonly hidePassword = signal(true);
   readonly hideConfirmPassword = signal(true);
+  readonly registeredSuccess = signal<{ email: string; displayName: string } | null>(null);
 
   /** Telefon kutusunun başındaki salt-okunur çevirme kodu — seçili ülkeye göre. */
   protected readonly dialCode = signal(findCountry(DEFAULT_COUNTRY_CODE)?.dialCode ?? '+90');
@@ -90,7 +97,7 @@ export class Register {
     this.submitting.set(true);
     try {
       const { tenantName, email, password, displayName, country, phone } = this.form.getRawValue();
-      await this.auth.signUpWithEmail({
+      const result = await this.auth.signUpWithEmail({
         tenantName,
         email,
         password,
@@ -99,12 +106,34 @@ export class Register {
         phone: `${this.dialCode()} ${phone}`.trim(),
         language: this.language.current(),
       });
-      await this.auth.waitUntilReady();
-      await this.router.navigateByUrl('/onboarding/wizard');
+      this.registeredSuccess.set({ email: result.email, displayName: result.displayName });
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {
       this.submitting.set(false);
     }
   }
+
+  async resendVerification(): Promise<void> {
+    const successData = this.registeredSuccess();
+    if (!successData?.email || this.resending()) return;
+    this.resending.set(true);
+    try {
+      await firstValueFrom(this.identity.resendVerification(successData.email));
+      this.snackBar.open(
+        this.transloco.translate('auth.registerSuccess.resendSuccess'),
+        this.transloco.translate('common.close'),
+        { duration: 4000 },
+      );
+    } catch {
+      this.snackBar.open(
+        this.transloco.translate('auth.verifyEmail.resendError'),
+        this.transloco.translate('common.close'),
+        { duration: 4000 },
+      );
+    } finally {
+      this.resending.set(false);
+    }
+  }
 }
+

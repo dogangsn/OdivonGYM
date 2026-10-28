@@ -23,10 +23,12 @@ import { GymBranch } from '../../core/models/gym-branch.model';
 
 type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator' | 'payroll';
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-staff',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-staff.html',
   styleUrl: './admin-staff.scss',
@@ -189,6 +191,7 @@ export class AdminStaff {
   readonly isDrawerOpen = signal(false);
   readonly editingStaff = signal<StaffMember | null>(null);
   readonly isSaving = signal(false);
+  readonly showPassword = signal(false);
 
   // Form State
   formData = {
@@ -205,6 +208,8 @@ export class AdminStaff {
     emergencyContact: '',
     hireDate: new Date().toISOString().slice(0, 10),
     notes: '',
+    password: '',
+    sendWelcomeEmail: true,
   };
 
   readonly roleDefinitions = ROLE_DEFINITIONS;
@@ -300,6 +305,32 @@ export class AdminStaff {
     },
   ];
 
+  generateRandomPassword(): void {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+    let result = '';
+    for (let i = 0; i < 10; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    this.formData.password = result;
+    this.showPassword.set(true);
+  }
+
+  copyPassword(): void {
+    if (!this.formData.password) return;
+    void navigator.clipboard.writeText(this.formData.password);
+    this.alertService.toastSuccess('Şifre panoya kopyalandı.');
+  }
+
+  async resendInvite(staff: StaffMember): Promise<void> {
+    try {
+      await this.staffService.resendInvite(staff.id);
+      this.alertService.toastSuccess(`${staff.displayName} için aktivasyon ve şifre belirleme daveti gönderildi.`);
+    } catch (err) {
+      console.error('Davet gönderilirken hata oluştu:', err);
+      this.alertService.toastError('Davet e-postası gönderilemedi.');
+    }
+  }
+
   openNewStaffDrawer(): void {
     const check = this.saasSub.canAddStaff();
     if (!check.allowed) {
@@ -331,7 +362,11 @@ export class AdminStaff {
       emergencyContact: '',
       hireDate: new Date().toISOString().slice(0, 10),
       notes: '',
+      password: '',
+      sendWelcomeEmail: true,
     };
+    this.generateRandomPassword();
+    this.showPassword.set(false);
     this.isDrawerOpen.set(true);
   }
 
@@ -367,7 +402,10 @@ export class AdminStaff {
       emergencyContact: staff.emergencyContact || '',
       hireDate: staff.hireDate || new Date().toISOString().slice(0, 10),
       notes: staff.notes || '',
+      password: '',
+      sendWelcomeEmail: false,
     };
+    this.showPassword.set(false);
     this.isDrawerOpen.set(true);
   }
 
@@ -510,6 +548,8 @@ export class AdminStaff {
         emergencyContact: this.formData.emergencyContact.trim(),
         hireDate: this.formData.hireDate,
         notes: this.formData.notes.trim(),
+        password: this.formData.password?.trim() || undefined,
+        sendWelcomeEmail: this.formData.sendWelcomeEmail,
       };
 
       const current = this.editingStaff();

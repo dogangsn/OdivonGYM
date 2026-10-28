@@ -39,10 +39,12 @@ const GENDER_LABEL: Record<string, string> = {
   unspecified: 'Belirtilmemiş',
 };
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-members',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, MemberFormDialog, MemberDetailDrawer, SlideOver, Field],
+  imports: [FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, MemberFormDialog, MemberDetailDrawer, SlideOver, Field, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-members.html',
   styleUrl: './admin-members.scss',

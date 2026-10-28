@@ -17,7 +17,37 @@
     "passive": "Inactief",
     "yes": "Ja",
     "no": "Nee",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "success": "Succes"
+  },
+  "cookieConsent": {
+    "badge": "Privacy & Cookiebeveiliging",
+    "bannerTitle": "Cookiebeleid en Privacytoestemming",
+    "bannerDesc": "OdivonGYM maakt gebruik van cookies en lokale opslag voor veilig inloggen, het onthouden van inloggegevens via 'Onthoud mij' en platformprestaties.",
+    "readPolicyInline": "Lees het cookiebeleid",
+    "customize": "Voorkeuren aanpassen",
+    "essentialOnly": "Alleen noodzakelijk",
+    "acceptAll": "Alles accepteren",
+    "settingsTitle": "Cookievoorkeuren beheren",
+    "settingsDesc": "Beheer de categorieën cookies die op ons platform worden gebruikt in overeenstemming met de privacywetgeving.",
+    "essentialTitle": "Noodzakelijke cookies (Beveiliging & Basis)",
+    "essentialDesc": "Vereist voor veilige authenticatie (Firebase Auth), CSRF-bescherming en platformstabiliteit.",
+    "alwaysActive": "Altijd actief",
+    "required": "Vereist",
+    "functionalTitle": "Functionele cookies (Onthoud mij & Voorkeuren)",
+    "functionalDesc": "Onthoudt uw e-mailadres met 'Onthoud mij', bewaart sessieduur en slaat uw taal- en themavoorkeuren op.",
+    "recommended": "Aanbevolen",
+    "analyticsTitle": "Analytische cookies",
+    "analyticsDesc": "Helpt responstijden te meten en de platformprestaties te optimaliseren via geanonimiseerde gegevens.",
+    "optional": "Optioneel",
+    "readFullPolicy": "Volledig cookiebeleid lezen",
+    "savePreferences": "Voorkeuren opslaan",
+    "rememberMeTooltip": "Bewaart uw e-mailadres en sessie veilig gedurende 30 dagen op vertrouwde apparaten.",
+    "functionalNeededForRemember": "Functionele cookies moeten zijn ingeschakeld om 'Onthoud mij' te gebruiken.",
+    "allow": "Toestaan",
+    "footerLink": "Cookievoorkeuren",
+    "policyLink": "Cookiebeleid",
+    "loginHint": "Door in te loggen gaat u akkoord met noodzakelijke cookies voor sessie- en systeembeveiliging."
   },
   "auth": {
     "login": {
@@ -127,7 +157,8 @@
       "pill3": "Pakketten & Betalingen",
       "stat1Label": "Actieve leden",
       "stat2Label": "Wekelijkse lessen",
-      "footer": "© {{year}} OdivonGYM. Alle rechten voorbehouden."
+      "footer": "© {{year}} OdivonGYM. Alle rechten voorbehouden.",
+      "stat3Label": "Tevredenheid"
     },
     "sportsShowcase": {
       "badge": "Prestaties, Training & Atleet Ecosysteem",
@@ -157,6 +188,38 @@
       "registerTitleHighlight": "als ware kampioenen.",
       "registerTitle2": "",
       "registerSubtitle": "Voltooi de installatie in 3 stappen: ledenbeheer, sportdisciplines, trainingsroosters en tourniquetcontrole direct klaar voor gebruik."
+    },
+    "verifyEmail": {
+      "pageTitle": "E-mailverificatie · OdivonGYM",
+      "verifyingTitle": "E-mailadres verifiëren",
+      "verifyingDesc": "Een ogenblik geduld terwijl we uw account activeren...",
+      "successTitle": "E-mail succesvol geverifieerd! 🎉",
+      "successDesc": "Gefeliciteerd! Uw account is geverifieerd en geactiveerd. U kunt nu inloggen.",
+      "goToLogin": "Inloggen",
+      "errorTitle": "Verificatie mislukt ⚠️",
+      "errorDesc": "De verificatielink is ongeldig of verlopen.",
+      "resendPrompt": "U kunt hieronder een nieuwe link aanvragen.",
+      "emailPlaceholder": "Uw e-mailadres",
+      "resendButton": "Nieuwe link verzenden",
+      "resending": "Verzenden...",
+      "resendSuccess": "Er is een nieuwe verificatielink verzonden.",
+      "resendError": "Kon verificatielink niet verzenden.",
+      "backToHome": "Terug naar startpagina",
+      "badgeSuccess": "Account Geverifieerd",
+      "startSetup": "Start Setup"
+    },
+    "registerSuccess": {
+      "badge": "REGISTRATIE VOLTOOID ✉️",
+      "title": "Verificatie-e-mail verzonden!",
+      "greeting": "Beste",
+      "desc": "we hebben een activatielink verzonden naar",
+      "info1": "Controleer uw inbox en eventueel uw spamberichten.",
+      "info2": "Klik op de knop in de e-mail om uw account te activeren.",
+      "info3": "Na verificatie kunt u inloggen op het dashboard.",
+      "resendButton": "Verificatie-e-mail opnieuw verzenden",
+      "resending": "Verzenden...",
+      "resendSuccess": "Verificatie-e-mail opnieuw verzonden!",
+      "loginButton": "Ga naar Inloggen"
     }
   },
   "onboarding": {
@@ -239,7 +302,10 @@
       "wallet": "E-Portemonnee",
       "packages": "Pakketten",
       "profile": "Profiel & instellingen",
-      "adminExitPayments": "Betalingen bij uitgang"
+      "adminExitPayments": "Betalingen bij uitgang",
+      "support": "Ondersteuning & Verzoeken",
+      "adminProgramRequests": "Programmaverzoeken",
+      "adminSmsSettings": "SMS-provider & instellingen"
     },
     "badges": {
       "renewal": "Verlenging",
@@ -297,7 +363,13 @@
     "closeMenu": "Menu sluiten",
     "defaultMemberName": "Lid",
     "menuProfile": "Profiel",
-    "menuLogout": "Uitloggen"
+    "menuLogout": "Uitloggen",
+    "support": "Ondersteuning & Verzoeken",
+    "searchPlaceholder": "Zoek in menu",
+    "collapseAll": "Alles inklappen",
+    "expandAll": "Alles uitklappen",
+    "noResults": "Geen menu-item gevonden",
+    "clearSearch": "Zoekopdracht wissen"
   },
   "shell": {
     "menu": "Menu",
@@ -353,7 +425,8 @@
     "notif3Title": "Kritiek voorraadniveau",
     "notif3Msg": "Optimum Gold Whey Protein (Chocola) is bijna op: nog slechts 2 stuks.",
     "notif4Title": "E-Factuur opgesteld",
-    "notif4Msg": "Fiscaal goedgekeurde factuur #ODV20260001 is succesvol verzegeld."
+    "notif4Msg": "Fiscaal goedgekeurde factuur #ODV20260001 is succesvol verzegeld.",
+    "menuChangePassword": "Wachtwoord wijzigen"
   },
   "dashboard": {
     "greetingNight": "Goedenacht",
@@ -700,6 +773,8 @@
     "closeTimeLabel": "Sluitingstijd *",
     "phoneLabel": "Contacttelefoon *",
     "cityLabel": "Stad *",
+    "selectCity": "Selecteer stad",
+    "selectCountry": "Landcode",
     "addressLabel": "Adres sportschool *",
     "step2Badge": "Stap 2",
     "step2Title": "Eerste vestiging & Faciliteiten",
@@ -776,7 +851,8 @@
     "generic": "Er is iets misgegaan, probeer het opnieuw.",
     "permissionDenied": "Je hebt geen toestemming voor deze actie.",
     "invalidArgument": "Sommige ingevoerde gegevens ontbreken of zijn ongeldig.",
-    "unauthenticated": "Je sessie is verlopen, log opnieuw in."
+    "unauthenticated": "Je sessie is verlopen, log opnieuw in.",
+    "emailNotVerified": "Verifieer uw e-mailadres om in te loggen. Klik op de link in uw inbox."
   },
   "trialExpired": {
     "titleCancelled": "Uw abonnement is geannuleerd",
@@ -801,7 +877,10 @@
     "needEmailFirst": "Voer eerst je e-mailadres in, daarna sturen we een herstellink.",
     "resetLinkSent": "Er is een link voor wachtwoordherstel verzonden naar {{email}}.",
     "tooManyAttemptsWait": "Te veel mislukte pogingen. Wacht {{seconds}} seconden.",
-    "lockedButton": "Even geduld ({{seconds}}s)"
+    "lockedButton": "Even geduld ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Uw account is nog niet geverifieerd. Klik op de link in uw e-mail.",
+    "resendVerificationButton": "Verificatie-e-mail opnieuw verzenden",
+    "verificationSent": "Verificatie-e-mail is opnieuw verzonden."
   },
   "exitPayments": {
     "title": "Betalingen bij uitgang",
@@ -821,5 +900,261 @@
     "tabCollected": "Ontvangen",
     "tabCancelled": "Geannuleerd",
     "tabAll": "Alles"
+  },
+  "support": {
+    "headerBadge": "KLANTENSERVICE & HELPCOMMUNICATIE",
+    "title": "Verzoek Indienen & Status Volgen",
+    "subtitle": "Dien technische storingen, draaikruistoegang, bevriezing van het lidmaatschap of suggesties in. Volg uw verzoek stap voor stap met uw unieke trackingnummer.",
+    "quickTrackBtn": "Zoeken op Trackingnummer",
+    "tabs": {
+      "create": "Nieuw Verzoek Indienen",
+      "track": "Status Controleren",
+      "history": "Mijn Eerdere Verzoeken"
+    },
+    "create": {
+      "categoryTitle": "Kies een Categorie",
+      "categoryDesc": "Selecteer de categorie die uw verzoek het beste omschrijft.",
+      "ticketDetailsTitle": "Details & Contactgegevens",
+      "ticketDetailsDesc": "Vul alle gegevens zo volledig mogelijk in voor een snelle afhandeling.",
+      "subject": "Onderwerp",
+      "subjectPlaceholder": "bijv. Draaikruis reageert niet op QR-code",
+      "description": "Gedetailleerde Beschrijving",
+      "descriptionPlaceholder": "Beschrijf het probleem, apparaat- of tijdsgegevens en eventuele stappen…",
+      "fullName": "Volledige Naam",
+      "fullNamePlaceholder": "Uw voor- en achternaam",
+      "email": "E-mailadres",
+      "emailPlaceholder": "voorbeeld@odivon.com",
+      "phone": "Telefoonnummer",
+      "phonePlaceholder": "+31 6 XX XX XX XX",
+      "priority": "Prioriteit",
+      "priorityNormal": "Normaal (Reguliere vraag of melding)",
+      "priorityUrgent": "Dringend (Verhindert toegang of handeling)",
+      "priorityCritical": "Kritiek (Hardware vergrendeld of totale storing)",
+      "submitBtn": "Verzoek Verzenden & Volgnummer Ontvangen",
+      "submitting": "Verzenden…",
+      "successTitle": "Uw Verzoek is Succesvol Ontvangen!",
+      "successDesc": "Uw verzoek is doorgestuurd naar ons supportteam. U kunt de voortgang op elk moment volgen.",
+      "trackingNoLabel": "Uw Trackingnummer",
+      "copyTrackingNo": "Kopiëren",
+      "copied": "Gekopieerd!",
+      "trackNowBtn": "Nu Verzoek Volgen",
+      "createNewBtn": "Nog een Verzoek Indienen"
+    },
+    "track": {
+      "title": "Verzoekstatus Opvragen",
+      "subtitle": "Voer het verstrekte trackingnummer in TK-XXXXXX formaat in om de huidige voortgang te bekijken.",
+      "inputPlaceholder": "bijv. TK-2026-A1B2C3",
+      "queryBtn": "Zoeken",
+      "querying": "Zoeken…",
+      "recentTitle": "Recent Aangemaakt Verzoek",
+      "notFound": "Geen ondersteuningsverzoek gevonden met dit trackingnummer.",
+      "notFoundHint": "Controleer uw trackingnummer (TK-YYYY-XXXXXX) en probeer het opnieuw."
+    },
+    "history": {
+      "title": "Uw Eerdere Verzoeken",
+      "subtitle": "Alle meldingen en verzoeken ingediend via dit account.",
+      "refresh": "Vernieuwen",
+      "empty": "U heeft nog geen actieve ondersteuningsverzoeken.",
+      "openNew": "Dien Uw Eerste Verzoek In"
+    },
+    "status": {
+      "received": "Ontvangen / Doorgestuurd",
+      "in_review": "In Beoordeling",
+      "in_progress": "In Behandeling",
+      "resolved": "Opgelost",
+      "closed": "Gesloten",
+      "rejected": "Afgewezen"
+    },
+    "categories": {
+      "technical_support": "Technische Ondersteuning",
+      "technical_support_desc": "App, netwerk, vastlopende schermen of softwarefouten.",
+      "turnstile_access": "Draaikruis & Toegangscontrole",
+      "turnstile_access_desc": "QR-code problemen, kaartregistratie of doorgangsstoringen.",
+      "membership_freeze": "Lidmaatschap & Bevriezing",
+      "membership_freeze_desc": "Verlenging, pauzeren, overdragen of opzeggen van pakketten.",
+      "billing_payment": "Betaling, Kassa & Factuur",
+      "billing_payment_desc": "Termijnbetalingen, pinnen, e-facturen of restitutieverzoeken.",
+      "feature_request": "Suggestie & Verbetering",
+      "feature_request_desc": "Nieuwe functies of ideeën die u graag in de club wilt zien.",
+      "general_inquiry": "Algemene Vragen & Info",
+      "general_inquiry_desc": "Openingstijden, groepslessen of informatie over trainers.",
+      "complaint_suggestion": "Klacht & Kwaliteit",
+      "complaint_suggestion_desc": "Feedback over hygiëne, clubinrichting of dienstverlening."
+    }
+  },
+  "members": {
+    "title": "Ledenadministratie",
+    "subtitle": "Zoek, filter, beheer lidmaatschapsstatus of voeg nieuwe leden toe.",
+    "newMember": "Nieuw Lid",
+    "missingTenantTitle": "Account niet gekoppeld aan een sportschool.",
+    "missingTenantDesc": "Dit account is aangemaakt vóór multi-tenant ondersteuning; tenantId ontbreekt in profiel.",
+    "activeMembers": "Actieve Leden",
+    "archived": "Gearchiveerd",
+    "archivedBadge": "Archief",
+    "archiveNotice": "Gearchiveerde leden worden geblokkeerd bij draaikruisen en kunnen met één klik worden hersteld.",
+    "searchPlaceholder": "Zoek op naam, e-mail, telefoon of vestiging...",
+    "branch": "Vestiging",
+    "branchFilterAll": "Alle Vestigingen",
+    "loading": "Laden…",
+    "balance": "Saldo",
+    "untilDate": "Tot {{date}}",
+    "perPage": "Per Pagina:",
+    "firstPage": "Eerste Pagina",
+    "prevPage": "Vorige Pagina",
+    "nextPage": "Volgende Pagina",
+    "lastPage": "Laatste Pagina",
+    "noMatchFound": "Geen leden gevonden",
+    "noMatchDesc": "Geen resultaten gevonden voor \"{{term}}\".",
+    "noArchivedFound": "Geen gearchiveerde leden",
+    "noArchivedDesc": "Er bevinden zich geen leden in het archief.",
+    "noMembersFound": "Nog geen leden toegevoegd",
+    "noMembersDesc": "Begin met het toevoegen van uw eerste lid.",
+    "addFirstMember": "+ Eerste Lid Toevoegen",
+    "table": {
+      "member": "Lid",
+      "branch": "Vestiging",
+      "contact": "Contact",
+      "gender": "Geslacht",
+      "status": "Status",
+      "package": "Pakket",
+      "registerDate": "Inschrijfdatum",
+      "actions": "Acties"
+    },
+    "status": {
+      "trial": "Proef",
+      "active": "Actief",
+      "expired": "Verlopen",
+      "cancelled": "Geannuleerd"
+    },
+    "gender": {
+      "female": "Vrouw",
+      "male": "Man",
+      "unspecified": "Niet gespecificeerd"
+    },
+    "actions": {
+      "archive": "Lid Archiveren",
+      "unarchive": "Dearchiveren & Activeren",
+      "delete": "Profiel verwijderen"
+    },
+    "wallet": {
+      "title": "Saldo",
+      "current": "Huidig saldo",
+      "transaction": "Transactie",
+      "deposit": "Saldo Opwaarderen",
+      "debit": "Saldo Afboeken",
+      "amount": "Bedrag",
+      "paymentMethod": "Betaalmethode",
+      "cash": "Contant",
+      "card": "Pinpas / Creditcard",
+      "transfer": "Bankoverschrijving",
+      "description": "Omschrijving",
+      "save": "Opslaan"
+    }
+  },
+  "packages": {
+    "title": "Pakketten & Prijzen",
+    "subtitle": "Beheer clubbrede lidmaatschappen, trainer-specifieke PT-pakketten en provisies.",
+    "addNew": "+ Nieuw Pakket",
+    "filterAll": "Alle Pakketten",
+    "filterClub": "Clubbreed",
+    "filterStaff": "Trainer Specifiek",
+    "allTrainers": "Alle Trainers",
+    "searchPlaceholder": "Zoek op pakketnaam, personeel of barcode...",
+    "loading": "Laden…",
+    "table": {
+      "package": "Pakket & Bereik",
+      "category": "Categorie",
+      "duration": "Duur",
+      "sessions": "Sessies & Toegang",
+      "pricing": "Prijs & Opbrengst",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "status": {
+      "active": "Actief",
+      "inactive": "Inactief"
+    },
+    "sessionsUnlimited": "Onbeperkt",
+    "daysUnit": "dagen",
+    "drawer": {
+      "scopeTitle": "Pakketbereik",
+      "scopeClub": "Clubbreed Pakket",
+      "scopeStaff": "Personeel / PT Specifiek",
+      "staffConfig": "Trainer & Provisieconfiguratie",
+      "selectStaff": "-- Selecteer Medewerker --",
+      "addStaffRate": "Tarief Toevoegen",
+      "staff": "Medewerker",
+      "price": "Prijs",
+      "commission": "Provisie (%)",
+      "durationConfig": "Geldigheidsduur",
+      "unit": "Eenheid",
+      "save": "Opslaan",
+      "cancel": "Annuleren"
+    }
+  },
+  "accounting": {
+    "title": "Boekhouding & Kassa",
+    "subtitle": "Kassabewegingen, dagafsluitingen (Z-rapporten) en gedetailleerde kostenanalyses.",
+    "tabs": {
+      "ledger": "Kassaboek (Inkomsten & Uitgaven)",
+      "dailyClose": "Dagafsluiting & Z-Rapport",
+      "analytics": "Kosten & Categorie-analyse"
+    },
+    "actions": {
+      "manageCategories": "Beheer Categorieën",
+      "newEntry": "Nieuwe Boeking",
+      "refreshLive": "Vernieuwen",
+      "closeDay": "Dag Afsluiten & Tellen",
+      "exportCsv": "Excel / CSV Exporteren"
+    }
+  },
+  "staff": {
+    "badge": "Rollen & Bevoegdheden",
+    "title": "Personeel & Rollen",
+    "subtitle": "Eigenaar, vestigingsmanager, fitnesstrainers en receptiemedewerkers.",
+    "newStaff": "Nieuwe Medewerker",
+    "simulation": "Simulatie",
+    "endSimulation": "Simulatie Beëindigen",
+    "kpi": {
+      "totalStaff": "Totaal Team",
+      "allBranches": "Alle vestigingen geregistreerd",
+      "activeTrainers": "Actieve Trainers",
+      "reception": "Receptie & Balie",
+      "management": "Management"
+    }
+  },
+  "branches": {
+    "title": "Vestigingen & Faciliteiten",
+    "subtitle": "Beheer vestigingen: logo, openingsdagen, uren en capaciteit.",
+    "newBranch": "Nieuwe vestiging"
+  },
+  "guestMembers": {
+    "title": "Gastleden & Lead Tracking",
+    "subtitle": "Beheer potentiële leden, enquêtes en opvolging in één dashboard.",
+    "newGuest": "Nieuwe gast"
+  },
+  "programRequests": {
+    "title": "Programma-aanvragen",
+    "subtitle": "Aanvragen van leden voor trainingsschema's door coaches."
+  },
+  "reports": {
+    "title": "Rapporten & Analyse",
+    "subtitle": "Financiële overzichten, verloop, bezettingsgraad en prestatiemetingen."
+  },
+  "gymInfo": {
+    "title": "Club- en Gymgegevens",
+    "subtitle": "Clubcontactgegevens, bedrijfsnaam, logo en algemene instellingen."
+  },
+  "products": {
+    "title": "Product- & Voorraadbeheer",
+    "subtitle": "Beheer café-artikelen, supplementen, kleding en barcodes."
+  },
+  "eInvoice": {
+    "title": "Facturatie & E-facturatie",
+    "subtitle": "Officiële e-facturatie, creditfacturen en fiscale rapportage."
+  },
+  "suppliers": {
+    "title": "Leveranciers & Crediteuren",
+    "subtitle": "Leverancierssaldi, inkoopfacturen en voorraadaankopen."
   }
 }

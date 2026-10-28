@@ -1,4 +1,5 @@
-<div class="space-y-6 font-sans pb-16">
+<div class="space-y-10 font-sans pb-20 max-w-7xl mx-auto px-4 sm:px-6">
+
   <!-- Süresi bitti uyarısı -->
   @if (subService.isExpired()) {
     <div class="p-5 sm:p-6 rounded-3xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -23,290 +24,322 @@
     </div>
   }
 
-  <!-- 1. Hero: mevcut plan ve abonelik durumu -->
-  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white shadow-xl shadow-indigo-900/20">
-    <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-3xl"></div>
-    <div class="pointer-events-none absolute -bottom-32 left-1/3 w-80 h-80 rounded-full bg-fuchsia-400/20 blur-3xl"></div>
-
-    <div class="relative p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 lg:items-center">
-      <div class="space-y-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/15 border border-white/20 backdrop-blur-sm">
-            <mat-icon class="icon-size-3.5">workspace_premium</mat-icon>
-            Odivon aboneliği
-          </span>
-          <span
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
-            [ngClass]="{
-              'bg-emerald-400/20 border-emerald-300/40 text-emerald-50': status().tone === 'emerald',
-              'bg-amber-400/20 border-amber-300/40 text-amber-50': status().tone === 'amber',
-              'bg-rose-500/30 border-rose-300/50 text-rose-50': status().tone === 'rose'
-            }"
-          >
-            <span class="w-1.5 h-1.5 rounded-full animate-pulse"
-              [ngClass]="{ 'bg-emerald-300': status().tone === 'emerald', 'bg-amber-300': status().tone === 'amber', 'bg-rose-300': status().tone === 'rose' }"></span>
-            {{ status().label }}
-          </span>
-          @if (paymentProviders()?.available?.[0]; as p) {
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 border border-white/15 text-indigo-100">
-              <mat-icon class="icon-size-3.5">{{ p.configured && p.mode === 'live' ? 'lock' : 'science' }}</mat-icon>
-              {{ p.configured ? (p.mode === 'live' ? 'Kartla ödeme açık' : 'Test ortamı · ödemeler aboneliği değiştirmez') : 'Online ödeme henüz açık değil' }}
-            </span>
-          }
-          @if (features.simulations) {
-            <button type="button" (click)="subService.toggleDemoExpired()" class="text-[10px] text-indigo-200 hover:text-white underline cursor-pointer">
-              {{ subService.isExpired() ? ('saasSubscription.normalModeBtn' | transloco) : ('saasSubscription.simulateExpiredBtn' | transloco) }}
-            </button>
-          }
-        </div>
-
-        <div>
-          <p class="text-xs font-semibold text-indigo-200 m-0">Mevcut planınız</p>
-          <h1 class="text-3xl sm:text-4xl font-black tracking-tight leading-tight m-0">{{ activePlan().name }}</h1>
-          <p class="text-sm text-indigo-100/90 mt-1 mb-0 max-w-xl">{{ activePlan().tagline }}</p>
-        </div>
-
-        @if (billing(); as b) {
-          <p class="m-0 text-sm font-semibold" [ngClass]="b.inGrace ? 'text-rose-100' : 'text-indigo-50'">
-            @if (b.subscriptionEndsAt) {
-              @if (b.inGrace) {
-                Aboneliğiniz {{ date(b.subscriptionEndsAt) }} tarihinde bitti. {{ date(b.graceEndsAt) }} tarihine kadar ek süredesiniz; yenilemezseniz panel erişimi kapanır.
-              } @else {
-                {{ date(b.subscriptionEndsAt) }} tarihine kadar geçerli. Erken yenilemede yeni dönem mevcut bitişten başlar.
-              }
-            } @else {
-              Henüz ücretli dönem yok. Plan seçip kartla ödediğinizde aboneliğiniz hemen açılır.
-            }
-          </p>
-        }
-        @if (paymentError()) {
-          <p class="m-0 inline-flex items-center gap-1.5 text-xs font-bold text-rose-100 bg-rose-500/30 border border-rose-300/40 rounded-lg px-2.5 py-1">
-            <mat-icon class="icon-size-4">error_outline</mat-icon>{{ paymentError() }}
-          </p>
-        }
-      </div>
-
-      <!-- Kalan gün ve hızlı aksiyon -->
-      <div class="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 lg:min-w-56">
-        @if (billing()?.daysLeft !== null && billing()?.daysLeft !== undefined && !billing()?.inGrace) {
-          <div class="flex-1 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-sm p-4">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 block">Kalan süre</span>
-            <div class="flex items-baseline gap-1.5 mt-1">
-              <span class="text-4xl font-black leading-none tracking-tight">{{ billing()!.daysLeft }}</span>
-              <span class="text-sm font-bold text-indigo-200">gün</span>
-            </div>
-          </div>
-        } @else if (subService.isTrial()) {
-          <div class="flex-1 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-sm p-4">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 block">Deneme süresi</span>
-            <div class="flex items-baseline gap-1.5 mt-1">
-              <span class="text-4xl font-black leading-none tracking-tight">{{ subService.trialDaysLeft() }}</span>
-              <span class="text-sm font-bold text-indigo-200">gün kaldı</span>
-            </div>
-          </div>
-        }
-        <button
-          type="button"
-          (click)="openUpgradeModal(activePlan())"
-          class="px-5 py-3 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-bold text-sm shadow-lg shadow-indigo-950/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-        >
-          <mat-icon class="icon-size-5">autorenew</mat-icon>
-          Planı Yenile
+  <!-- 1. En Üst Simülasyon / Durum Hapı (Pill) -->
+  <div class="flex items-center justify-center pt-2">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/80 text-indigo-700 dark:text-indigo-300 shadow-2xs">
+      <span>{{ status().label }}</span>
+      @if (features.simulations) {
+        <span class="text-indigo-300">·</span>
+        <button type="button" (click)="subService.toggleDemoExpired()" class="hover:underline font-bold text-indigo-800 dark:text-indigo-200 cursor-pointer">
+          {{ subService.isExpired() ? ('saasSubscription.normalModeBtn' | transloco) : ('saasSubscription.simulateExpiredBtn' | transloco) }}
         </button>
-      </div>
+      }
     </div>
-  </section>
+  </div>
 
-  <!-- 2. Kota kullanımı -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    @for (u of usage(); track u.label) {
-      @let warn = !u.unlimited && u.pct >= 80;
-      @let full = !u.unlimited && u.pct >= 100;
-      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ u.label }} kullanımı</span>
-          <div
-            class="w-10 h-10 rounded-xl flex items-center justify-center"
-            [ngClass]="{
-              'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300': u.color === 'indigo',
-              'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300': u.color === 'emerald',
-              'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300': u.color === 'sky'
-            }"
-          >
-            <mat-icon class="icon-size-5">{{ u.icon }}</mat-icon>
-          </div>
+  <!-- 2. Hero Başlık Alanı (Referans görseldeki gibi ortalanmış, büyük, modern gradient başlıklı) -->
+  <div class="text-center max-w-3xl mx-auto space-y-3">
+    <h1 class="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight m-0">
+      Salonunuzu Büyütecek <br />
+      <span class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+        Şeffaf & Esnek Paketler
+      </span>
+    </h1>
+    <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed m-0 font-medium">
+      Sürpriz maliyet, gizli kurulum ücreti veya taahhüt yok. Spor salonunuz için en uygun planı seçin, randevudan kasaya tam kontrole geçin.
+    </p>
+  </div>
+
+  <!-- 3. Deneme / Abonelik Durum Kartı (Görseldeki beyaz, şık progress barlı kart) -->
+  <div class="max-w-4xl mx-auto p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+    <div class="flex items-center gap-3.5">
+      <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/30">
+        <mat-icon class="icon-size-5">workspace_premium</mat-icon>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
+            @if (subService.isTrial()) {
+              14 Günlük Ücretsiz Deneme Aktif
+            } @else {
+              Odivon Aboneliği Aktif ({{ activePlan().name }})
+            }
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+            TÜM ÖZELLİKLER AÇIK
+          </span>
         </div>
-        <div class="mt-3 flex items-baseline gap-1.5">
-          <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{{ u.used }}</span>
-          <span class="text-sm font-bold text-slate-400">/ {{ u.unlimited ? ('saasSubscription.unlimited' | transloco) : u.max }}</span>
-        </div>
-        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-4">
-          <div
-            class="h-full rounded-full transition-all"
-            [style.width.%]="u.pct"
-            [ngClass]="full ? 'bg-rose-500' : warn ? 'bg-amber-500' : {
-              'bg-indigo-500': u.color === 'indigo', 'bg-emerald-500': u.color === 'emerald', 'bg-sky-500': u.color === 'sky'
-            }"
-          ></div>
-        </div>
-        <p class="m-0 mt-2 text-xs font-semibold" [ngClass]="full ? 'text-rose-600 dark:text-rose-400' : warn ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'">
-          @if (u.unlimited) {
-            Bu planda sınır yok
-          } @else if (full) {
-            Limit doldu, üst plana geçin
-          } @else if (warn) {
-            Limite yaklaşıyorsunuz (%{{ u.pct }})
+        <p class="text-xs text-slate-500 dark:text-slate-400 m-0 mt-0.5">
+          @if (subService.isTrial()) {
+            Deneme sürenizin bitmesine {{ subService.trialDaysLeft() }} gün kaldı. Kredi kartı gerekmez.
+          } @else if (billing()?.subscriptionEndsAt) {
+            {{ date(billing()!.subscriptionEndsAt) }} tarihine kadar geçerli. Erken yenilemede yeni dönem mevcut bitişten başlar.
           } @else {
-            %{{ u.pct }} kullanılıyor
+            Aboneliğiniz aktif durumda.
           }
         </p>
       </div>
-    }
-  </div>
-
-  <!-- 3. Planlar -->
-  <section class="space-y-5 pt-2">
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-      <div>
-        <h2 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight m-0">Planlar</h2>
-        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 m-0 mt-0.5">Salonunuz büyüdükçe planınızı yükseltin; yeni dönem mevcut bitişin sonuna eklenir.</p>
-      </div>
-      <div class="self-start sm:self-auto p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1">
-        <button
-          type="button"
-          (click)="setCycle('monthly')"
-          class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          [ngClass]="selectedCycle() === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
-        >
-          Aylık
-        </button>
-        <button
-          type="button"
-          (click)="setCycle('yearly')"
-          class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-          [ngClass]="selectedCycle() === 'yearly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
-        >
-          Yıllık
-          <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">2 ay hediye</span>
-        </button>
-      </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
-      @for (plan of plans(); track plan.id) {
-        @let isCurrent = isCurrentPlan(plan.id);
-        @let isPro = plan.id === 'pro';
-        @let isEnt = plan.id === 'enterprise';
-
-        <div
-          class="relative flex flex-col rounded-3xl p-6 transition-all duration-200 hover:-translate-y-1"
-          [ngClass]="isPro
-            ? 'bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-xl shadow-indigo-500/15 md:-mt-2 md:mb-2'
-            : isEnt
-              ? 'bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700 text-white shadow-lg'
-              : 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md'"
-        >
-          @if (isPro) {
-            <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/30 whitespace-nowrap">
-              {{ 'saasSubscription.mostPopular' | transloco }}
-            </div>
+    <div class="flex flex-col md:items-end gap-1.5 min-w-[220px]">
+      <div class="flex items-center justify-between w-full md:w-auto md:gap-4 text-xs">
+        <span class="font-semibold text-slate-500 dark:text-slate-400">Kalan Süre</span>
+        <span class="font-black text-indigo-600 dark:text-indigo-400">
+          @if (subService.isTrial()) {
+            {{ subService.trialDaysLeft() }} / 14 Gün
+          } @else if (billing()?.daysLeft !== null && billing()?.daysLeft !== undefined) {
+            {{ billing()!.daysLeft }} Gün
+          } @else {
+            Aktif
           }
+        </span>
+      </div>
+      <div class="w-full md:w-52 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+        <div
+          class="h-full rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 transition-all duration-500"
+          [style.width.%]="trialProgressPct()"
+        ></div>
+      </div>
+    </div>
+  </div>
 
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="text-lg font-black m-0" [ngClass]="isEnt ? 'text-white' : 'text-slate-900 dark:text-white'">{{ plan.name }}</h3>
-              <span class="text-[10px] font-bold uppercase tracking-wider" [ngClass]="isEnt ? 'text-sky-300' : isPro ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">{{ plan.badge }}</span>
-            </div>
-            @if (isCurrent) {
-              <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
-                <mat-icon class="icon-size-3.5">check</mat-icon>Mevcut plan
-              </span>
-            }
+  <!-- 4. Fatura Döngüsü Seçici (Aylık / Yıllık) -->
+  <div class="flex flex-col items-center justify-center space-y-2.5">
+    <div class="inline-flex items-center p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
+      <button
+        type="button"
+        (click)="setCycle('monthly')"
+        class="px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        [ngClass]="selectedCycle() === 'monthly'
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        Aylık Faturalandırma
+      </button>
+      <button
+        type="button"
+        (click)="setCycle('yearly')"
+        class="px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2"
+        [ngClass]="selectedCycle() === 'yearly'
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span>Yıllık Faturalandırma</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tight bg-amber-400 text-slate-950 shadow-xs">
+          %20 İNDİRİM (2 AY HEDİYE)
+        </span>
+      </button>
+    </div>
+    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 m-0">
+      <mat-icon class="text-[16px] w-4 h-4">check_circle</mat-icon>
+      Yıllık seçiminizde 2 ay kullanım hediye edilmektedir.
+    </p>
+  </div>
+
+  <!-- 5. Üçlü Paket Kartları (Başlangıç, Profesyonel, Kurumsal) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch pt-2">
+    @for (plan of plans(); track plan.id) {
+      @let isCurrent = isCurrentPlan(plan.id);
+      @let isPro = plan.id === 'pro';
+
+      <div
+        class="relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 transition-all duration-300 hover:shadow-xl bg-white dark:bg-slate-900 border"
+        [ngClass]="isPro
+          ? 'border-2 border-indigo-600 shadow-xl shadow-indigo-500/10 md:-translate-y-2'
+          : 'border-slate-200/90 dark:border-slate-800 shadow-sm'"
+      >
+        <!-- En Çok Tercih Edilen Floating Pill (Sadece Pro'da) -->
+        @if (isPro) {
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white shadow-md shadow-indigo-500/30 whitespace-nowrap">
+            <mat-icon class="text-[13px] w-3.5 h-3.5">auto_awesome</mat-icon>
+            EN ÇOK TERCİH EDİLEN
           </div>
-          <p class="text-xs font-medium mt-2 mb-0 min-h-[2.5rem]" [ngClass]="isEnt ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'">{{ plan.tagline }}</p>
+        }
 
-          <div class="mt-5">
-            <div class="flex items-baseline gap-1">
-              <span class="text-4xl font-black tracking-tight leading-none" [ngClass]="isEnt ? 'text-white' : 'text-slate-900 dark:text-white'">{{ tl(getPrice(plan)) }}</span>
-              <span class="text-xs font-bold" [ngClass]="isEnt ? 'text-slate-400' : 'text-slate-400'">{{ getPeriodLabel() }}</span>
+        <div>
+          <!-- Üst Rozet ve İkon -->
+          <div class="flex items-start justify-between gap-3">
+            <span
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
+              [ngClass]="isPro
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800'
+                : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'"
+            >
+              {{ getCardBadgeLabel(plan.id) }}
+            </span>
+            <div
+              class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              [ngClass]="isPro
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'"
+            >
+              <mat-icon class="icon-size-4.5">{{ getCardIcon(plan.id) }}</mat-icon>
             </div>
-            <p class="text-[11px] font-semibold mt-1.5 mb-0 min-h-[1rem]" [ngClass]="isEnt ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'">
+          </div>
+
+          <!-- Plan Başlığı ve Açıklaması -->
+          <div class="mt-3">
+            <div class="flex items-center gap-2">
+              <h2 class="text-2xl font-black text-slate-900 dark:text-white m-0 tracking-tight">{{ plan.name }}</h2>
+              @if (isCurrent) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                  <mat-icon class="icon-size-3">check</mat-icon>Mevcut plan
+                </span>
+              }
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-0 leading-relaxed min-h-[2.5rem]">
+              {{ plan.tagline }}
+            </p>
+          </div>
+
+          <!-- Fiyat Alanı -->
+          <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-baseline gap-1">
+              <span class="text-4xl sm:text-[2.6rem] font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                {{ tl(getDisplayPrice(plan)) }}
+              </span>
+              <span class="text-xs font-bold text-slate-400">/ ay</span>
+            </div>
+            <p class="text-[11px] font-semibold mt-1.5 mb-0 min-h-[1.2rem]">
               @if (selectedCycle() === 'yearly') {
-                Aylık {{ tl(getMonthlyEquivalent(plan)) }}
-                @if (yearlySaving(plan) > 0) {
-                  <span class="text-emerald-600 dark:text-emerald-400" [class.!text-emerald-300]="isEnt"> · {{ tl(yearlySaving(plan)) }} tasarruf</span>
-                }
+                <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                  Yıllık tek fatura: {{ tl(getPrice(plan)) }}
+                </span>
               } @else {
-                Aylık faturalandırılır
+                <span class="text-slate-400">Aylık faturalandırılır</span>
               }
             </p>
           </div>
 
-          <!-- Limitler -->
-          <div class="grid grid-cols-3 gap-2 mt-5">
-            @for (lim of [
-              { icon: 'group', value: plan.limits.maxMembers >= 999999 ? '∞' : plan.limits.maxMembers, label: 'Üye' },
-              { icon: 'store', value: plan.limits.maxBranches >= 9999 ? '∞' : plan.limits.maxBranches, label: 'Şube' },
-              { icon: 'badge', value: plan.limits.maxStaff >= 9999 ? '∞' : plan.limits.maxStaff, label: 'Personel' }
-            ]; track lim.label) {
-              <div class="rounded-xl px-2 py-2.5 text-center" [ngClass]="isEnt ? 'bg-white/5 border border-white/10' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800'">
-                <div class="text-sm font-black" [class.text-lg]="lim.value === '∞'" [class.leading-5]="lim.value === '∞'" [ngClass]="isEnt ? 'text-white' : 'text-slate-900 dark:text-white'">{{ lim.value }}</div>
-                <div class="text-[10px] font-bold uppercase tracking-wider" [ngClass]="isEnt ? 'text-slate-400' : 'text-slate-400'">{{ lim.label }}</div>
+          <!-- Hızlı Limit Özeti Kutuları -->
+          <div class="grid grid-cols-3 gap-2 my-5">
+            <div class="rounded-xl py-2 px-1 text-center bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+              <div class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                {{ plan.limits.maxMembers >= 999999 ? '∞' : (plan.limits.maxMembers | number) }}
               </div>
-            }
+              <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">ÜYE</div>
+            </div>
+            <div class="rounded-xl py-2 px-1 text-center bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+              <div class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                {{ plan.limits.maxBranches >= 9999 ? '∞' : plan.limits.maxBranches }}
+              </div>
+              <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">ŞUBE</div>
+            </div>
+            <div class="rounded-xl py-2 px-1 text-center bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+              <div class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                {{ plan.limits.maxStaff >= 9999 ? '∞' : plan.limits.maxStaff }}
+              </div>
+              <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">PERSONEL</div>
+            </div>
           </div>
 
-          <!-- Özellikler -->
-          <ul class="list-none p-0 m-0 mt-5 space-y-2.5 text-xs flex-1">
-            @for (f of plan.features; track f.name) {
-              <li class="flex items-start gap-2">
-                @if (f.included) {
-                  <span class="mt-px w-4 h-4 rounded-full flex items-center justify-center shrink-0" [ngClass]="isEnt ? 'bg-sky-400/20 text-sky-300' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'">
-                    <mat-icon class="icon-size-3">check</mat-icon>
-                  </span>
-                  <span class="font-semibold" [ngClass]="isEnt ? 'text-slate-200' : 'text-slate-700 dark:text-slate-300'">{{ f.name }}</span>
-                } @else {
-                  <span class="mt-px w-4 h-4 rounded-full flex items-center justify-center shrink-0 bg-slate-100 text-slate-400 dark:bg-slate-800">
-                    <mat-icon class="icon-size-3">remove</mat-icon>
-                  </span>
-                  <span class="text-slate-400 line-through decoration-slate-300 dark:decoration-slate-600">{{ f.name }}</span>
-                  @if (f.note) {
-                    <span class="ml-auto shrink-0 text-[10px] font-bold text-indigo-500">{{ f.note }}</span>
+          <!-- Paket Özellikleri Listesi -->
+          <div class="space-y-3">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+              PAKET ÖZELLİKLERİ
+            </span>
+            <ul class="list-none p-0 m-0 space-y-2.5 text-xs">
+              @for (f of plan.features; track f.name) {
+                <li class="flex items-start gap-2.5">
+                  @if (f.included) {
+                    <mat-icon class="text-slate-900 dark:text-white text-[17px] w-4.5 h-4.5 shrink-0 mt-0.5">check_circle</mat-icon>
+                    <span class="font-semibold text-slate-800 dark:text-slate-200 leading-snug">{{ f.name }}</span>
+                  } @else {
+                    <mat-icon class="text-slate-300 dark:text-slate-700 text-[17px] w-4.5 h-4.5 shrink-0 mt-0.5">cancel</mat-icon>
+                    <span class="text-slate-400 line-through decoration-slate-300 dark:decoration-slate-700 leading-snug">{{ f.name }}</span>
+                    @if (f.note) {
+                      <span class="ml-auto shrink-0 text-[10px] font-bold text-indigo-500">{{ f.note }}</span>
+                    }
                   }
-                }
-              </li>
-            }
-          </ul>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            (click)="openUpgradeModal(plan)"
-            class="mt-6 w-full py-3 px-4 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
-            [ngClass]="isCurrent
-              ? (isEnt ? 'bg-white/10 hover:bg-white/15 text-white border border-white/15' : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100')
-              : isPro
-                ? 'bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md shadow-indigo-500/25'
-                : isEnt
-                  ? 'bg-white hover:bg-slate-100 text-slate-900'
-                  : 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white'"
-          >
-            <span>{{ ctaLabel(plan) }}</span>
-            <mat-icon class="icon-size-4">{{ isCurrent ? 'autorenew' : 'arrow_forward' }}</mat-icon>
-          </button>
+        <!-- Aksiyon Butonu -->
+        <button
+          type="button"
+          (click)="openUpgradeModal(plan)"
+          class="mt-7 w-full py-3.5 px-4 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99]"
+          [ngClass]="isCurrent
+            ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700'
+            : isPro
+              ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30'
+              : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 shadow-sm'"
+        >
+          <span>{{ getButtonLabel(plan) }}</span>
+          <mat-icon class="icon-size-4">{{ isCurrent ? 'autorenew' : 'arrow_forward' }}</mat-icon>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Güven Rozetleri -->
+  <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+    <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">verified_user</mat-icon>iyzico 3D Secure ile ödeme</span>
+    <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">lock</mat-icon>Kart bilgileriniz Odivon'da saklanmaz</span>
+    <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">receipt_long</mat-icon>Her ödeme için resmi e-fatura & makbuz</span>
+  </div>
+
+  <!-- 6. Kota Kullanımı Kartları (Üye, Şube, Personel) -->
+  <div class="pt-6">
+    <div class="mb-4">
+      <h3 class="text-base font-black text-slate-900 dark:text-white tracking-tight m-0">Kullanım & Kota Durumunuz</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 m-0 mt-0.5">Mevcut paketinizin kullanım limitleri ve doluluk oranları.</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      @for (u of usage(); track u.label) {
+        @let warn = !u.unlimited && u.pct >= 80;
+        @let full = !u.unlimited && u.pct >= 100;
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ u.label }} kullanımı</span>
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center"
+              [ngClass]="{
+                'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300': u.color === 'indigo',
+                'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300': u.color === 'emerald',
+                'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300': u.color === 'sky'
+              }"
+            >
+              <mat-icon class="icon-size-5">{{ u.icon }}</mat-icon>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline gap-1.5">
+            <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{{ u.used }}</span>
+            <span class="text-sm font-bold text-slate-400">/ {{ u.unlimited ? ('saasSubscription.unlimited' | transloco) : u.max }}</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-4">
+            <div
+              class="h-full rounded-full transition-all"
+              [style.width.%]="u.pct"
+              [ngClass]="full ? 'bg-rose-500' : warn ? 'bg-amber-500' : {
+                'bg-indigo-500': u.color === 'indigo', 'bg-emerald-500': u.color === 'emerald', 'bg-sky-500': u.color === 'sky'
+              }"
+            ></div>
+          </div>
+          <p class="m-0 mt-2 text-xs font-semibold" [ngClass]="full ? 'text-rose-600 dark:text-rose-400' : warn ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'">
+            @if (u.unlimited) {
+              Bu planda sınır yok
+            } @else if (full) {
+              Limit doldu, üst plana geçin
+            } @else if (warn) {
+              Limite yaklaşıyorsunuz (%{{ u.pct }})
+            } @else {
+              %{{ u.pct }} kullanılıyor
+            }
+          </p>
         </div>
       }
     </div>
+  </div>
 
-    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-      <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">verified_user</mat-icon>iyzico 3D Secure ile ödeme</span>
-      <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">lock</mat-icon>Kart bilgileriniz Odivon'da saklanmaz</span>
-      <span class="inline-flex items-center gap-1.5"><mat-icon class="icon-size-4 text-emerald-500">receipt_long</mat-icon>Her ödeme için makbuz</span>
-    </div>
-  </section>
-
-  <!-- 4. Ödeme geçmişi ve SSS -->
-  <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 items-start">
-    <section class="xl:col-span-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+  <!-- 7. Ödeme Geçmişi ve SSS -->
+  <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start pt-4">
+    <!-- Ödeme Geçmişi -->
+    <section class="xl:col-span-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center justify-center">
           <mat-icon class="icon-size-5">receipt_long</mat-icon>
@@ -360,7 +393,8 @@
       }
     </section>
 
-    <section class="xl:col-span-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-5">
+    <!-- Sıkça Sorulan Sorular -->
+    <section class="xl:col-span-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs p-5">
       <div class="flex items-center gap-3 mb-2">
         <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300 flex items-center justify-center">
           <mat-icon class="icon-size-5">help_outline</mat-icon>
@@ -390,69 +424,69 @@
     </section>
   </div>
 
-  <!-- 5. Ödeme paneli (sağdan açılır) -->
+  <!-- 8. Yükseltme & İyzico Checkout Modalı (Sağdan Açılır Drawer) -->
   @if (upgradeModalOpen() && selectedTargetPlan(); as target) {
     <div>
-    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50" (click)="closeUpgradeModal()"></div>
-    <div class="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800">
-      <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/25">
-            <mat-icon class="icon-size-5">credit_card</mat-icon>
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity" (click)="closeUpgradeModal()"></div>
+      <div class="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-200">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/25">
+              <mat-icon class="icon-size-5">credit_card</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-900 dark:text-white m-0">{{ target.name }} planı</h3>
+              <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 m-0 mt-0.5">Ödeme onaylanınca abonelik açılır; mevcut dönem varsa sonuna eklenir.</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-lg font-black text-slate-900 dark:text-white m-0">{{ target.name }} planı</h3>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 m-0 mt-0.5">Ödeme onaylanınca abonelik açılır; mevcut dönem varsa sonuna eklenir.</p>
-          </div>
+          <button
+            type="button"
+            (click)="closeUpgradeModal()"
+            aria-label="Kapat"
+            class="w-9 h-9 shrink-0 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-        <button
-          type="button"
-          (click)="closeUpgradeModal()"
-          aria-label="Kapat"
-          class="w-9 h-9 shrink-0 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-5">
+          <!-- Dönem seçimi -->
+          <div class="grid grid-cols-2 gap-2">
+            @for (c of ['monthly', 'yearly']; track c) {
+              @let cyc = $any(c);
+              <button
+                type="button"
+                (click)="setCycle(cyc)"
+                class="rounded-xl border-2 p-3 text-left transition-all cursor-pointer"
+                [ngClass]="selectedCycle() === cyc ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+              >
+                <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ cyc === 'yearly' ? 'Yıllık' : 'Aylık' }}</span>
+                <span class="block text-base font-black text-slate-900 dark:text-white mt-0.5">{{ tl(cyc === 'yearly' ? (serverPrices()?.[target.id]?.yearly ?? target.priceYearly) : (serverPrices()?.[target.id]?.monthly ?? target.priceMonthly)) }}</span>
+                @if (cyc === 'yearly' && yearlySaving(target) > 0) {
+                  <span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{{ tl(yearlySaving(target)) }} tasarruf</span>
+                }
+              </button>
+            }
+          </div>
+
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 p-4 text-xs space-y-2">
+            <div class="flex justify-between">
+              <span class="font-semibold text-slate-500">{{ 'saasSubscription.selectedPlanLabel' | transloco }}</span>
+              <strong class="text-slate-900 dark:text-white">{{ target.name }}</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-semibold text-slate-500">{{ 'saasSubscription.billingPeriodLabel' | transloco }}</span>
+              <strong class="text-slate-900 dark:text-white">{{ selectedCycle() === 'yearly' ? ('saasSubscription.yearly' | transloco) : ('saasSubscription.monthly' | transloco) }}</strong>
+            </div>
+            <div class="flex justify-between items-baseline pt-2 border-t border-slate-200 dark:border-slate-700">
+              <span class="font-bold text-slate-700 dark:text-slate-200">Ödenecek tutar</span>
+              <span class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{ tl(getPrice(target)) }} <span class="text-xs font-bold text-slate-400">{{ getPeriodLabel() }}</span></span>
+            </div>
+          </div>
+
+          <app-saas-checkout [planId]="target.id" [cycle]="selectedCycle()" />
+        </div>
       </div>
-
-      <div class="flex-1 overflow-y-auto p-6 space-y-5">
-        <!-- Dönem seçimi -->
-        <div class="grid grid-cols-2 gap-2">
-          @for (c of ['monthly', 'yearly']; track c) {
-            @let cyc = $any(c);
-            <button
-              type="button"
-              (click)="setCycle(cyc)"
-              class="rounded-xl border-2 p-3 text-left transition-all cursor-pointer"
-              [ngClass]="selectedCycle() === cyc ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-            >
-              <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ cyc === 'yearly' ? 'Yıllık' : 'Aylık' }}</span>
-              <span class="block text-base font-black text-slate-900 dark:text-white mt-0.5">{{ tl(cyc === 'yearly' ? (serverPrices()?.[target.id]?.yearly ?? target.priceYearly) : (serverPrices()?.[target.id]?.monthly ?? target.priceMonthly)) }}</span>
-              @if (cyc === 'yearly' && yearlySaving(target) > 0) {
-                <span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{{ tl(yearlySaving(target)) }} tasarruf</span>
-              }
-            </button>
-          }
-        </div>
-
-        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 p-4 text-xs space-y-2">
-          <div class="flex justify-between">
-            <span class="font-semibold text-slate-500">{{ 'saasSubscription.selectedPlanLabel' | transloco }}</span>
-            <strong class="text-slate-900 dark:text-white">{{ target.name }}</strong>
-          </div>
-          <div class="flex justify-between">
-            <span class="font-semibold text-slate-500">{{ 'saasSubscription.billingPeriodLabel' | transloco }}</span>
-            <strong class="text-slate-900 dark:text-white">{{ selectedCycle() === 'yearly' ? ('saasSubscription.yearly' | transloco) : ('saasSubscription.monthly' | transloco) }}</strong>
-          </div>
-          <div class="flex justify-between items-baseline pt-2 border-t border-slate-200 dark:border-slate-700">
-            <span class="font-bold text-slate-700 dark:text-slate-200">Ödenecek tutar</span>
-            <span class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{ tl(getPrice(target)) }} <span class="text-xs font-bold text-slate-400">{{ getPeriodLabel() }}</span></span>
-          </div>
-        </div>
-
-        <app-saas-checkout [planId]="target.id" [cycle]="selectedCycle()" />
-      </div>
-    </div>
     </div>
   }
 </div>

@@ -12,4 +12,10 @@ export const authRoutes: Routes = [
     loadComponent: () => import('./register/register').then((m) => m.Register),
     title: 'Kayıt Ol · OdivonGYM',
   },
+  {
+    path: 'verify-email',
+    loadComponent: () => import('./verify-email/verify-email').then((m) => m.VerifyEmail),
+    title: 'E-Posta Doğrulama · OdivonGYM',
+  },
 ];
+

@@ -278,11 +278,32 @@
 
       <!-- Error Message Banner -->
       @if (errorMessage()) {
-        <div class="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200">
-          <mat-icon class="icon-size-4.5 text-rose-500 flex-shrink-0">error_outline</mat-icon>
-          <p class="m-0 leading-relaxed">{{ errorMessage() }}</p>
+        <div class="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex flex-col gap-2.5 animate-in fade-in duration-200">
+          <div class="flex items-center gap-2.5">
+            <mat-icon class="icon-size-4.5 text-rose-500 flex-shrink-0">error_outline</mat-icon>
+            <p class="m-0 leading-relaxed">{{ errorMessage() }}</p>
+          </div>
+          @if (unverifiedEmail()) {
+            <div class="pt-1.5 border-t border-rose-200/60 dark:border-rose-800/40 flex justify-end">
+              <button
+                type="button"
+                (click)="resendVerificationEmail()"
+                [disabled]="resendingVerification()"
+                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                @if (resendingVerification()) {
+                  <span class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>{{ 'auth.verifyEmail.resending' | transloco }}</span>
+                } @else {
+                  <mat-icon class="icon-size-3.5">mark_email_unread</mat-icon>
+                  <span>{{ 'loginExtra.resendVerificationButton' | transloco }}</span>
+                }
+              </button>
+            </div>
+          }
         </div>
       }
+
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
         <!-- Email Field -->
@@ -342,16 +363,51 @@
         </div>
 
         <!-- Remember Me & Forgot Password -->
-        <div class="flex items-center justify-between gap-2 pt-0.5">
-          <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <mat-checkbox formControlName="rememberMe" color="primary" class="scale-90" />
-            <span>{{ 'auth.login.rememberMe' | transloco }}</span>
-          </label>
+        <div class="flex items-center justify-between gap-2 pt-1 pb-0.5">
+          <!-- Beni Hatırla Custom Checkbox -->
+          <div
+            class="flex items-center gap-2.5 group cursor-pointer select-none"
+            (click)="toggleRememberMe()"
+            role="checkbox"
+            [attr.aria-checked]="form.controls.rememberMe.value"
+            tabindex="0"
+            (keydown.space)="$event.preventDefault(); toggleRememberMe()"
+            (keydown.enter)="$event.preventDefault(); toggleRememberMe()"
+            [attr.aria-label]="'auth.login.rememberMe' | transloco"
+          >
+            <!-- Custom Checkbox Box with Indigo Glow -->
+            <div
+              class="w-5 h-5 rounded-lg border flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              [ngClass]="form.controls.rememberMe.value
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 border-indigo-500 text-white shadow-indigo-500/25 shadow-sm'
+                : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 group-hover:border-indigo-400 dark:group-hover:border-indigo-500'"
+            >
+              @if (form.controls.rememberMe.value) {
+                <mat-icon class="icon-size-3.5 text-white font-black">check</mat-icon>
+              }
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                {{ 'auth.login.rememberMe' | transloco }}
+              </span>
+
+              <!-- 30 Gün Güvenli Oturum Badge with Tooltip -->
+              <span
+                class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60"
+                [matTooltip]="'cookieConsent.rememberMeTooltip' | transloco"
+              >
+                30 Gün
+              </span>
+            </div>
+          </div>
+
+          <!-- Forgot Password Link -->
           <button
             type="button"
             (click)="forgotPassword()"
             [disabled]="resettingPassword()"
-            class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer bg-transparent border-none p-0"
+            class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline cursor-pointer bg-transparent border-none p-0 transition-colors shrink-0"
           >
             {{ resettingPassword() ? ('auth.login.forgotPasswordSending' | transloco) : ('auth.login.forgotPassword' | transloco) }}
           </button>
@@ -360,8 +416,8 @@
         <!-- Submit CTA -->
         <button
           type="submit"
-          [disabled]="submitting() || lockSecondsLeft() > 0"
           class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-1"
+          [disabled]="submitting() || lockSecondsLeft() > 0"
         >
           @if (submitting()) {
             <span class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -374,14 +430,52 @@
             <mat-icon class="icon-size-4">arrow_forward</mat-icon>
           }
         </button>
-      </form>
 
+        <!-- Clear Secondary CTA: 14 Gün Ücretsiz Deneme -->
+        <div class="pt-2">
+          <a
+            routerLink="/auth/register"
+            class="w-full py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/40 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-center gap-2 transition-all no-underline shadow-2xs"
+          >
+            <mat-icon class="icon-size-4 text-amber-500">verified</mat-icon>
+            <span>Yeni Salon İçin 14 Gün Ücretsiz Deneme Başlat</span>
+          </a>
+        </div>
+
+        <!-- Çerez ve Güvenlik Bilgilendirme Notu -->
+        <p class="text-[11px] text-slate-400 dark:text-slate-500 text-center m-0 pt-1 leading-snug">
+          {{ 'cookieConsent.loginHint' | transloco }}
+        </p>
+      </form>
 
     </div>
 
-    <!-- Bottom Copyright -->
-    <div class="text-center mt-6 text-xs text-slate-400">
-      © {{ currentYear }} OdivonGYM. {{ 'auth.login.allRightsReserved' | transloco }}
+    <!-- Bottom Copyright, Legal & Cookie Preferences -->
+    <div class="text-center mt-6 text-xs text-slate-400 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      <span>© {{ currentYear }} OdivonGYM. {{ 'auth.login.allRightsReserved' | transloco }}</span>
+      <span class="hidden sm:inline text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/terms"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Kullanım Şartları
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">·</span>
+      <a
+        routerLink="/privacy"
+        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors no-underline"
+      >
+        Gizlilik & KVKK
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">·</span>
+      <button
+        type="button"
+        (click)="openCookieSettings()"
+        class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
+      >
+        <mat-icon class="icon-size-3.5">cookie</mat-icon>
+        <span>{{ 'cookieConsent.footerLink' | transloco }}</span>
+      </button>
     </div>
   </section>
 </div>

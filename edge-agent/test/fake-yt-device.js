@@ -68,6 +68,7 @@ function startFakeYtDevice({ username = 'admin', password = 'secret' } = {}) {
         case 'SetUserInfo': {
           for (const { update, ...user } of data.users ?? []) {
             if (state.ignoreVaildEnd) user.vaildEnd = '20991231';
+            if (state.dashedDates) user.vaildEnd = String(user.vaildEnd).replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
             state.users.set(String(user.userId), { privilege: 0, ...user, name: String(user.name ?? '').slice(0, 9) });
           }
           return reply(0);

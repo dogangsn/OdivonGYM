@@ -145,8 +145,55 @@ export class AdminSubscription {
   }
 
   getMonthlyEquivalent(plan: SaasPlan): number {
-    return Math.round((this.serverPrices()?.[plan.id]?.yearly ?? plan.priceYearly) / 12);
+    const yearly = this.serverPrices()?.[plan.id]?.yearly ?? plan.priceYearly;
+    if (yearly > 0 && yearly < 12) {
+      return yearly;
+    }
+    return Math.round(yearly / 12);
   }
+
+  /** Kartta gösterilen ana fiyat rakamı (Yıllık modda aylık eşdeğer, Aylık modda doğrudan aylık tutar) */
+  getDisplayPrice(plan: SaasPlan): number {
+    if (this.selectedCycle() === 'yearly') {
+      return this.getMonthlyEquivalent(plan);
+    }
+    return this.getPrice(plan);
+  }
+
+  getCardIcon(planId: SaasPlanId): string {
+    switch (planId) {
+      case 'starter': return 'storefront';
+      case 'pro': return 'workspace_premium';
+      case 'enterprise': return 'apartment';
+      default: return 'fitness_center';
+    }
+  }
+
+  getCardBadgeLabel(planId: SaasPlanId): string {
+    switch (planId) {
+      case 'starter': return 'KÜÇÜK SALONLAR';
+      case 'pro': return 'EN POPÜLER';
+      case 'enterprise': return 'ZİNCİR SALONLAR';
+      default: return '';
+    }
+  }
+
+  getButtonLabel(plan: SaasPlan): string {
+    if (this.isCurrentPlan(plan.id)) return 'Planı Yenile';
+    switch (plan.id) {
+      case 'starter': return 'Başlangıç Paketini Seç';
+      case 'pro': return 'Profesyonel Paketini Seç';
+      case 'enterprise': return 'Kurumsal Paketini Seç';
+      default: return this.ctaLabel(plan);
+    }
+  }
+
+  readonly trialProgressPct = computed(() => {
+    if (!this.subService.isTrial()) return 100;
+    const left = this.subService.trialDaysLeft();
+    const total = 14;
+    return Math.min(100, Math.max(0, Math.round((left / total) * 100)));
+  });
 
   /** Planın bulunduğu kademe; mevcut plana göre "Yükselt" / "Geç" etiketini seçmek için. */
   private readonly planRank: Record<SaasPlanId, number> = { starter: 0, pro: 1, enterprise: 2 };

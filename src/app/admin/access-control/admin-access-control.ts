@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -21,6 +21,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AccessDirection, AccessStatus } from '../../core/models/access-log.model';
+import { UserProfile } from '../../core/models/user-profile.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { RouterLink } from '@angular/router';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
@@ -34,9 +35,9 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
     <div class="font-sans space-y-6">
       <!-- 1. Page Header -->
       <app-page-header
-        title="Turnike & Geçiş Kontrol"
+        title="accessControl.title"
         icon="nfc"
-        description="Turnike ve kart okuyucuları izle, geçiş kayıtlarını denetle, üye yetkilerinin cihazlara uygulanmasını takip et."
+        description="accessControl.desc"
       >
         <div actions class="flex items-center gap-2">
           <button
@@ -237,12 +238,65 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         }
       </div>
 
-      <!-- 3. Canlı Resepsiyon Kart / Barkod Okutma Çubuğu (Physical USB/Handheld Scanner Listener) -->
+      <!-- Senaryo B: Turnikeden Okunan Son Tanımsız Kart & Hızlı Atama İstasyonu -->
+      @if (latestUnassignedCard(); as unassigned) {
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-violet-500/10 border-2 border-dashed border-amber-400 dark:border-amber-600/80 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-2 duration-300">
+          <div class="flex items-center gap-3.5">
+            <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 shrink-0">
+              <mat-icon class="icon-size-6">nfc</mat-icon>
+              <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Turnikeden Tanımsız Kart Okutuldu!</span>
+                <span class="px-2.5 py-0.5 rounded-lg bg-white dark:bg-slate-800 font-mono text-sm font-black text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {{ unassigned.card }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 mb-0">
+                <strong>{{ unassigned.gateName }}</strong> turnikesinden okutuldu · {{ formatRelative(unassigned.timestamp) }}
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              (click)="openAssignCardDialog(unassigned.card!)"
+              class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <mat-icon class="icon-size-4">person_add</mat-icon>
+              <span>Mevcut Üyeye Ata</span>
+            </button>
+            <button
+              type="button"
+              (click)="copyCard(unassigned.card!)"
+              class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <mat-icon class="icon-size-4">content_copy</mat-icon>
+              <span>Kopyala</span>
+            </button>
+            <button
+              type="button"
+              (click)="dismissUnassignedCard(unassigned.card!)"
+              class="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors"
+              matTooltip="Bildirimi Kapat"
+            >
+              <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 3. Resepsiyon USB okuyucu: QR geçişi veya RFID kart atama -->
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+        <div class="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0">
+          <button type="button" (click)="scannerMode.set('qr'); barcodeInput = ''" [class.bg-emerald-600]="scannerMode() === 'qr'" [class.text-white]="scannerMode() === 'qr'" class="px-3 py-2 text-xs font-bold cursor-pointer">QR geçiş</button>
+          <button type="button" (click)="scannerMode.set('card'); barcodeInput = ''" [class.bg-indigo-600]="scannerMode() === 'card'" [class.text-white]="scannerMode() === 'card'" class="px-3 py-2 text-xs font-bold cursor-pointer">Kartı üyeye ata</button>
+        </div>
         <div class="relative flex-1 w-full">
           <input
             type="text"
-            placeholder="Fiziksel USB Barkod/QR Okuyucu ile Okutun veya Kart/QR Kodu Girin (Enter)..."
+            [placeholder]="scannerMode() === 'card' ? 'USB RFID okuyucuyla kartı okutun veya numarasını yazın (Enter)' : 'QR / barkod okuyucuyla okutun veya kodu yazın (Enter)'"
             class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             [(ngModel)]="barcodeInput"
             (keydown.enter)="onBarcodeScanned()"
@@ -255,8 +309,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
           [disabled]="!barcodeInput.trim() || scanning()"
           class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
         >
-          <mat-icon class="icon-size-4">{{ scanning() ? 'sync' : 'bolt' }}</mat-icon>
-          <span>{{ scanning() ? 'Doğrulanıyor...' : 'Kodu Doğrula / Geçiş İzni Ver' }}</span>
+          <mat-icon class="icon-size-4">{{ scanning() ? 'sync' : scannerMode() === 'card' ? 'credit_card' : 'bolt' }}</mat-icon>
+          <span>{{ scannerMode() === 'card' ? 'Kartı üyeye ata' : scanning() ? 'Doğrulanıyor...' : 'QR geçişini doğrula' }}</span>
         </button>
       </div>
 
@@ -549,7 +603,37 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                           {{ log.userName.charAt(0) || 'Ü' }}
                         </span>
                       }
-                      <span class="font-bold text-slate-900 dark:text-white">{{ log.userName }}</span>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="font-bold text-slate-900 dark:text-white">{{ log.userName }}</span>
+                          @if (!log.userId && log.card) {
+                            <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                              Tanımsız Kart
+                            </span>
+                            <button
+                              type="button"
+                              (click)="openAssignCardDialog(log.card, $event)"
+                              class="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                              matTooltip="Bu kartı bir üyeye bağla"
+                            >
+                              <mat-icon class="icon-size-3">person_add</mat-icon>
+                              <span>Üyeye Ata</span>
+                            </button>
+                          }
+                        </div>
+                        @if (log.card) {
+                          <button
+                            type="button"
+                            (click)="copyCard(log.card, $event)"
+                            class="inline-flex items-center gap-1 font-mono text-[10px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer text-left bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 px-1.5 py-0.5 rounded mt-0.5 border border-slate-200 dark:border-slate-700/60 transition-colors"
+                            matTooltip="Kart numarasını panoya kopyala"
+                          >
+                            <mat-icon class="icon-size-3">credit_card</mat-icon>
+                            <span>{{ log.card }}</span>
+                            <mat-icon class="icon-size-3 opacity-60">content_copy</mat-icon>
+                          </button>
+                        }
+                      </div>
                     </div>
                   </td>
                   <td class="py-3 px-5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
@@ -1047,6 +1131,21 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
 
               @if (wizardTab() === 'guide') {
                 <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  <div class="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <mat-icon class="text-indigo-600 dark:text-indigo-400 icon-size-4">credit_card</mat-icon>
+                      <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Üye Geldiğinde Kart Numarası Nasıl Öğrenilir & Atanır?</h4>
+                    </div>
+                    <p class="m-0 text-slate-600 dark:text-slate-300">
+                      <b>1. Yöntem (Önerilen - Masaüstü USB Okuyucu):</b> Resepsiyon PC'sine klavye gibi çalışan bir USB RFID okuyucu bağlayın. Yukarıdaki "Kartı üyeye ata" modunu açıp kartı okutun; gelen numarayı üyeye seçerek atayın. Okuyucunun verdiği numaranın cihazın kullandığı kart biçimiyle eşleştiğini test edin.
+                    </p>
+                    <p class="m-0 text-slate-600 dark:text-slate-300">
+                      <b>2. Yöntem (Cihaz destekliyorsa):</b> Turnike tanımsız kartın numarasını geçiş olayında ayrı bir alan olarak bildirirse kart burada görünür ve üyeye atanabilir. Test edilen YT cihazı reddedilen tanımsız kartı loglamıyor; bu cihazda USB okuyucu veya üreticinin doğrulanmış ham kart okuma protokolü gerekir.
+                    </p>
+                    <p class="m-0 text-slate-500 dark:text-slate-400 text-[11px]">
+                      <b>Senkronizasyon Süresi:</b> Agent cihazı 5 saniyede bir okur, yeni üye yetkilerini en geç 30 saniyede cihaza yazar; yeni geçiş kayıtlarını ilk geçişten 5 saniye sonra MainApi'ye gönderir (geçiş yoksa istek atmaz). Görünme süresi cihaz ve ağ yanıtına bağlıdır.
+                    </p>
+                  </div>
                   <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
                     <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Canlıya almadan önce donanım testi</h4>
                     <p class="m-0">
@@ -1080,6 +1179,106 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 type="button"
                 (click)="closeAgentWizard()"
                 class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold cursor-pointer transition-colors"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Senaryo B: Kartı Üyeye Hızlı Atama Modalı -->
+      @if (assignCardTarget(); as targetCard) {
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 font-sans animate-in fade-in duration-200">
+          <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 w-full max-w-lg flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+                  <mat-icon class="icon-size-5">badge</mat-icon>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white m-0">Turnike Kartını Üyeye Ata</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
+                    Kart turnikeye okutuldu; atamak istediğiniz üyeyi seçin.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="closeAssignCardDialog()"
+                class="w-8 h-8 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <mat-icon class="icon-size-5">close</mat-icon>
+              </button>
+            </div>
+
+            <!-- Kart Bilgisi Rozeti -->
+            <div class="px-6 pt-4 pb-2">
+              <div class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-900 dark:text-indigo-300">Seçili RFID Kart Numarası:</span>
+                <span class="font-mono text-sm font-black text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800 px-3 py-1 rounded-xl border border-indigo-200/60 dark:border-indigo-800">
+                  {{ targetCard }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Üye Arama Kutusu -->
+            <div class="p-6 pt-2 space-y-4">
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="Üye adı, telefon veya üye no ile ara..."
+                  [ngModel]="assignMemberSearch()"
+                  (ngModelChange)="assignMemberSearch.set($event)"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <mat-icon class="icon-size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+              </div>
+
+              <!-- Üye Listesi -->
+              <div class="max-h-64 overflow-y-auto space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60">
+                @for (member of assignMemberResults(); track member.uid) {
+                  <div class="pt-2 first:pt-0 flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      @if (member.photoURL) {
+                        <img [src]="member.photoURL" class="w-8 h-8 rounded-full object-cover shrink-0" alt="avatar" />
+                      } @else {
+                        <span class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
+                          {{ member.displayName ? member.displayName.charAt(0) : 'Ü' }}
+                        </span>
+                      }
+                      <div class="min-w-0">
+                        <span class="font-bold text-xs text-slate-900 dark:text-white block truncate">{{ member.displayName }}</span>
+                        <span class="text-[11px] text-slate-400 block truncate">
+                          {{ member.phone || 'Telefon yok' }} · No: {{ member.memberNumber || '—' }}
+                          @if (member.rfidCardNumber) {
+                            · <span class="text-amber-600 font-mono">Mevcut: {{ member.rfidCardNumber }}</span>
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      (click)="assignCardToSelectedMember(member)"
+                      [disabled]="assigningCard()"
+                      class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      Ata
+                    </button>
+                  </div>
+                } @empty {
+                  <p class="text-xs text-slate-400 text-center py-6 m-0">Aramaya uygun üye bulunamadı.</p>
+                }
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                (click)="closeAssignCardDialog()"
+                class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
               >
                 Kapat
               </button>
@@ -1164,7 +1363,8 @@ export class AdminAccessControl implements OnInit {
         mainApiUrl: environment.apiBaseUrl.startsWith('http') ? environment.apiBaseUrl : 'https://mainapi.odivon.com/api/v1',
         agentName: 'Resepsiyon PC',
         pollIntervalSeconds: 5,
-        heartbeatIntervalSeconds: 15,
+        eventFlushDelaySeconds: 5,
+        heartbeatIntervalSeconds: 60,
         dataDir: './data',
         credentials,
       },
@@ -1189,9 +1389,84 @@ export class AdminAccessControl implements OnInit {
     this.alertService.toastSuccess('Yapılandırma panoya kopyalandı.');
   }
 
+  protected copyCard(card: string, event?: Event): void {
+    event?.stopPropagation();
+    navigator.clipboard.writeText(card);
+    this.alertService.toastSuccess(`Kart numarası panoya kopyalandı: ${card}`);
+  }
+
+  // Senaryo B: Tanımsız Kart Tespit & Hızlı Atama
+  protected readonly dismissedCards = signal<string[]>([]);
+  protected readonly assignCardTarget = signal<string | null>(null);
+  protected readonly assignMemberSearch = signal('');
+  protected readonly assigningCard = signal(false);
+
+  protected readonly latestUnassignedCard = computed(() => {
+    const logs = this.logs();
+    const dismissed = this.dismissedCards();
+    const now = Date.now();
+    return logs.find((l) =>
+      !l.userId &&
+      !!l.card &&
+      !dismissed.includes(l.card) &&
+      (now - this.getLogMillis(l.timestamp)) <= 30 * 60 * 1000
+    ) ?? null;
+  });
+
+  protected readonly assignMemberResults = computed(() => {
+    const term = this.assignMemberSearch().toLowerCase().trim();
+    const list = this.members();
+    if (!term) return list.slice(0, 8);
+    return list.filter((m) =>
+      (m.displayName ?? '').toLowerCase().includes(term) ||
+      (m.phone ?? '').includes(term) ||
+      String(m.memberNumber ?? '').includes(term)
+    ).slice(0, 15);
+  });
+
+  protected openAssignCardDialog(card: string, event?: Event): void {
+    event?.stopPropagation();
+    this.assignCardTarget.set(card);
+    this.assignMemberSearch.set('');
+  }
+
+  protected closeAssignCardDialog(): void {
+    this.assignCardTarget.set(null);
+  }
+
+  protected dismissUnassignedCard(card: string): void {
+    this.dismissedCards.update((list) => [...list, card]);
+  }
+
+  protected async assignCardToSelectedMember(member: UserProfile): Promise<void> {
+    const card = this.assignCardTarget();
+    if (!card || !member.uid) return;
+    this.assigningCard.set(true);
+    try {
+      await this.membersService.updateCardAssignment(member.uid, member.displayName || '', {
+        rfidCardNumber: card,
+        cardDepositFee: member.cardDepositFee || 0,
+        cardDepositPaid: member.cardDepositPaid || false,
+      });
+      this.alertService.toastSuccess(`Kart ${card}, ${member.displayName} adlı üyeye başarıyla atandı! Turnike en geç 30 sn içinde güncellenecektir.`);
+      this.closeAssignCardDialog();
+      this.dismissUnassignedCard(card);
+      this.accessService.refresh();
+    } catch {
+      this.alertService.toastError('Kart üyeye atanamadı.');
+    } finally {
+      this.assigningCard.set(false);
+    }
+  }
+
   protected readonly gates = toSignal(this.accessService.watchGates(), { initialValue: [] });
   protected readonly agents = toSignal(this.accessService.watchAgents(), { initialValue: [] });
   private readonly syncSummary = toSignal(this.accessService.watchSyncSummary(), { initialValue: {} as DeviceSyncSummary });
+  // Senkron listesi açıkken sayılar değişirse (ör. üyenin bitiş tarihi düzenlendi) liste kendiliğinden yenilenir.
+  private readonly refreshOpenSyncList = effect(() => {
+    this.syncSummary();
+    if (untracked(() => this.syncGate())) void untracked(() => this.loadSyncItems(true));
+  });
   protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
   private readonly logs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
 
@@ -1231,18 +1506,19 @@ export class AdminAccessControl implements OnInit {
     await this.loadSyncItems();
   }
 
-  private async loadSyncItems(): Promise<void> {
+  private async loadSyncItems(quiet = false): Promise<void> {
     const gate = this.syncGate();
     if (!gate?.id) return;
-    this.syncLoading.set(true);
+    if (!quiet) this.syncLoading.set(true);
     try {
       const filter = this.syncFilter();
-      const items = await this.accessService.listSync(gate.id, filter === 'all' || filter === 'pending' ? undefined : filter);
+      // MainApi "pending" süzgecine agent'ın alıp henüz onaylamadıklarını (delivered) da katar; liste son değişene göre sıralı gelir.
+      const items = await this.accessService.listSync(gate.id, filter === 'all' ? undefined : filter);
       this.syncItems.set(filter === 'pending' ? items.filter((i) => i.status === 'pending' || i.status === 'delivered') : items);
     } catch {
-      this.alertService.toastError('Senkron durumu alınamadı.');
+      if (!quiet) this.alertService.toastError('Senkron durumu alınamadı.');
     } finally {
-      this.syncLoading.set(false);
+      if (!quiet) this.syncLoading.set(false);
     }
   }
 
@@ -1319,10 +1595,10 @@ export class AdminAccessControl implements OnInit {
     return DEVICE_PROTOCOLS.find((p) => p.value === protocol)?.label ?? 'Protokol seçilmedi';
   }
 
-  protected formatRelative(value: string | null | undefined): string {
+  protected formatRelative(value: any): string {
     if (!value) return '—';
-    const ms = new Date(value).getTime();
-    if (Number.isNaN(ms)) return '—';
+    const ms = this.getLogMillis(value);
+    if (!ms) return '—';
     const secs = Math.max(0, Math.round((Date.now() - ms) / 1000));
     if (secs < 60) return `${secs} sn önce`;
     if (secs < 3600) return `${Math.round(secs / 60)} dk önce`;
@@ -1354,6 +1630,7 @@ export class AdminAccessControl implements OnInit {
 
   // Reception Barcode / RFID Reader
   protected barcodeInput = '';
+  protected readonly scannerMode = signal<'qr' | 'card'>('qr');
 
 
   // Add Gate SlideOver state
@@ -1661,6 +1938,17 @@ export class AdminAccessControl implements OnInit {
   protected async onBarcodeScanned(): Promise<void> {
     const code = this.barcodeInput.trim();
     if (!code || this.scanning()) return;
+
+    if (this.scannerMode() === 'card') {
+      const existing = this.members().find((member) => member.rfidCardNumber?.trim() === code);
+      if (existing) {
+        this.alertService.toastError(`Bu kart zaten ${existing.displayName} üyesine atanmış.`);
+        return;
+      }
+      this.openAssignCardDialog(code);
+      this.barcodeInput = '';
+      return;
+    }
 
     this.scanning.set(true);
     try {

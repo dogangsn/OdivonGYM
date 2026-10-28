@@ -14,9 +14,11 @@ const CODE_TO_KEY: Record<string, string> = {
   'auth/too-many-requests': 'authErrors.tooManyRequests',
   'auth/popup-closed-by-user': 'authErrors.popupClosedByUser',
   'auth/network-request-failed': 'authErrors.networkRequestFailed',
+  'auth/email-not-verified': 'authErrors.emailNotVerified',
   // Firestore client SDK'sının yetki hatası (ön eksiz).
   'permission-denied': 'authErrors.permissionDenied',
 };
+
 
 /**
  * `translate` olarak `TranslocoService.translate` (veya aynı imzadaki başka

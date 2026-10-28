@@ -1,0 +1,48 @@
+# OdivonGYM - Comprehensive Technical & AI Index (llms-full.txt)
+
+## 1. Executive Summary
+OdivonGYM is a multi-tenant fitness and athletic club management platform engineered with modern cloud technologies. It bridges online club administration (membership lifecycle, billing, analytics) with physical gym operations (turnstile relay control, biometric checkpoints, offline Edge Agent).
+
+## 2. Technical Stack & Architecture
+- **Frontend Layer**: Angular 20 (Standalone Components, Signals, Reactive Forms, Transloco i18n, Tailwind CSS, Angular Material CDK).
+- **Backend Layer**: NestJS modular microservice architecture located at `OdivonMainApi`.
+- **Database & Realtime Sync**: Google Cloud Firestore, Firebase Authentication, Cloud Storage.
+- **Physical Integration (Edge Agent)**: Node.js Windows service (`edge-agent`) communicating with RS485/TCP turnstile controllers and relays.
+- **Payment Infrastructure**: iyzico Virtual POS (3D Secure, recurring card storage, webhook verification).
+- **Invoicing**: GİB (Gelir İdaresi Başkanlığı) e-Fatura / e-Arşiv entegrasyonu.
+
+## 3. Platform Modules
+### 3.1 Authentication & Security
+- Firebase Auth with JWT validation and custom tenant claims (`tenantId`, `role`, `permissions`).
+- Role-Based Access Control: SuperAdmin, TenantAdmin, BranchManager, Trainer, Member.
+- Two-Factor / Email verification support.
+- KVKK & GDPR consent audit trail.
+
+### 3.2 Member & Athlete Experience
+- Real-time QR pass for gym entrance turnstiles.
+- Workout routine tracking with interactive exercise cards.
+- Personal trainer (PT) appointment booking and slot availability.
+- Body composition and measurement tracking (Weight, Fat %, Muscle Mass, BMI).
+- Water intake logging and daily hydration telemetry.
+- In-app digital wallet for cafeteria, supplement, and service purchases.
+
+### 3.3 Club & Multi-Branch Management
+- Multi-branch hierarchy per tenant.
+- Staff shift planning and coach commission tracking.
+- Turnstile and gate relay monitoring with real-time heartbeat status.
+- Live telemetry radar for current active gym floor occupancy.
+
+## 4. Public Endpoints & SEO Sitemaps
+- Web App URL: https://gym.odivon.com
+- Auth Login: https://gym.odivon.com/auth/login
+- Auth Register: https://gym.odivon.com/auth/register
+- Terms of Service: https://gym.odivon.com/terms
+- Privacy Policy: https://gym.odivon.com/privacy
+- 404 Error Handler: https://gym.odivon.com/404
+- Robots File: https://gym.odivon.com/robots.txt
+- Sitemap Index: https://gym.odivon.com/sitemap.xml
+
+## 5. Contact & Support
+- Legal Entity: Odivon Software Technologies
+- Website: https://odivon.com / https://gym.odivon.com
+- Inquiries: info@odivon.com / support@odivon.com

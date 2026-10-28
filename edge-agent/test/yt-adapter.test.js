@@ -4,8 +4,18 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { startFakeYtDevice } = require('./fake-yt-device');
 const { createYtHttpDigestAdapter, deviceName } = require('../src/adapters/yt-http-digest');
+const { readLogRecord } = require('../src/adapters/yt-wire');
 
 const NOW = new Date('2026-09-28T18:30:00Z'); // 21:30 TR
+
+test('kartlı YT logunda userId kart numarası olarak yorumlanmaz', () => {
+  const record = readLogRecord({ time: '20260928213000', userId: '1042', verifyMode: 'Card', ioMode: 10 });
+  assert.equal(record.userId, '1042');
+  assert.equal(record.card, null);
+  const explicitCard = readLogRecord({ time: '20260928213000', userId: null, card: '0004928172', verifyMode: 'Card', ioMode: 10 });
+  assert.equal(explicitCard.userId, null);
+  assert.equal(explicitCard.card, '0004928172');
+});
 
 async function setup(t, { now = () => NOW } = {}) {
   const dev = await startFakeYtDevice();
@@ -105,7 +115,14 @@ test('cihaz bitiş tarihini uygulamazsa doğrulanmış sayılmaz', async (t) => 
   const { dev, adapter } = await setup(t);
   dev.state.ignoreVaildEnd = true;
   const res = await adapter.applyUser({ userId: '7', name: 'X', card: null, validEnd: '20261031', enabled: true });
-  assert.deepEqual(res, { verified: false });
+  assert.deepEqual(res, { verified: false, detail: 'bitiş "20991231" ≠ "20261031"' });
+});
+
+test('cihaz tarihi tireli döndürürse de doğrulanır', async (t) => {
+  const { dev, adapter } = await setup(t);
+  dev.state.dashedDates = true;
+  const res = await adapter.applyUser({ userId: '8', name: 'X', card: null, validEnd: '20261031', enabled: true });
+  assert.deepEqual(res, { verified: true });
 });
 
 test('yetki kapatma kullanıcıyı siler, yoksa da doğrulanır', async (t) => {

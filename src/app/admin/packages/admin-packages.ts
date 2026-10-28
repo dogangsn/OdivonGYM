@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AlertService } from '../../core/services/alert.service';
@@ -10,14 +10,15 @@ import { Field } from '../../shared/ui/field';
 import { firstError, formatMoney, splitLines } from '../../shared/ui/ui-utils';
 import { AdminPackagesService } from './admin-packages.service';
 import { AdminDisciplinesService } from '../disciplines/admin-disciplines.service';
-import { GymPackage } from '../../core/models/gym-package.model';
+import { AdminStaffService } from '../staff/admin-staff.service';
+import { GymPackage, PackageScope, TrainerPackagePricing } from '../../core/models/gym-package.model';
 import { DocumentDefinitionsService } from '../../core/services/document-definitions.service';
 import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
 
 const STATUS_LABEL: Record<GymPackage['status'], string> = {
-  active: 'Satışta',
-  inactive: 'Pasif',
-  archived: 'Arşiv',
+  active: 'packages.status.active',
+  inactive: 'packages.status.inactive',
+  archived: 'common.status',
 };
 
 const STATUS_CLASS: Record<GymPackage['status'], string> = {
@@ -36,51 +37,146 @@ const DAYS_OF_WEEK = [
   { id: 7, label: 'Pazar', short: 'Paz' },
 ];
 
+import { TranslocoPipe } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-admin-packages',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, PageHeader, SlideOver, Field, DocumentDefinitionsModal],
+  imports: [ReactiveFormsModule, FormsModule, MatIconModule, PageHeader, SlideOver, Field, DocumentDefinitionsModal, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="font-sans">
+    <div class="font-sans space-y-5">
       <app-page-header
-        title="Paket & Fiyatlandırma Yönetimi"
+        title="packages.title"
         icon="sell"
-        description="Üyelik paketleri, kategori, seans limitleri, giriş-çıkış saatleri, barkod ve süre kurallarını yönetin."
+        description="packages.subtitle"
       >
         <button actions type="button" class="odv-btn-primary" (click)="openForm()">
           <mat-icon class="icon-size-4.5">add</mat-icon>
-          Yeni Paket Ekle
+          {{ 'packages.addNew' | transloco }}
         </button>
       </app-page-header>
 
+      <!-- KAPSAM SEKMELERİ & ARAMA ÇUBUĞU -->
+      <div class="odv-card p-3 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <!-- Scope Segmented Tabs -->
+        <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 self-start sm:self-auto">
+          <button
+            type="button"
+            (click)="activeScopeTab.set('all')"
+            class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="activeScopeTab() === 'all'
+              ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          >
+            <span>{{ 'packages.filterAll' | transloco }}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
+              [class]="activeScopeTab() === 'all' ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
+              {{ counts().all }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            (click)="activeScopeTab.set('gym')"
+            class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="activeScopeTab() === 'gym'
+              ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          >
+            <mat-icon class="icon-size-3.5 text-indigo-500">fitness_center</mat-icon>
+            <span>{{ 'packages.filterClub' | transloco }}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
+              [class]="activeScopeTab() === 'gym' ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
+              {{ counts().gym }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            (click)="activeScopeTab.set('trainer')"
+            class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            [class]="activeScopeTab() === 'trainer'
+              ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          >
+            <mat-icon class="icon-size-3.5 text-purple-500">person</mat-icon>
+            <span>{{ 'packages.filterStaff' | transloco }}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
+              [class]="activeScopeTab() === 'trainer' ? 'bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
+              {{ counts().trainer }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Filters: Search + Staff Filter -->
+        <div class="flex items-center gap-2.5 flex-1 max-w-md">
+          @if (activeScopeTab() !== 'gym' && trainers().length > 0) {
+            <select
+              [ngModel]="selectedTrainerFilter()"
+              (ngModelChange)="selectedTrainerFilter.set($event)"
+              class="odv-input py-2 text-xs max-w-[180px]"
+            >
+              <option value="all">{{ 'packages.allTrainers' | transloco }}</option>
+              @for (t of trainers(); track t.id) {
+                <option [value]="t.id">{{ t.displayName }}</option>
+              }
+            </select>
+          }
+
+          <div class="relative flex-1">
+            <mat-icon class="icon-size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              class="odv-input pl-9 py-2 text-xs w-full"
+              [placeholder]="'packages.searchPlaceholder' | transloco"
+            />
+          </div>
+        </div>
+      </div>
+
       <div class="odv-card overflow-hidden">
         @if (loading()) {
-          <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">Yükleniyor…</p>
+          <p class="py-16 text-center text-sm text-slate-500 dark:text-slate-400 m-0">{{ 'packages.loading' | transloco }}</p>
         } @else if (packages().length === 0) {
           <div class="py-16 text-center">
-            <p class="text-sm text-slate-500 dark:text-slate-400 m-0">Henüz paket eklenmedi.</p>
-            <button type="button" class="odv-btn-soft mt-4" (click)="openForm()">+ İlk Paketi Ekle</button>
+            <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400 mb-3">
+              <mat-icon class="icon-size-6">sell</mat-icon>
+            </div>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 m-0">
+              @if (searchQuery() || activeScopeTab() !== 'all' || selectedTrainerFilter() !== 'all') {
+                {{ 'members.noMatchFound' | transloco }}
+              } @else {
+                {{ 'members.noMembersFound' | transloco }}
+              }
+            </p>
+            <p class="text-xs text-slate-400 mt-1 mb-4">
+              {{ 'packages.subtitle' | transloco }}
+            </p>
+            <button type="button" class="odv-btn-soft" (click)="openForm()">{{ 'packages.addNew' | transloco }}</button>
           </div>
         } @else {
           <div class="overflow-x-auto custom-scroll">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-                  <th class="odv-th">Paket & Kategori</th>
-                  <th class="odv-th">Süre</th>
-                  <th class="odv-th">Seans & Saat & Gün</th>
-                  <th class="odv-th">Barkod</th>
-                  <th class="odv-th">Fiyat</th>
-                  <th class="odv-th">Durum</th>
-                  <th class="odv-th text-right">İşlemler</th>
+                  <th class="odv-th">{{ 'packages.table.package' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.category' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.duration' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.sessions' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.pricing' | transloco }}</th>
+                  <th class="odv-th">{{ 'packages.table.status' | transloco }}</th>
+                  <th class="odv-th text-right">{{ 'packages.table.actions' | transloco }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
                 @for (p of packages(); track p.id) {
                   <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <!-- Paket & Kapsam -->
                     <td class="odv-td">
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 flex-wrap">
                         <p class="font-bold text-slate-900 dark:text-white m-0">{{ p.name }}</p>
                         @if (p.isHidden) {
                           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
@@ -88,28 +184,73 @@ const DAYS_OF_WEEK = [
                           </span>
                         }
                       </div>
-                      <div class="flex items-center gap-2 mt-0.5">
-                        <span class="inline-flex items-center text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                          {{ p.category || 'Genel' }}
-                        </span>
-                        @if (p.features.length) {
-                          <span class="text-[11px] text-slate-400 truncate max-w-xs">{{ p.features.join(' · ') }}</span>
+
+                      <!-- Scope & Trainer Badges -->
+                      <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                        @if (p.packageScope === 'trainer' || p.trainerName) {
+                          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
+                            <mat-icon class="icon-size-3 text-purple-600">person</mat-icon>
+                            <span>{{ p.trainerName || 'Personele Özel' }}</span>
+                          </span>
+
+                          @if (p.trainerCommissionRate) {
+                            <span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                              <mat-icon class="icon-size-3">percent</mat-icon>
+                              <span>%{{ p.trainerCommissionRate }} Prim</span>
+                            </span>
+                          }
+
+                          @if (p.trainerPricing && p.trainerPricing.length > 0) {
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800"
+                              [title]="formatTrainerPricingTooltip(p.trainerPricing)">
+                              <mat-icon class="icon-size-3">groups</mat-icon>
+                              <span>{{ p.trainerPricing.length }} Eğitmen Tarifesi</span>
+                            </span>
+                          }
+                        } @else {
+                          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                            <mat-icon class="icon-size-3 text-indigo-600">fitness_center</mat-icon>
+                            <span>{{ 'packages.filterClub' | transloco }}</span>
+                          </span>
                         }
-                        @if (p.requiredDocuments?.length) {
+
+                        @if (p.barcode) {
+                          <span class="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {{ p.barcode }}
+                          </span>
+                        }
+                      </div>
+
+                      @if (p.features.length) {
+                        <p class="text-[11px] text-slate-400 truncate max-w-sm mt-1 m-0">{{ p.features.join(' · ') }}</p>
+                      }
+                    </td>
+
+                    <!-- Kategori & Evrak -->
+                    <td class="odv-td whitespace-nowrap">
+                      <span class="inline-flex items-center text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200/80 dark:border-slate-700">
+                        {{ p.category || 'Genel' }}
+                      </span>
+                      @if (p.requiredDocuments?.length) {
+                        <div class="mt-1">
                           <span class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
                             <mat-icon class="icon-size-3">badge</mat-icon>
                             <span>{{ formatDocRequirements(p.requiredDocuments) }}</span>
                           </span>
-                        }
-                      </div>
+                        </div>
+                      }
                     </td>
+
+                    <!-- Süre -->
                     <td class="odv-td text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       <span class="font-semibold">{{ p.durationValue || p.durationDays }} {{ getDurationLabel(p) }}</span>
-                      <span class="text-[11px] text-slate-400 block">({{ p.durationDays }} gün)</span>
+                      <span class="text-[11px] text-slate-400 block">({{ p.durationDays }} {{ 'packages.daysUnit' | transloco }})</span>
                     </td>
+
+                    <!-- Seans & Erişim -->
                     <td class="odv-td text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       <span class="font-semibold block">
-                        {{ p.isUnlimitedSessions ? 'Sınırsız Giriş' : (p.sessionCount ? p.sessionCount + ' Seans' : 'Sınırsız') }}
+                        {{ p.isUnlimitedSessions ? ('packages.sessionsUnlimited' | transloco) : (p.sessionCount ? p.sessionCount + ' Seans' : ('packages.sessionsUnlimited' | transloco)) }}
                       </span>
                       <span class="text-[11px] text-slate-400 block">
                         {{ p.checkInStartTime || '06:00' }} - {{ p.checkInEndTime || '23:00' }}
@@ -119,20 +260,30 @@ const DAYS_OF_WEEK = [
                         {{ formatAllowedDays(p.allowedDays) }}
                       </span>
                     </td>
-                    <td class="odv-td text-slate-500 font-mono text-xs whitespace-nowrap">
-                      {{ p.barcode || '—' }}
+
+                    <!-- Fiyat -->
+                    <td class="odv-td whitespace-nowrap">
+                      <p class="font-black text-slate-900 dark:text-white m-0 text-sm">
+                        {{ money(p.price) }}
+                      </p>
+                      @if (p.trainerPricing && p.trainerPricing.length > 0) {
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold block">
+                          {{ getPriceRangeLabel(p) }}
+                        </span>
+                      }
                     </td>
-                    <td class="odv-td font-black text-slate-900 dark:text-white whitespace-nowrap">
-                      {{ money(p.price) }}
-                    </td>
+
+                    <!-- Durum -->
                     <td class="odv-td">
-                      <span class="odv-badge" [class]="statusClass[p.status]">{{ statusLabel[p.status] }}</span>
+                      <span class="odv-badge" [class]="statusClass[p.status]">{{ statusLabel[p.status] | transloco }}</span>
                     </td>
+
+                    <!-- İşlemler -->
                     <td class="odv-td text-right whitespace-nowrap">
-                      <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(p)">
+                      <button type="button" class="odv-icon-btn" [title]="'common.edit' | transloco" (click)="openForm(p)">
                         <mat-icon class="icon-size-4">edit</mat-icon>
                       </button>
-                      <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" title="Sil" (click)="remove(p)">
+                      <button type="button" class="odv-icon-btn odv-icon-btn-danger ml-1" [title]="'common.delete' | transloco" (click)="remove(p)">
                         <mat-icon class="icon-size-4">delete</mat-icon>
                       </button>
                     </td>
@@ -145,6 +296,7 @@ const DAYS_OF_WEEK = [
       </div>
     </div>
 
+    <!-- PAKET EKLEME / DÜZENLEME SLIDE-OVER -->
     <app-slide-over
       [open]="drawerOpen()"
       [title]="editing() ? 'Paketi Düzenle' : 'Yeni Paket Ekle'"
@@ -155,8 +307,205 @@ const DAYS_OF_WEEK = [
       (submitted)="submit()"
     >
       <div [formGroup]="form" class="space-y-4 font-sans">
+        
+        <!-- 1. PAKET KAPSAMI SEÇİCİ (SALON GENELİ vs PERSONELE ÖZEL) -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 m-0 flex items-center gap-1.5">
+              <mat-icon class="icon-size-4 text-indigo-500">category</mat-icon>
+              <span>Paket Kapsamı & Ayrımı</span>
+            </p>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              [class]="form.controls.packageScope.value === 'trainer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'">
+              {{ form.controls.packageScope.value === 'trainer' ? '🏋️‍♂️ Personele Özel' : '🏛️ Salon Geneli' }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Salon Geneli Kartı -->
+            <button
+              type="button"
+              (click)="setPackageScope('gym')"
+              class="p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3"
+              [class]="form.controls.packageScope.value === 'gym'
+                ? 'bg-indigo-50/80 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20 dark:bg-indigo-950/40 dark:border-indigo-500'
+                : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'"
+            >
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                [class]="form.controls.packageScope.value === 'gym' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
+                <mat-icon class="icon-size-4.5">fitness_center</mat-icon>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-slate-900 dark:text-white m-0">Salon Geneli Paket</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 m-0 leading-tight">
+                  Tüm salonda standart genel üyelik veya kampanya.
+                </p>
+              </div>
+            </button>
+
+            <!-- Personele Özel Kartı -->
+            <button
+              type="button"
+              (click)="setPackageScope('trainer')"
+              class="p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3"
+              [class]="form.controls.packageScope.value === 'trainer'
+                ? 'bg-purple-50/80 border-purple-500 shadow-sm ring-2 ring-purple-500/20 dark:bg-purple-950/40 dark:border-purple-500'
+                : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'"
+            >
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                [class]="form.controls.packageScope.value === 'trainer' ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
+                <mat-icon class="icon-size-4.5">person</mat-icon>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-slate-900 dark:text-white m-0">Personele / PT'ye Özel</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 m-0 leading-tight">
+                  Antrenör bazlı abonelik fiyatı & birebir özel ders.
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. PERSONEL / EĞİTMEN DETAYLARI (YALNIZCA PERSONELE ÖZEL SEÇİLDİĞİNDE) -->
+        @if (form.controls.packageScope.value === 'trainer') {
+          <div class="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/25 border border-purple-200 dark:border-purple-900/50 space-y-3 animate-in fade-in duration-200">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 m-0 flex items-center gap-1.5">
+                <mat-icon class="icon-size-4 text-purple-600">badge</mat-icon>
+                <span>Eğitmen & Prim Yapılandırması</span>
+              </p>
+              <span class="text-[10px] text-purple-700 dark:text-purple-300 font-semibold">
+                {{ trainers().length }} Aktif Personel Kayıtlı
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                  Atanan Eğitmen / Personel <span class="text-rose-500">*</span>
+                </label>
+                <select
+                  formControlName="trainerId"
+                  (change)="onTrainerSelected($any($event.target).value)"
+                  class="odv-input text-xs font-semibold"
+                >
+                  <option [value]="null">-- Personel Seçiniz --</option>
+                  @for (t of trainers(); track t.id) {
+                    <option [value]="t.id">{{ t.displayName }} ({{ t.title || 'Eğitmen' }})</option>
+                  }
+                </select>
+                @if (form.controls.packageScope.value === 'trainer' && !form.controls.trainerId.value && formTrainerPricing().length === 0) {
+                  <span class="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 block font-medium">
+                    * Lütfen paketin geçerli olduğu antrenörü seçiniz.
+                  </span>
+                }
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                  Personel Prim Oranı (%)
+                </label>
+                <div class="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    formControlName="trainerCommissionRate"
+                    class="odv-input text-xs font-bold text-emerald-600 pl-8"
+                    placeholder="Örn: 40"
+                  />
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">%</span>
+                </div>
+                <span class="text-[10px] text-slate-400 mt-0.5 block">
+                  Satış veya seans başına personele aktarılacak hakediş oranı.
+                </span>
+              </div>
+            </div>
+
+            <!-- ÇOKLU PERSONEL FİYAT MATRİSİ (OPSİYONEL) -->
+            <div class="pt-2 border-t border-purple-200/60 dark:border-purple-800/50">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-purple-900 dark:text-purple-200">
+                  Farklı Antrenörler İçin Değişken Seans & Fiyat Listesi (Opsiyonel)
+                </span>
+                <button
+                  type="button"
+                  (click)="addTrainerPricingRow()"
+                  class="odv-btn-soft py-1 px-2.5 text-[11px] inline-flex items-center gap-1 font-bold"
+                >
+                  <mat-icon class="icon-size-3.5">add</mat-icon>
+                  <span>Personel Tarifesi Ekle</span>
+                </button>
+              </div>
+
+              @if (formTrainerPricing().length > 0) {
+                <div class="space-y-2">
+                  @for (row of formTrainerPricing(); track $index) {
+                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200/80 dark:border-purple-800/60 grid grid-cols-12 gap-2 items-center">
+                      <div class="col-span-5">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Personel</label>
+                        <select
+                          [value]="row.trainerId"
+                          (change)="updateTrainerPricingRow($index, 'trainerId', $any($event.target).value)"
+                          class="odv-input py-1.5 text-xs font-semibold"
+                        >
+                          <option value="">Seçiniz</option>
+                          @for (t of trainers(); track t.id) {
+                            <option [value]="t.id">{{ t.displayName }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="col-span-3">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Fiyat (₺)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          [value]="row.price"
+                          (input)="updateTrainerPricingRow($index, 'price', $any($event.target).value)"
+                          class="odv-input py-1.5 text-xs font-bold text-emerald-600"
+                        />
+                      </div>
+
+                      <div class="col-span-3">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Prim (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          [value]="row.commissionRate ?? ''"
+                          (input)="updateTrainerPricingRow($index, 'commissionRate', $any($event.target).value)"
+                          class="odv-input py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300"
+                          placeholder="%"
+                        />
+                      </div>
+
+                      <div class="col-span-1 text-right pt-4">
+                        <button
+                          type="button"
+                          (click)="removeTrainerPricingRow($index)"
+                          class="odv-icon-btn odv-icon-btn-danger w-7 h-7"
+                          title="Sil"
+                        >
+                          <mat-icon class="icon-size-3.5">close</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- 3. TEMEL BİLGİLER -->
         <app-field label="Paket Adı" [required]="true" [error]="err('name', { required: 'Paket adı gerekli.' })">
-          <input type="text" formControlName="name" class="odv-input" placeholder="Örn. 3 Aylık Gold Üyelik" />
+          <input
+            type="text"
+            formControlName="name"
+            class="odv-input"
+            [placeholder]="form.controls.packageScope.value === 'trainer' ? 'Örn. Serdar Keskin ile 10 Seans PT' : 'Örn. 3 Aylık Gold Üyelik'"
+          />
         </app-field>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,11 +544,11 @@ const DAYS_OF_WEEK = [
           </app-field>
 
           <app-field label="Barkod / Paket Kodu">
-            <input type="text" formControlName="barcode" class="odv-input font-mono" placeholder="Örn: PKT-3M-001" />
+            <input type="text" formControlName="barcode" class="odv-input font-mono" placeholder="Örn: PKT-PT-001" />
           </app-field>
         </div>
 
-        <!-- SÜRE (YIL / AY / GÜN) AYARLARI -->
+        <!-- 4. SÜRE (YIL / AY / GÜN) AYARLARI -->
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-3">
           <p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 m-0 flex items-center gap-1.5">
             <mat-icon class="icon-size-4 text-indigo-500">schedule</mat-icon>
@@ -225,7 +574,7 @@ const DAYS_OF_WEEK = [
           </div>
         </div>
 
-        <!-- FİYAT & DONDURMA -->
+        <!-- 5. FİYAT & DONDURMA -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <app-field label="Fiyat (₺)" [required]="true" [error]="err('price', { required: 'Fiyat gerekli.', min: 'Negatif olamaz.' })">
             <input type="number" min="0" step="0.01" formControlName="price" class="odv-input font-bold text-emerald-600" />
@@ -235,7 +584,7 @@ const DAYS_OF_WEEK = [
           </app-field>
         </div>
 
-        <!-- SEANS VE GİRİŞ-ÇIKIŞ SAAT KURALLARI -->
+        <!-- 6. SEANS VE GİRİŞ-ÇIKIŞ SAAT KURALLARI -->
         <div class="p-3.5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 space-y-3">
           <p class="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 m-0 flex items-center gap-1.5">
             <mat-icon class="icon-size-4 text-indigo-600">door_sliding</mat-icon>
@@ -268,11 +617,11 @@ const DAYS_OF_WEEK = [
           <div class="flex items-center gap-3 pt-1">
             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap" for="pkg-class-credits">Grup dersi hakkı</label>
             <input id="pkg-class-credits" type="number" min="0" formControlName="classCredits" placeholder="Sınırsız" class="odv-input py-1.5 text-xs font-bold max-w-[120px]" />
-            <span class="text-[11px] text-slate-400">Dönem başına; boş = sınırsız. Rezervasyonda 1 hak düşer, 2 saat öncesine kadar iptalde iade edilir.</span>
+            <span class="text-[11px] text-slate-400">Dönem başına; boş = sınırsız. Rezervasyonda 1 hak düşer.</span>
           </div>
         </div>
 
-        <!-- GEÇERLİ GÜNLER (HAFTANIN GÜNLERİ) KISITLAMASI -->
+        <!-- 7. GEÇERLİ GÜNLER KISITLAMASI -->
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 m-0 flex items-center gap-1.5">
@@ -284,7 +633,7 @@ const DAYS_OF_WEEK = [
             </span>
           </div>
 
-          <!-- Hızlı Hazır Seçimler (Presets) -->
+          <!-- Presets -->
           <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
             <button
               type="button"
@@ -310,25 +659,9 @@ const DAYS_OF_WEEK = [
             >
               Hafta Sonu (2 Gün)
             </button>
-            <button
-              type="button"
-              (click)="setDayPreset('mon_wed_fri')"
-              class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border cursor-pointer"
-              [class]="isPresetActive('mon_wed_fri') ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
-            >
-              Pzt · Çar · Cum
-            </button>
-            <button
-              type="button"
-              (click)="setDayPreset('tue_thu_sat')"
-              class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border cursor-pointer"
-              [class]="isPresetActive('tue_thu_sat') ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
-            >
-              Sal · Per · Cmt
-            </button>
           </div>
 
-          <!-- Gün Seçim Butonları (7 Gün Toggle) -->
+          <!-- Gün Seçim Butonları -->
           <div class="grid grid-cols-7 gap-1.5 pt-1">
             @for (day of daysOfWeek; track day.id) {
               <button
@@ -349,12 +682,9 @@ const DAYS_OF_WEEK = [
               </button>
             }
           </div>
-          <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">
-            * Turnike geçiş kontrolünde üyenin yalnızca bu seçilen günlerde salona girişine izin verilir.
-          </p>
         </div>
 
-        <!-- ZORUNLU EVRAK & LİSANS ŞARTLARI -->
+        <!-- 8. ZORUNLU EVRAK & LİSANS ŞARTLARI -->
         <div class="p-3.5 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 space-y-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 m-0 flex items-center gap-1.5">
@@ -370,17 +700,14 @@ const DAYS_OF_WEEK = [
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-300">
             @for (def of docDefsService.activeDefinitions(); track def.id) {
-            <label class="flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all"
-              [class]="hasDocRequirement(def.code) ? 'border-purple-600 bg-purple-100/60 dark:bg-purple-950/60 font-bold text-purple-950 dark:text-purple-200' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'">
-              <input type="checkbox" [checked]="hasDocRequirement(def.code)" (change)="toggleDocRequirement(def.code)"
-                class="rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
-              <span class="truncate">{{ def.name }}</span>
-            </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all"
+                [class]="hasDocRequirement(def.code) ? 'border-purple-600 bg-purple-100/60 dark:bg-purple-950/60 font-bold text-purple-950 dark:text-purple-200' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'">
+                <input type="checkbox" [checked]="hasDocRequirement(def.code)" (change)="toggleDocRequirement(def.code)"
+                  class="rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
+                <span class="truncate">{{ def.name }}</span>
+              </label>
             }
           </div>
-          <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">
-            * Bu paketi satın alan veya tanımlanan üyeler için seçilen belgeler zorunlu tutulur ve üye detayında "Doküman Bekleniyor" olarak takip edilir.
-          </p>
         </div>
 
         @if (editing()) {
@@ -394,7 +721,7 @@ const DAYS_OF_WEEK = [
         }
 
         <app-field label="Paket Özellikleri" hint="Her satıra bir özellik yazınız.">
-          <textarea formControlName="features" rows="3" class="odv-input resize-none" placeholder="Tüm ekipmanlara erişim&#10;Grup derslerine katılım&#10;Havuz & Spa kullanımı"></textarea>
+          <textarea formControlName="features" rows="3" class="odv-input resize-none" placeholder="Tüm ekipmanlara erişim&#10;Grup derslerine katılım&#10;Birebir PT koçluk desteği"></textarea>
         </app-field>
 
         <app-field label="Açıklama">
@@ -427,54 +754,105 @@ export class AdminPackages {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(AdminPackagesService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
+  private readonly staffService = inject(AdminStaffService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
 
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly statusClass = STATUS_CLASS;
-  private readonly disciplinesList = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] });
-  protected readonly categories = computed(() => {
-    const fromDisciplines = (this.disciplinesList() ?? []).map((d) => d.name.trim()).filter(Boolean);
-    const fromPackages = (this.data() ?? []).map((p) => p.category?.trim()).filter((c): c is string => !!c);
-    const combined = Array.from(new Set([...fromDisciplines, ...fromPackages]));
-    return combined.sort((a, b) => a.localeCompare(b, 'tr'));
-  });
   protected readonly daysOfWeek = DAYS_OF_WEEK;
   protected readonly money = formatMoney;
 
-  private readonly data = toSignal(this.service.watchPackages(), { initialValue: null });
-  protected readonly loading = computed(() => this.data() === null);
-  protected readonly packages = computed(() => [...(this.data() ?? [])].sort((a, b) => a.durationDays - b.durationDays));
+  // Staff and Trainers
+  private readonly staffMembers = toSignal(this.staffService.watchStaff(), { initialValue: [] });
+  protected readonly trainers = computed(() => {
+    const list = this.staffMembers() ?? [];
+    return list.filter((s) => s.status === 'active');
+  });
 
+  // Disciplines & Categories
+  private readonly disciplinesList = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] });
+  protected readonly categories = computed(() => {
+    const fromDisciplines = (this.disciplinesList() ?? []).map((d) => d.name.trim()).filter(Boolean);
+    const fromPackages = (this.rawData() ?? []).map((p) => p.category?.trim()).filter((c): c is string => !!c);
+    const combined = Array.from(new Set([...fromDisciplines, ...fromPackages]));
+    return combined.sort((a, b) => a.localeCompare(b, 'tr'));
+  });
+
+  // Data Loading & Filtering
+  private readonly rawData = toSignal(this.service.watchPackages(), { initialValue: null });
+  protected readonly loading = computed(() => this.rawData() === null);
+
+  // Tabs & Search Signals
+  protected readonly activeScopeTab = signal<'all' | 'gym' | 'trainer'>('all');
+  protected readonly searchQuery = signal('');
+  protected readonly selectedTrainerFilter = signal<string>('all');
+
+  // Package Counts by Scope
+  protected readonly counts = computed(() => {
+    const all = this.rawData() ?? [];
+    const gym = all.filter((p) => (p.packageScope || 'gym') !== 'trainer' && !p.trainerName).length;
+    const trainer = all.filter((p) => p.packageScope === 'trainer' || !!p.trainerName).length;
+    return { all: all.length, gym, trainer };
+  });
+
+  // Filtered packages
+  protected readonly packages = computed(() => {
+    let list = [...(this.rawData() ?? [])];
+
+    // Filter by Scope Tab
+    const tab = this.activeScopeTab();
+    if (tab === 'gym') {
+      list = list.filter((p) => (p.packageScope || 'gym') !== 'trainer' && !p.trainerName);
+    } else if (tab === 'trainer') {
+      list = list.filter((p) => p.packageScope === 'trainer' || !!p.trainerName);
+    }
+
+    // Filter by specific trainer
+    const trainerFilter = this.selectedTrainerFilter();
+    if (trainerFilter !== 'all') {
+      list = list.filter(
+        (p) =>
+          p.trainerId === trainerFilter ||
+          (p.trainerPricing && p.trainerPricing.some((tp) => tp.trainerId === trainerFilter)),
+      );
+    }
+
+    // Filter by Search Query
+    const query = this.searchQuery().trim().toLowerCase();
+    if (query) {
+      list = list.filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(query);
+        const catMatch = (p.category ?? '').toLowerCase().includes(query);
+        const trainerMatch = (p.trainerName ?? '').toLowerCase().includes(query);
+        const barcodeMatch = (p.barcode ?? '').toLowerCase().includes(query);
+        return nameMatch || catMatch || trainerMatch || barcodeMatch;
+      });
+    }
+
+    return list.sort((a, b) => a.durationDays - b.durationDays);
+  });
+
+  // Drawer & Form State
   protected readonly drawerOpen = signal(false);
   protected readonly editing = signal<GymPackage | null>(null);
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
 
+  // Multi-Trainer Pricing Tiers
+  protected readonly formTrainerPricing = signal<TrainerPackagePricing[]>([]);
+
+  // Documents
   protected readonly docDefsService = inject(DocumentDefinitionsService);
   protected readonly showDocDefsModal = signal(false);
   protected readonly selectedDocRequirements = signal<string[]>([]);
 
-  hasDocRequirement(code: string): boolean {
-    return this.selectedDocRequirements().includes(code);
-  }
-
-  toggleDocRequirement(code: string): void {
-    const cur = this.selectedDocRequirements();
-    if (cur.includes(code)) {
-      this.selectedDocRequirements.set(cur.filter((c) => c !== code));
-    } else {
-      this.selectedDocRequirements.set([...cur, code]);
-    }
-  }
-
-  formatDocRequirements(reqs?: string[]): string {
-    if (!reqs || reqs.length === 0) return '';
-    return reqs.map((r) => this.docDefsService.getLabel(r)).join(', ');
-  }
-
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
+    packageScope: ['gym' as PackageScope],
+    trainerId: [null as string | null],
+    trainerName: [null as string | null],
+    trainerCommissionRate: [null as number | null],
     category: [''],
     barcode: [''],
     durationType: ['month' as 'day' | 'month' | 'year'],
@@ -499,6 +877,98 @@ export class AdminPackages {
     return firstError(this.form.controls[name], messages);
   }
 
+  protected setPackageScope(scope: PackageScope): void {
+    this.form.controls.packageScope.setValue(scope);
+    if (scope === 'gym') {
+      this.form.controls.trainerId.setValue(null);
+      this.form.controls.trainerName.setValue(null);
+      this.form.controls.trainerCommissionRate.setValue(null);
+      this.formTrainerPricing.set([]);
+    }
+  }
+
+  protected onTrainerSelected(trainerId: string): void {
+    if (!trainerId || trainerId === 'null') {
+      this.form.controls.trainerId.setValue(null);
+      this.form.controls.trainerName.setValue(null);
+      return;
+    }
+    const staff = this.trainers().find((t) => t.id === trainerId);
+    if (staff) {
+      this.form.controls.trainerId.setValue(staff.id);
+      this.form.controls.trainerName.setValue(staff.displayName);
+      if (staff.commissionRate && !this.form.controls.trainerCommissionRate.value) {
+        this.form.controls.trainerCommissionRate.setValue(staff.commissionRate);
+      }
+    }
+  }
+
+  protected addTrainerPricingRow(): void {
+    const available = this.trainers().find((t) => !this.formTrainerPricing().some((p) => p.trainerId === t.id));
+    const newRow: TrainerPackagePricing = {
+      trainerId: available?.id || '',
+      trainerName: available?.displayName || '',
+      price: this.form.controls.price.value || 0,
+      commissionRate: this.form.controls.trainerCommissionRate.value || null,
+      sessionCount: this.form.controls.sessionCount.value,
+    };
+    this.formTrainerPricing.update((rows) => [...rows, newRow]);
+  }
+
+  protected updateTrainerPricingRow(index: number, field: keyof TrainerPackagePricing, val: unknown): void {
+    this.formTrainerPricing.update((rows) => {
+      const updated = [...rows];
+      const item = { ...updated[index] };
+      if (field === 'trainerId') {
+        const staff = this.trainers().find((t) => t.id === val);
+        item.trainerId = String(val);
+        item.trainerName = staff?.displayName || '';
+      } else if (field === 'price') {
+        item.price = Number(val) || 0;
+      } else if (field === 'commissionRate') {
+        item.commissionRate = val === '' ? null : Number(val);
+      }
+      updated[index] = item;
+      return updated;
+    });
+  }
+
+  protected removeTrainerPricingRow(index: number): void {
+    this.formTrainerPricing.update((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  protected formatTrainerPricingTooltip(pricing?: TrainerPackagePricing[]): string {
+    if (!pricing || pricing.length === 0) return '';
+    return pricing.map((p) => `${p.trainerName}: ${this.money(p.price)}`).join('\n');
+  }
+
+  protected getPriceRangeLabel(pkg: GymPackage): string {
+    if (!pkg.trainerPricing || pkg.trainerPricing.length === 0) return '';
+    const prices = [pkg.price, ...pkg.trainerPricing.map((tp) => tp.price)].filter((n) => typeof n === 'number');
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (min === max) return `${this.money(min)}`;
+    return `Eğitmene Göre (${this.money(min)} - ${this.money(max)})`;
+  }
+
+  hasDocRequirement(code: string): boolean {
+    return this.selectedDocRequirements().includes(code);
+  }
+
+  toggleDocRequirement(code: string): void {
+    const cur = this.selectedDocRequirements();
+    if (cur.includes(code)) {
+      this.selectedDocRequirements.set(cur.filter((c) => c !== code));
+    } else {
+      this.selectedDocRequirements.set([...cur, code]);
+    }
+  }
+
+  formatDocRequirements(reqs?: string[]): string {
+    if (!reqs || reqs.length === 0) return '';
+    return reqs.map((r) => this.docDefsService.getLabel(r)).join(', ');
+  }
+
   protected getDurationLabel(pkg: GymPackage): string {
     if (pkg.durationType === 'year') return 'Yıl';
     if (pkg.durationType === 'month') return 'Ay';
@@ -517,7 +987,7 @@ export class AdminPackages {
     const shortNames: Record<number, string> = {
       1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 7: 'Paz'
     };
-    return sorted.map(d => shortNames[d] || String(d)).join(', ');
+    return sorted.map((d) => shortNames[d] || String(d)).join(', ');
   }
 
   protected isDaySelected(dayId: number): boolean {
@@ -525,16 +995,14 @@ export class AdminPackages {
     return days.includes(dayId);
   }
 
-  protected isPresetActive(preset: 'weekdays' | 'weekend' | 'mon_wed_fri' | 'tue_thu_sat'): boolean {
+  protected isPresetActive(preset: 'weekdays' | 'weekend'): boolean {
     const val = this.form.controls.allowedDays.value || [];
-    if (preset === 'weekdays') return val.length === 5 && [1, 2, 3, 4, 5].every(d => val.includes(d));
-    if (preset === 'weekend') return val.length === 2 && [6, 7].every(d => val.includes(d));
-    if (preset === 'mon_wed_fri') return val.length === 3 && [1, 3, 5].every(d => val.includes(d));
-    if (preset === 'tue_thu_sat') return val.length === 3 && [2, 4, 6].every(d => val.includes(d));
+    if (preset === 'weekdays') return val.length === 5 && [1, 2, 3, 4, 5].every((d) => val.includes(d));
+    if (preset === 'weekend') return val.length === 2 && [6, 7].every((d) => val.includes(d));
     return false;
   }
 
-  protected setDayPreset(preset: 'all' | 'weekdays' | 'weekend' | 'mon_wed_fri' | 'tue_thu_sat'): void {
+  protected setDayPreset(preset: 'all' | 'weekdays' | 'weekend'): void {
     let days: number[] = [];
     switch (preset) {
       case 'all':
@@ -545,12 +1013,6 @@ export class AdminPackages {
         break;
       case 'weekend':
         days = [6, 7];
-        break;
-      case 'mon_wed_fri':
-        days = [1, 3, 5];
-        break;
-      case 'tue_thu_sat':
-        days = [2, 4, 6];
         break;
     }
     this.form.controls.allowedDays.setValue(days);
@@ -585,12 +1047,19 @@ export class AdminPackages {
     this.editing.set(pkg);
     this.errorMessage.set('');
     this.selectedDocRequirements.set(pkg?.requiredDocuments || []);
-    
+    this.formTrainerPricing.set([...(pkg?.trainerPricing || [])]);
+
     const type = pkg?.durationType || (pkg?.durationDays && pkg.durationDays % 30 === 0 ? 'month' : 'day');
     const val = pkg?.durationValue || (type === 'month' && pkg?.durationDays ? Math.round(pkg.durationDays / 30) : pkg?.durationDays || 1);
 
+    const initialScope: PackageScope = pkg?.packageScope ?? (pkg?.trainerId || pkg?.trainerName ? 'trainer' : 'gym');
+
     this.form.reset({
       name: pkg?.name ?? '',
+      packageScope: initialScope,
+      trainerId: pkg?.trainerId ?? null,
+      trainerName: pkg?.trainerName ?? null,
+      trainerCommissionRate: pkg?.trainerCommissionRate ?? null,
       category: pkg?.category ?? (this.categories()[0] || ''),
       barcode: pkg?.barcode ?? '',
       durationType: type,
@@ -616,6 +1085,7 @@ export class AdminPackages {
   protected close(): void {
     this.drawerOpen.set(false);
     this.editing.set(null);
+    this.formTrainerPricing.set([]);
   }
 
   protected async submit(): Promise<void> {
@@ -623,12 +1093,28 @@ export class AdminPackages {
       this.form.markAllAsTouched();
       return;
     }
+
+    const v = this.form.getRawValue();
+
+    if (v.packageScope === 'trainer' && !v.trainerId && this.formTrainerPricing().length === 0) {
+      this.errorMessage.set('Personele özel paket için lütfen bir antrenör seçiniz.');
+      return;
+    }
+
     this.submitting.set(true);
     this.errorMessage.set('');
+
     try {
-      const v = this.form.getRawValue();
       const payload = {
         name: v.name.trim(),
+        packageScope: v.packageScope,
+        trainerId: v.packageScope === 'trainer' ? v.trainerId : null,
+        trainerName: v.packageScope === 'trainer' ? v.trainerName : null,
+        trainerCommissionRate:
+          v.packageScope === 'trainer' && v.trainerCommissionRate !== null && (v.trainerCommissionRate as unknown) !== ''
+            ? Number(v.trainerCommissionRate)
+            : null,
+        trainerPricing: v.packageScope === 'trainer' ? this.formTrainerPricing() : [],
         category: v.category,
         barcode: v.barcode.trim(),
         durationType: v.durationType,
@@ -648,16 +1134,21 @@ export class AdminPackages {
         trialEligible: v.trialEligible,
         requiredDocuments: this.selectedDocRequirements(),
       };
+
       const current = this.editing();
       if (current) {
         await this.service.updatePackage(current.id, { ...payload, status: v.status });
       } else {
         await this.service.createPackage(payload);
       }
-      this.snackBar.open(current ? 'Paket güncellendi.' : 'Paket eklendi.', 'Kapat', { duration: 3000 });
+
+      this.snackBar.open(current ? 'Paket başarıyla güncellendi.' : 'Yeni paket başarıyla eklendi.', 'Kapat', {
+        duration: 3000,
+      });
       this.close();
-    } catch {
-      this.errorMessage.set('Kaydedilemedi, tekrar dene.');
+    } catch (err) {
+      console.error('Paket kaydetme hatası:', err);
+      this.errorMessage.set('Kaydedilemedi, lütfen bilgileri kontrol edip tekrar deneyin.');
     } finally {
       this.submitting.set(false);
     }

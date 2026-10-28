@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,6 +10,36 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { GymApi } from '../../../core/api/gym.api';
 import { AlertService } from '../../../core/services/alert.service';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
+import { COUNTRIES, findCountry } from '../../../core/data/countries';
+import { TURKISH_CITIES } from '../../../core/data/turkish-cities';
+
+function parsePhoneNumber(fullPhone?: string | null): { countryCode: string; nationalNumber: string } {
+  if (!fullPhone) {
+    return { countryCode: 'TR', nationalNumber: '' };
+  }
+  const clean = fullPhone.trim();
+  const sorted = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  for (const c of sorted) {
+    if (clean.startsWith(c.dialCode)) {
+      const national = clean.slice(c.dialCode.length).trim();
+      return { countryCode: c.code, nationalNumber: national };
+    }
+  }
+  return { countryCode: 'TR', nationalNumber: clean.replace(/^\+90\s*/, '') };
+}
+
+function formatFullPhoneNumber(countryCode: string, nationalNumber: string): string {
+  let num = (nationalNumber || '').trim();
+  if (!num) return '';
+  const dialCode = findCountry(countryCode)?.dialCode ?? '+90';
+  if (num.startsWith('+')) {
+    return num;
+  }
+  if (dialCode === '+90' && num.startsWith('0')) {
+    num = num.slice(1).trim();
+  }
+  return `${dialCode} ${num}`.trim();
+}
 
 export interface DayOption {
   day: number;
@@ -64,6 +94,26 @@ export class TenantWizard {
   readonly currentStep = signal<1 | 2 | 3 | 4 | 5>(1);
   readonly submitting = signal(false);
 
+  // Ülke ve Şehir Listeleri
+  readonly countries = COUNTRIES;
+  readonly cities = TURKISH_CITIES;
+
+  // Başlangıç Telefon Ayrıştırmaları
+  private readonly initialGymPhone = parsePhoneNumber(this.auth.profile()?.phone);
+  private readonly initialBranchPhone = parsePhoneNumber(this.auth.profile()?.phone || '+90 216 450 1020');
+
+  // Adım 1 Salon Telefon Alan Kodu (+90)
+  readonly gymCountryCode = signal<string>(this.initialGymPhone.countryCode);
+  readonly gymDialCode = computed(() => findCountry(this.gymCountryCode())?.dialCode ?? '+90');
+
+  // Adım 2 Şube Telefon Alan Kodu (+90)
+  readonly branchCountryCode = signal<string>(this.initialBranchPhone.countryCode);
+  readonly branchDialCode = computed(() => findCountry(this.branchCountryCode())?.dialCode ?? '+90');
+
+  // Adım 3 Antrenör Telefon Alan Kodu (+90)
+  readonly trainerCountryCode = signal<string>('TR');
+  readonly trainerDialCode = computed(() => findCountry(this.trainerCountryCode())?.dialCode ?? '+90');
+
   // Gün Seçimleri (Step 1)
   readonly workingDays = signal<DayOption[]>(JSON.parse(JSON.stringify(WEEK_DAYS)));
 
@@ -91,7 +141,7 @@ export class TenantWizard {
   // Adım 1: Salon Bilgileri
   readonly gymForm = this.fb.nonNullable.group({
     name: [this.auth.profile()?.displayName ? `${this.auth.profile()?.displayName} Gym` : 'Odivon GYM', [Validators.required, Validators.minLength(2)]],
-    phone: [this.auth.profile()?.phone || '', [Validators.required]],
+    phone: [this.initialGymPhone.nationalNumber, [Validators.required]],
     city: ['İstanbul', [Validators.required]],
     address: ['Merkez Mah. Spor Cad. No: 14', [Validators.required]],
     openTime: ['07:00', [Validators.required]],
@@ -102,7 +152,7 @@ export class TenantWizard {
   readonly branchForm = this.fb.nonNullable.group({
     branchName: ['Merkez Şube', [Validators.required]],
     capacity: [250, [Validators.required, Validators.min(10)]],
-    branchPhone: [this.auth.profile()?.phone || '+90 216 450 1020', [Validators.required]],
+    branchPhone: [this.initialBranchPhone.nationalNumber, [Validators.required]],
     branchAddress: ['Bağdat Caddesi No: 142', [Validators.required]],
   });
 
@@ -229,7 +279,7 @@ export class TenantWizard {
         this.gymApi.completeOnboarding({
           gym: {
             name: gymData.name.trim(),
-            phone: gymData.phone.trim(),
+            phone: formatFullPhoneNumber(this.gymCountryCode(), gymData.phone),
             city: gymData.city.trim(),
             address: gymData.address.trim(),
             openTime: gymData.openTime,
@@ -241,13 +291,13 @@ export class TenantWizard {
           branch: {
             branchName: branchData.branchName.trim(),
             capacity: Number(branchData.capacity),
-            branchPhone: branchData.branchPhone.trim(),
+            branchPhone: formatFullPhoneNumber(this.branchCountryCode(), branchData.branchPhone),
             branchAddress: branchData.branchAddress.trim(),
           },
           trainer: {
             displayName: trainerData.displayName.trim(),
             email: trainerData.email.trim().toLowerCase(),
-            phone: trainerData.phone.trim(),
+            phone: formatFullPhoneNumber(this.trainerCountryCode(), trainerData.phone),
             specialties: trainerData.specialties,
             notes: trainerData.notes.trim(),
           },

@@ -18,9 +18,12 @@ import { errorInterceptor } from './core/http/error.interceptor';
 import { requestIdInterceptor } from './core/http/request-id.interceptor';
 import { clientVersionInterceptor } from './core/http/client-version.interceptor';
 import { loadingInterceptor } from './core/http/loading.interceptor';
-
+import { registerLocaleData } from '@angular/common';
+import localeTr from '@angular/common/locales/tr';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
+
+registerLocaleData(localeTr);
 
 export const appConfig: ApplicationConfig = {
   providers: [

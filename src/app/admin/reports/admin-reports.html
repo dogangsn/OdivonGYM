@@ -2,9 +2,9 @@
   <!-- 1. Header & Filtre Barı -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <app-page-header
-      title="Birleşik ERP & Mali Raporlar"
+      title="reports.title"
       icon="analytics"
-      description="Salon gelir-giderleri, kâr/zarar (P&L), üyelik paketleri, market satışları ve turnike yoğunluk analizi."
+      description="reports.subtitle"
     />
 
     <!-- Tarih Filtreleri & Dışa Aktar -->
@@ -117,7 +117,7 @@
         <div>
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Gelir</span>
           <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-            ₺{{ money(totalIncome()) }}
+            {{ money(totalIncome()) }}
           </div>
           <div class="text-xs font-semibold text-slate-500 mt-0.5">
             Paket + Market + Ek Hizmet
@@ -133,7 +133,7 @@
         <div>
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Gider</span>
           <div class="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 font-mono">
-            ₺{{ money(totalExpense()) }}
+            {{ money(totalExpense()) }}
           </div>
           <div class="text-xs font-semibold text-slate-500 mt-0.5">
             Kira + Maaş + Faturalar
@@ -150,7 +150,7 @@
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Net Faaliyet Kârı</span>
           <div class="text-2xl font-black mt-1 font-mono"
                [class]="netProfit() >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'">
-            ₺{{ money(netProfit()) }}
+            {{ money(netProfit()) }}
           </div>
           <div class="text-xs font-semibold text-slate-500 mt-0.5">
             {{ netProfit() >= 0 ? 'Net Pozitif Nakit Akışı' : 'Faaliyet Açığı' }}
@@ -188,7 +188,7 @@
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
             <span>Gelir Kaynakları Dağılımı</span>
           </h3>
-          <span class="text-xs font-black text-emerald-600 font-mono">₺{{ money(totalIncome()) }}</span>
+          <span class="text-xs font-black text-emerald-600 font-mono">{{ money(totalIncome()) }}</span>
         </div>
 
         @if (incomeByCategory().length === 0) {
@@ -200,7 +200,7 @@
                 <div class="flex items-center justify-between text-xs mb-1">
                   <span class="font-semibold text-slate-700 dark:text-slate-300">{{ item.category }}</span>
                   <span class="font-mono text-slate-900 dark:text-white font-bold">
-                    ₺{{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
+                    {{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
                   </span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -219,7 +219,7 @@
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
             <span>Gider Kalemleri Dağılımı</span>
           </h3>
-          <span class="text-xs font-black text-rose-600 font-mono">₺{{ money(totalExpense()) }}</span>
+          <span class="text-xs font-black text-rose-600 font-mono">{{ money(totalExpense()) }}</span>
         </div>
 
         @if (expenseByCategory().length === 0) {
@@ -231,7 +231,7 @@
                 <div class="flex items-center justify-between text-xs mb-1">
                   <span class="font-semibold text-slate-700 dark:text-slate-300">{{ item.category }}</span>
                   <span class="font-mono text-slate-900 dark:text-white font-bold">
-                    ₺{{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
+                    {{ money(item.total) }} <span class="text-[10px] text-slate-400">(%{{ item.percentage }})</span>
                   </span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -339,7 +339,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Toplam Satış Cirosu</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">₺{{ money(totalShopRevenue()) }}</div>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">{{ money(totalShopRevenue()) }}</div>
       </div>
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İşlem Adedi</span>
@@ -347,7 +347,7 @@
       </div>
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ortalama Fiş</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">₺{{ money(averageTicket()) }}</div>
+        <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">{{ money(averageTicket()) }}</div>
       </div>
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">İadeler</span>
@@ -366,7 +366,7 @@
               <span>{{ paymentLabel[m] }}</span>
             </div>
             <div class="text-base font-black text-slate-900 dark:text-white font-mono">
-              ₺{{ money(paymentStats()[m]?.total || 0) }}
+              {{ money(paymentStats()[m]?.total || 0) }}
             </div>
             <div class="text-[10px] text-slate-400 mt-0.5">
               {{ paymentStats()[m]?.count || 0 }} İşlem
@@ -428,7 +428,7 @@
                     {{ sale.status === 'completed' ? 'Tamamlandı' : 'İade Edildi' }}
                   </span>
                 </td>
-                <td class="odv-td text-right font-black font-mono">₺{{ money(sale.totalAmount) }}</td>
+                <td class="odv-td text-right font-black font-mono">{{ money(sale.totalAmount) }}</td>
                 <td class="odv-td text-center">
                   @if (sale.status === 'completed') {
                     <button type="button"

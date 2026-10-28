@@ -13,7 +13,7 @@ import { AdminShopService } from './admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { ShopProduct, ShopSale, isLowStock } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
-import { StockCategoryItem } from '../../core/models/stock-category.model';
+import { StockCategoryItem, resolveCategoryEmoji } from '../../core/models/stock-category.model';
 
 type Tab = 'pos' | 'products' | 'sales';
 
@@ -85,7 +85,7 @@ export class AdminShop {
       ...list.map((c) => ({
         id: c.key,
         label: c.name,
-        icon: c.icon || 'inventory_2',
+        icon: resolveCategoryEmoji(c.name || c.key, c.icon),
       })),
     ];
   });
@@ -142,12 +142,14 @@ export class AdminShop {
     const search = this.posSearch().trim().toLowerCase();
 
     return list.filter((p) => {
-      const matchCat = cat === 'all' || p.category?.toLowerCase() === cat.toLowerCase();
+      const pCat = (p.category ?? '').trim().toLowerCase();
+      const targetCat = (cat ?? '').trim().toLowerCase();
+      const matchCat = cat === 'all' || (!!targetCat && pCat === targetCat);
       const matchSearch =
         !search ||
-        p.name.toLowerCase().includes(search) ||
-        p.sku.toLowerCase().includes(search) ||
-        p.category?.toLowerCase().includes(search);
+        (!!p.name && p.name.toLowerCase().includes(search)) ||
+        (!!p.sku && p.sku.toLowerCase().includes(search)) ||
+        (!!p.category && p.category.toLowerCase().includes(search));
       return matchCat && matchSearch;
     });
   });

@@ -16,7 +16,7 @@ import { Supplier } from '../../core/models/supplier.model';
 import { AdminSuppliersService } from '../suppliers/admin-suppliers.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { of } from 'rxjs';
-import { StockCategoryItem } from '../../core/models/stock-category.model';
+import { StockCategoryItem, resolveCategoryEmoji } from '../../core/models/stock-category.model';
 
 @Component({
   selector: 'app-admin-products',
@@ -51,7 +51,7 @@ export class AdminProducts {
       ...list.map((c) => ({
         id: c.key,
         label: c.name,
-        icon: c.icon || 'inventory_2',
+        icon: resolveCategoryEmoji(c.name || c.key, c.icon),
         colorTag: c.colorTag || 'indigo',
       })),
     ];
@@ -86,12 +86,14 @@ export class AdminProducts {
     const q = this.search().trim().toLowerCase();
 
     return list.filter((p) => {
-      const matchCat = cat === 'all' || p.category?.toLowerCase() === cat.toLowerCase();
+      const pCat = (p.category ?? '').trim().toLowerCase();
+      const targetCat = (cat ?? '').trim().toLowerCase();
+      const matchCat = cat === 'all' || (!!targetCat && pCat === targetCat);
       const matchQuery =
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q);
+        (!!p.name && p.name.toLowerCase().includes(q)) ||
+        (!!p.sku && p.sku.toLowerCase().includes(q)) ||
+        (!!p.category && p.category.toLowerCase().includes(q));
       return matchCat && matchQuery;
     });
   });
@@ -122,9 +124,14 @@ export class AdminProducts {
     return firstError(this.form.controls[name], messages);
   }
 
-  getCategoryItem(key: string): StockCategoryItem | undefined {
+  getCategoryItem(key?: string): StockCategoryItem | undefined {
+    if (!key) return undefined;
+    const target = key.trim().toLowerCase();
     return this.stockCategories().find(
-      (c) => c.key === key || c.name.toLowerCase() === key?.toLowerCase(),
+      (c) =>
+        (c.key && c.key.trim().toLowerCase() === target) ||
+        (c.name && c.name.trim().toLowerCase() === target) ||
+        (c.id && c.id.trim().toLowerCase() === target),
     );
   }
 
@@ -135,7 +142,7 @@ export class AdminProducts {
 
   getCategoryIcon(key: string): string {
     const found = this.getCategoryItem(key);
-    return found?.icon || 'inventory_2';
+    return resolveCategoryEmoji(found?.name || key, found?.icon);
   }
 
   selectCategory(key: string): void {
@@ -146,7 +153,8 @@ export class AdminProducts {
   openCreate(): void {
     this.errorMessage.set('');
     this.editingProduct.set(null);
-    const defaultCat = this.stockCategories()[0]?.key || 'protein';
+    const firstCat = this.stockCategories()[0];
+    const defaultCat = firstCat?.key || firstCat?.name || 'protein';
     this.form.reset({
       name: '',
       sku: `PRD-${Date.now().toString().slice(-4)}`,

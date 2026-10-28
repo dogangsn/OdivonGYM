@@ -2,14 +2,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Auth,
+  EmailAuthProvider,
   User,
   authState,
   browserLocalPersistence,
   browserSessionPersistence,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
 } from '@angular/fire/auth';
 import { firstValueFrom, from, of, switchMap, tap } from 'rxjs';
 import { IdentityApi } from '../api/identity.api';
@@ -32,6 +35,8 @@ export class AuthService {
   /** Set when the last sign-out was forced because the session was too old (login page message). */
   readonly sessionExpired = signal(false);
   readonly isAuthenticated = computed(() => this.firebaseUser() !== null);
+  readonly user = computed(() => this.firebaseUser());
+  readonly email = computed(() => this.userProfile()?.email || this.firebaseUser()?.email || '');
   readonly profile = computed(() => this.userProfile());
   readonly membershipStatus = computed<MembershipStatus | null>(
     () => this.userProfile()?.membershipStatus ?? null,
@@ -145,7 +150,7 @@ export class AuthService {
     country: string;
     phone: string;
     language: string;
-  }): Promise<void> {
+  }): Promise<{ email: string; displayName: string; tenantName: string }> {
     await firstValueFrom(
       this.identity.register({
         email: input.email,
@@ -156,18 +161,80 @@ export class AuthService {
         phone: input.phone,
       }),
     );
-    await this.signInWithEmail(input.email, input.password, true);
+    return {
+      email: input.email,
+      displayName: input.displayName,
+      tenantName: input.tenantName,
+    };
   }
 
   async signInWithEmail(email: string, password: string, remember = true): Promise<void> {
     this.ready.set(false);
     await setPersistence(this.auth, remember ? browserLocalPersistence : browserSessionPersistence);
-    await signInWithEmailAndPassword(this.auth, email, password);
+    const credential = await signInWithEmailAndPassword(this.auth, email, password);
+
+    // E-posta doğrulama kontrolü: Yalnızca yeni SaaS salon sahibi kayıtları için zorunludur.
+    // Oluşturulan kullanıcı kartları, sporcu üyeler ve personeller için mail doğrulama zorunlu değildir.
+    if (!credential.user.emailVerified) {
+      await credential.user.reload();
+      if (!this.auth.currentUser?.emailVerified) {
+        const tokenResult = await credential.user.getIdTokenResult().catch(() => null);
+        const claims = tokenResult?.claims ?? {};
+        const isBypassed =
+          claims['accountType'] === 'gym_member' ||
+          claims['role'] === 'user' ||
+          claims['role'] === 'trainer' ||
+          claims['role'] === 'receptionist' ||
+          (Boolean(claims['tenantId']) && claims['role'] !== 'owner');
+
+        if (!isBypassed) {
+          await signOut(this.auth);
+          this.firebaseUser.set(null);
+          this.userProfile.set(null);
+          this.markReady();
+          const err = new Error('auth/email-not-verified');
+          (err as { code?: string; email?: string }).code = 'auth/email-not-verified';
+          (err as { code?: string; email?: string }).email = email;
+          throw err;
+        }
+      }
+    }
+
     await this.waitUntilReady();
   }
 
   async sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(this.auth, email);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const user = this.auth.currentUser ?? this.firebaseUser();
+    if (!user || !user.email) {
+      throw new Error('Aktif kullanıcı oturumu bulunamadı.');
+    }
+
+    // 1. Mevcut şifreyi doğrulamak ve Firebase oturumunu tazelemek için yeniden kimlik doğrula
+    try {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+    } catch (err: any) {
+      if (err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
+        const customErr = new Error('Mevcut şifreniz hatalı. Lütfen kontrol edip tekrar deneyin.');
+        (customErr as any).code = 'INVALID_CURRENT_PASSWORD';
+        throw customErr;
+      }
+      throw err;
+    }
+
+    // 2. Firebase Auth üzerinde şifreyi güncelle
+    await updatePassword(user, newPassword);
+
+    // 3. Backend API ile senkronize et
+    try {
+      await firstValueFrom(this.identity.changePassword({ currentPassword, newPassword }));
+    } catch (e) {
+      console.warn('Backend password sync notice:', e);
+    }
   }
 
   /** Signs out a sign-in older than the session limit; returns the user if it may continue. */

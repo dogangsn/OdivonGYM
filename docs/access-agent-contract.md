@@ -23,7 +23,7 @@ Tüm yollar `/api/v1` önekiyle çalışır. Yanıtlar MainApi'nin standart
 | `adapterStatus` | `'ready' \| 'hardware_pending' \| 'not_validated'` | Sunucu türetir. |
 | `lastSeenAt` | timestamp \| null | Heartbeat'te cihaz `reachable: true` ise güncellenir. |
 | `lastError` | string \| null | Heartbeat'ten. |
-| `online` | boolean | **Okuma anında hesaplanır:** `lastSeenAt` son 30 sn içinde ve agent heartbeat'i son 30 sn içinde. Sabit değer yazılmaz. |
+| `online` | boolean | **Okuma anında hesaplanır:** `lastSeenAt` son 150 sn içinde ve agent heartbeat'i son 150 sn içinde. Sabit değer yazılmaz. |
 
 Cihaz parolası (Digest) **MainApi'de tutulmaz**; agent'ın yerel `config.json`
 dosyasında `credentials[host]` altında durur.
@@ -142,12 +142,12 @@ Yanıt:
       "name": "Ayse Yilmaz", "card": "0012345678", "validEnd": "20261031",
       "enabled": true, "version": 7 }
   ],
-  "pollAfterMs": 5000
+  "pollAfterMs": 30000
 }
 ```
 ```
 
-`limit` 1–200 (varsayılan 50). Tam sayfa dönerse `pollAfterMs` 0'dır. Öğelerde `replacesUserId` de bulunur.
+`limit` 1–200 (varsayılan 50). Tam sayfa dönerse `pollAfterMs` 0'dır; agent bir sonraki iş sorgusunu bu kadar bekler (cihaz logları yerelde 5 sn'de bir okunmaya devam eder). Öğelerde `replacesUserId` de bulunur.
 
 **Atomik teslim:** Transaction içinde agent'ın cihazlarına ait
 `status == 'pending'` **veya** (`status == 'delivered'` ve `leaseUntil < now`)
@@ -193,13 +193,21 @@ Agent'a atanmamış cihazın olayı bütün partiyi 403 yapmaz; `rejected` için
 
 İstek: `{ agentVersion, queueDepth, devices: [{ gateId, reachable, lastError, lastEventAt, deviceTime }] }`
 Etki: `gymAccessAgents.lastHeartbeatAt = now`; her cihaz için `reachable` ise
-`lastSeenAt = now`, `lastError` yazılır. Agent 15 sn'de bir gönderir.
+`lastSeenAt = now`, `lastError` yazılır. Agent 60 sn'de bir gönderir.
 
 ## 4. Agent davranışı (OdivonGYM/edge-agent)
 
 - Her cihaz 5 sn'de bir taranır; tüm log sayfaları okunur, yeni kayıtlar yerel
-  SQLite (`agent.db`) kuyruğuna alınır, sonra MainApi'ye toplu gönderilir.
+  SQLite (`agent.db`) kuyruğuna alınır; yeni geçiş olunca 5 sn toplanıp tek pakette gönderilir; olay yoksa istek atılmaz. MainApi yalnızca paketteki üye numaralarını/kartları sorgular.
   İnternet yoksa kuyruk diskte kalır; gönderim başarılı olunca silinir.
+- `192.168.1.2` üzerindeki Perkotek YT-32 firmware `K4E_2Y1Kbc011_2.9` logları kart numarasını
+  ayrı alan olarak döndürmez. 24.10.2026 canlı testinde reddedilen tanımsız kart yeni
+  `GetLogDataPage` kaydı üretmedi (öncesi ve sonrası `allLogCount: 42`). Bu API üzerinden
+  tanımsız kart numarası tespit edilemez; kart için ayrı USB okuyucu veya doğrulanmış
+  üretici ham okuma arayüzü gerekir.
+- Cihazın TCP/5005 portu açık ve ikili çerçeveli yanıt veriyor. Bu portun SDK protokolü
+  ve tanımsız kartı doğrulama öncesinde bildiren bir callback sunup sunmadığı henüz
+  belgelenmedi; üreticiden YT-32 firmware sürümüne uygun SDK/protokol belgesi gerekir.
 - Her iş öğesi cihaza uygulanır (aynı cihaza istekler sıralı gider), cihazdan `GetUserInfo` ile geri okunur; alanlar
   eşleşirse `verified: true` ile `applied` onayı gönderilir. Eşleşmezse `error`.
 - `enabled: false` ⇒ `DeleteUserInfo`; geri okumada kullanıcı yoksa doğrulanmış sayılır.

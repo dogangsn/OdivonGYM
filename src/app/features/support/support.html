@@ -1,0 +1,560 @@
+<div class="space-y-6 max-w-5xl mx-auto px-4 py-4 sm:px-6">
+  <!-- Üst Başlık & Giriş Kartı -->
+  <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600/90 text-white flex items-center justify-center shadow-lg shadow-indigo-600/40 shrink-0">
+          <mat-icon class="text-[32px] w-8 h-8">support_agent</mat-icon>
+        </div>
+        <div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-indigo-400">{{ 'support.headerBadge' | transloco }}</span>
+          <h1 class="text-xl sm:text-2xl font-black text-white m-0 tracking-tight">{{ 'support.title' | transloco }}</h1>
+          <p class="text-xs text-slate-300 m-0 mt-1 max-w-xl">
+            {{ 'support.subtitle' | transloco }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Hızlı Sorgula Butonu -->
+      <button
+        type="button"
+        (click)="activeTab.set('track')"
+        class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all backdrop-blur-md border border-white/10 flex items-center gap-2 cursor-pointer shrink-0"
+      >
+        <mat-icon class="text-[18px] w-4.5 h-4.5 text-indigo-300">search</mat-icon>
+        <span>{{ 'support.quickTrackBtn' | transloco }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sekme Butonları -->
+  <div class="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/80 border border-slate-200/80 w-fit">
+    <button
+      type="button"
+      (click)="activeTab.set('create')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'create' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">add_comment</mat-icon>
+      <span>{{ 'support.tabs.create' | transloco }}</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('track')"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      [ngClass]="activeTab() === 'track' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+    >
+      <mat-icon class="text-[16px] w-4 h-4">track_changes</mat-icon>
+      <span>{{ 'support.tabs.track' | transloco }}</span>
+      @if (trackedTicket()) {
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      }
+    </button>
+
+    @if (isAuthenticated()) {
+      <button
+        type="button"
+        (click)="activeTab.set('history'); loadMyTickets()"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+        [ngClass]="activeTab() === 'history' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+      >
+        <mat-icon class="text-[16px] w-4 h-4">history</mat-icon>
+        <span>{{ 'support.tabs.history' | transloco }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SEKME 1: YENİ TALEP OLUŞTUR                -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'create') {
+    @if (submittedTicket()) {
+      <!-- Başarıyla Oluşturulan Talep Kartı -->
+      <div class="p-8 rounded-3xl bg-white border border-emerald-200 shadow-xl space-y-6 text-center animate-fade-in max-w-2xl mx-auto">
+        <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
+          <mat-icon class="text-[36px] w-9 h-9">check_circle</mat-icon>
+        </div>
+
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">TALEP BAŞARIYLA ALINDI</span>
+          <h2 class="text-2xl font-black text-slate-900 m-0 mt-1">Talebiniz Kaydedildi!</h2>
+          <p class="text-xs text-slate-500 m-0 mt-2 max-w-md mx-auto">
+            Talebiniz incelenmek üzere sistemimize iletilmiştir. Yetkili ekibimiz inceleyip onayladığında veya yanıtladığında durumu takip edebilirsiniz.
+          </p>
+        </div>
+
+        <!-- Takip Numarası Vurgu Kutusu -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-slate-50 border-2 border-indigo-200/80 max-w-md mx-auto space-y-2">
+          <span class="text-[11px] font-bold text-indigo-700 uppercase tracking-widest block">ÖZEL TAKİP NUMARANIZ</span>
+          <div class="flex items-center justify-center gap-3">
+            <span class="font-mono text-2xl font-black tracking-wider text-indigo-950">
+              {{ submittedTicket()?.trackingNumber }}
+            </span>
+            <button
+              type="button"
+              (click)="copyTrackingNumber()"
+              class="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-xs"
+              title="Takip Numarasını Kopyala"
+            >
+              <mat-icon class="text-[18px] w-4.5 h-4.5">content_copy</mat-icon>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 m-0">Lütfen bu numarayı kaydedin veya durumunu sorgulamak için saklayın.</p>
+        </div>
+
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            (click)="startNewTicket()"
+            class="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+          >
+            Başka Talep Oluştur
+          </button>
+          <button
+            type="button"
+            (click)="trackFromSubmitted()"
+            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-2"
+          >
+            <mat-icon class="text-[18px] w-4.5 h-4.5">visibility</mat-icon>
+            <span>Talebimi Hemen Sorgula</span>
+          </button>
+        </div>
+      </div>
+    } @else {
+      <!-- Talep Giriş Formu -->
+      <div class="rounded-3xl bg-white border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+        <!-- 1. Kategori Seçimi -->
+        <div>
+          <label class="block font-bold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
+            <mat-icon class="text-[16px] w-4 h-4 text-indigo-600">category</mat-icon>
+            <span>{{ 'support.create.categoryTitle' | transloco }} *</span>
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            @for (cat of categories; track cat.id) {
+              <button
+                type="button"
+                (click)="selectCategory(cat.id)"
+                class="p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 relative select-none"
+                [class]="selectedCategory() === cat.id
+                  ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20 text-indigo-950 font-bold shadow-xs'
+                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800 hover:border-slate-300'"
+              >
+                <div
+                  class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                  [class]="selectedCategory() === cat.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'"
+                >
+                  <mat-icon class="text-[20px] w-5 h-5">{{ cat.icon }}</mat-icon>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="m-0 text-xs font-bold leading-tight truncate text-slate-900">{{ ('support.categories.' + cat.id) | transloco }}</p>
+                  <p class="m-0 mt-1 text-[11px] text-slate-500 font-normal leading-snug line-clamp-2">{{ ('support.categories.' + cat.id + '_desc') | transloco }}</p>
+                </div>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- 2. İletişim Bilgileri -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div>
+            <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.fullName' | transloco }} *</label>
+            <input
+              type="text"
+              [ngModel]="fullName()"
+              (ngModelChange)="fullName.set($event)"
+              placeholder="Örn: Ayşe Yılmaz"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+            />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.email' | transloco }} *</label>
+            <input
+              type="email"
+              [ngModel]="email()"
+              (ngModelChange)="email.set($event)"
+              placeholder="ayse@example.com"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+            />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.phone' | transloco }}</label>
+            <input
+              type="tel"
+              [ngModel]="phone()"
+              (ngModelChange)="phone.set($event)"
+              placeholder="+90 532 000 00 00"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+            />
+          </div>
+        </div>
+
+        <!-- 3. Konu & Öncelik -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div class="sm:col-span-3">
+            <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.subject' | transloco }} *</label>
+            <input
+              type="text"
+              [ngModel]="subject()"
+              (ngModelChange)="subject.set($event)"
+              placeholder="Örn: Akşam saatlerinde turnike QR kodu geçersiz hatası alıyorum"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+            />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 text-xs mb-1">{{ 'support.create.priority' | transloco }}</label>
+            <select
+              [ngModel]="priority()"
+              (ngModelChange)="priority.set($event)"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 bg-white cursor-pointer"
+            >
+              <option value="low">{{ 'support.create.priorityNormal' | transloco }}</option>
+              <option value="normal">{{ 'support.create.priorityNormal' | transloco }}</option>
+              <option value="high">{{ 'support.create.priorityUrgent' | transloco }}</option>
+              <option value="urgent">{{ 'support.create.priorityCritical' | transloco }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4. Detaylı Açıklama -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-bold text-slate-700 text-xs">{{ 'support.create.description' | transloco }} *</label>
+            <span class="text-[11px]" [class]="description().trim().length >= 5 ? 'text-slate-400' : 'text-amber-600 font-semibold'">
+              @if (description().trim().length < 5) {
+                En az 5 karakter gerekli ({{ 5 - description().trim().length }} karakter kaldı)
+              } @else {
+                {{ description().trim().length }} karakter
+              }
+            </span>
+          </div>
+          <textarea
+            rows="5"
+            [ngModel]="description()"
+            (ngModelChange)="description.set($event)"
+            placeholder="Lütfen yaşadığınız durumu, tarih veya saat bilgisini detaylıca yazın. Böylece destek ekibimiz size en hızlı şekilde çözüm sunabilir."
+            class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 bg-white resize-y"
+          ></textarea>
+        </div>
+
+        <!-- Gönder Butonu -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <span class="text-[11px] text-slate-400">
+            * Zorunlu alanlar. Talebiniz gönderildiğinde size özel bir <strong>Takip No</strong> üretilecektir.
+          </span>
+          <button
+            type="button"
+            (click)="submitTicket()"
+            [disabled]="isSubmitting() || !subject().trim() || description().trim().length < 5 || !fullName().trim() || !email().trim()"
+            class="px-6 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 text-xs flex items-center gap-2"
+          >
+            @if (isSubmitting()) {
+              <mat-icon class="animate-spin text-[16px] w-4 h-4">refresh</mat-icon>
+              <span>{{ 'support.create.submitting' | transloco }}</span>
+            } @else {
+              <mat-icon class="text-[18px] w-4.5 h-4.5">send</mat-icon>
+              <span>{{ 'support.create.submitBtn' | transloco }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ========================================== -->
+  <!-- SEKME 2: TAKİP NO İLE SORGULA             -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'track') {
+    <div class="space-y-6">
+      <!-- Arama Girişi -->
+      <div class="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-sm space-y-3">
+        <label class="block font-bold text-slate-800 text-xs m-0">Talep Takip Numarası ile Canlı Sorgulama</label>
+        <div class="flex flex-col sm:flex-row items-center gap-2">
+          <div class="relative flex-1 w-full">
+            <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-5">search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="searchTrackingNo()"
+              (ngModelChange)="searchTrackingNo.set($event); searchError.set(null)"
+              (keydown.enter)="searchTicket()"
+              placeholder="Örn: TK-2026-749216"
+              class="w-full pl-11 pr-24 py-3 rounded-2xl border border-slate-200 text-sm font-mono font-bold text-slate-800 outline-none focus:border-indigo-600 uppercase placeholder:normal-case placeholder:font-sans placeholder:text-slate-400"
+            />
+            <button
+              type="button"
+              (click)="pasteTrackingNumber()"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+              title="Panodaki Takip Numarasını Yapıştır"
+            >
+              Yapıştır
+            </button>
+          </div>
+          <button
+            type="button"
+            (click)="searchTicket()"
+            [disabled]="isSearching() || !searchTrackingNo().trim()"
+            class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            @if (isSearching()) {
+              <mat-icon class="animate-spin icon-size-4">refresh</mat-icon>
+              <span>Sorgulanıyor...</span>
+            } @else {
+              <mat-icon class="icon-size-4.5">travel_explore</mat-icon>
+              <span>Durumu Sorgula</span>
+            }
+          </button>
+        </div>
+
+        @if (searchError()) {
+          <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+            <mat-icon class="icon-size-4.5 text-rose-600 shrink-0">error_outline</mat-icon>
+            <span>{{ searchError() }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Sorgulanan Talep Sonucu -->
+      @if (trackedTicket()) {
+        <div class="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-md space-y-6 animate-fade-in">
+          <!-- Üst Başlık & Durum Rozeti -->
+          <div class="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono text-sm font-black px-3 py-1 rounded-xl bg-slate-100 text-slate-900 border border-slate-200">
+                  {{ trackedTicket()?.trackingNumber }}
+                </span>
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold border" [ngClass]="getStatusBadge(trackedTicket()!.status).bg">
+                  <span class="inline-block w-2 h-2 rounded-full mr-1" [ngClass]="getStatusBadge(trackedTicket()!.status).dot"></span>
+                  <span [ngClass]="getStatusBadge(trackedTicket()!.status).text">
+                    {{ getStatusBadge(trackedTicket()!.status).label }}
+                  </span>
+                </span>
+                <span class="px-2 py-0.5 rounded-lg text-[11px] font-semibold border" [ngClass]="getPriorityBadge(trackedTicket()!.priority).class">
+                  {{ getPriorityBadge(trackedTicket()!.priority).label }} Öncelik
+                </span>
+              </div>
+              <h2 class="text-xl font-bold text-slate-900 m-0 mt-2">{{ trackedTicket()?.subject }}</h2>
+              <p class="text-xs text-slate-500 m-0 mt-0.5">
+                Kategori: <strong>{{ trackedTicket()?.categoryLabel }}</strong> •
+                Kayıt Tarihi: {{ trackedTicket()?.createdAt | date:'d MMMM y, HH:mm':'':'tr-TR' }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="copyTrackingNumber(trackedTicket()?.trackingNumber)"
+              class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span>No Kopyala</span>
+            </button>
+          </div>
+
+          <!-- Süreç İlerleme Çubuğu (Stepper) -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-3">SÜREÇ AŞAMALARI</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <!-- Adım 1: Kayıt Alındı -->
+              <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 font-bold text-xs flex flex-col items-center justify-center gap-1.5">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="m-0 text-[11px] font-bold">1. Talep Alındı</p>
+                <span class="text-[10px] text-emerald-700 font-normal block">{{ trackedTicket()?.createdAt | date:'HH:mm, dd/MM' }}</span>
+              </div>
+
+              <!-- Adım 2: İnceleniyor -->
+              <div
+                class="p-3.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1.5 border"
+                [ngClass]="trackedTicket()?.status !== 'pending' ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-300 text-amber-950 ring-2 ring-amber-400/20'"
+              >
+                <svg
+                  class="w-5 h-5"
+                  [class.text-emerald-600]="trackedTicket()?.status !== 'pending'"
+                  [class.text-amber-600]="trackedTicket()?.status === 'pending'"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="m-0 text-[11px] font-bold">2. İnceleniyor</p>
+                <span class="text-[10px] text-slate-500 font-normal block">Destek Ekibinde</span>
+              </div>
+
+              <!-- Adım 3: İşlemde / Onaylandı -->
+              <div
+                class="p-3.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1.5 border"
+                [ngClass]="trackedTicket()?.status === 'in_progress' || trackedTicket()?.status === 'approved' || trackedTicket()?.status === 'completed'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                  : 'bg-white border-slate-200 text-slate-400'"
+              >
+                <svg
+                  class="w-5 h-5"
+                  [class.text-emerald-600]="trackedTicket()?.status === 'in_progress' || trackedTicket()?.status === 'approved' || trackedTicket()?.status === 'completed'"
+                  [class.text-slate-400]="trackedTicket()?.status === 'pending'"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <p class="m-0 text-[11px] font-bold">3. İşlemde / Onay</p>
+                <span class="text-[10px] font-normal block" [class.text-emerald-700]="trackedTicket()?.approvedAt">
+                  {{ trackedTicket()?.approvedAt ? (trackedTicket()?.approvedAt | date:'HH:mm, dd/MM') : 'Bekleniyor' }}
+                </span>
+              </div>
+
+              <!-- Adım 4: Tamamlandı / Çözüldü -->
+              <div
+                class="p-3.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1.5 border"
+                [ngClass]="trackedTicket()?.status === 'completed'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  : (trackedTicket()?.status === 'rejected' ? 'bg-rose-50 border-rose-200 text-rose-950' : 'bg-white border-slate-200 text-slate-400')"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <p class="m-0 text-[11px] font-bold">
+                  {{ trackedTicket()?.status === 'rejected' ? 'İptal Edildi' : '4. Tamamlandı' }}
+                </p>
+                <span class="text-[10px] font-normal block">
+                  {{ trackedTicket()?.completedAt ? (trackedTicket()?.completedAt | date:'HH:mm, dd/MM') : 'Sonuç bekleniyor' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Yetkili / Destek Ekibi Yanıtı (Varsa) -->
+          @if (trackedTicket()?.adminNote) {
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/90 to-purple-50/70 border-2 border-indigo-200/80 space-y-2 animate-fade-in">
+              <div class="flex items-center gap-2 text-indigo-950 font-bold text-xs">
+                <svg class="w-4.5 h-4.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/>
+                </svg>
+                <span>Destek Masası & Yönetici Yanıtı</span>
+              </div>
+              <p class="text-xs text-slate-800 leading-relaxed font-medium m-0 whitespace-pre-wrap pl-6">
+                {{ trackedTicket()?.adminNote }}
+              </p>
+              <div class="text-right text-[10px] font-semibold text-indigo-600">
+                Son Güncelleme: {{ trackedTicket()?.updatedAt | date:'dd.MM.yyyy, HH:mm' }}
+              </div>
+            </div>
+          }
+
+          <!-- Müşteri Talep Metni -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">İLETİLEN TALEP AÇIKLAMASI</span>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-800 font-medium leading-relaxed whitespace-pre-wrap min-h-[60px]">
+              {{ trackedTicket()?.description }}
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- SEKME 3: GEÇMİŞ TALEPLERİM                 -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'history') {
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 m-0">Tarafınızdan Açılan Talepler</h3>
+          <p class="text-xs text-slate-500 m-0">{{ auth.email() || email() }} hesabına ait tüm kayıtlar.</p>
+        </div>
+        <button
+          type="button"
+          (click)="loadMyTickets()"
+          class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <mat-icon class="text-[16px] w-4 h-4" [class.animate-spin]="isLoadingHistory()">refresh</mat-icon>
+          <span>Yenile</span>
+        </button>
+      </div>
+
+      @if (isLoadingHistory()) {
+        <div class="p-12 text-center text-slate-400 text-xs">
+          <mat-icon class="animate-spin text-[28px] w-7 h-7 mx-auto mb-2 text-indigo-600">refresh</mat-icon>
+          <p>Talepleriniz yükleniyor...</p>
+        </div>
+      } @else if (myTicketsList().length === 0) {
+        <div class="p-12 text-center rounded-3xl bg-white border border-slate-200/80 space-y-3">
+          <mat-icon class="text-[40px] w-10 h-10 text-slate-300 mx-auto">inbox</mat-icon>
+          <h4 class="text-sm font-bold text-slate-800 m-0">Henüz Açılmış Bir Talebiniz Yok</h4>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">Sorularınız veya talepleriniz için "Yeni Talep Oluştur" sekmesinden kolayca destek kaydı açabilirsiniz.</p>
+          <button
+            type="button"
+            (click)="activeTab.set('create')"
+            class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-colors cursor-pointer"
+          >
+            İlk Talebini Oluştur
+          </button>
+        </div>
+      } @else {
+        <div class="rounded-3xl bg-white border border-slate-200/80 shadow-2xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+              <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">Takip No</th>
+                  <th class="py-3 px-4">Kategori & Konu</th>
+                  <th class="py-3 px-4">Tarih</th>
+                  <th class="py-3 px-4">Öncelik</th>
+                  <th class="py-3 px-4">Durum</th>
+                  <th class="py-3 px-4 text-right">İşlem</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (ticket of myTicketsList(); track ticket.id) {
+                  <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3.5 px-4 font-mono font-bold text-indigo-950">
+                      {{ ticket.trackingNumber }}
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <p class="font-bold text-slate-900 m-0">{{ ticket.subject }}</p>
+                      <span class="text-[11px] text-slate-500">{{ ticket.categoryLabel }}</span>
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-500 text-[11px]">
+                      {{ ticket.createdAt | date:'dd.MM.yyyy, HH:mm' }}
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold border" [ngClass]="getPriorityBadge(ticket.priority).class">
+                        {{ getPriorityBadge(ticket.priority).label }}
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2.5 py-1 rounded-xl text-xs font-bold border inline-flex items-center gap-1" [ngClass]="getStatusBadge(ticket.status).bg">
+                        <span class="w-1.5 h-1.5 rounded-full" [ngClass]="getStatusBadge(ticket.status).dot"></span>
+                        <span [ngClass]="getStatusBadge(ticket.status).text">
+                          {{ getStatusBadge(ticket.status).label }}
+                        </span>
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                      <button
+                        type="button"
+                        (click)="viewTicketFromHistory(ticket)"
+                        class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        İncele
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

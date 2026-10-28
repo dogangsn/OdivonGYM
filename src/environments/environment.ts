@@ -11,4 +11,8 @@ export const environment = {
     appId: '1:845036233177:web:ba0cbe0dcdb48e197bf9c8',
   },
   trialDurationDays: 14,
+  analytics: {
+    enabled: true,
+    measurementId: 'G-ODIVONGYM1',
+  },
 };

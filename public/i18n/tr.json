@@ -1,5 +1,6 @@
 {
   "common": {
+    "success": "Başarılı",
     "or": "veya",
     "close": "Kapat",
     "logout": "Çıkış Yap",
@@ -17,7 +18,39 @@
     "passive": "Pasif",
     "yes": "Evet",
     "no": "Hayır",
-    "loading": "Yükleniyor…"
+    "loading": "Yükleniyor…",
+    "terms": "Kullanım Şartları",
+    "privacy": "Gizlilik Politikası",
+    "cookieSettings": "Çerez Tercihleri"
+  },
+  "cookieConsent": {
+    "badge": "KVKK & Çerez Güvenliği",
+    "bannerTitle": "Çerez Politikası ve Gizlilik Onayı",
+    "bannerDesc": "OdivonGYM, güvenli oturum açma, 'Beni Hatırla' ile giriş bilgilerinizi hatırlama ve en iyi performansı sunmak için çerezleri ve yerel depolamayı kullanır.",
+    "readPolicyInline": "Çerez Aydınlatma Metnini İnceleyin",
+    "customize": "Tercihleri Özelleştir",
+    "essentialOnly": "Sadece Zorunlu",
+    "acceptAll": "Tümünü Kabul Et",
+    "settingsTitle": "Çerez İzin Tercihleri",
+    "settingsDesc": "KVKK ve veri gizliliği mevzuatı doğrultusunda web sitemizde kullanılan çerez türlerini aşağıdan yönetebilirsiniz.",
+    "essentialTitle": "Zorunlu Çerezler (Teknik & Güvenlik)",
+    "essentialDesc": "Güvenli oturum açma (Firebase Auth), CSRF koruması ve temel sistem güvenliği için zorunludur. Devre dışı bırakılamaz.",
+    "alwaysActive": "Her Zaman Aktif",
+    "required": "Zorunlu",
+    "functionalTitle": "İşlevsel Çerezler (Beni Hatırla & Tercihler)",
+    "functionalDesc": "Giriş ekranında 'Beni Hatırla' seçeneği ile e-posta adresinizin ve oturum sürenizin saklanması, dil ve arayüz tema seçimlerinizin hatırlanmasını sağlar.",
+    "recommended": "Önerilen",
+    "analyticsTitle": "Analitik ve Performans Çerezleri",
+    "analyticsDesc": "Sistem yanıt hızlarını ve sayfa performansını optimize etmek amacıyla anonimleştirilmiş telemetri verilerini değerlendirir.",
+    "optional": "İsteğe Bağlı",
+    "readFullPolicy": "Ayrıntılı Çerez ve KVKK Aydınlatma Metnini Oku",
+    "savePreferences": "Tercihlerimi Kaydet",
+    "rememberMeTooltip": "Güvenli cihazlarda oturumunuzu ve e-posta adresinizi 30 gün boyunca hatırlar.",
+    "functionalNeededForRemember": "'Beni Hatırla' özelliğini kullanabilmek için işlevsel çerezlere izin vermelisiniz.",
+    "allow": "İzin Ver",
+    "footerLink": "Çerez Tercihleri",
+    "policyLink": "Çerez Politikası",
+    "loginHint": "Giriş yaparak oturum ve sistem güvenliği için zorunlu çerezlerin kullanımını onaylamış olursunuz."
   },
   "auth": {
     "login": {
@@ -127,7 +160,8 @@
       "pill3": "Paket & Ödeme Yönetimi",
       "stat1Label": "Aktif Üye",
       "stat2Label": "Haftalık Ders",
-      "footer": "© {{year}} OdivonGYM. Tüm hakları saklıdır."
+      "footer": "© {{year}} OdivonGYM. Tüm hakları saklıdır.",
+      "stat3Label": "Memnuniyet Oranı"
     },
     "sportsShowcase": {
       "badge": "Performans, Antrenman & Sporcu Ekosistemi",
@@ -157,6 +191,38 @@
       "registerTitleHighlight": "şampiyonlar gibi",
       "registerTitle2": "yönet.",
       "registerSubtitle": "Kurulumunu 3 adımda tamamla; üye takibi, spor branşları, antrenman takvimleri ve akıllı turnike kontrolünü hemen kullanmaya başla."
+    },
+    "verifyEmail": {
+      "badgeSuccess": "Hesap Doğrulandı",
+      "startSetup": "Kuruluma Başla",
+      "pageTitle": "E-Posta Doğrulama · OdivonGYM",
+      "verifyingTitle": "E-Posta Adresiniz Doğrulanıyor",
+      "verifyingDesc": "Lütfen bekleyin, hesabınız aktifleştiriliyor...",
+      "successTitle": "E-Posta Adresiniz Doğrulandı! 🎉",
+      "successDesc": "Tebrikler! Spor salonu yönetim hesabınız başarıyla doğrulandı ve aktifleştirildi. Artık yönetim paneline giriş yapabilirsiniz.",
+      "goToLogin": "Giriş Yap",
+      "errorTitle": "Doğrulama Başarısız ⚠️",
+      "errorDesc": "Doğrulama bağlantısı geçersiz veya süresi (24 saat) dolmuş olabilir.",
+      "resendPrompt": "Aşağıdaki formu kullanarak yeni bir doğrulama bağlantısı talep edebilirsiniz.",
+      "emailPlaceholder": "E-posta adresiniz",
+      "resendButton": "Yeni Bağlantı Gönder",
+      "resending": "Gönderiliyor...",
+      "resendSuccess": "Yeni doğrulama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin.",
+      "resendError": "Doğrulama bağlantısı gönderilemedi. Lütfen e-posta adresinizi kontrol edin.",
+      "backToHome": "Ana Sayfaya Dön"
+    },
+    "registerSuccess": {
+      "badge": "KAYIT BAŞARILI ✉️",
+      "title": "Doğrulama E-Postası Gönderildi!",
+      "greeting": "Sayın",
+      "desc": "adresine bir aktivasyon bağlantısı gönderdik.",
+      "info1": "Lütfen gelen kutunuzu ve gerekiyorsa spam/gereksiz klasörünüzü kontrol edin.",
+      "info2": "E-postadaki \"E-Posta Adresimi Doğrula\" butonuna tıklayarak hesabınızı aktifleştirin.",
+      "info3": "Doğrulama işlemini tamamladıktan sonra yönetim masasına giriş yapabilirsiniz.",
+      "resendButton": "Tekrar Doğrulama E-postası Gönder",
+      "resending": "Gönderiliyor...",
+      "resendSuccess": "Doğrulama e-postası tekrar gönderildi!",
+      "loginButton": "Giriş Ekranına Git"
     }
   },
   "onboarding": {
@@ -241,7 +307,8 @@
       "wallet": "E-Cüzdan",
       "packages": "Paketler",
       "profile": "Profil & Ayarlar",
-      "adminExitPayments": "Çıkışta Ödemeler"
+      "adminExitPayments": "Çıkışta Ödemeler",
+      "support": "Müşteri Talepleri & Destek"
     },
     "badges": {
       "renewal": "Yenileme",
@@ -294,6 +361,12 @@
     "adminStaff": "Personel & Roller",
     "adminGymInfo": "Salon Bilgileri",
     "adminSubscription": "Paket & Lisans",
+    "support": "Destek & Taleplerim",
+    "searchPlaceholder": "Menüde ara",
+    "collapseAll": "Tüm grupları kapat",
+    "expandAll": "Tüm grupları aç",
+    "noResults": "Eşleşen menü bulunamadı",
+    "clearSearch": "Aramayı Temizle",
     "expand": "Genişlet",
     "collapse": "Daralt",
     "closeMenu": "Menüyü kapat",
@@ -336,6 +409,7 @@
     "menuGymInfo": "Salon Bilgileri",
     "menuDigitalCard": "Dijital Turnike Kartım",
     "menuProfile": "Profil & Ayarlar",
+    "menuChangePassword": "Şifremi Değiştir",
     "menuLogout": "Çıkış Yap",
     "expiredBannerTitle": "SaaS Lisans Süresi Doldu",
     "expiredBannerDesc": "Turnike geçişleri, hızlı POS satışı ve operasyonel modüller askıya alındı. Kesintisiz yönetim için paketinizi yenileyin.",
@@ -701,6 +775,8 @@
     "closeTimeLabel": "Kapanış Saati *",
     "phoneLabel": "İletişim Telefonu *",
     "cityLabel": "Şehir *",
+    "selectCity": "Şehir Seçiniz",
+    "selectCountry": "Ülke Kodu Seç",
     "addressLabel": "Salon Adresi *",
     "step2Badge": "2. Adım",
     "step2Title": "İlk Şubeniz & Tesis Olanakları",
@@ -777,7 +853,8 @@
     "generic": "Bir şeyler ters gitti, lütfen tekrar dene.",
     "permissionDenied": "Bu işlem için yetkin yok.",
     "invalidArgument": "Girdiğin bilgilerde eksik veya hatalı bir alan var.",
-    "unauthenticated": "Oturumun sona ermiş, lütfen tekrar giriş yap."
+    "unauthenticated": "Oturumun sona ermiş, lütfen tekrar giriş yap.",
+    "emailNotVerified": "Giriş yapabilmek için lütfen e-posta adresinizi doğrulayın. E-postanıza gönderdiğimiz bağlantıya tıklayın."
   },
   "trialExpired": {
     "titleCancelled": "Aboneliğiniz İptal Edildi",
@@ -802,7 +879,10 @@
     "needEmailFirst": "Önce e-posta adresini gir, sonra sıfırlama bağlantısı gönderelim.",
     "resetLinkSent": "{{email}} adresine şifre sıfırlama bağlantısı gönderildi.",
     "tooManyAttemptsWait": "Çok fazla başarısız deneme yaptınız. Lütfen {{seconds}} saniye bekleyin.",
-    "lockedButton": "Lütfen bekleyin ({{seconds}}s)"
+    "lockedButton": "Lütfen bekleyin ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Hesabınız henüz doğrulanmamış. Giriş yapabilmek için lütfen e-posta kutunuza gönderilen doğrulama bağlantısına tıklayın.",
+    "resendVerificationButton": "Doğrulama Mailini Tekrar Gönder",
+    "verificationSent": "Doğrulama e-postası tekrar gönderildi. Lütfen gelen kutunuzu ve spam klasörünüzü kontrol edin."
   },
   "exitPayments": {
     "title": "Çıkışta Ödemeler",
@@ -822,5 +902,261 @@
     "tabCollected": "Tahsil Edilenler",
     "tabCancelled": "İptal Edilenler",
     "tabAll": "Tümü"
+  },
+  "support": {
+    "headerBadge": "MÜŞTERİ DESTEK & İLETİŞİM MERKEZİ",
+    "title": "Talep İletme & Durum Takibi",
+    "subtitle": "Teknik aksaklıklar, turnike kartı, üyelik dondurma veya önerilerinizi iletin. Üretilen benzersiz takip numarası ile talebinizi adım adım izleyin.",
+    "quickTrackBtn": "Takip No ile Sorgula",
+    "tabs": {
+      "create": "Yeni Talep Oluştur",
+      "track": "Durum Sorgula",
+      "history": "Geçmiş Taleplerim"
+    },
+    "create": {
+      "categoryTitle": "Talep Kategorisi Seçin",
+      "categoryDesc": "Lütfen bildiriminizin konusunu en iyi anlatan kategoriyi belirleyin.",
+      "ticketDetailsTitle": "Talep Detayları & İletişim Bilgileri",
+      "ticketDetailsDesc": "Sorunu hızlıca çözebilmemiz için lütfen gerekli bilgileri eksiksiz doldurun.",
+      "subject": "Talep Konusu / Başlık",
+      "subjectPlaceholder": "Örn: Turnikeden geçerken QR okuyucu yanıt vermedi",
+      "description": "Detaylı Açıklama",
+      "descriptionPlaceholder": "Karşılaştığınız sorunu, cihaz veya saat bilgisini ve yaşadığınız adımları detaylandırın…",
+      "fullName": "Ad Soyad",
+      "fullNamePlaceholder": "Adınız ve soyadınız",
+      "email": "E-posta Adresi",
+      "emailPlaceholder": "ornek@odivon.com",
+      "phone": "Telefon Numarası",
+      "phonePlaceholder": "05XX XXX XX XX",
+      "priority": "Öncelik Derecesi",
+      "priorityNormal": "Normal (Rutin talep veya soru)",
+      "priorityUrgent": "Acil (İşlemi veya geçişi engelleyen durum)",
+      "priorityCritical": "Kritik (Donanım/Turnike kilitlendi veya sistem çalışmıyor)",
+      "submitBtn": "Talebi Gönder ve Takip No Oluştur",
+      "submitting": "Gönderiliyor…",
+      "successTitle": "Talebiniz Başarıyla Alındı!",
+      "successDesc": "Talebiniz destek ekibimize iletilmiştir. Durum güncellemelerini takip numaranızla sorgulayabilirsiniz.",
+      "trackingNoLabel": "Takip Numaranız",
+      "copyTrackingNo": "Kopyala",
+      "copied": "Kopyalandı!",
+      "trackNowBtn": "Talebi Hemen Takip Et",
+      "createNewBtn": "Yeni Bir Talep Daha Gönder"
+    },
+    "track": {
+      "title": "Talep Durumu Sorgulama",
+      "subtitle": "Size iletilen TK-XXXXXX formatındaki takip numarasını girerek talebinizin güncel aşamasını öğrenin.",
+      "inputPlaceholder": "Örn: TK-2026-A1B2C3",
+      "queryBtn": "Sorgula",
+      "querying": "Sorgulanıyor…",
+      "recentTitle": "Son Oluşturduğunuz Talep",
+      "notFound": "Bu takip numarasına ait bir destek talebi bulunamadı.",
+      "notFoundHint": "Lütfen takip numaranızı (TK-YYYY-XXXXXX) kontrol edip tekrar deneyin."
+    },
+    "history": {
+      "title": "Geçmiş Destek Talepleriniz",
+      "subtitle": "Bu hesap üzerinden açtığınız tüm destek ve bildirim kayıtları.",
+      "refresh": "Yenile",
+      "empty": "Henüz açılmış bir destek talebiniz bulunmuyor.",
+      "openNew": "İlk Talebinizi Oluşturun"
+    },
+    "status": {
+      "received": "Alındı / İletildi",
+      "in_review": "İnceleniyor",
+      "in_progress": "İşlemde",
+      "resolved": "Çözüldü",
+      "closed": "Kapatıldı",
+      "rejected": "Reddedildi"
+    },
+    "categories": {
+      "technical_support": "Teknik Destek & Sistem",
+      "technical_support_desc": "Uygulama, bağlantı, ekran donması veya yazılımsal sorunlar.",
+      "turnstile_access": "Turnike & Geçiş Kontrol",
+      "turnstile_access_desc": "QR kod okumama, kart tanımlama, geçiş engeli ve turnike arızaları.",
+      "membership_freeze": "Üyelik & Dondurma",
+      "membership_freeze_desc": "Üyelik süresi uzatma, paket dondurma, transfer veya iptal talepleri.",
+      "billing_payment": "Ödeme, Kasa & Fatura",
+      "billing_payment_desc": "Taksit ödemeleri, kart çekimi, e-fatura sorgulama veya iade konuları.",
+      "feature_request": "Öneri & Yeni İstek",
+      "feature_request_desc": "Salonda veya uygulamada görmek istediğiniz yeni fikirler.",
+      "general_inquiry": "Genel Soru & Bilgi",
+      "general_inquiry_desc": "Çalışma saatleri, grup dersleri veya antrenör seansları hakkında.",
+      "complaint_suggestion": "Şikayet & Hizmet Bildirimi",
+      "complaint_suggestion_desc": "Hizmet kalitesi, salon düzeni veya personel ile ilgili geri bildirim."
+    }
+  },
+  "members": {
+    "title": "Üye Kayıtları",
+    "subtitle": "Tüm üyeleri ara, filtrele, üyelik durumunu değiştir veya yeni üye ekle.",
+    "newMember": "Yeni Üye",
+    "missingTenantTitle": "Hesabın bir salona bağlı değil.",
+    "missingTenantDesc": "Bu admin hesabı çok-kiracılı yapıdan önce oluşturulmuş; profilinde tenantId yok. Bu yüzden üye listesi boş görünüyor.",
+    "activeMembers": "Aktif Üyeler",
+    "archived": "Arşivdekiler",
+    "archivedBadge": "Arşivde",
+    "archiveNotice": "Arşivdeki üyeler turnike geçişlerinde pasif kalır, istendiğinde tek tıkla geri aktif edilebilir.",
+    "searchPlaceholder": "Ad, e-posta, telefon, üye no veya şube ara...",
+    "branch": "Şube",
+    "branchFilterAll": "Tüm Şubeler",
+    "loading": "Yükleniyor…",
+    "balance": "Bakiye",
+    "untilDate": "{{date}}'e kadar",
+    "perPage": "Sayfa Başına:",
+    "firstPage": "İlk Sayfa",
+    "prevPage": "Önceki Sayfa",
+    "nextPage": "Sonraki Sayfa",
+    "lastPage": "Son Sayfa",
+    "noMatchFound": "Eşleşen üye bulunamadı",
+    "noMatchDesc": "\"{{term}}\" ile eşleşen bir kayıt yok.",
+    "noArchivedFound": "Arşivde Üye Yok",
+    "noArchivedDesc": "Arşive kaldırılmış üye bulunmuyor.",
+    "noMembersFound": "Henüz Üye Bulunamadı",
+    "noMembersDesc": "Yeni bir üye ekleyerek hemen başlayabilirsiniz.",
+    "addFirstMember": "+ İlk Üyeyi Ekle",
+    "table": {
+      "member": "Üye",
+      "branch": "Şube",
+      "contact": "İletişim",
+      "gender": "Cinsiyet",
+      "status": "Durum",
+      "package": "Paket",
+      "registerDate": "Kayıt Tarihi",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "trial": "Deneme",
+      "active": "Aktif",
+      "expired": "Süresi Bitti",
+      "cancelled": "İptal"
+    },
+    "gender": {
+      "female": "Kadın",
+      "male": "Erkek",
+      "unspecified": "Belirtilmemiş"
+    },
+    "actions": {
+      "archive": "Üyeyi Arşive Kaldır",
+      "unarchive": "Arşivden Çıkar ve Aktifleştir",
+      "delete": "Üye profilini sil"
+    },
+    "wallet": {
+      "title": "Bakiye",
+      "current": "Mevcut bakiye",
+      "transaction": "İşlem",
+      "deposit": "Bakiye Yükle",
+      "debit": "Bakiye Düş",
+      "amount": "Tutar (₺)",
+      "paymentMethod": "Ödeme Yöntemi",
+      "cash": "Nakit",
+      "card": "Kart",
+      "transfer": "Havale",
+      "description": "Açıklama",
+      "save": "Kaydet"
+    }
+  },
+  "packages": {
+    "title": "Paket & Fiyatlandırma Yönetimi",
+    "subtitle": "Salon geneli üyelikler ile personele/eğitmene özel abonelik & PT paketlerini, prim oranlarını ve kurallarını yönetin.",
+    "addNew": "+ Yeni Paket Ekle",
+    "filterAll": "Tüm Paketler",
+    "filterClub": "Salon Geneli",
+    "filterStaff": "Personele Özel",
+    "allTrainers": "Tüm Eğitmenler",
+    "searchPlaceholder": "Paket adı, personel veya barkod ara...",
+    "loading": "Yükleniyor…",
+    "table": {
+      "package": "Paket & Kapsam",
+      "category": "Kategori",
+      "duration": "Süre",
+      "sessions": "Seans & Erişim",
+      "pricing": "Fiyat & Hakediş",
+      "status": "Durum",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "active": "Satışta",
+      "inactive": "Pasif"
+    },
+    "sessionsUnlimited": "Sınırsız",
+    "daysUnit": "Gün",
+    "drawer": {
+      "scopeTitle": "Paket Kapsamı & Ayrımı",
+      "scopeClub": "Salon Geneli Paket",
+      "scopeStaff": "Personele / PT'ye Özel",
+      "staffConfig": "Eğitmen & Prim Yapılandırması",
+      "selectStaff": "-- Personel Seçiniz --",
+      "addStaffRate": "Personel Tarifesi Ekle",
+      "staff": "Personel",
+      "price": "Fiyat (₺)",
+      "commission": "Prim (%)",
+      "durationConfig": "Süre Yapılandırması",
+      "unit": "Birim",
+      "save": "Kaydet",
+      "cancel": "Vazgeç"
+    }
+  },
+  "accounting": {
+    "title": "Muhasebe & Kasa Yönetimi",
+    "subtitle": "Kasa hareketleri, gün sonu Z raporu kasa mutabakatı ve detaylı gider analitiği.",
+    "tabs": {
+      "ledger": "Kasa Defteri (Gelir & Gider)",
+      "dailyClose": "Günü Kapat & Z Raporu",
+      "analytics": "Gider & Kategori Analitiği"
+    },
+    "actions": {
+      "manageCategories": "Kategorileri Yönet",
+      "newEntry": "Yeni Kayıt Ekle",
+      "refreshLive": "Canlı Kasayı Yenile",
+      "closeDay": "Günü Kapat & Sayım Yap",
+      "exportCsv": "Excel / CSV İndir"
+    }
+  },
+  "staff": {
+    "badge": "Rol & Yetki Altyapısı",
+    "title": "Personel & Kullanıcı Rolleri",
+    "subtitle": "Salon sahibi (patron), genel müdür, antrenör ve resepsiyon görev tanımları, yetkilendirme ve çalışma şartları.",
+    "newStaff": "Yeni Personel Tanımla",
+    "simulation": "Simülasyon",
+    "endSimulation": "Simülasyonu Bitir",
+    "kpi": {
+      "totalStaff": "Toplam Ekip",
+      "allBranches": "Tüm şubeler kayıtlı",
+      "activeTrainers": "Aktif Eğitmenler",
+      "reception": "Resepsiyon & Kasa",
+      "management": "Yönetim & Müdür"
+    }
+  },
+  "branches": {
+    "title": "Şubeler & Tesisler",
+    "subtitle": "Salon şubelerini yönetin: Şube logosu, açık olduğu günler, çalışma saatleri ve kapasite.",
+    "newBranch": "Yeni Şube Ekle"
+  },
+  "guestMembers": {
+    "title": "Misafir Üye & Ziyaretçi Takibi",
+    "subtitle": "Salonu gezmeye gelen potansiyel üyelerin anket, ilgi ve takip süreçlerini tek panelden yönetin.",
+    "newGuest": "Yeni Misafir Kaydı"
+  },
+  "programRequests": {
+    "title": "Program Talepleri",
+    "subtitle": "Üyenin antrenörden istediği programlar. Atama mevcut antrenman kaydıyla talebi kapatır."
+  },
+  "reports": {
+    "title": "Raporlar & Analizler",
+    "subtitle": "Finansal özetler, üye sirkülasyonu, doluluk oranları ve salon performans metrikleri."
+  },
+  "gymInfo": {
+    "title": "Kulüp & Salon Bilgileri",
+    "subtitle": "Kulüp iletişim bilgileri, ticari unvan, logo ve genel salon ayarları."
+  },
+  "products": {
+    "title": "Ürün & Stok Yönetimi",
+    "subtitle": "Kafe, suplement, ekipman ve perakende satış ürünlerinin takibi ve barkod yönetimi."
+  },
+  "eInvoice": {
+    "title": "Fatura & E-Fatura / E-Arşiv Yönetimi",
+    "subtitle": "GİB uyumlu e-fatura ve e-arşiv fatura kesimi, iptal/iade ve muhasebe entegrasyonu."
+  },
+  "suppliers": {
+    "title": "Tedarikçi & Cari Hesap Yönetimi",
+    "subtitle": "Tedarikçi borç-alacak takibi, hammadde ve ürün alım faturaları."
   }
 }

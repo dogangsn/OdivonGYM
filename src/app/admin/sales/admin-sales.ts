@@ -14,7 +14,7 @@ import { AdminPackagesService } from '../packages/admin-packages.service';
 import { ShopProduct } from '../../core/models/shop-product.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 import { GymPackage } from '../../core/models/gym-package.model';
-import { StockCategoryItem } from '../../core/models/stock-category.model';
+import { StockCategoryItem, resolveCategoryEmoji } from '../../core/models/stock-category.model';
 import { Receivable } from '../../core/models/receivable.model';
 import { InstallmentSaleDialog } from '../../shared/components/installment-sale-dialog/installment-sale-dialog';
 
@@ -63,7 +63,7 @@ export class AdminSales {
       ...list.map((c) => ({
         id: c.key,
         label: c.name,
-        icon: c.icon || 'inventory_2',
+        icon: resolveCategoryEmoji(c.name || c.key, c.icon),
       })),
     ];
   });
@@ -128,12 +128,14 @@ export class AdminSales {
     const search = this.searchQuery().trim().toLowerCase();
 
     return list.filter((p) => {
-      const matchCat = cat === 'all' || p.category?.toLowerCase() === cat.toLowerCase();
+      const pCat = (p.category ?? '').trim().toLowerCase();
+      const targetCat = (cat ?? '').trim().toLowerCase();
+      const matchCat = cat === 'all' || (!!targetCat && pCat === targetCat);
       const matchSearch =
         !search ||
-        p.name.toLowerCase().includes(search) ||
-        p.sku.toLowerCase().includes(search) ||
-        p.category?.toLowerCase().includes(search);
+        (!!p.name && p.name.toLowerCase().includes(search)) ||
+        (!!p.sku && p.sku.toLowerCase().includes(search)) ||
+        (!!p.category && p.category.toLowerCase().includes(search));
       return matchCat && matchSearch;
     });
   });
@@ -181,8 +183,8 @@ export class AdminSales {
     if (!pkg || !pkg.hasActiveStatus) return false;
 
     // VIP / Full paketler su ve içecekleri otomatik kapsar
-    const prodName = product.name.toLowerCase();
-    const prodCat = product.category.toLowerCase();
+    const prodName = (product.name || '').toLowerCase();
+    const prodCat = (product.category || '').toLowerCase();
 
     if (pkg.isVip) {
       if (prodCat === 'drink' || prodName.includes('su') || prodName.includes('havlu')) {

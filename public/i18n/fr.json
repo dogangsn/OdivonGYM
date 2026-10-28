@@ -17,7 +17,37 @@
     "passive": "Inactif",
     "yes": "Oui",
     "no": "Non",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "success": "Succès"
+  },
+  "cookieConsent": {
+    "badge": "Confidentialité & Cookies",
+    "bannerTitle": "Politique de cookies et consentement",
+    "bannerDesc": "OdivonGYM utilise des cookies et le stockage local pour assurer une connexion sécurisée, mémoriser vos identifiants via 'Se souvenir de moi' et optimiser les performances.",
+    "readPolicyInline": "Lire la politique des cookies",
+    "customize": "Personnaliser les préférences",
+    "essentialOnly": "Essentiels uniquement",
+    "acceptAll": "Tout accepter",
+    "settingsTitle": "Gérer les préférences de cookies",
+    "settingsDesc": "Gérez les catégories de cookies utilisées sur notre plateforme conformément aux réglementations sur la confidentialité.",
+    "essentialTitle": "Cookies essentiels (Sécurité & Base)",
+    "essentialDesc": "Nécessaires pour l'authentification sécurisée (Firebase Auth), la protection CSRF et la stabilité générale.",
+    "alwaysActive": "Toujours actifs",
+    "required": "Obligatoire",
+    "functionalTitle": "Cookies fonctionnels (Se souvenir de moi & Préférences)",
+    "functionalDesc": "Mémorise votre adresse e-mail avec 'Se souvenir de moi', prolonge la session et enregistre vos choix de langue et de thème.",
+    "recommended": "Recommandé",
+    "analyticsTitle": "Cookies analytiques",
+    "analyticsDesc": "Permet de mesurer les temps de réponse et d'optimiser l'expérience utilisateur à partir de données anonymisées.",
+    "optional": "Optionnel",
+    "readFullPolicy": "Consulter la politique complète",
+    "savePreferences": "Enregistrer les préférences",
+    "rememberMeTooltip": "Mémorise en toute sécurité votre e-mail et votre session pendant 30 jours sur les appareils de confiance.",
+    "functionalNeededForRemember": "Les cookies fonctionnels doivent être activés pour utiliser 'Se souvenir de moi'.",
+    "allow": "Autoriser",
+    "footerLink": "Préférences de cookies",
+    "policyLink": "Politique de cookies",
+    "loginHint": "En vous connectant, vous acceptez les cookies essentiels nécessaires à la sécurité de la session."
   },
   "auth": {
     "login": {
@@ -127,7 +157,8 @@
       "pill3": "Forfaits & Facturation",
       "stat1Label": "Membres actifs",
       "stat2Label": "Cours hebdomadaires",
-      "footer": "© {{year}} OdivonGYM. Tous droits réservés."
+      "footer": "© {{year}} OdivonGYM. Tous droits réservés.",
+      "stat3Label": "Taux de satisfaction"
     },
     "sportsShowcase": {
       "badge": "Performance, Entraînement & Écosystème Athlétique",
@@ -157,6 +188,38 @@
       "registerTitleHighlight": "comme des champions.",
       "registerTitle2": "",
       "registerSubtitle": "Configuration en 3 étapes : gestion des membres, disciplines, plannings et contrôle d'accès opérationnels immédiatement."
+    },
+    "verifyEmail": {
+      "pageTitle": "Vérification e-mail · OdivonGYM",
+      "verifyingTitle": "Vérification de votre e-mail",
+      "verifyingDesc": "Veuillez patienter pendant que nous activons votre compte...",
+      "successTitle": "E-mail vérifié avec succès ! 🎉",
+      "successDesc": "Félicitations ! Votre compte est activé. Vous pouvez maintenant vous connecter.",
+      "goToLogin": "Se connecter",
+      "errorTitle": "Échec de la vérification ⚠️",
+      "errorDesc": "Le lien de confirmation est invalide ou a expiré.",
+      "resendPrompt": "Vous pouvez demander un nouveau lien ci-dessous.",
+      "emailPlaceholder": "Votre adresse e-mail",
+      "resendButton": "Envoyer un nouveau lien",
+      "resending": "Envoi...",
+      "resendSuccess": "Un nouveau lien a été envoyé.",
+      "resendError": "Impossible d’envoyer le lien.",
+      "backToHome": "Retour à l’accueil",
+      "badgeSuccess": "Compte Vérifié",
+      "startSetup": "Démarrer la configuration"
+    },
+    "registerSuccess": {
+      "badge": "INSCRIPTION RÉUSSIE ✉️",
+      "title": "E-mail de vérification envoyé !",
+      "greeting": "Cher/Chère",
+      "desc": "nous avons envoyé un lien d’activation à",
+      "info1": "Veuillez vérifier votre boîte de réception et vos spams.",
+      "info2": "Cliquez sur le lien dans l’e-mail pour activer votre compte.",
+      "info3": "Une fois vérifié, vous pourrez vous connecter au tableau de bord.",
+      "resendButton": "Renvoyer l’e-mail de vérification",
+      "resending": "Envoi...",
+      "resendSuccess": "E-mail de vérification renvoyé !",
+      "loginButton": "Se connecter"
     }
   },
   "onboarding": {
@@ -239,7 +302,10 @@
       "wallet": "Portefeuille",
       "packages": "Forfaits",
       "profile": "Profil & paramètres",
-      "adminExitPayments": "Paiements à la sortie"
+      "adminExitPayments": "Paiements à la sortie",
+      "support": "Support & Demandes",
+      "adminProgramRequests": "Demandes de programmes",
+      "adminSmsSettings": "Fournisseur SMS & Paramètres"
     },
     "badges": {
       "renewal": "Renouvellement",
@@ -297,7 +363,13 @@
     "closeMenu": "Fermer le menu",
     "defaultMemberName": "Membre",
     "menuProfile": "Profil",
-    "menuLogout": "Se déconnecter"
+    "menuLogout": "Se déconnecter",
+    "support": "Support & Demandes",
+    "searchPlaceholder": "Rechercher dans le menu",
+    "collapseAll": "Tout réduire",
+    "expandAll": "Tout développer",
+    "noResults": "Aucun élément de menu trouvé",
+    "clearSearch": "Effacer la recherche"
   },
   "shell": {
     "menu": "Menu",
@@ -353,7 +425,8 @@
     "notif3Title": "Niveau de stock critique",
     "notif3Msg": "Le stock d'Optimum Gold Whey Protein (Chocolat) est bas : plus que 2 unités.",
     "notif4Title": "Facture électronique émise",
-    "notif4Msg": "La facture électronique certifiée #ODV20260001 a été validée avec succès."
+    "notif4Msg": "La facture électronique certifiée #ODV20260001 a été validée avec succès.",
+    "menuChangePassword": "Changer le mot de passe"
   },
   "dashboard": {
     "greetingNight": "Bonne nuit",
@@ -700,6 +773,8 @@
     "closeTimeLabel": "Heure de fermeture *",
     "phoneLabel": "Téléphone de contact *",
     "cityLabel": "Ville *",
+    "selectCity": "Sélectionnez une ville",
+    "selectCountry": "Indicatif pays",
     "addressLabel": "Adresse du club *",
     "step2Badge": "Étape 2",
     "step2Title": "Première succursale & Équipements",
@@ -776,7 +851,8 @@
     "generic": "Une erreur est survenue, veuillez réessayer.",
     "permissionDenied": "Vous n'avez pas l'autorisation pour cette action.",
     "invalidArgument": "Certaines informations saisies sont manquantes ou invalides.",
-    "unauthenticated": "Votre session a expiré, veuillez vous reconnecter."
+    "unauthenticated": "Votre session a expiré, veuillez vous reconnecter.",
+    "emailNotVerified": "Veuillez vérifier votre adresse e-mail pour vous connecter."
   },
   "trialExpired": {
     "titleCancelled": "Votre abonnement a été annulé",
@@ -801,7 +877,10 @@
     "needEmailFirst": "Entrez d'abord votre e-mail pour recevoir le lien de réinitialisation.",
     "resetLinkSent": "Un lien de réinitialisation a été envoyé à {{email}}.",
     "tooManyAttemptsWait": "Trop de tentatives infructueuses. Veuillez patienter {{seconds}} secondes.",
-    "lockedButton": "Veuillez patienter ({{seconds}}s)"
+    "lockedButton": "Veuillez patienter ({{seconds}}s)",
+    "emailNotVerifiedAlert": "Votre compte n’est pas encore vérifié. Veuillez cliquer sur le lien envoyé par e-mail.",
+    "resendVerificationButton": "Renvoyer l’e-mail de confirmation",
+    "verificationSent": "L’e-mail de vérification a été renvoyé."
   },
   "exitPayments": {
     "title": "Paiements à la sortie",
@@ -821,5 +900,261 @@
     "tabCollected": "Encaissées",
     "tabCancelled": "Annulées",
     "tabAll": "Toutes"
+  },
+  "support": {
+    "headerBadge": "CENTRE D'ASSISTANCE & DE SUPPORT CLIENT",
+    "title": "Soumission de Demande & Suivi",
+    "subtitle": "Signalez un incident technique, un problème de tourniquet, une suspension d'abonnement ou une suggestion. Suivez l'avancement pas à pas grâce à votre numéro unique.",
+    "quickTrackBtn": "Rechercher par Numéro",
+    "tabs": {
+      "create": "Créer une Demande",
+      "track": "Suivre l'État",
+      "history": "Mes Anciennes Demandes"
+    },
+    "create": {
+      "categoryTitle": "Sélectionnez une Catégorie",
+      "categoryDesc": "Veuillez choisir la catégorie correspondant le mieux à votre demande.",
+      "ticketDetailsTitle": "Détails de la Demande & Contact",
+      "ticketDetailsDesc": "Renseignez toutes les informations utiles pour une résolution rapide.",
+      "subject": "Objet / Titre",
+      "subjectPlaceholder": "ex: Le lecteur du tourniquet ne répond pas au QR code",
+      "description": "Description Détaillée",
+      "descriptionPlaceholder": "Détaillez le problème, l'appareil ou l'heure de l'incident…",
+      "fullName": "Nom et Prénom",
+      "fullNamePlaceholder": "Votre nom complet",
+      "email": "Adresse E-mail",
+      "emailPlaceholder": "exemple@odivon.com",
+      "phone": "Numéro de Téléphone",
+      "phonePlaceholder": "+33 6 XX XX XX XX",
+      "priority": "Niveau de Priorité",
+      "priorityNormal": "Normal (Demande ou question de routine)",
+      "priorityUrgent": "Urgent (Bloque une opération ou un passage)",
+      "priorityCritical": "Critique (Matériel bloqué ou arrêt système)",
+      "submitBtn": "Envoyer la Demande & Obtenir le Numéro",
+      "submitting": "Envoi en cours…",
+      "successTitle": "Demande Enregistrée avec Succès !",
+      "successDesc": "Votre demande a été transmise à notre équipe support. Vous pouvez suivre son avancement avec votre numéro de suivi.",
+      "trackingNoLabel": "Votre Numéro de Suivi",
+      "copyTrackingNo": "Copier",
+      "copied": "Copié !",
+      "trackNowBtn": "Suivre la Demande",
+      "createNewBtn": "Soumettre une Autre Demande"
+    },
+    "track": {
+      "title": "Suivi de votre Demande",
+      "subtitle": "Saisissez votre numéro au format TK-XXXXXX pour connaître l'état actuel de votre dossier.",
+      "inputPlaceholder": "ex: TK-2026-A1B2C3",
+      "queryBtn": "Rechercher",
+      "querying": "Recherche…",
+      "recentTitle": "Dernière Demande Créée",
+      "notFound": "Aucun ticket de support trouvé avec ce numéro.",
+      "notFoundHint": "Veuillez vérifier votre numéro (TK-YYYY-XXXXXX) et réessayer."
+    },
+    "history": {
+      "title": "Historique de vos Demandes",
+      "subtitle": "Toutes les demandes et réclamations ouvertes avec ce compte.",
+      "refresh": "Actualiser",
+      "empty": "Vous n'avez aucune demande en cours pour le moment.",
+      "openNew": "Créer votre Première Demande"
+    },
+    "status": {
+      "received": "Reçu / Transmis",
+      "in_review": "En Cours d'Examen",
+      "in_progress": "En Traitement",
+      "resolved": "Résolu",
+      "closed": "Fermé",
+      "rejected": "Refusé"
+    },
+    "categories": {
+      "technical_support": "Support Technique & Système",
+      "technical_support_desc": "Application, connexion réseau, écran figé ou anomalie logicielle.",
+      "turnstile_access": "Tourniquet & Contrôle d'Accès",
+      "turnstile_access_desc": "Lecture QR code impossible, assignation de badge ou refus d'accès.",
+      "membership_freeze": "Abonnement & Suspension",
+      "membership_freeze_desc": "Prolongation d'abonnement, suspension temporaire ou résiliation.",
+      "billing_payment": "Paiement, Caisse & Facture",
+      "billing_payment_desc": "Paiements échelonnés, débits bancaires, facturation ou remboursements.",
+      "feature_request": "Suggestions & Idées",
+      "feature_request_desc": "Nouvelles fonctionnalités ou idées pour améliorer votre salle.",
+      "general_inquiry": "Questions Générales & Infos",
+      "general_inquiry_desc": "Horaires d'ouverture, cours collectifs ou séances de coaching.",
+      "complaint_suggestion": "Réclamation & Qualité de Service",
+      "complaint_suggestion_desc": "Retours concernant la propreté, les équipements ou le personnel."
+    }
+  },
+  "members": {
+    "title": "Gestion des Adhérents",
+    "subtitle": "Recherchez, filtrez, modifiez le statut d'adhésion ou ajoutez de nouveaux membres.",
+    "newMember": "Nouvel Adhérent",
+    "missingTenantTitle": "Compte non rattaché à une salle.",
+    "missingTenantDesc": "Ce compte admin a été créé avant la structure multi-établissements; tenantId absent.",
+    "activeMembers": "Membres Actifs",
+    "archived": "Archivés",
+    "archivedBadge": "Archivé",
+    "archiveNotice": "Les membres archivés sont désactivés aux tourniquets et peuvent être réactivés en un clic.",
+    "searchPlaceholder": "Rechercher par nom, e-mail, téléphone ou agence...",
+    "branch": "Agence",
+    "branchFilterAll": "Toutes les Agences",
+    "loading": "Chargement…",
+    "balance": "Solde",
+    "untilDate": "Jusqu'au {{date}}",
+    "perPage": "Par Page:",
+    "firstPage": "Première Page",
+    "prevPage": "Page Précédente",
+    "nextPage": "Page Suivante",
+    "lastPage": "Dernière Page",
+    "noMatchFound": "Aucun adhérent trouvé",
+    "noMatchDesc": "Aucun résultat ne correspond à \"{{term}}\".",
+    "noArchivedFound": "Aucun membre archivé",
+    "noArchivedDesc": "Il n'y a aucun membre dans l'archive.",
+    "noMembersFound": "Aucun membre enregistré",
+    "noMembersDesc": "Commencez dès maintenant en ajoutant un premier adhérent.",
+    "addFirstMember": "+ Ajouter un Membre",
+    "table": {
+      "member": "Adhérent",
+      "branch": "Agence",
+      "contact": "Contact",
+      "gender": "Genre",
+      "status": "Statut",
+      "package": "Formule",
+      "registerDate": "Date d'Inscription",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Essai",
+      "active": "Actif",
+      "expired": "Expiré",
+      "cancelled": "Résilié"
+    },
+    "gender": {
+      "female": "Femme",
+      "male": "Homme",
+      "unspecified": "Non spécifié"
+    },
+    "actions": {
+      "archive": "Archiver le membre",
+      "unarchive": "Désarchiver et Réactiver",
+      "delete": "Supprimer le profil"
+    },
+    "wallet": {
+      "title": "Portefeuille",
+      "current": "Solde actuel",
+      "transaction": "Opération",
+      "deposit": "Recharger le Solde",
+      "debit": "Débiter le Solde",
+      "amount": "Montant",
+      "paymentMethod": "Moyen de Paiement",
+      "cash": "Espèces",
+      "card": "Carte Bancaire",
+      "transfer": "Virement",
+      "description": "Motif / Description",
+      "save": "Enregistrer"
+    }
+  },
+  "packages": {
+    "title": "Formules & Tarification",
+    "subtitle": "Gérez les abonnements de salle, les formules PT spécifiques aux coachs et les commissions.",
+    "addNew": "+ Nouvelle Formule",
+    "filterAll": "Toutes les Formules",
+    "filterClub": "Club Entier",
+    "filterStaff": "Spécifique Coach",
+    "allTrainers": "Tous les Coachs",
+    "searchPlaceholder": "Nom de formule, coach ou code-barres...",
+    "loading": "Chargement…",
+    "table": {
+      "package": "Formule & Accès",
+      "category": "Catégorie",
+      "duration": "Durée",
+      "sessions": "Séances & Accès",
+      "pricing": "Tarif & Rémunération",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "En vente",
+      "inactive": "Inactif"
+    },
+    "sessionsUnlimited": "Illimité",
+    "daysUnit": "jours",
+    "drawer": {
+      "scopeTitle": "Portée de la Formule",
+      "scopeClub": "Formule Club Entier",
+      "scopeStaff": "Spécifique Coach / PT",
+      "staffConfig": "Configuration Coachs & Commissions",
+      "selectStaff": "-- Sélectionner un Collaborateur --",
+      "addStaffRate": "Ajouter un Tarif Collaborateur",
+      "staff": "Collaborateur",
+      "price": "Prix",
+      "commission": "Commission (%)",
+      "durationConfig": "Configuration de Durée",
+      "unit": "Unité",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    }
+  },
+  "accounting": {
+    "title": "Comptabilité & Caisse",
+    "subtitle": "Flux de trésorerie, clôtures journalières (rapport Z) et analyse des dépenses.",
+    "tabs": {
+      "ledger": "Livre de Caisse (Recettes & Dépenses)",
+      "dailyClose": "Clôture Journalière & Rapport Z",
+      "analytics": "Analyse des Dépenses"
+    },
+    "actions": {
+      "manageCategories": "Gérer les Catégories",
+      "newEntry": "Nouvelle Écriture",
+      "refreshLive": "Actualiser la Caisse",
+      "closeDay": "Clôturer & Compter",
+      "exportCsv": "Exporter Excel / CSV"
+    }
+  },
+  "staff": {
+    "badge": "Gestion des Rôles & Accès",
+    "title": "Personnel & Rôles",
+    "subtitle": "Propriétaire de salle, directeur, coachs sportifs et réceptionnistes.",
+    "newStaff": "Nouveau Collaborateur",
+    "simulation": "Simulation",
+    "endSimulation": "Quitter la Simulation",
+    "kpi": {
+      "totalStaff": "Équipe Totale",
+      "allBranches": "Toutes agences confondues",
+      "activeTrainers": "Coachs Actifs",
+      "reception": "Réception & Accueil",
+      "management": "Direction"
+    }
+  },
+  "branches": {
+    "title": "Succursales & Installations",
+    "subtitle": "Gérez les succursales : logo, jours d'ouverture, horaires et capacité.",
+    "newBranch": "Ajouter une succursale"
+  },
+  "guestMembers": {
+    "title": "Suivi des Invités & Prospects",
+    "subtitle": "Gérez les prospects, enquêtes et relances depuis un tableau de bord unique.",
+    "newGuest": "Nouvel invité"
+  },
+  "programRequests": {
+    "title": "Demandes de Programme",
+    "subtitle": "Demandes d'entraînement des membres auprès des entraîneurs."
+  },
+  "reports": {
+    "title": "Rapports & Analyses",
+    "subtitle": "Résumés financiers, attrition des membres, taux d'occupation et KPI."
+  },
+  "gymInfo": {
+    "title": "Informations du Club & Salle",
+    "subtitle": "Coordonnées du club, raison sociale, logo et paramètres généraux."
+  },
+  "products": {
+    "title": "Gestion des Produits & Stocks",
+    "subtitle": "Suivi du bar, des compléments, du textile et des codes-barres."
+  },
+  "eInvoice": {
+    "title": "Facturation & Factures Électroniques",
+    "subtitle": "Émission de factures électroniques conformes, avoirs et comptabilité."
+  },
+  "suppliers": {
+    "title": "Fournisseurs & Comptes Tiers",
+    "subtitle": "Soldes fournisseurs, factures d'achat et approvisionnement de stock."
   }
 }

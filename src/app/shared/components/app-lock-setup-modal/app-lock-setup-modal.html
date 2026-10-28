@@ -1,0 +1,177 @@
+@if (lockService.isSetupModalOpen()) {
+  <div
+    class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lock-modal-title"
+  >
+    <div
+      class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xl p-6 sm:p-7 animate-in zoom-in-95 duration-200 text-left"
+    >
+      <!-- Modal Başlığı -->
+      <div class="flex items-start justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">pin</mat-icon>
+          </div>
+          <div>
+            <h3 id="lock-modal-title" class="text-base font-bold text-slate-900 dark:text-white m-0">
+              {{ lockService.hasPin() ? 'Kilit PIN Kodunu Değiştir' : 'Uygulama Kilit PIN\'i Belirle' }}
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5 mb-0">
+              Uygulamayı kilitlediğinizde açmak için kullanılacak sayısal PIN
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="close()"
+          class="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors border-none bg-transparent cursor-pointer"
+        >
+          <mat-icon class="icon-size-4">close</mat-icon>
+        </button>
+      </div>
+
+      <div class="space-y-4 pt-4">
+        <!-- Hane Uzunluğu Seçimi (4 veya 6 Hane) -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            PIN Hane Uzunluğu
+          </label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              (click)="selectLength(4)"
+              class="px-4 py-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1"
+              [class]="selectedLength() === 4
+                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 ring-2 ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 font-semibold'"
+            >
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm font-black">4 Haneli PIN</span>
+                @if (selectedLength() === 4) {
+                  <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400">check_circle</mat-icon>
+                }
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono tracking-widest">••••</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="selectLength(6)"
+              class="px-4 py-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1"
+              [class]="selectedLength() === 6
+                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 ring-2 ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 font-semibold'"
+            >
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm font-black">6 Haneli PIN</span>
+                @if (selectedLength() === 6) {
+                  <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400">check_circle</mat-icon>
+                }
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono tracking-widest">••••••</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Yeni PIN Girişi -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-700 dark:text-slate-200">
+              Yeni PIN Kodu ({{ selectedLength() }} Rakam) *
+            </label>
+            <button
+              type="button"
+              (click)="showPin.set(!showPin())"
+              class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer"
+            >
+              <mat-icon class="text-[14px] w-3.5 h-3.5">{{ showPin() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              <span>{{ showPin() ? 'Gizle' : 'Göster' }}</span>
+            </button>
+          </div>
+          <div class="relative">
+            <input
+              [type]="showPin() ? 'text' : 'password'"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              [maxLength]="selectedLength()"
+              [value]="newPin()"
+              (input)="onPinInput($event, 'new')"
+              placeholder="Sadece {{ selectedLength() }} rakam girin"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white font-mono text-base tracking-widest focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- PIN Onayı -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+            PIN Kodunu Doğrulayın *
+          </label>
+          <div class="relative">
+            <input
+              [type]="showPin() ? 'text' : 'password'"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              [maxLength]="selectedLength()"
+              [value]="confirmPin()"
+              (input)="onPinInput($event, 'confirm')"
+              placeholder="Aynı PIN kodunu tekrar girin"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white font-mono text-base tracking-widest focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Bilgilendirme Kutusu -->
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-2">
+          <mat-icon class="icon-size-4 text-indigo-500 shrink-0 mt-0.5">info</mat-icon>
+          <span>Sayısal veri girişi kuralı gereğince sadece rakamlar kabul edilir. PIN kodu {{ selectedLength() }} haneye ulaştığında kaydedilebilir.</span>
+        </div>
+
+        <!-- Hata Mesajı -->
+        @if (errorMessage()) {
+          <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200/80 dark:border-rose-800/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
+            <mat-icon class="icon-size-4 text-rose-500">error</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Alt Aksiyon Butonları -->
+      <div class="flex items-center justify-between gap-2 pt-5 mt-5 border-t border-slate-100 dark:border-slate-800">
+        <div>
+          @if (lockService.hasPin()) {
+            <button
+              type="button"
+              (click)="removeLock()"
+              class="px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold border-none bg-transparent transition-colors cursor-pointer"
+            >
+              PIN'i Kaldır
+            </button>
+          }
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="close()"
+            class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="button"
+            (click)="save()"
+            [disabled]="isSaving() || newPin().length !== selectedLength() || confirmPin().length !== selectedLength()"
+            class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <mat-icon class="icon-size-4">lock</mat-icon>
+            <span>{{ isSaving() ? 'Kaydediliyor…' : 'PIN\'i Kaydet' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

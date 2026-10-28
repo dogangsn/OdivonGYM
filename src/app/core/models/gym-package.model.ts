@@ -1,3 +1,13 @@
+export type PackageScope = 'gym' | 'trainer';
+
+export interface TrainerPackagePricing {
+  trainerId: string;
+  trainerName: string;
+  price: number;
+  sessionCount?: number | null;
+  commissionRate?: number | null;
+}
+
 export interface GymPackage {
   id: string;
   tenantId?: string;
@@ -24,6 +34,17 @@ export interface GymPackage {
   status: 'active' | 'inactive' | 'archived';
   createdAt: string;
   updatedAt: string;
+
+  /** Paket Kapsamı: Salon Geneli ('gym') veya Personele / Antrenöre Özel ('trainer') */
+  packageScope?: PackageScope;
+  /** Personele özel ise antrenör / personel ID */
+  trainerId?: string | null;
+  /** Personele özel ise antrenör / personel adı */
+  trainerName?: string | null;
+  /** Personele ödenecek prim / komisyon yüzdesi (%) */
+  trainerCommissionRate?: number | null;
+  /** Çoklu eğitmen / antrenör fiyat matrisi */
+  trainerPricing?: TrainerPackagePricing[];
 }
 
 export interface UserPackagePurchase {
@@ -66,6 +87,12 @@ export interface CreateGymPackageInput {
   barcode?: string;
   isHidden?: boolean;
   requiredDocuments?: string[];
+
+  packageScope?: PackageScope;
+  trainerId?: string | null;
+  trainerName?: string | null;
+  trainerCommissionRate?: number | null;
+  trainerPricing?: TrainerPackagePricing[];
 }
 
 export type UpdateGymPackageInput = Partial<CreateGymPackageInput> & { status?: GymPackage['status'] };

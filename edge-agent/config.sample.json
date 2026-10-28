@@ -2,7 +2,8 @@
   "mainApiUrl": "https://mainapi.odivon.com/api/v1",
   "agentName": "Resepsiyon PC",
   "pollIntervalSeconds": 5,
-  "heartbeatIntervalSeconds": 15,
+  "eventFlushDelaySeconds": 5,
+  "heartbeatIntervalSeconds": 60,
   "dataDir": "./data",
   "credentials": {
     "192.168.1.201": { "username": "admin", "password": "CIHAZ_PAROLASI" }

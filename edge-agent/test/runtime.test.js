@@ -164,3 +164,120 @@ test('heartbeat cihaz erişilebilirliğini ve kuyruk derinliğini bildirir', asy
     { gateId: 'g1', reachable: true, queueDepth: 0 },
   );
 });
+
+test('flushOnTick false iken tick olayları göndermez, flushEvents gönderir', async (t) => {
+  const { dev, store, api, runtime } = await setup(t);
+  runtime.flushOnTick = false;
+  await runtime.tick();
+  dev.addLogs(10, istanbulToday());
+  await runtime.tick();
+  assert.equal(store.queueDepth(), 10);
+  assert.equal(api.logs.size, 0);
+
+  await runtime.flushEvents();
+  assert.equal(store.queueDepth(), 0);
+  assert.equal(api.logs.size, 10);
+});
+
+test('tanımsız kart okutulduğunda flushOnTick false olsa bile anında MainApiye gönderilir', async (t) => {
+  const { dev, store, api, runtime } = await setup(t);
+  runtime.flushOnTick = false;
+  await runtime.tick();
+
+  // Tanımsız bir kart kaydı ekle (userId yok, card var)
+  dev.state.logs.push({
+    time: `${istanbulToday()}120000`,
+    userId: null,
+    card: '0004928172',
+    verifyMode: 'card',
+    ioMode: 0,
+  });
+
+  await runtime.tick();
+  assert.equal(store.queueDepth(), 0);
+  assert.equal(api.logs.size, 1);
+  const sent = [...api.logs.values()][0];
+  assert.equal(sent.card, '0004928172');
+});
+
+
+
+test('iş sorgusu sunucunun önerdiği aralıkla yapılır, geçişler kısa beklemeyle toplu gönderilir', async (t) => {
+  const { dev, store, api } = await setup(t);
+  let clock = 1_000_000;
+  let workCalls = 0;
+  const getWork = api.getWork;
+  api.getWork = async () => {
+    workCalls += 1;
+    return { ...(await getWork()), pollAfterMs: 30_000 };
+  };
+  let batches = 0;
+  const sendEvents = api.sendEvents;
+  api.sendEvents = async (events) => {
+    batches += 1;
+    return sendEvents(events);
+  };
+  const runtime = new AgentRuntime({
+    client: api,
+    store,
+    credentials: { [dev.host]: { username: 'admin', password: 'secret' } },
+    agentVersion: 'test',
+    logger: silent,
+    flushOnTick: false,
+    eventFlushDelayMs: 20_000,
+    now: () => clock,
+  });
+
+  await runtime.tick();
+  assert.equal(workCalls, 1);
+  dev.addLogs(3, istanbulToday());
+  clock += 5_000;
+  await runtime.tick(); // okundu, henüz gönderilmedi
+  assert.equal(store.queueDepth(), 3);
+  assert.equal(batches, 0);
+  assert.equal(workCalls, 1);
+
+  dev.addLogs(2, istanbulToday());
+  clock += 10_000;
+  await runtime.tick();
+  assert.equal(batches, 0);
+
+  clock += 10_000; // ilk geçişten 25 sn sonra
+  await runtime.tick();
+  assert.equal(batches, 1);
+  assert.equal(api.logs.size, 5);
+  assert.equal(store.queueDepth(), 0);
+
+  clock += 10_000; // olay yok: istek yok
+  await runtime.tick();
+  assert.equal(batches, 1);
+  assert.equal(workCalls, 2); // 30 sn doldu
+});
+
+test('kimlik reddedilince yeni kod istenir ve yeni kimlikle kaldığı yerden devam edilir', async (t) => {
+  const { dev, store, api } = await setup(t);
+  let asked = 0;
+  let runtime;
+  runtime = new AgentRuntime({
+    client: api,
+    store,
+    credentials: { [dev.host]: { username: 'admin', password: 'secret' } },
+    agentVersion: 'test',
+    logger: silent,
+    onRevoked: async () => {
+      asked += 1;
+      api.revoked = false; // yeni kimlik kabul ediliyor
+      runtime.resume(api);
+    },
+  });
+  await runtime.tick();
+  dev.addLogs(3, istanbulToday());
+  api.revoked = true;
+  await runtime.tick();
+  await runtime.tick(); // ikinci hata yeniden sormaz
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(asked, 1);
+  assert.equal(runtime.revoked, false);
+  await runtime.tick();
+  assert.equal(api.logs.size, 3);
+});
