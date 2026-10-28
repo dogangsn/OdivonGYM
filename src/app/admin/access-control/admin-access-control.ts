@@ -1010,7 +1010,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                     </div>
                     <div>
                       <span class="font-extrabold text-sm sm:text-base block">OdivonGYM Edge Agent (Windows)</span>
-                      <span class="text-xs text-slate-300 mt-0.5 block">Node.js 22.13+ gerekir; ek paket kurulmaz. Firebase anahtarı gerekmez.</span>
+                      <span class="text-xs text-slate-300 mt-0.5 block">Node.js 22.13+ gerekir; cihaz sürücüleri ilk çalıştırmada otomatik kurulur. Firebase anahtarı gerekmez.</span>
                     </div>
                   </div>
                   <a
@@ -1064,7 +1064,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                     <div>
                       <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">2. config.json</h4>
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
-                        Cihaz parolasını salondaki bilgisayarda bu dosyaya yazın; buluta gönderilmez.
+                        YT cihazlarında kullanıcı adı/parolayı, ZK cihazlarında CommKey ayarını kontrol edin; bu bilgiler buluta gönderilmez.
                       </p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -1354,11 +1354,27 @@ export class AdminAccessControl implements OnInit {
   }
 
   protected readonly generatedConfigJson = computed(() => {
-    const hosts = this.gates()
-      .filter((g) => g.id && this.pairGateIds().includes(g.id) && g.host)
-      .map((g) => g.host!);
+    const selectedGates = this.gates().filter(
+      (gate) => gate.id && this.pairGateIds().includes(gate.id) && gate.host,
+    );
     const credentials = Object.fromEntries(
-      (hosts.length ? hosts : ['192.168.1.201']).map((host) => [host, { username: 'admin', password: 'CIHAZ_PAROLASI' }]),
+      selectedGates.length
+        ? selectedGates.map((gate) => [
+            gate.host!,
+            gate.protocol === 'zk-tcp-4370'
+              ? {
+                  commKey: 0,
+                  timeoutMs: 10000,
+                  udpInPort: 4000,
+                  maxChunkBytes: 65472,
+                }
+              : {
+                  username: 'admin',
+                  password: 'CIHAZ_PAROLASI',
+                  timeoutMs: 5000,
+                },
+          ])
+        : [['192.168.1.201', { username: 'admin', password: 'CIHAZ_PAROLASI', timeoutMs: 5000 }]],
     );
     return JSON.stringify(
       {
@@ -1383,7 +1399,7 @@ export class AdminAccessControl implements OnInit {
     a.download = 'config.json';
     a.click();
     URL.revokeObjectURL(url);
-    this.alertService.toastSuccess('config.json indirildi. Cihaz parolasını dosyada düzenleyin.');
+    this.alertService.toastSuccess('config.json indirildi. Cihaz kimlik doğrulama ayarlarını kontrol edin.');
   }
 
   copyConfigJson(): void {
