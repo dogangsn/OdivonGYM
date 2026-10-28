@@ -97,6 +97,11 @@ export class AdminSubscriptions {
   protected readonly selectedBranchFilter = signal<string>('all');
   protected readonly sortBy = signal<SubscriptionSortBy>('urgency');
 
+  // Pagination states
+  protected readonly currentPage = signal(1);
+  protected readonly pageSize = signal(25);
+  protected readonly pageSizeOptions = [10, 25, 50, 100];
+
   // Enriched Member Subscriptions
   protected readonly enrichedSubscriptions = computed<EnrichedMemberSubscription[]>(() => {
     const rawList = this.members();
@@ -286,6 +291,34 @@ export class AdminSubscriptions {
       }
       return 0;
     });
+  });
+
+  // Pagination computed values
+  protected readonly totalItems = computed(() => this.filteredSubscriptions().length);
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.pageSize())));
+  protected readonly safeCurrentPage = computed(() => Math.min(this.currentPage(), this.totalPages()));
+  protected readonly startIndex = computed(() => (this.safeCurrentPage() - 1) * this.pageSize());
+  protected readonly endIndex = computed(() => Math.min(this.startIndex() + this.pageSize(), this.totalItems()));
+
+  protected readonly paginatedSubscriptions = computed<EnrichedMemberSubscription[]>(() => {
+    const start = this.startIndex();
+    return this.filteredSubscriptions().slice(start, start + this.pageSize());
+  });
+
+  protected readonly visiblePages = computed<number[]>(() => {
+    const current = this.safeCurrentPage();
+    const total = this.totalPages();
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
   });
 
   // ==========================================
@@ -675,9 +708,55 @@ export class AdminSubscriptions {
     this.alertService.toastSuccess('CSV listesi başarıyla indirildi.');
   }
 
-  // Preset Filters
+  // Preset Filters & Pagination Controls
   setFilter(status: SubscriptionFilterStatus): void {
     this.statusFilter.set(status);
+    this.currentPage.set(1);
+  }
+
+  onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+    this.currentPage.set(1);
+  }
+
+  onPackageFilterChange(pkg: string): void {
+    this.selectedPackageFilter.set(pkg);
+    this.currentPage.set(1);
+  }
+
+  onBranchFilterChange(branchId: string): void {
+    this.selectedBranchFilter.set(branchId);
+    this.currentPage.set(1);
+  }
+
+  onSortChange(sort: SubscriptionSortBy): void {
+    this.sortBy.set(sort);
+    this.currentPage.set(1);
+  }
+
+  onPageSizeChange(size: number | string): void {
+    this.pageSize.set(Number(size));
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage(): void {
+    const current = this.safeCurrentPage();
+    if (current < this.totalPages()) {
+      this.currentPage.set(current + 1);
+    }
+  }
+
+  prevPage(): void {
+    const current = this.safeCurrentPage();
+    if (current > 1) {
+      this.currentPage.set(current - 1);
+    }
   }
 
   resetFilters(): void {
@@ -686,5 +765,6 @@ export class AdminSubscriptions {
     this.selectedPackageFilter.set('all');
     this.selectedBranchFilter.set('all');
     this.sortBy.set('urgency');
+    this.currentPage.set(1);
   }
 }
