@@ -150,3 +150,36 @@ test('TCP 4370 reddedilirse cihazın UDP 4370 kanalına geçer', async () => {
   assert.equal(result.events.length, 1);
   adapter.close();
 });
+
+test('başarısız UDP bağlantısından sonra yerel soketi serbest bırakır', async () => {
+  const { driver, factory } = setupDriver();
+  let udpClosed = 0;
+  driver.createSocket = async () => {
+    throw { err: Object.assign(new Error('TCP refused'), { code: 'ECONNREFUSED' }) };
+  };
+  driver.disconnect = async () => {
+    throw new Error('connection type yok');
+  };
+  driver.zudp = {
+    socket: null,
+    async createSocket() {
+      this.socket = {};
+    },
+    async connect() {
+      throw Object.assign(new Error('UDP timeout'), { code: 'ETIMEDOUT' });
+    },
+    async closeSocket() {
+      udpClosed += 1;
+      this.socket = null;
+    },
+  };
+
+  const adapter = createZkTcpAdapter(
+    { gateId: 'g1', protocol: 'zk-tcp-4370', host: '192.168.1.10', port: 4370, direction: 'in' },
+    { udpInPort: 4000 },
+    { driverFactory: factory },
+  );
+
+  await assert.rejects(adapter.readEvents(null), /UDP timeout/);
+  assert.equal(udpClosed, 1);
+});

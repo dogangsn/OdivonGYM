@@ -56,6 +56,14 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
       await current.disconnect();
     } catch {
       // Bağlantı zaten kopmuş olabilir.
+    } finally {
+      // UDP bağlantısı kurulmadan zaman aşımına uğrarsa zkteco-js connectionType
+      // atamadığı için disconnect() soketi kapatmıyor. Sonraki denemenin aynı
+      // yerel porta bağlanabilmesi için iki taşıyıcının soketini de kesin kapat.
+      await Promise.allSettled([
+        Promise.resolve().then(() => current.ztcp?.closeSocket?.()),
+        Promise.resolve().then(() => current.zudp?.closeSocket?.()),
+      ]);
     }
   }
 
