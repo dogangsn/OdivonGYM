@@ -727,6 +727,7 @@ export class AdminDisciplines {
     }
   }
 
+
   // ==========================================
   // STOK & ÜRÜN KATEGORİLERİ ACTIONS
   // ==========================================
