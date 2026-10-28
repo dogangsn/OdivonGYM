@@ -202,6 +202,13 @@ class AgentRuntime {
       }
       try {
         const result = await this.client.sendEvents(batch.map((row) => row.event));
+        const accepted = Number(result?.accepted ?? 0);
+        const duplicates = Number(result?.duplicates ?? 0);
+        if (accepted > 0 || duplicates > 0) {
+          this.log.info(
+            `📤 MainApi: ${accepted} geçiş kaydı gönderildi${duplicates > 0 ? `, ${duplicates} kayıt zaten vardı` : ''}.`,
+          );
+        }
         // Reddedilenler de silinir: sunucu kalıcı olarak kabul etmiyor (ör. cihaz agent'tan alındı).
         for (const rejected of result?.rejected ?? []) {
           this.log.warn(`⚠️ Olay reddedildi (${rejected.eventId}): ${rejected.reason}`);
@@ -259,6 +266,9 @@ class AgentRuntime {
   }
 
   markReachable(device) {
+    if (!device.reachable) {
+      this.log.info(`🔌 ${device.config.name}: cihaz bağlantısı kuruldu.`);
+    }
     device.reachable = true;
     device.lastError = null;
   }

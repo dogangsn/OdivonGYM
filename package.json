@@ -1,6 +1,6 @@
 {
   "name": "odivongym",
-  "version": "1.0.48",
+  "version": "1.0.49",
   "scripts": {
     "ng": "ng",
     "prestart": "node scripts/write-version.mjs",

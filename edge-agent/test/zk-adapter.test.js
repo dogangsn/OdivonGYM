@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
 const { createZkTcpAdapter, normalizeTime, resolveDirection } = require('../src/adapters/zk-tcp-4370');
 const { asDeviceError } = require('../src/adapters/errors');
 
@@ -182,4 +183,26 @@ test('başarısız UDP bağlantısından sonra yerel soketi serbest bırakır', 
 
   await assert.rejects(adapter.readEvents(null), /UDP timeout/);
   assert.equal(udpClosed, 1);
+});
+
+test('canlı abonelikten önce eski UDP mesaj dinleyicilerini temizler', async () => {
+  const { state, driver, factory } = setupDriver();
+  const socket = new EventEmitter();
+  socket.on('message', () => undefined);
+  driver.connectionType = 'udp';
+  driver.zudp = { socket };
+  driver.getRealTimeLogs = async (callback) => {
+    assert.equal(socket.listenerCount('message'), 0);
+    state.realtime = callback;
+  };
+
+  const adapter = createZkTcpAdapter(
+    { gateId: 'g1', protocol: 'zk-tcp-4370', host: '192.168.1.10', port: 4370, direction: 'in' },
+    {},
+    { driverFactory: factory },
+  );
+
+  await adapter.readEvents(null);
+  assert.equal(typeof state.realtime, 'function');
+  adapter.close();
 });

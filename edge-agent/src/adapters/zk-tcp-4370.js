@@ -92,6 +92,7 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
         pending.push(...recordsOf(attendanceResult));
         deviceTime = normalizeTime(timeResult);
 
+        clearStaleRealtimeListeners(current);
         await current.getRealTimeLogs((record) => {
           if (record) pending.push(record);
         });
@@ -200,6 +201,20 @@ function hasErrorCode(error, expectedCode) {
   return false;
 }
 
+/**
+ * zkteco-js UDP komutlarından sonra bazı cihazlarda bir `message` listener'ı
+ * bırakıyor. getRealTimeLogs listener sayısı sıfır değilse canlı dinleyiciyi
+ * kurmadığından, bütün sıralı sorgular tamamlandıktan sonra yalnızca veri
+ * listener'larını temizliyoruz. error/close listener'larına dokunulmaz.
+ */
+function clearStaleRealtimeListeners(driver) {
+  if (driver?.connectionType === 'udp') {
+    driver.zudp?.socket?.removeAllListeners?.('message');
+  } else if (driver?.connectionType === 'tcp') {
+    driver.ztcp?.socket?.removeAllListeners?.('data');
+  }
+}
+
 function recordsOf(result) {
   if (Array.isArray(result)) return result;
   return Array.isArray(result?.data) ? result.data : [];
@@ -243,4 +258,5 @@ module.exports = {
   normalizeTime,
   resolveDirection,
   openSocketWithUdpFallback,
+  clearStaleRealtimeListeners,
 };
