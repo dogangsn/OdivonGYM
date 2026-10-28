@@ -243,11 +243,11 @@
       <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">
         search
       </mat-icon>
-      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+      <input type="text" [ngModel]="searchTerm()"
         (ngModelChange)="onSearchChange($event)" [placeholder]="'subscriptions.searchPlaceholder' | transloco"
         class="odv-input pl-10 pr-8" />
       @if (searchTerm()) {
-      <button type="button" (click)="searchTerm.set('')" (click)="onSearchChange('')"
+      <button type="button" (click)="onSearchChange('')"
         class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
         <mat-icon class="icon-size-4">close</mat-icon>
       </button>
@@ -257,7 +257,7 @@
     <!-- Filtre Dropdown'ları -->
     <div class="flex flex-wrap items-center gap-2">
       <!-- Paket Filtresi -->
-      <select [ngModel]="selectedPackageFilter()" (ngModelChange)="selectedPackageFilter.set($event)"
+      <select [ngModel]="selectedPackageFilter()"
         (ngModelChange)="onPackageFilterChange($event)" class="odv-input !w-auto text-xs py-2">
         <option value="all">{{ 'common.all' | transloco }}</option>
         @for (pkg of distinctPackageOptions(); track pkg) {
@@ -267,7 +267,7 @@
 
       <!-- Şube Filtresi (varsa) -->
       @if (branches().length > 1) {
-      <select [ngModel]="selectedBranchFilter()" (ngModelChange)="selectedBranchFilter.set($event)"
+      <select [ngModel]="selectedBranchFilter()"
         (ngModelChange)="onBranchFilterChange($event)" class="odv-input !w-auto text-xs py-2">
         <option value="all">{{ 'common.all' | transloco }}</option>
         @for (br of branches(); track br.id) {
@@ -277,7 +277,7 @@
       }
 
       <!-- Sıralama -->
-      <select [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)" (ngModelChange)="onSortChange($event)"
+      <select [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)"
         class="odv-input !w-auto text-xs py-2">
         <option value="urgency">🚨 {{ 'subscriptions.statusExpiring' | transloco }}</option>
         <option value="remaining_asc">{{ 'subscriptions.colRemaining' | transloco }} (↑)</option>
@@ -336,7 +336,6 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          @for (item of filteredSubscriptions(); track item.member.uid) {
           @for (item of paginatedSubscriptions(); track item.member.uid) {
           <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
             [class.bg-rose-50/30]="item.isExpired" [class.dark:bg-rose-950/20]="item.isExpired">
@@ -497,117 +496,93 @@
       </table>
     </div>
 
-    <!-- Tablo Alt Bilgisi -->
+    <!-- Tablo Alt Bilgisi & Sayfalama -->
     <div
-      class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between text-xs text-slate-500">
-      <div>
-        {{ 'subscriptions.totalListedPrefix' | transloco }} <strong class="text-slate-800 dark:text-slate-200">{{
-          filteredSubscriptions().length }}</strong> {{ 'subscriptions.totalListedSuffix' | transloco }}
-        <!-- Tablo Alt Bilgisi & Sayfalama -->
-        <div
-          class="px-6 py-3.5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
-          <!-- Kayıt Aralığı ve Durum Özeti -->
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="font-medium">
-              Toplam <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ totalItems() }}</strong> kayıttan
-              <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ startIndex() + 1 }}-{{ endIndex()
-                }}</strong> arası gösteriliyor
-            </div>
-            <div class="hidden xl:flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700">
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                {{ 'subscriptions.statusExpired' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{
-                  kpiMetrics().expired }}</strong>
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                {{ 'subscriptions.kpiExpiringSoon' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{
-                  kpiMetrics().expiringSoon }}</strong>
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                {{ 'subscriptions.statusActive' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{
-                  kpiMetrics().active }}</strong>
-              </span>
-            </div>
-          </div>
-          <div class="flex items-center gap-4">
-            <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-              {{ 'subscriptions.statusExpired' | transloco }}: <strong>{{ kpiMetrics().expired }}</strong>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              {{ 'subscriptions.kpiExpiringSoon' | transloco }}: <strong>{{ kpiMetrics().expiringSoon }}</strong>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              {{ 'subscriptions.statusActive' | transloco }}: <strong>{{ kpiMetrics().active }}</strong>
-            </span>
-
-            <!-- Sayfa Boyutu ve Gezinme Kontrolleri -->
-            <div class="flex items-center gap-3">
-              <!-- Page Size Selector -->
-              <div class="flex items-center gap-2">
-                <label class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">{{
-                  'members.perPage' | transloco }}</label>
-                <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)"
-                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer shadow-2xs">
-                  @for (sz of pageSizeOptions; track sz) {
-                  <option [value]="sz">{{ sz }}</option>
-                  }
-                </select>
-              </div>
-
-              <!-- Nav Buttons -->
-              <div class="flex items-center gap-1">
-                <!-- First Page -->
-                <button type="button" (click)="goToPage(1)" [disabled]="safeCurrentPage() === 1"
-                  class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  [matTooltip]="'members.firstPage' | transloco">
-                  <mat-icon class="icon-size-4">first_page</mat-icon>
-                </button>
-
-                <!-- Prev Page -->
-                <button type="button" (click)="prevPage()" [disabled]="safeCurrentPage() === 1"
-                  class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  [matTooltip]="'members.prevPage' | transloco">
-                  <mat-icon class="icon-size-4">chevron_left</mat-icon>
-                </button>
-
-                <!-- Numbered Buttons -->
-                @for (p of visiblePages(); track p) {
-                <button type="button" (click)="goToPage(p)"
-                  class="min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center"
-                  [class.bg-indigo-600]="safeCurrentPage() === p" [class.text-white]="safeCurrentPage() === p"
-                  [class.border]="safeCurrentPage() !== p" [class.border-slate-200]="safeCurrentPage() !== p"
-                  [class.dark:border-slate-700]="safeCurrentPage() !== p" [class.bg-white]="safeCurrentPage() !== p"
-                  [class.dark:bg-slate-800]="safeCurrentPage() !== p" [class.text-slate-700]="safeCurrentPage() !== p"
-                  [class.dark:text-slate-200]="safeCurrentPage() !== p"
-                  [class.hover:bg-slate-100]="safeCurrentPage() !== p"
-                  [class.dark:hover:bg-slate-700]="safeCurrentPage() !== p">
-                  {{ p }}
-                </button>
-                }
-
-                <!-- Next Page -->
-                <button type="button" (click)="nextPage()" [disabled]="safeCurrentPage() === totalPages()"
-                  class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  [matTooltip]="'members.nextPage' | transloco">
-                  <mat-icon class="icon-size-4">chevron_right</mat-icon>
-                </button>
-
-                <!-- Last Page -->
-                <button type="button" (click)="goToPage(totalPages())" [disabled]="safeCurrentPage() === totalPages()"
-                  class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  [matTooltip]="'members.lastPage' | transloco">
-                  <mat-icon class="icon-size-4">last_page</mat-icon>
-                </button>
-              </div>
-            </div>
-          </div>
-          }
+      class="px-6 py-3.5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+      <!-- Kayıt Aralığı ve Durum Özeti -->
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="font-medium">
+          Toplam <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ totalItems() }}</strong> kayıttan
+          <strong class="text-slate-800 dark:text-slate-200 font-bold">{{ startIndex() + 1 }}-{{ endIndex() }}</strong> arası gösteriliyor
         </div>
+        <div class="hidden xl:flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            {{ 'subscriptions.statusExpired' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{ kpiMetrics().expired }}</strong>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            {{ 'subscriptions.kpiExpiringSoon' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{ kpiMetrics().expiringSoon }}</strong>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            {{ 'subscriptions.statusActive' | transloco }}: <strong class="text-slate-700 dark:text-slate-300">{{ kpiMetrics().active }}</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Sayfa Boyutu ve Gezinme Kontrolleri -->
+      <div class="flex items-center gap-3">
+        <!-- Page Size Selector -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">{{ 'members.perPage' | transloco }}</label>
+          <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)"
+            class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer shadow-2xs">
+            @for (sz of pageSizeOptions; track sz) {
+            <option [value]="sz">{{ sz }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Nav Buttons -->
+        <div class="flex items-center gap-1">
+          <!-- First Page -->
+          <button type="button" (click)="goToPage(1)" [disabled]="safeCurrentPage() === 1"
+            class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            [matTooltip]="'members.firstPage' | transloco">
+            <mat-icon class="icon-size-4">first_page</mat-icon>
+          </button>
+
+          <!-- Prev Page -->
+          <button type="button" (click)="prevPage()" [disabled]="safeCurrentPage() === 1"
+            class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            [matTooltip]="'members.prevPage' | transloco">
+            <mat-icon class="icon-size-4">chevron_left</mat-icon>
+          </button>
+
+          <!-- Numbered Buttons -->
+          @for (p of visiblePages(); track p) {
+          <button type="button" (click)="goToPage(p)"
+            class="min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center"
+            [class.bg-indigo-600]="safeCurrentPage() === p" [class.text-white]="safeCurrentPage() === p"
+            [class.border]="safeCurrentPage() !== p" [class.border-slate-200]="safeCurrentPage() !== p"
+            [class.dark:border-slate-700]="safeCurrentPage() !== p" [class.bg-white]="safeCurrentPage() !== p"
+            [class.dark:bg-slate-800]="safeCurrentPage() !== p" [class.text-slate-700]="safeCurrentPage() !== p"
+            [class.dark:text-slate-200]="safeCurrentPage() !== p"
+            [class.hover:bg-slate-100]="safeCurrentPage() !== p"
+            [class.dark:hover:bg-slate-700]="safeCurrentPage() !== p">
+            {{ p }}
+          </button>
+          }
+
+          <!-- Next Page -->
+          <button type="button" (click)="nextPage()" [disabled]="safeCurrentPage() === totalPages()"
+            class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            [matTooltip]="'members.nextPage' | transloco">
+            <mat-icon class="icon-size-4">chevron_right</mat-icon>
+          </button>
+
+          <!-- Last Page -->
+          <button type="button" (click)="goToPage(totalPages())" [disabled]="safeCurrentPage() === totalPages()"
+            class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            [matTooltip]="'members.lastPage' | transloco">
+            <mat-icon class="icon-size-4">last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+  </div>
 
         <!-- ======================================================== -->
         <!-- 6. HIZLI ABONELİK YENİLEME SLIDE-OVER ÇEKMECESİ          -->
