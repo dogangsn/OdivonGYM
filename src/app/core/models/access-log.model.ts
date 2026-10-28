@@ -1,7 +1,7 @@
 import { Timestamp } from '@angular/fire/firestore';
 
 export type AccessDirection = 'in' | 'out';
-export type AccessMethod = 'qr' | 'rfid' | 'nfc' | 'manual';
+export type AccessMethod = 'qr' | 'rfid' | 'nfc' | 'manual' | 'fingerprint' | 'face' | 'pin' | 'unknown';
 /** `unknown`: cihaz geçiş sonucunu bildirmedi (agent ve sunucu tahmin etmez). */
 export type AccessStatus = 'granted' | 'denied' | 'anti_passback_warning' | 'unknown';
 

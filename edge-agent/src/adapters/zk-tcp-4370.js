@@ -33,6 +33,8 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
   let subscribed = false;
   let pending = [];
   let deviceTime = null;
+  let usersByUid = new Map();
+  let usersByEnrollNumber = new Map();
 
   function ensureSupportedConfig() {
     if (commKey !== 0) {
@@ -87,6 +89,8 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
         connected = true;
 
         // ZK cihazı tek komut kanalı kullanır; aynı sokette paralel komut gönderme.
+        const usersResult = typeof current.getUsers === 'function' ? await current.getUsers().catch(() => null) : null;
+        indexUsers(recordsOf(usersResult));
         const attendanceResult = await current.getAttendances();
         const timeResult = await current.getTime().catch(() => null);
         pending.push(...recordsOf(attendanceResult));
@@ -112,7 +116,10 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
   }
 
   function toEvent(raw) {
-    const userId = stringOrNull(raw?.user_id ?? raw?.userId);
+    const rawUserId = stringOrNull(raw?.user_id ?? raw?.userId);
+    const user = resolveDeviceUser(rawUserId);
+    const userId = stringOrNull(user?.userId ?? rawUserId);
+    const card = cardOrNull(user?.cardno ?? user?.card);
     const time = normalizeTime(raw?.record_time ?? raw?.recordTime ?? raw?.attTime ?? raw?.time);
     if (!time) return null;
     const state = raw?.state ?? raw?.ioMode ?? null;
@@ -120,21 +127,46 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
     const direction = resolveDirection(device.direction, credentials.directionByState, state);
     const eventId = `zk-${crypto
       .createHash('sha256')
-      .update([device.host, raw?.sn ?? '', userId ?? '', time, verifyMode ?? '', state ?? ''].join('|'))
+      // Kimliği sürümler arasında sabit tut: UID sonradan EnrollNumber/kartla
+      // zenginleştirilse bile aynı cihaz kaydı yeni bir olay gibi görünmesin.
+      .update([device.host, raw?.sn ?? '', rawUserId ?? '', time, verifyMode ?? '', state ?? ''].join('|'))
       .digest('hex')
       .slice(0, 32)}`;
 
     return {
       eventId,
       userId,
-      card: null,
+      card,
       time,
       direction,
       // Standalone protokol doğrulama sonucunu güvenilir biçimde bildirmiyor.
       result: null,
       verifyMode: verifyMode == null ? null : String(verifyMode),
-      raw: compactRaw(raw),
+      raw: compactRaw(raw, { rawUserId, userId, user }),
     };
+  }
+
+  function indexUsers(users) {
+    usersByUid = new Map();
+    usersByEnrollNumber = new Map();
+    for (const user of users) {
+      const uid = stringOrNull(user?.uid ?? user?.userSn);
+      const userId = stringOrNull(user?.userId ?? user?.deviceUserId ?? user?.userid);
+      if (!userId) continue;
+      const normalized = { ...user, userId };
+      if (uid) usersByUid.set(uid, normalized);
+      usersByEnrollNumber.set(userId, normalized);
+    }
+  }
+
+  function resolveDeviceUser(rawUserId) {
+    if (!rawUserId) return null;
+    // Eski UDP cihazları olayda yalnızca iç sıra numarasını (UID) gönderir;
+    // gerçek 6-9 haneli EnrollNumber cihazın kullanıcı tablosundadır.
+    if (driver?.connectionType === 'udp') {
+      return usersByUid.get(rawUserId) ?? usersByEnrollNumber.get(rawUserId) ?? null;
+    }
+    return usersByEnrollNumber.get(rawUserId) ?? usersByUid.get(rawUserId) ?? null;
   }
 
   return {
@@ -230,6 +262,11 @@ function stringOrNull(value) {
   return String(value).trim() || null;
 }
 
+function cardOrNull(value) {
+  const card = stringOrNull(value);
+  return card && card !== '0' ? card : null;
+}
+
 function normalizeTime(value) {
   if (value == null || value === '') return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
@@ -245,9 +282,12 @@ function resolveDirection(gateDirection, directionByState, state) {
   return gateDirection === 'in' || gateDirection === 'out' ? gateDirection : null;
 }
 
-function compactRaw(raw) {
+function compactRaw(raw, identity = {}) {
   return {
     sn: raw?.sn ?? null,
+    deviceUid: identity.rawUserId ?? null,
+    enrollNumber: identity.userId ?? null,
+    deviceUserName: stringOrNull(identity.user?.name),
     state: raw?.state ?? raw?.ioMode ?? null,
     type: raw?.type ?? raw?.verifyMode ?? null,
   };

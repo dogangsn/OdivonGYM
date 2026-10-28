@@ -38,7 +38,7 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 | Protokol | Durum |
 | --- | --- |
 | `yt-http-digest` | Olay okuma + kart/üye no/bitiş günü senkronu. **Donanım testi gerekli.** |
-| `zk-tcp-4370` | Geçmiş + gerçek zamanlı olay okuma. Üye/kart yazma kapalı; donanım testi gerekli. |
+| `zk-tcp-4370` | Geçmiş + gerçek zamanlı olay okuma. Eski UDP cihazlarında iç UID, gerçek EnrollNumber ile eşlenir. Üye/kart yazma kapalı; donanım testi gerekli. |
 | `vendor-sdk` | Tanımlı, henüz eklenmedi. |
 
 ## Kurulum (Windows)

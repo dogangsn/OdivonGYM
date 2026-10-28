@@ -25,6 +25,9 @@ function setupDriver() {
         ],
       };
     },
+    async getUsers() {
+      return { data: [] };
+    },
     async getTime() {
       return new Date('2026-10-28T05:15:00.000Z');
     },
@@ -58,7 +61,14 @@ test('ilk bağlantıda geçmiş hareketleri okur ve gerçek zamanlı olayları k
     direction: 'in',
     result: null,
     verifyMode: '4',
-    raw: { sn: 7, state: 0, type: 4 },
+    raw: {
+      sn: 7,
+      deviceUid: '1042',
+      enrollNumber: '1042',
+      deviceUserName: null,
+      state: 0,
+      type: 4,
+    },
   });
   assert.equal(first.deviceTime, '2026-10-28T05:15:00.000Z');
 
@@ -204,5 +214,34 @@ test('canlı abonelikten önce eski UDP mesaj dinleyicilerini temizler', async (
 
   await adapter.readEvents(null);
   assert.equal(typeof state.realtime, 'function');
+  adapter.close();
+});
+
+test('eski UDP cihazının iç UID değerini gerçek EnrollNumber ve kartla eşler', async () => {
+  const { state, driver, factory } = setupDriver();
+  driver.connectionType = 'udp';
+  driver.getUsers = async () => ({
+    data: [{ uid: 7, userId: 117673, name: 'Test Üye', cardno: 998877 }],
+  });
+  driver.getAttendances = async () => ({
+    data: [{ user_id: 7, record_time: '2026-10-28 08:14:10' }],
+  });
+
+  const adapter = createZkTcpAdapter(
+    { gateId: 'g1', protocol: 'zk-tcp-4370', host: '192.168.1.10', port: 4370, direction: 'in' },
+    {},
+    { driverFactory: factory },
+  );
+
+  const history = await adapter.readEvents(null);
+  assert.equal(history.events[0].userId, '117673');
+  assert.equal(history.events[0].card, '998877');
+  assert.equal(history.events[0].raw.deviceUid, '7');
+  assert.equal(history.events[0].raw.deviceUserName, 'Test Üye');
+
+  state.realtime({ userId: 7, attTime: new Date('2026-10-28T08:15:00Z') });
+  const realtime = await adapter.readEvents(history.cursor);
+  assert.equal(realtime.events[0].userId, '117673');
+  assert.equal(realtime.events[0].card, '998877');
   adapter.close();
 });
