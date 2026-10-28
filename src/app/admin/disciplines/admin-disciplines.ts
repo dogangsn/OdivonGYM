@@ -31,7 +31,7 @@ import { DEFAULT_EXERCISE_LIBRARY, Exercise } from '../../core/models/workout-pl
 import { toSignal } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 import { AdminShopService } from '../shop/admin-shop.service';
-import { StockCategoryItem } from '../../core/models/stock-category.model';
+import { StockCategoryItem, resolveCategoryEmoji } from '../../core/models/stock-category.model';
 import { ShopProduct } from '../../core/models/shop-product.model';
 import { DocumentDefinitionsService } from '../../core/services/document-definitions.service';
 import { DocumentDefinitionsModal } from '../../shared/components/document-definitions-modal/document-definitions-modal';
@@ -225,7 +225,7 @@ export class AdminDisciplines {
   protected readonly stockCategoryForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     key: [''],
-    icon: ['inventory_2', [Validators.required]],
+    icon: ['📦', [Validators.required]],
     colorTag: ['indigo', [Validators.required]],
     description: [''],
   });
@@ -731,12 +731,31 @@ export class AdminDisciplines {
   // STOK & ÜRÜN KATEGORİLERİ ACTIONS
   // ==========================================
 
-  getProductCountByCategory(catKey: string, catName?: string): number {
-    const products = this.shopProducts();
+  getProductCountByCategory(catKey?: string, catName?: string, catId?: string): number {
+    const products = this.shopProducts() ?? [];
+    if (!products.length) return 0;
+
+    const normalizedKey = (catKey ?? '').trim().toLowerCase();
+    const normalizedName = (catName ?? '').trim().toLowerCase();
+    const normalizedId = (catId ?? '').trim().toLowerCase();
+
+    if (!normalizedKey && !normalizedName && !normalizedId) {
+      return 0;
+    }
+
     return products.filter((p) => {
-      const c = p.category?.toLowerCase();
-      return c === catKey.toLowerCase() || (catName && c === catName.toLowerCase());
+      const c = (p.category ?? '').trim().toLowerCase();
+      if (!c) return false;
+      return (
+        (!!normalizedKey && c === normalizedKey) ||
+        (!!normalizedName && c === normalizedName) ||
+        (!!normalizedId && c === normalizedId)
+      );
     }).length;
+  }
+
+  resolveCategoryIcon(name: string, icon?: string): string {
+    return resolveCategoryEmoji(name, icon);
   }
 
   openNewStockCategory(): void {
@@ -744,7 +763,7 @@ export class AdminDisciplines {
     this.stockCategoryForm.reset({
       name: '',
       key: '',
-      icon: 'inventory_2',
+      icon: '📦',
       colorTag: 'indigo',
       description: '',
     });
@@ -754,9 +773,9 @@ export class AdminDisciplines {
   openEditStockCategory(cat: StockCategoryItem): void {
     this.editingStockCategoryId.set(cat.id ?? null);
     this.stockCategoryForm.patchValue({
-      name: cat.name,
-      key: cat.key,
-      icon: cat.icon || 'inventory_2',
+      name: cat.name || '',
+      key: cat.key || '',
+      icon: resolveCategoryEmoji(cat.name, cat.icon),
       colorTag: cat.colorTag || 'indigo',
       description: cat.description || '',
     });
@@ -774,23 +793,23 @@ export class AdminDisciplines {
     const id = this.editingStockCategoryId();
 
     try {
+      const computedKey = (val.key?.trim() || val.name?.trim() || 'cat')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_');
+
+      const payload = {
+        name: val.name?.trim(),
+        key: computedKey,
+        icon: resolveCategoryEmoji(val.name, val.icon),
+        colorTag: val.colorTag || 'indigo',
+        description: val.description?.trim() || '',
+      };
+
       if (id) {
-        await this.shopService.updateCategory(id, {
-          name: val.name,
-          key: val.key || val.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-          icon: val.icon,
-          colorTag: val.colorTag,
-          description: val.description,
-        });
+        await this.shopService.updateCategory(id, payload);
         this.alertService.toastSuccess('Stok kategorisi güncellendi.');
       } else {
-        await this.shopService.createCategory({
-          name: val.name,
-          key: val.key || val.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-          icon: val.icon,
-          colorTag: val.colorTag,
-          description: val.description,
-        });
+        await this.shopService.createCategory(payload);
         this.alertService.toastSuccess('Yeni stok kategorisi eklendi.');
       }
       this.stockCategoryModalOpen.set(false);
@@ -803,7 +822,7 @@ export class AdminDisciplines {
 
   async deleteStockCategory(cat: StockCategoryItem): Promise<void> {
     if (!cat.id) return;
-    const count = this.getProductCountByCategory(cat.key, cat.name);
+    const count = this.getProductCountByCategory(cat.key, cat.name, cat.id);
     if (count > 0) {
       const ok = await this.alertService.actionConfirm(
         'Kategoriyi Sil',

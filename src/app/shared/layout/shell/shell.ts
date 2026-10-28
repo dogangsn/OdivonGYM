@@ -24,6 +24,7 @@ import { ChangePasswordModal } from '../../components/change-password-modal/chan
 import { ChangePasswordService } from '../../components/change-password-modal/change-password.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
+import { AppLockService } from '../../../core/services/app-lock.service';
 
 import { FormsModule } from '@angular/forms';
 
@@ -124,6 +125,7 @@ export class Shell {
   protected readonly features = FEATURES;
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
+  protected readonly lockService = inject(AppLockService);
   private readonly router = inject(Router);
 
   protected readonly languageNames = LANGUAGE_NAMES;
@@ -252,5 +254,13 @@ export class Shell {
   async logOut(): Promise<void> {
     await this.auth.logOut();
     await this.router.navigateByUrl('/auth/login');
+  }
+
+  lockApp(): void {
+    this.lockService.lock();
+  }
+
+  openLockPinSetup(): void {
+    this.lockService.openSetupModal();
   }
 }

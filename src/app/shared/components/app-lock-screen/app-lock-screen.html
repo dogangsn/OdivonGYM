@@ -1,0 +1,152 @@
+<div
+  class="fixed inset-0 z-[99998] flex flex-col justify-between overflow-y-auto select-none bg-slate-950/95 backdrop-blur-2xl transition-all duration-300"
+  [class.animate-fade-out]="isUnlocked()"
+>
+  <!-- Ambient Gradient Orbs -->
+  <div class="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-pink-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="fixed bottom-10 left-10 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed bottom-10 right-10 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- 1. Üst Bar: Saat & Tarih & Salon Bilgisi -->
+  <header class="relative z-10 w-full px-6 pt-6 sm:px-10 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+        <mat-icon class="text-white icon-size-4.5">fitness_center</mat-icon>
+      </div>
+      <div>
+        <span class="text-xs font-black tracking-wider text-white uppercase block leading-none">Odivon<span class="text-indigo-400">GYM</span></span>
+        <span class="text-[10px] text-slate-400 font-medium block mt-0.5">Güvenli Kilit Sistemi</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-medium backdrop-blur-md">
+      <mat-icon class="icon-size-3.5 text-amber-400">lock</mat-icon>
+      <span>Ekran Kilitli</span>
+    </div>
+  </header>
+
+  <!-- 2. Orta Bölüm: Kullanıcı Kartı & PIN Tuş Takımı -->
+  <main class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 my-auto max-w-sm mx-auto w-full">
+    <!-- Dijital Saat & Tarih -->
+    <div class="text-center mb-6">
+      <div class="text-4xl sm:text-5xl font-black text-white tracking-tight font-mono drop-shadow-md">
+        {{ currentTime() }}
+      </div>
+      <div class="text-xs sm:text-sm font-medium text-slate-400 mt-1 capitalize">
+        {{ currentDate() }}
+      </div>
+    </div>
+
+    <!-- Kullanıcı Profil Kartı -->
+    <div class="flex flex-col items-center mb-6">
+      <div class="relative mb-3">
+        <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-black text-xl sm:text-2xl flex items-center justify-center shadow-xl shadow-indigo-500/25 ring-4 ring-white/10">
+          {{ userInitials() }}
+        </div>
+        <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md ring-2 ring-slate-950">
+          <mat-icon class="text-[13px] w-3.5 h-3.5">lock</mat-icon>
+        </div>
+      </div>
+
+      <h3 class="text-base sm:text-lg font-bold text-white m-0 text-center">
+        {{ auth.profile()?.displayName || 'Yönetici' }}
+      </h3>
+      <div class="flex items-center gap-1.5 mt-1">
+        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+          {{ permissions.roleDefinition().name }}
+        </span>
+      </div>
+    </div>
+
+    <!-- PIN Noktaları Göstergesi (Dots) -->
+    <div
+      class="flex items-center justify-center gap-3 sm:gap-4 mb-4"
+      [class.animate-shake]="isShaking()"
+    >
+      @for (_ of dotsArray(); track $index) {
+        <div
+          class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 transition-all duration-200"
+          [class]="$index < enteredDigits().length
+            ? 'bg-indigo-500 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.7)] scale-110'
+            : 'bg-white/5 border-white/20'"
+        ></div>
+      }
+    </div>
+
+    <!-- Hata Mesajı -->
+    @if (errorMessage()) {
+      <div class="mb-4 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
+        <mat-icon class="icon-size-4 text-rose-400">error_outline</mat-icon>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    } @else {
+      <p class="text-xs text-slate-400 mb-4 h-5 flex items-center justify-center">
+        {{ pinLength() }} haneli PIN kodunuzu tuşlayın
+      </p>
+    }
+
+    <!-- Sayısal Dokunmatik Tuş Takımı (Numpad) -->
+    <div class="grid grid-cols-3 gap-3 sm:gap-3.5 w-full max-w-[280px]">
+      @for (num of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track num) {
+        <button
+          type="button"
+          (click)="pressDigit(num)"
+          [disabled]="isVerifying() || isUnlocked()"
+          class="h-14 sm:h-15 rounded-2xl bg-white/[0.07] hover:bg-white/[0.15] active:bg-indigo-600/40 border border-white/10 active:border-indigo-400 text-white font-bold text-xl sm:text-2xl shadow-sm transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-50"
+        >
+          {{ num }}
+        </button>
+      }
+
+      <!-- Temizle (C) -->
+      <button
+        type="button"
+        (click)="clearDigits()"
+        [disabled]="isVerifying() || isUnlocked() || enteredDigits().length === 0"
+        class="h-14 sm:h-15 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-white/[0.15] border border-white/10 text-slate-400 hover:text-white font-bold text-sm uppercase tracking-wider transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-30"
+        title="Temizle (Esc)"
+      >
+        C
+      </button>
+
+      <!-- 0 -->
+      <button
+        type="button"
+        (click)="pressDigit('0')"
+        [disabled]="isVerifying() || isUnlocked()"
+        class="h-14 sm:h-15 rounded-2xl bg-white/[0.07] hover:bg-white/[0.15] active:bg-indigo-600/40 border border-white/10 active:border-indigo-400 text-white font-bold text-xl sm:text-2xl shadow-sm transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-50"
+      >
+        0
+      </button>
+
+      <!-- Geri Sil (Backspace) -->
+      <button
+        type="button"
+        (click)="backspace()"
+        [disabled]="isVerifying() || isUnlocked() || enteredDigits().length === 0"
+        class="h-14 sm:h-15 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-white/[0.15] border border-white/10 text-slate-400 hover:text-white transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-30"
+        title="Geri Sil"
+      >
+        <mat-icon class="icon-size-5 text-current">backspace</mat-icon>
+      </button>
+    </div>
+
+    <!-- Klavye İpucu -->
+    <div class="mt-4 flex items-center gap-1.5 text-[11px] text-slate-400">
+      <mat-icon class="icon-size-3.5">keyboard</mat-icon>
+      <span>Klavyenizden doğrudan tuşlayabilirsiniz</span>
+    </div>
+  </main>
+
+  <!-- 3. Alt Bar: Kullanıcı Değiştir / Çıkış Yap -->
+  <footer class="relative z-10 w-full px-6 pb-6 text-center">
+    <button
+      type="button"
+      (click)="logOut()"
+      class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-white/10 hover:border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
+    >
+      <mat-icon class="icon-size-4 text-current">logout</mat-icon>
+      <span>Farklı Hesapla Giriş Yap / Çıkış Yap</span>
+    </button>
+  </footer>
+</div>

@@ -10,11 +10,14 @@ import { CookieConsentBanner } from './shared/components/cookie-consent-banner/c
 import { VersionService } from './core/version/version.service';
 import { SeoService } from './core/services/seo.service';
 import { AnalyticsService } from './core/services/analytics.service';
+import { AppLockService } from './core/services/app-lock.service';
+import { AppLockScreen } from './shared/components/app-lock-screen/app-lock-screen';
+import { AppLockSetupModal } from './shared/components/app-lock-setup-modal/app-lock-setup-modal';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GymLoader, UpdateBanner, CookieConsentBanner],
+  imports: [RouterOutlet, GymLoader, UpdateBanner, CookieConsentBanner, AppLockScreen, AppLockSetupModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -22,6 +25,7 @@ import { AnalyticsService } from './core/services/analytics.service';
 export class App {
   protected readonly auth = inject(AuthService);
   protected readonly httpLoading = inject(HttpLoadingService);
+  protected readonly lockService = inject(AppLockService);
 
   // Tema, Dil, Sürüm ve SEO servisleri kök bileşende erkenden başlatılır.
   private readonly theme = inject(ThemeService);

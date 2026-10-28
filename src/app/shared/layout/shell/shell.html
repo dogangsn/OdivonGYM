@@ -240,6 +240,16 @@
           <span>{{ 'shell.online' | transloco }}</span>
         </div>
 
+        <!-- Uygulama Kilit Butonu (4 veya 6 haneli PIN) -->
+        <button
+          type="button"
+          class="topbar__icon-btn cursor-pointer transition-colors hover:text-amber-600"
+          [matTooltip]="lockService.hasPin() ? ('Uygulamayı Kilitle (' + lockService.pinLength() + ' Haneli PIN)') : 'Uygulama Kilidi (PIN Belirle)'"
+          (click)="lockApp()"
+        >
+          <mat-icon [class.text-amber-500]="lockService.hasPin()">{{ lockService.hasPin() ? 'lock' : 'lock_outline' }}</mat-icon>
+        </button>
+
         <!-- Dil Seçimi -->
         <button
           type="button"
@@ -390,6 +400,14 @@
               <span>{{ 'shell.menuGymInfo' | transloco }}</span>
             </button>
           }
+          <button mat-menu-item (click)="lockApp()">
+            <mat-icon class="text-amber-500">lock</mat-icon>
+            <span>Uygulamayı Kilitle</span>
+          </button>
+          <button mat-menu-item (click)="openLockPinSetup()">
+            <mat-icon class="text-indigo-600">pin</mat-icon>
+            <span>{{ lockService.hasPin() ? 'Kilit PIN Kodunu Değiştir' : 'Kilit PIN\'i Belirle' }}</span>
+          </button>
           <button mat-menu-item (click)="openChangePasswordModal()">
             <mat-icon class="text-indigo-600">lock_reset</mat-icon>
             <span>{{ 'shell.menuChangePassword' | transloco }}</span>

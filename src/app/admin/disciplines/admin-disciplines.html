@@ -740,12 +740,12 @@
                       'bg-teal-50 text-teal-700 border border-teal-200': cat.colorTag === 'teal',
                       'bg-blue-50 text-blue-700 border border-blue-200': !cat.colorTag || cat.colorTag === 'blue'
                     }">
-              <span>{{ cat.icon || '📦' }}</span>
+              <span>{{ resolveCategoryIcon(cat.name, cat.icon) }}</span>
             </div>
             <div>
               <h4 class="text-sm font-black text-slate-900 m-0">{{ cat.name }}</h4>
               <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mt-0.5">
-                Kod: {{ cat.key }}
+                Kod: {{ cat.key || cat.name }}
               </span>
             </div>
           </div>
@@ -772,7 +772,7 @@
         <span
           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
           <mat-icon class="icon-size-3.5 text-slate-500">inventory</mat-icon>
-          <span>{{ getProductCountByCategory(cat.key, cat.name) }} Ürün</span>
+          <span>{{ getProductCountByCategory(cat.key, cat.name, cat.id) }} Ürün</span>
         </span>
 
         @if (cat.isDefault) {

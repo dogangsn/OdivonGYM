@@ -42,3 +42,11 @@
 
 <!-- 4. KVKK & Çerez İzin Yönetimi -->
 <app-cookie-consent-banner />
+
+<!-- 5. Güvenli Ekran Kilit Ekranı (PIN) -->
+@if (auth.user() && lockService.isLocked()) {
+  <app-lock-screen />
+}
+
+<!-- 6. PIN Ayar / Değiştirme Modalı -->
+<app-lock-setup-modal />

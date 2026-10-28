@@ -135,17 +135,17 @@ export class AdminPos {
       let matchCat = cat === 'all';
       if (!matchCat) {
         const prodCat = (p.category ?? '').trim().toLowerCase();
-        const selectedId = cat.toLowerCase();
-        const selectedLabel = catItem?.label.toLowerCase();
+        const selectedId = (cat ?? '').trim().toLowerCase();
+        const selectedLabel = (catItem?.label ?? '').trim().toLowerCase();
 
-        matchCat = prodCat === selectedId || (!!selectedLabel && prodCat === selectedLabel);
+        matchCat = (!!selectedId && prodCat === selectedId) || (!!selectedLabel && prodCat === selectedLabel);
       }
 
       const matchQuery =
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        (p.category && p.category.toLowerCase().includes(q));
+        (!!p.name && p.name.toLowerCase().includes(q)) ||
+        (!!p.sku && p.sku.toLowerCase().includes(q)) ||
+        (!!p.category && p.category.toLowerCase().includes(q));
 
       return matchCat && matchQuery;
     });

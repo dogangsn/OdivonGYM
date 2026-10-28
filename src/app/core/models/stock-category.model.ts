@@ -59,3 +59,23 @@ export const DEFAULT_STOCK_CATEGORIES: Array<Omit<StockCategoryItem, 'tenantId'>
     order: 5,
   },
 ];
+
+/**
+ * Kategori adı/anahtarına veya mevcut ikonuna göre uygun emojiyi döndürür.
+ * 'inventory_2' gibi Material icon string'lerinin arayüzde ham metin olarak çıkmasını önler.
+ */
+export function resolveCategoryEmoji(catNameOrKey?: string, currentIcon?: string): string {
+  const icon = currentIcon?.trim();
+  if (icon && icon !== 'inventory_2' && !/^[a-z0-9_]+$/i.test(icon)) {
+    return icon;
+  }
+  const text = (catNameOrKey || '').toLowerCase();
+  if (text.includes('protein') || text.includes('toz')) return '🥛';
+  if (text.includes('bcaa') || text.includes('amino') || text.includes('kreatin') || text.includes('creatine')) return '⚡';
+  if (text.includes('içecek') || text.includes('su') || text.includes('drink') || text.includes('water')) return '🥤';
+  if (text.includes('bar') || text.includes('atıştırmalık') || text.includes('snack')) return '🍫';
+  if (text.includes('ekipman') || text.includes('aksesuar') || text.includes('havlu') || text.includes('shaker')) return '🎒';
+  if (text.includes('performans') || text.includes('güç') || text.includes('pre-workout') || text.includes('enerji')) return '⚡';
+  if (text.includes('vitamin') || text.includes('mineral') || text.includes('hap') || text.includes('tablet')) return '💊';
+  return '📦';
+}

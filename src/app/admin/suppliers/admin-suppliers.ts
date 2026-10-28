@@ -129,8 +129,10 @@ export class AdminSuppliers {
     return CATEGORY_BADGES[key] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300';
   }
 
-  getCategorySupplierCount(key: string): number {
-    return this.suppliers().filter((s) => s.category === key).length;
+  getCategorySupplierCount(key?: string): number {
+    if (!key) return 0;
+    const target = key.trim().toLowerCase();
+    return this.suppliers().filter((s) => (s.category || '').trim().toLowerCase() === target).length;
   }
 
   openCategoryModal(): void {

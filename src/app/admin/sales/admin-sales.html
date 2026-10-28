@@ -96,7 +96,7 @@
           <div class="text-left sm:text-right">
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">E-Cüzdan</div>
             <div class="text-sm font-black text-emerald-600 dark:text-emerald-400 leading-tight">
-              ₺{{ money(pkg.walletBalance) }}
+              {{ money(pkg.walletBalance) }}
             </div>
           </div>
         </div>
@@ -203,11 +203,11 @@
               <div class="flex items-baseline justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                 @if (isProductEligibleForPackage(prod)) {
                   <div>
-                    <span class="text-xs text-slate-400 line-through">₺{{ money(prod.price) }}</span>
+                    <span class="text-xs text-slate-400 line-through">{{ money(prod.price) }}</span>
                     <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 ml-1.5">0.00 ₺</span>
                   </div>
                 } @else {
-                  <span class="text-sm font-black text-slate-900 dark:text-white">₺{{ money(prod.price) }}</span>
+                  <span class="text-sm font-black text-slate-900 dark:text-white">{{ money(prod.price) }}</span>
                 }
                 
                 <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex items-center justify-center">
@@ -250,7 +250,7 @@
               </div>
 
               <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span class="text-xl font-black text-slate-900 dark:text-white">₺{{ money(pkg.price) }}</span>
+                <span class="text-xl font-black text-slate-900 dark:text-white">{{ money(pkg.price) }}</span>
                 <button
                   type="button"
                   (click)="addPackageToCart(pkg)"
@@ -356,11 +356,11 @@
 
                 <div class="text-right">
                   @if (item.isPackageIncluded) {
-                    <span class="text-[11px] text-slate-400 line-through">₺{{ money(item.unitPrice * item.quantity) }}</span>
+                    <span class="text-[11px] text-slate-400 line-through">{{ money(item.unitPrice * item.quantity) }}</span>
                     <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 ml-1">0.00 ₺</span>
                   } @else {
                     <span class="text-xs font-black text-slate-900 dark:text-white">
-                      ₺{{ money(item.unitPrice * item.quantity) }}
+                      {{ money(item.unitPrice * item.quantity) }}
                     </span>
                   }
                 </div>
