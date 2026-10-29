@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -151,17 +151,117 @@ export class AdminPos {
     });
   });
 
-  // Cart State
+  // Cart State & Searchable Member Dropdown
   protected readonly cart = signal<PosCartItem[]>([]);
   protected readonly selectedMemberId = signal<string>('');
+  protected readonly isMemberDropdownOpen = signal<boolean>(false);
+  protected readonly memberSearchQuery = signal<string>('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  protected readonly searchingMembers = signal<boolean>(false);
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly maxDropdownMembers = 30;
   protected readonly cashGiven = signal<number | null>(null);
   protected readonly isPaying = signal(false);
+
+  /** Yalnızca aktif veya deneme sürecinde olan, süresi dolmamış ve arşivlenmemiş üyeler POS'ta listelenir. */
+  private isActivePosMember(m: UserProfile): boolean {
+    if (m.isArchived || m.archivedAt) return false;
+    if (m.membershipStatus !== 'active' && m.membershipStatus !== 'trial') return false;
+    const endMs = m.membershipEndsAt ? toMillis(m.membershipEndsAt) : 0;
+    if (endMs > 0 && endMs <= Date.now()) return false;
+    return true;
+  }
+
+  protected readonly activeMembersPool = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.members()) {
+      if (m.uid && this.isActivePosMember(m)) map.set(m.uid, m);
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m.uid && this.isActivePosMember(m)) map.set(m.uid, m);
+    }
+    return Array.from(map.values());
+  });
 
   protected readonly selectedMember = computed(() => {
     const id = this.selectedMemberId();
     if (!id) return null;
-    return this.members().find((m) => m.uid === id) ?? null;
+    return this.activeMembersPool().find((m) => m.uid === id) ?? this.members().find((m) => m.uid === id) ?? null;
   });
+
+  private readonly allMatchedMembers = computed(() => {
+    const q = this.memberSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.activeMembersPool();
+    if (!q) return list;
+    return list.filter((m) =>
+      (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+      String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.packageLabel ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.rfidCardNumber ?? '').toLocaleLowerCase('tr').includes(q),
+    );
+  });
+
+  protected readonly totalMatchedMembersCount = computed(() => this.allMatchedMembers().length);
+
+  /** Binlerce üyede DOM performans kaybını önlemek için en fazla 30 kayıt render edilir. */
+  protected readonly filteredMembers = computed(() =>
+    this.allMatchedMembers().slice(0, this.maxDropdownMembers),
+  );
+
+  constructor() {
+    effect(() => {
+      const q = this.memberSearchQuery();
+      this.triggerRemoteMemberSearch(q);
+    });
+  }
+
+  onMemberSearchInput(value: string): void {
+    this.memberSearchQuery.set(value ?? '');
+  }
+
+  private triggerRemoteMemberSearch(value: string): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    const trimmed = (value ?? '').trim();
+    if (trimmed.length < 2) {
+      this.searchingMembers.set(false);
+      return;
+    }
+    this.searchingMembers.set(true);
+    this.searchTimer = setTimeout(async () => {
+      const results = await this.membersService.searchMembers(trimmed, {
+        status: 'active_or_trial',
+        archived: false,
+        limit: 30,
+      });
+      this.remoteSearchedMembers.set(results);
+      this.searchingMembers.set(false);
+    }, 250);
+  }
+
+  toggleMemberDropdown(): void {
+    const next = !this.isMemberDropdownOpen();
+    this.isMemberDropdownOpen.set(next);
+    if (next) {
+      this.memberSearchQuery.set('');
+    }
+  }
+
+  closeMemberDropdown(): void {
+    this.isMemberDropdownOpen.set(false);
+  }
+
+  selectMemberFromDropdown(memberId: string): void {
+    this.selectedMemberId.set(memberId);
+    this.isMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+  }
+
+  clearSelectedMember(event: Event): void {
+    event.stopPropagation();
+    this.selectMemberFromDropdown('');
+  }
 
   protected readonly cartTotal = computed(() =>
     this.cart().reduce((sum, item) => sum + item.product.price * item.quantity, 0),

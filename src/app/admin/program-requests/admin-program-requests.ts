@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
@@ -11,11 +12,14 @@ import { ExercisePicker } from '../../shared/components/exercise-picker/exercise
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { WorkoutDayTabs } from '../../shared/components/workout-day-tabs/workout-day-tabs';
 import { toAppError } from '../../shared/models/app-error.model';
+import { formatDateTime } from '../../shared/ui/ui-utils';
+
+export type ProgramRequestFilter = 'all' | 'pending' | 'fulfilled' | 'rejected';
 
 @Component({
   selector: 'app-admin-program-requests',
   standalone: true,
-  imports: [FormsModule, MatIconModule, PageHeader, ExercisePicker, WorkoutDayTabs],
+  imports: [CommonModule, FormsModule, MatIconModule, PageHeader, ExercisePicker, WorkoutDayTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-program-requests.html',
 })
@@ -24,10 +28,18 @@ export class AdminProgramRequests {
   private readonly workouts = inject(WorkoutService);
   private readonly alerts = inject(AlertService);
 
+  protected readonly formatDate = formatDateTime;
+
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly requests = signal<ProgramRequest[]>([]);
   protected readonly selected = signal<ProgramRequest | null>(null);
+
+  // Filters & Search
+  protected readonly statusFilter = signal<ProgramRequestFilter>('all');
+  protected readonly searchQuery = signal('');
+
+  // Program Builder Form State
   protected readonly title = signal('');
   protected readonly description = signal('');
   protected readonly rejectNote = signal('');
@@ -41,6 +53,42 @@ export class AdminProgramRequests {
           return dayName === null ? [] : [{ ...item, dayName }];
         }),
       ),
+  );
+
+  // KPI Metrics
+  protected readonly totalCount = computed(() => this.requests().length);
+  protected readonly pendingCount = computed(
+    () => this.requests().filter((r) => r.status === 'pending').length,
+  );
+  protected readonly fulfilledCount = computed(
+    () => this.requests().filter((r) => r.status === 'fulfilled').length,
+  );
+  protected readonly rejectedCount = computed(
+    () => this.requests().filter((r) => r.status === 'rejected').length,
+  );
+  protected readonly completionRate = computed(() => {
+    const total = this.totalCount();
+    if (!total) return 0;
+    return Math.round((this.fulfilledCount() / total) * 100);
+  });
+
+  protected readonly filteredRequests = computed(() => {
+    const status = this.statusFilter();
+    const q = this.searchQuery().trim().toLocaleLowerCase('tr');
+    return this.requests().filter((req) => {
+      if (status !== 'all' && req.status !== status) return false;
+      if (!q) return true;
+      return (
+        (req.memberName ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (req.goal ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (req.trainerName ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (req.notes ?? '').toLocaleLowerCase('tr').includes(q)
+      );
+    });
+  });
+
+  protected readonly activeDayExercisesCount = computed(
+    () => this.exercises().filter((ex) => this.days.isActive(ex.dayName)).length,
   );
 
   constructor() {
@@ -59,15 +107,19 @@ export class AdminProgramRequests {
     }
   }
 
+  protected clearFilters(): void {
+    this.statusFilter.set('all');
+    this.searchQuery.set('');
+  }
+
   protected open(request: ProgramRequest): void {
     this.selected.set(request);
-    this.title.set(`${request.memberName} programı`);
+    this.title.set(`${request.memberName} Antrenman Programı`);
     this.description.set(request.goal);
     this.rejectNote.set('');
     this.exercises.set([]);
     this.days.reset();
   }
-
 
   protected close(): void {
     this.selected.set(null);
@@ -85,7 +137,9 @@ export class AdminProgramRequests {
   }
 
   protected updateExercise(index: number, patch: Partial<Exercise>): void {
-    this.exercises.update((list) => list.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+    this.exercises.update((list) =>
+      list.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)),
+    );
   }
 
   protected removeExercise(index: number): void {
@@ -126,7 +180,9 @@ export class AdminProgramRequests {
     if (!request || request.status !== 'pending') return;
     this.saving.set(true);
     try {
-      await firstValueFrom(this.api.resolve(request.id, { status: 'rejected', notes: this.rejectNote().trim() }));
+      await firstValueFrom(
+        this.api.resolve(request.id, { status: 'rejected', notes: this.rejectNote().trim() }),
+      );
       await this.alerts.success('Talep kapatıldı');
       this.close();
       await this.reload();
@@ -140,8 +196,15 @@ export class AdminProgramRequests {
 
   protected statusLabel(status: string): string {
     if (status === 'pending') return 'Bekliyor';
-    if (status === 'fulfilled') return 'Program hazır';
+    if (status === 'fulfilled') return 'Program Hazır';
     if (status === 'rejected') return 'Karşılanamadı';
     return status;
+  }
+
+  protected statusBadgeClass(status: string): string {
+    if (status === 'pending') return 'badge-amber';
+    if (status === 'fulfilled') return 'badge-emerald';
+    if (status === 'rejected') return 'badge-rose';
+    return 'badge-slate';
   }
 }

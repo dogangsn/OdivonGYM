@@ -114,6 +114,24 @@ export class AdminMembersService {
     );
   }
 
+  async searchMembers(
+    q: string,
+    options?: { status?: string; archived?: boolean; limit?: number },
+  ): Promise<UserProfile[]> {
+    try {
+      return await firstValueFrom(
+        this.api.listMembers({
+          q: q.trim() || undefined,
+          status: options?.status,
+          archived: options?.archived,
+          limit: options?.limit ?? 30,
+        }),
+      );
+    } catch {
+      return [];
+    }
+  }
+
   private refresh(): void {
     this.reload$.next();
   }

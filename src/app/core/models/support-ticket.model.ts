@@ -6,6 +6,8 @@ export interface SupportTicket {
   trackingNumber: string;
   tenantId?: string | null;
   tenantName?: string | null;
+  product?: string | null;
+  productLabel?: string | null;
   userId?: string | null;
   userRole?: string | null;
   category: string;
@@ -35,4 +37,6 @@ export interface CreateTicketRequest {
   priority?: TicketPriority;
   tenantId?: string;
   tenantName?: string;
+  /** Product module the ticket is sent from (always 'gym' here). */
+  product?: 'gym';
 }

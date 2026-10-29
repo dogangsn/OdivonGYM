@@ -306,7 +306,7 @@
               <div
                 class="px-4 py-3 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
                 [class.bg-indigo-50/40]="!item.read"
-                (click)="markNotificationAsRead(item.id)"
+                (click)="openNotification(item)"
               >
                 <div
                   class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
@@ -328,6 +328,9 @@
                   <p class="text-[11px] text-slate-500 m-0 line-clamp-2 leading-relaxed">
                     {{ item.message ?? (item.messageKey | transloco) }}
                   </p>
+                  @if (item.linkLabel) {
+                    <span class="text-[11px] font-semibold text-indigo-600">{{ item.linkLabel }}</span>
+                  }
                 </div>
               </div>
             } @empty {

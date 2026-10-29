@@ -20,7 +20,7 @@ import {
 } from './admin-access-control.service';
 import { environment } from '../../../environments/environment';
 import { AdminMembersService } from '../members/admin-members.service';
-import { AccessDirection, AccessStatus } from '../../core/models/access-log.model';
+import { AccessDirection, AccessLog, AccessStatus } from '../../core/models/access-log.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { RouterLink } from '@angular/router';
@@ -385,18 +385,19 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         <div class="p-4 bg-slate-50/60 dark:bg-slate-800/30 border-b border-slate-200/80 dark:border-slate-800 space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             <!-- 1. Search Query Input -->
-            <div class="lg:col-span-4 relative">
+            <div class="lg:col-span-3 relative">
               <mat-icon class="icon-size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
               <input
                 type="text"
-                [(ngModel)]="searchQuery"
-                placeholder="Üye adı, turnike veya notlarda ara..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="onSearchQueryChange($event)"
+                placeholder="Üye adı, kart no, turnike veya notlarda ara..."
                 class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
               />
               @if (searchQuery()) {
                 <button
                   type="button"
-                  (click)="searchQuery.set('')"
+                  (click)="onSearchQueryChange('')"
                   class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                 >
                   <mat-icon class="icon-size-3.5">clear</mat-icon>
@@ -404,45 +405,182 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               }
             </div>
 
-            <!-- 2. Tarih Filtresi -->
-            <div class="lg:col-span-3">
+            <!-- 2. Kart Numarası Filtresi -->
+            <div class="lg:col-span-2 relative">
+              <mat-icon class="icon-size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">credit_card</mat-icon>
+              <input
+                type="text"
+                [ngModel]="cardFilter()"
+                (ngModelChange)="onCardFilterChange($event)"
+                placeholder="Kart No filtrele..."
+                class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+              />
+              @if (cardFilter()) {
+                <button
+                  type="button"
+                  (click)="onCardFilterChange('')"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  <mat-icon class="icon-size-3.5">clear</mat-icon>
+                </button>
+              }
+            </div>
+
+            <!-- 3. Tarih Filtresi (Varsayılan: Bugün) -->
+            <div class="lg:col-span-2">
               <select
-                [(ngModel)]="datePreset"
+                [ngModel]="datePreset()"
+                (ngModelChange)="onDatePresetChange($event)"
                 class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs cursor-pointer font-medium"
               >
-                <option value="all">📅 Tarih: Tüm Zamanlar</option>
                 <option value="today">📅 Tarih: Bugün</option>
                 <option value="yesterday">📅 Tarih: Dün</option>
                 <option value="last7">📅 Tarih: Son 7 Gün</option>
                 <option value="thisMonth">📅 Tarih: Bu Ay</option>
+                <option value="all">📅 Tarih: Tüm Zamanlar</option>
                 <option value="custom">📅 Tarih: Özel Aralık Belirle...</option>
               </select>
             </div>
 
-            <!-- 3. Üye Filtresi -->
-            <div class="lg:col-span-3">
-              <select
-                [(ngModel)]="selectedMemberFilter"
-                class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs cursor-pointer font-medium"
+            <!-- 4. Üye Filtresi (Aramalı Seçim Menüsü, Varsayılan: Tüm Üyeler) -->
+            <div class="lg:col-span-3 relative">
+              <button
+                type="button"
+                (click)="toggleMemberDropdown()"
+                class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs cursor-pointer font-medium flex items-center justify-between gap-2 text-left"
               >
-                <option value="all">👤 Üye: Tüm Üyeler</option>
-                @for (m of members(); track m.uid) {
-                  <option [value]="m.uid">
-                    👤 {{ m.displayName || m.email }}
-                  </option>
-                }
-              </select>
+                <span class="truncate flex items-center gap-1.5">
+                  <span>👤</span>
+                  <span class="truncate">{{ selectedMemberFilterLabel() }}</span>
+                </span>
+                <span class="flex items-center gap-1 shrink-0">
+                  @if (selectedMemberFilter() !== 'all') {
+                    <span
+                      role="button"
+                      tabindex="0"
+                      (click)="resetMemberFilter($event)"
+                      class="w-4 h-4 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                      matTooltip="Tüm Üyeler'e sıfırla"
+                    >
+                      <mat-icon class="icon-size-3">close</mat-icon>
+                    </span>
+                  }
+                  <mat-icon class="icon-size-4 text-slate-400 transition-transform" [class.rotate-180]="isMemberDropdownOpen()">expand_more</mat-icon>
+                </span>
+              </button>
+
+              @if (isMemberDropdownOpen()) {
+                <div class="fixed inset-0 z-30" (click)="closeMemberDropdown()"></div>
+                <div class="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
+                  <!-- Dropdown İçi Üye Arama Kutusu -->
+                  <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
+                    <div class="relative">
+                      <mat-icon class="icon-size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+                      <input
+                        type="text"
+                        [ngModel]="memberDropdownSearch()"
+                        (ngModelChange)="onMemberDropdownSearchInput($event)"
+                        (click)="$event.stopPropagation()"
+                        placeholder="Üye adı, üye no, tel veya kart no ara..."
+                        class="w-full pl-8 pr-7 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      @if (memberDropdownSearch()) {
+                        <button
+                          type="button"
+                          (click)="onMemberDropdownSearchInput(''); $event.stopPropagation()"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          <mat-icon class="icon-size-3">clear</mat-icon>
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Üye Seçenek Listesi -->
+                  <div class="max-h-64 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <button
+                      type="button"
+                      (click)="selectMemberFilter('all')"
+                      class="w-full px-3 py-2 text-left text-xs hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                      [class.bg-indigo-50]="selectedMemberFilter() === 'all'"
+                      [class.dark:bg-indigo-950/40]="selectedMemberFilter() === 'all'"
+                      [class.font-bold]="selectedMemberFilter() === 'all'"
+                      [class.text-indigo-700]="selectedMemberFilter() === 'all'"
+                      [class.dark:text-indigo-300]="selectedMemberFilter() === 'all'"
+                    >
+                      <span class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[11px]">👥</span>
+                        <span>Üye: Tüm Üyeler</span>
+                      </span>
+                      <span class="flex items-center gap-1.5">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                          {{ members().length }}
+                        </span>
+                        @if (selectedMemberFilter() === 'all') {
+                          <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400">check</mat-icon>
+                        }
+                      </span>
+                    </button>
+
+                    @for (m of filteredDropdownMembers(); track m.uid) {
+                      <button
+                        type="button"
+                        (click)="selectMemberFilter(m.uid)"
+                        class="w-full px-3 py-2 text-left text-xs hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        [class.bg-indigo-50]="selectedMemberFilter() === m.uid"
+                        [class.dark:bg-indigo-950/40]="selectedMemberFilter() === m.uid"
+                      >
+                        <div class="flex items-center gap-2 min-w-0">
+                          @if (m.photoURL) {
+                            <img [src]="m.photoURL" class="w-6 h-6 rounded-full object-cover shrink-0" alt="avatar" />
+                          } @else {
+                            <span class="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-[11px] shrink-0">
+                              {{ (m.displayName || m.email || 'Ü').charAt(0) }}
+                            </span>
+                          }
+                          <div class="min-w-0">
+                            <div class="font-semibold text-slate-900 dark:text-white truncate">
+                              {{ m.displayName || m.email }}
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-400">
+                              @if (m.memberNumber) {
+                                <span class="font-mono">#{{ m.memberNumber }}</span>
+                              }
+                              @if (m.phone) {
+                                <span>{{ m.phone }}</span>
+                              }
+                              @if (m.rfidCardNumber) {
+                                <span class="px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono">
+                                  💳 {{ m.rfidCardNumber }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                        @if (selectedMemberFilter() === m.uid) {
+                          <mat-icon class="icon-size-3.5 text-indigo-600 dark:text-indigo-400 shrink-0">check</mat-icon>
+                        }
+                      </button>
+                    } @empty {
+                      <div class="px-3 py-4 text-center text-xs text-slate-400">
+                        Aramaya uygun üye bulunamadı.
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
             </div>
 
-            <!-- 4. Turnike / Kapı Filtresi -->
+            <!-- 5. Turnike / Kapı Filtresi -->
             <div class="lg:col-span-2">
               <select
-                [(ngModel)]="gateFilter"
+                [ngModel]="gateFilter()"
+                (ngModelChange)="onGateFilterChange($event)"
                 class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs cursor-pointer font-medium"
               >
                 <option value="all">🚪 Turnike: Tümü</option>
-                @for (gate of gates(); track gate.id || gate.name) {
-                  <option [value]="gate.name">{{ gate.name }}</option>
+                @for (gateName of availableGateNames(); track gateName) {
+                  <option [value]="gateName">{{ gateName }}</option>
                 }
               </select>
             </div>
@@ -455,7 +593,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               <div class="inline-flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-xl text-xs font-semibold">
                 <button
                   type="button"
-                  (click)="logFilter.set('all')"
+                  (click)="onLogFilterChange('all')"
                   class="px-3 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="logFilter() === 'all'"
                   [class.dark:bg-slate-700]="logFilter() === 'all'"
@@ -468,7 +606,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </button>
                 <button
                   type="button"
-                  (click)="logFilter.set('granted')"
+                  (click)="onLogFilterChange('granted')"
                   class="px-3 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="logFilter() === 'granted'"
                   [class.dark:bg-slate-700]="logFilter() === 'granted'"
@@ -481,7 +619,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </button>
                 <button
                   type="button"
-                  (click)="logFilter.set('denied')"
+                  (click)="onLogFilterChange('denied')"
                   class="px-3 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="logFilter() === 'denied'"
                   [class.dark:bg-slate-700]="logFilter() === 'denied'"
@@ -498,7 +636,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               <div class="inline-flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-xl text-xs font-semibold">
                 <button
                   type="button"
-                  (click)="directionFilter.set('all')"
+                  (click)="onDirectionFilterChange('all')"
                   class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="directionFilter() === 'all'"
                   [class.dark:bg-slate-700]="directionFilter() === 'all'"
@@ -511,7 +649,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </button>
                 <button
                   type="button"
-                  (click)="directionFilter.set('in')"
+                  (click)="onDirectionFilterChange('in')"
                   class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="directionFilter() === 'in'"
                   [class.dark:bg-slate-700]="directionFilter() === 'in'"
@@ -524,7 +662,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </button>
                 <button
                   type="button"
-                  (click)="directionFilter.set('out')"
+                  (click)="onDirectionFilterChange('out')"
                   class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                   [class.bg-white]="directionFilter() === 'out'"
                   [class.dark:bg-slate-700]="directionFilter() === 'out'"
@@ -558,7 +696,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Başlangıç:</span>
                 <input
                   type="date"
-                  [(ngModel)]="customStartDate"
+                  [ngModel]="customStartDate()"
+                  (ngModelChange)="onCustomStartDateChange($event)"
                   class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
                 />
               </div>
@@ -566,7 +705,8 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Bitiş:</span>
                 <input
                   type="date"
-                  [(ngModel)]="customEndDate"
+                  [ngModel]="customEndDate()"
+                  (ngModelChange)="onCustomEndDateChange($event)"
                   class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
                 />
               </div>
@@ -584,6 +724,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
               <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <th class="py-3 px-5">Zaman</th>
                 <th class="py-3 px-5">Üye</th>
+                <th class="py-3 px-5">Kart No</th>
                 <th class="py-3 px-5">Turnike Kapısı</th>
                 <th class="py-3 px-5">Yön</th>
                 <th class="py-3 px-5">Yöntem</th>
@@ -598,45 +739,54 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                   </td>
                   <td class="py-3 px-5">
                     <div class="flex items-center gap-2.5">
-                      @if (log.userPhoto) {
-                        <img [src]="log.userPhoto" class="w-7 h-7 rounded-full object-cover shrink-0" alt="avatar" />
+                      @if (log.userPhoto || getLogMember(log)?.photoURL) {
+                        <img [src]="log.userPhoto || getLogMember(log)?.photoURL" class="w-7 h-7 rounded-full object-cover shrink-0" alt="avatar" />
                       } @else {
                         <span class="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                          {{ log.userName.charAt(0) || 'Ü' }}
+                          {{ (getLogMember(log)?.displayName || log.userName || 'Ü').charAt(0) }}
                         </span>
                       }
                       <div class="min-w-0">
                         <div class="flex items-center gap-1.5 flex-wrap">
-                          <span class="font-bold text-slate-900 dark:text-white">{{ log.userName }}</span>
-                          @if (!log.userId && log.card) {
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                              Tanımsız Kart
-                            </span>
-                            <button
-                              type="button"
-                              (click)="openAssignCardDialog(log.card, $event)"
-                              class="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
-                              matTooltip="Bu kartı bir üyeye bağla"
-                            >
-                              <mat-icon class="icon-size-3">person_add</mat-icon>
-                              <span>Üyeye Ata</span>
-                            </button>
+                          <span class="font-bold text-slate-900 dark:text-white">{{ getLogMember(log)?.displayName || log.userName }}</span>
+                          @if (getLogMember(log)?.memberNumber || log.deviceUserId) {
+                            <span class="text-[10px] font-mono text-slate-400">#{{ getLogMember(log)?.memberNumber || log.deviceUserId }}</span>
                           }
                         </div>
-                        @if (log.card) {
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-5 whitespace-nowrap">
+                    @if (getLogCardNumber(log); as cardNo) {
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          (click)="copyCard(cardNo, $event)"
+                          class="inline-flex items-center gap-1 font-mono text-[11px] text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-400 cursor-pointer text-left bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700/60 transition-colors"
+                          matTooltip="Kart numarasını panoya kopyala"
+                        >
+                          <mat-icon class="icon-size-3">credit_card</mat-icon>
+                          <span>{{ cardNo }}</span>
+                          <mat-icon class="icon-size-3 opacity-60">content_copy</mat-icon>
+                        </button>
+                        @if (!log.userId && !getLogMember(log) && log.card) {
+                          <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            Tanımsız Kart
+                          </span>
                           <button
                             type="button"
-                            (click)="copyCard(log.card, $event)"
-                            class="inline-flex items-center gap-1 font-mono text-[10px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer text-left bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 px-1.5 py-0.5 rounded mt-0.5 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                            matTooltip="Kart numarasını panoya kopyala"
+                            (click)="openAssignCardDialog(log.card, $event)"
+                            class="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                            matTooltip="Bu kartı bir üyeye bağla"
                           >
-                            <mat-icon class="icon-size-3">credit_card</mat-icon>
-                            <span>{{ log.card }}</span>
-                            <mat-icon class="icon-size-3 opacity-60">content_copy</mat-icon>
+                            <mat-icon class="icon-size-3">person_add</mat-icon>
+                            <span>Üyeye Ata</span>
                           </button>
                         }
                       </div>
-                    </div>
+                    } @else {
+                      <span class="text-slate-400 dark:text-slate-600 text-xs">—</span>
+                    }
                   </td>
                   <td class="py-3 px-5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
                     {{ log.gateName }}
@@ -677,17 +827,39 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
-                    @if (isAnyFilterActive()) {
-                      <div class="space-y-2">
-                        <p class="m-0 font-medium">Seçili filtrelere uygun turnike geçiş kaydı bulunamadı.</p>
+                  <td colspan="7" class="py-12 text-center text-slate-400 text-xs">
+                    @if (datePreset() === 'today' && logs().length > 0 && !isAnyNonDateFilterActive()) {
+                      <div class="space-y-2.5">
+                        <p class="m-0 font-medium text-slate-500 dark:text-slate-400">Bugün için henüz turnike geçiş kaydı bulunmuyor.</p>
                         <button
                           type="button"
-                          (click)="clearFilters()"
-                          class="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 transition-all cursor-pointer"
+                          (click)="onDatePresetChange('all')"
+                          class="px-3.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 transition-all cursor-pointer"
                         >
-                          Filtreleri Temizle
+                          Tüm Zamanları Göster ({{ logs().length }} Kayıt)
                         </button>
+                      </div>
+                    } @else if (isAnyFilterActive()) {
+                      <div class="space-y-2.5">
+                        <p class="m-0 font-medium">Seçili filtrelere uygun turnike geçiş kaydı bulunamadı.</p>
+                        <div class="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            (click)="clearFilters()"
+                            class="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 transition-all cursor-pointer"
+                          >
+                            Filtreleri Sıfırla
+                          </button>
+                          @if (datePreset() !== 'all' && logs().length > 0) {
+                            <button
+                              type="button"
+                              (click)="onDatePresetChange('all')"
+                              class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                            >
+                              Tüm Zamanlarda Ara
+                            </button>
+                          }
+                        </div>
                       </div>
                     } @else {
                       <span>Henüz kayıtlı turnike geçiş hareketi bulunmuyor.</span>
@@ -729,7 +901,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <button
                   type="button"
                   (click)="goToLogPage(1)"
-                  [disabled]="logsCurrentPage() === 1"
+                  [disabled]="safeLogsCurrentPage() === 1"
                   class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                   matTooltip="İlk Sayfa"
                 >
@@ -739,7 +911,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <button
                   type="button"
                   (click)="prevLogPage()"
-                  [disabled]="logsCurrentPage() === 1"
+                  [disabled]="safeLogsCurrentPage() === 1"
                   class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                   matTooltip="Önceki Sayfa"
                 >
@@ -751,17 +923,17 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                     type="button"
                     (click)="goToLogPage(p)"
                     class="min-w-7 h-7 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center"
-                    [class.bg-indigo-600]="logsCurrentPage() === p"
-                    [class.text-white]="logsCurrentPage() === p"
-                    [class.border]="logsCurrentPage() !== p"
-                    [class.border-slate-200]="logsCurrentPage() !== p"
-                    [class.dark:border-slate-700]="logsCurrentPage() !== p"
-                    [class.bg-white]="logsCurrentPage() !== p"
-                    [class.dark:bg-slate-800]="logsCurrentPage() !== p"
-                    [class.text-slate-700]="logsCurrentPage() !== p"
-                    [class.dark:text-slate-200]="logsCurrentPage() !== p"
-                    [class.hover:bg-slate-100]="logsCurrentPage() !== p"
-                    [class.dark:hover:bg-slate-700]="logsCurrentPage() !== p"
+                    [class.bg-indigo-600]="safeLogsCurrentPage() === p"
+                    [class.text-white]="safeLogsCurrentPage() === p"
+                    [class.border]="safeLogsCurrentPage() !== p"
+                    [class.border-slate-200]="safeLogsCurrentPage() !== p"
+                    [class.dark:border-slate-700]="safeLogsCurrentPage() !== p"
+                    [class.bg-white]="safeLogsCurrentPage() !== p"
+                    [class.dark:bg-slate-800]="safeLogsCurrentPage() !== p"
+                    [class.text-slate-700]="safeLogsCurrentPage() !== p"
+                    [class.dark:text-slate-200]="safeLogsCurrentPage() !== p"
+                    [class.hover:bg-slate-100]="safeLogsCurrentPage() !== p"
+                    [class.dark:hover:bg-slate-700]="safeLogsCurrentPage() !== p"
                   >
                     {{ p }}
                   </button>
@@ -770,7 +942,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <button
                   type="button"
                   (click)="nextLogPage()"
-                  [disabled]="logsCurrentPage() === totalLogPages()"
+                  [disabled]="safeLogsCurrentPage() === totalLogPages()"
                   class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                   matTooltip="Sonraki Sayfa"
                 >
@@ -780,7 +952,7 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <button
                   type="button"
                   (click)="goToLogPage(totalLogPages())"
-                  [disabled]="logsCurrentPage() === totalLogPages()"
+                  [disabled]="safeLogsCurrentPage() === totalLogPages()"
                   class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                   matTooltip="Son Sayfa"
                 >
@@ -1066,6 +1238,11 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
                         YT cihazlarında kullanıcı adı/parolayı, ZK cihazlarında CommKey ayarını kontrol edin; bu bilgiler buluta gönderilmez.
                       </p>
+                      @if (pairGateIds().length === 0) {
+                        <p class="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1 mb-0">
+                          Henüz cihaz seçilmedi. Aşağıda ZK TCP / 4370 için örnek config gösteriliyor; eşleştirmeden önce gerçek cihazı yukarıdan seçin.
+                        </p>
+                      }
                     </div>
                     <div class="flex items-center gap-2">
                       <button type="button" (click)="copyConfigJson()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
@@ -1380,7 +1557,19 @@ export class AdminAccessControl implements OnInit {
                   timeoutMs: 5000,
                 },
           ])
-        : [['192.168.1.201', { username: 'admin', password: 'CIHAZ_PAROLASI', timeoutMs: 5000 }]],
+        : [
+            [
+              '192.168.1.202',
+              {
+                driver: 'zkemkeeper-com',
+                machineNumber: 1,
+                commKey: 0,
+                timeoutMs: 10000,
+                udpInPort: 4000,
+                maxChunkBytes: 65472,
+              },
+            ],
+          ],
     );
     return JSON.stringify(
       {
@@ -1492,7 +1681,7 @@ export class AdminAccessControl implements OnInit {
     if (untracked(() => this.syncGate())) void untracked(() => this.loadSyncItems(true));
   });
   protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] });
-  private readonly logs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
+  protected readonly logs = toSignal(this.accessService.watchLogs(), { initialValue: [] });
 
   // Üye senkron ayrıntısı
   protected readonly syncGate = signal<TurnstileGate | null>(null);
@@ -1640,13 +1829,192 @@ export class AdminAccessControl implements OnInit {
 
   // Filtering Signals
   protected readonly searchQuery = signal('');
+  protected readonly cardFilter = signal('');
   protected readonly logFilter = signal<'all' | 'granted' | 'denied'>('all');
-  protected readonly datePreset = signal<'all' | 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'custom'>('all');
+  protected readonly datePreset = signal<'all' | 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'custom'>('today');
   protected readonly customStartDate = signal('');
   protected readonly customEndDate = signal('');
-  protected readonly selectedMemberFilter = signal('today');
+  protected readonly selectedMemberFilter = signal('all');
+  protected readonly isMemberDropdownOpen = signal(false);
+  protected readonly memberDropdownSearch = signal('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  private memberSearchTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly gateFilter = signal('all');
   protected readonly directionFilter = signal<'all' | 'in' | 'out'>('all');
+
+  protected readonly allKnownMembers = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.members()) {
+      if (m.uid) map.set(m.uid, m);
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m.uid) map.set(m.uid, m);
+    }
+    return Array.from(map.values());
+  });
+
+  protected readonly memberByIdMap = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.allKnownMembers()) {
+      if (m.uid) map.set(m.uid, m);
+    }
+    return map;
+  });
+
+  protected readonly memberByCardMap = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.allKnownMembers()) {
+      const card = m.rfidCardNumber?.trim();
+      if (card) map.set(card, m);
+    }
+    return map;
+  });
+
+  protected readonly memberByNumberMap = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.allKnownMembers()) {
+      const num = String(m.memberNumber ?? '').trim();
+      if (num) map.set(num, m);
+    }
+    return map;
+  });
+
+  protected readonly filteredDropdownMembers = computed(() => {
+    const q = this.memberDropdownSearch().trim().toLocaleLowerCase('tr');
+    const list = this.allKnownMembers();
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter(
+        (m) =>
+          (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+          String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.rfidCardNumber ?? '').toLocaleLowerCase('tr').includes(q),
+      )
+      .slice(0, 30);
+  });
+
+  protected onMemberDropdownSearchInput(value: string): void {
+    const q = value ?? '';
+    this.memberDropdownSearch.set(q);
+    if (this.memberSearchTimer) clearTimeout(this.memberSearchTimer);
+    const trimmed = q.trim();
+    if (trimmed.length < 2) return;
+    this.memberSearchTimer = setTimeout(async () => {
+      const results = await this.membersService.searchMembers(trimmed, { limit: 30 });
+      this.remoteSearchedMembers.set(results);
+    }, 250);
+  }
+
+  protected readonly selectedMemberFilterLabel = computed(() => {
+    const id = this.selectedMemberFilter();
+    if (!id || id === 'all') return 'Üye: Tüm Üyeler';
+    const member = this.memberByIdMap().get(id);
+    if (!member) return 'Üye: Tüm Üyeler';
+    const name = member.displayName || member.email || 'Seçili Üye';
+    return member.rfidCardNumber ? `${name} (💳 ${member.rfidCardNumber})` : name;
+  });
+
+  protected readonly availableGateNames = computed(() => {
+    const names = new Set<string>();
+    for (const g of this.gates()) {
+      if (g.name?.trim()) names.add(g.name.trim());
+    }
+    for (const l of this.logs()) {
+      if (l.gateName?.trim()) names.add(l.gateName.trim());
+    }
+    return Array.from(names);
+  });
+
+  protected toggleMemberDropdown(): void {
+    const next = !this.isMemberDropdownOpen();
+    this.isMemberDropdownOpen.set(next);
+    if (next) {
+      this.memberDropdownSearch.set('');
+    }
+  }
+
+  protected closeMemberDropdown(): void {
+    this.isMemberDropdownOpen.set(false);
+  }
+
+  protected selectMemberFilter(memberId: string): void {
+    this.selectedMemberFilter.set(memberId || 'all');
+    this.isMemberDropdownOpen.set(false);
+    this.memberDropdownSearch.set('');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected resetMemberFilter(event: Event): void {
+    event.stopPropagation();
+    this.selectMemberFilter('all');
+  }
+
+  protected onSearchQueryChange(value: string): void {
+    this.searchQuery.set(value ?? '');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onCardFilterChange(value: string): void {
+    this.cardFilter.set(value ?? '');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onDatePresetChange(value: 'all' | 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'custom'): void {
+    this.datePreset.set(value);
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onGateFilterChange(value: string): void {
+    this.gateFilter.set(value || 'all');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onLogFilterChange(value: 'all' | 'granted' | 'denied'): void {
+    this.logFilter.set(value);
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onDirectionFilterChange(value: 'all' | 'in' | 'out'): void {
+    this.directionFilter.set(value);
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onCustomStartDateChange(value: string): void {
+    this.customStartDate.set(value ?? '');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected onCustomEndDateChange(value: string): void {
+    this.customEndDate.set(value ?? '');
+    this.logsCurrentPage.set(1);
+  }
+
+  protected getLogMember(log: AccessLog): UserProfile | undefined {
+    if (log.userId) {
+      const byId = this.memberByIdMap().get(log.userId);
+      if (byId) return byId;
+    }
+    const card = (log.card || log.rfidCardNumber)?.trim();
+    if (card) {
+      const byCard = this.memberByCardMap().get(card);
+      if (byCard) return byCard;
+    }
+    const devId = log.deviceUserId ? String(log.deviceUserId).trim() : '';
+    if (devId) {
+      const byNum = this.memberByNumberMap().get(devId);
+      if (byNum) return byNum;
+    }
+    return undefined;
+  }
+
+  protected getLogCardNumber(log: AccessLog): string | null {
+    const direct = (log.card || log.rfidCardNumber)?.trim();
+    if (direct) return direct;
+    const memberCard = this.getLogMember(log)?.rfidCardNumber?.trim();
+    return memberCard || null;
+  }
 
   protected readonly openingGate = signal<string | null>(null);
   protected readonly scanning = signal(false);
@@ -1687,27 +2055,37 @@ export class AdminAccessControl implements OnInit {
     // Sabit / demo veri enjekte edilmez; tüm kayıtlar gerçek veritabanından dinamik gelir.
   }
 
-  protected readonly isAnyFilterActive = computed(() => {
+  protected readonly isAnyNonDateFilterActive = computed(() => {
     return (
       this.logFilter() !== 'all' ||
-      this.datePreset() !== 'all' ||
-      this.customStartDate() !== '' ||
-      this.customEndDate() !== '' ||
       this.selectedMemberFilter() !== 'all' ||
       this.gateFilter() !== 'all' ||
       this.directionFilter() !== 'all' ||
+      this.cardFilter().trim() !== '' ||
       this.searchQuery().trim() !== ''
+    );
+  });
+
+  protected readonly isAnyFilterActive = computed(() => {
+    return (
+      this.isAnyNonDateFilterActive() ||
+      this.datePreset() !== 'today' ||
+      this.customStartDate() !== '' ||
+      this.customEndDate() !== ''
     );
   });
 
   protected clearFilters(): void {
     this.logFilter.set('all');
-    this.datePreset.set('all');
+    this.datePreset.set('today');
     this.customStartDate.set('');
     this.customEndDate.set('');
     this.selectedMemberFilter.set('all');
+    this.isMemberDropdownOpen.set(false);
+    this.memberDropdownSearch.set('');
     this.gateFilter.set('all');
     this.directionFilter.set('all');
+    this.cardFilter.set('');
     this.searchQuery.set('');
     this.logsCurrentPage.set(1);
   }
@@ -1763,27 +2141,67 @@ export class AdminAccessControl implements OnInit {
     // 4. Gate filter
     const gate = this.gateFilter();
     if (gate !== 'all') {
-      list = list.filter((l) => l.gateName === gate);
+      const gateLower = gate.toLocaleLowerCase('tr');
+      const matchedGateObj = this.gates().find((g) => g.name?.trim().toLocaleLowerCase('tr') === gateLower);
+      list = list.filter((l) => {
+        if (l.gateName?.trim() === gate) return true;
+        if (matchedGateObj?.id && l.gateId === matchedGateObj.id) return true;
+        const logGateLower = (l.gateName ?? '').trim().toLocaleLowerCase('tr');
+        return logGateLower === gateLower || logGateLower.startsWith(gateLower);
+      });
     }
 
     // 5. Member filter
     const memberId = this.selectedMemberFilter();
-    if (memberId !== 'all') {
-      list = list.filter((l) => l.userId === memberId);
+    if (memberId && memberId !== 'all') {
+      const targetMember = this.memberByIdMap().get(memberId);
+      const targetCard = targetMember?.rfidCardNumber?.trim();
+      const targetNum = targetMember?.memberNumber ? String(targetMember.memberNumber).trim() : '';
+      const targetName = targetMember?.displayName?.trim().toLocaleLowerCase('tr');
+
+      list = list.filter((l) => {
+        if (l.userId === memberId) return true;
+        const logCard = (l.card || l.rfidCardNumber)?.trim();
+        if (targetCard && logCard && logCard === targetCard) return true;
+        const logDevId = l.deviceUserId ? String(l.deviceUserId).trim() : '';
+        if (targetNum && logDevId && logDevId === targetNum) return true;
+        if (targetName && l.userName && l.userName.trim().toLocaleLowerCase('tr') === targetName) return true;
+        return false;
+      });
     }
 
-    // 6. Search query
-    const q = this.searchQuery().trim().toLowerCase();
+    // 6. Card Number filter
+    const cardQuery = this.cardFilter().trim().toLocaleLowerCase('tr');
+    if (cardQuery) {
+      list = list.filter((l) => {
+        const cardNo = this.getLogCardNumber(l)?.toLocaleLowerCase('tr') ?? '';
+        return cardNo.includes(cardQuery);
+      });
+    }
+
+    // 7. Search query
+    const q = this.searchQuery().trim().toLocaleLowerCase('tr');
     if (q) {
-      list = list.filter((l) =>
-        (l.userName && l.userName.toLowerCase().includes(q)) ||
-        (l.gateName && l.gateName.toLowerCase().includes(q)) ||
-        (l.notes && l.notes.toLowerCase().includes(q)) ||
-        (l.method && l.method.toLowerCase().includes(q))
-      );
+      list = list.filter((l) => {
+        const member = this.getLogMember(l);
+        const cardNo = this.getLogCardNumber(l)?.toLocaleLowerCase('tr') ?? '';
+        const memberNo = String(member?.memberNumber ?? l.deviceUserId ?? '').toLocaleLowerCase('tr');
+        const displayName = (member?.displayName ?? l.userName ?? '').toLocaleLowerCase('tr');
+        const phone = (member?.phone ?? '').toLocaleLowerCase('tr');
+        return (
+          displayName.includes(q) ||
+          (l.userName && l.userName.toLocaleLowerCase('tr').includes(q)) ||
+          (l.gateName && l.gateName.toLocaleLowerCase('tr').includes(q)) ||
+          (l.notes && l.notes.toLocaleLowerCase('tr').includes(q)) ||
+          (l.method && l.method.toLocaleLowerCase('tr').includes(q)) ||
+          cardNo.includes(q) ||
+          memberNo.includes(q) ||
+          phone.includes(q)
+        );
+      });
     }
 
-    // 7. Date filter
+    // 8. Date filter
     const preset = this.datePreset();
     if (preset !== 'all') {
       const now = new Date();
@@ -1834,7 +2252,8 @@ export class AdminAccessControl implements OnInit {
 
   protected readonly totalLogItems = computed(() => this.filteredLogs().length);
   protected readonly totalLogPages = computed(() => Math.max(1, Math.ceil(this.totalLogItems() / this.logsPageSize())));
-  protected readonly logStartIndex = computed(() => (this.logsCurrentPage() - 1) * this.logsPageSize());
+  protected readonly safeLogsCurrentPage = computed(() => Math.min(this.logsCurrentPage(), this.totalLogPages()));
+  protected readonly logStartIndex = computed(() => (this.safeLogsCurrentPage() - 1) * this.logsPageSize());
   protected readonly logEndIndex = computed(() => Math.min(this.logStartIndex() + this.logsPageSize(), this.totalLogItems()));
 
   protected readonly paginatedLogs = computed(() => {
@@ -1843,7 +2262,7 @@ export class AdminAccessControl implements OnInit {
   });
 
   protected readonly visibleLogPages = computed<number[]>(() => {
-    const current = this.logsCurrentPage();
+    const current = this.safeLogsCurrentPage();
     const total = this.totalLogPages();
     const pages: number[] = [];
     const maxVisible = 5;
@@ -1865,14 +2284,14 @@ export class AdminAccessControl implements OnInit {
   }
 
   protected nextLogPage(): void {
-    if (this.logsCurrentPage() < this.totalLogPages()) {
-      this.logsCurrentPage.set(this.logsCurrentPage() + 1);
+    if (this.safeLogsCurrentPage() < this.totalLogPages()) {
+      this.logsCurrentPage.set(this.safeLogsCurrentPage() + 1);
     }
   }
 
   protected prevLogPage(): void {
-    if (this.logsCurrentPage() > 1) {
-      this.logsCurrentPage.set(this.logsCurrentPage() - 1);
+    if (this.safeLogsCurrentPage() > 1) {
+      this.logsCurrentPage.set(this.safeLogsCurrentPage() - 1);
     }
   }
 

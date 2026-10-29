@@ -180,8 +180,11 @@ export class Support implements OnInit {
           email,
           phone: this.phone().trim() || undefined,
           priority: this.priority(),
-          tenantId: branch?.tenantId || undefined,
-          tenantName: branch?.name || 'Odivon Salon',
+          // Product tells the management panel which app the ticket came from.
+          product: 'gym',
+          tenantId: this.auth.profile()?.tenantId || branch?.tenantId || undefined,
+          // MainAPI replaces this with the tenant's own name when it knows the tenant.
+          tenantName: branch?.name || undefined,
         }),
       );
 

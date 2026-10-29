@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
-import { formatMoney, formatDateTime, toJsDate } from '../../shared/ui/ui-utils';
+import { formatMoney, formatDateTime, toJsDate, toMillis } from '../../shared/ui/ui-utils';
 import { AdminShopService } from '../shop/admin-shop.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminPackagesService } from '../packages/admin-packages.service';
@@ -86,13 +86,116 @@ export class AdminSales {
     return list.filter((p) => p.status === 'active');
   });
 
-  // Selected Member
+  // Selected Member & Searchable Dropdown State
   protected readonly selectedMemberId = signal<string>('');
+  protected readonly isMemberDropdownOpen = signal<boolean>(false);
+  protected readonly memberSearchQuery = signal<string>('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  protected readonly searchingMembers = signal<boolean>(false);
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly maxDropdownMembers = 30;
+
+  /** Market satışlarında yalnızca aktif / deneme sürecinde olan ve süresi dolmamış üyeler listelenir. */
+  private isEligibleSalesMember(m: UserProfile): boolean {
+    if (m.isArchived || m.archivedAt) return false;
+    if (this.saleCatalogMode() === 'packages') {
+      return m.membershipStatus !== 'cancelled';
+    }
+    if (m.membershipStatus !== 'active' && m.membershipStatus !== 'trial') return false;
+    const endMs = m.membershipEndsAt ? toMillis(m.membershipEndsAt) : 0;
+    if (endMs > 0 && endMs <= Date.now()) return false;
+    return true;
+  }
+
+  protected readonly eligibleMembersPool = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.members()) {
+      if (m.uid && this.isEligibleSalesMember(m)) map.set(m.uid, m);
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m.uid && this.isEligibleSalesMember(m)) map.set(m.uid, m);
+    }
+    return Array.from(map.values());
+  });
+
   protected readonly selectedMember = computed(() => {
     const id = this.selectedMemberId();
     if (!id) return null;
-    return this.members().find((m) => m.uid === id) ?? null;
+    return this.eligibleMembersPool().find((m) => m.uid === id) ?? this.members().find((m) => m.uid === id) ?? null;
   });
+
+  private readonly allMatchedMembers = computed(() => {
+    const q = this.memberSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.eligibleMembersPool();
+    if (!q) return list;
+    return list.filter((m) =>
+      (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+      String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.packageLabel ?? '').toLocaleLowerCase('tr').includes(q) ||
+      (m.rfidCardNumber ?? '').toLocaleLowerCase('tr').includes(q),
+    );
+  });
+
+  protected readonly totalMatchedMembersCount = computed(() => this.allMatchedMembers().length);
+
+  protected readonly filteredMembers = computed(() =>
+    this.allMatchedMembers().slice(0, this.maxDropdownMembers),
+  );
+
+  constructor() {
+    effect(() => {
+      const q = this.memberSearchQuery();
+      this.triggerRemoteMemberSearch(q);
+    });
+  }
+
+  onMemberSearchInput(value: string): void {
+    this.memberSearchQuery.set(value ?? '');
+  }
+
+  private triggerRemoteMemberSearch(value: string): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    const trimmed = (value ?? '').trim();
+    if (trimmed.length < 2) {
+      this.searchingMembers.set(false);
+      return;
+    }
+    this.searchingMembers.set(true);
+    this.searchTimer = setTimeout(async () => {
+      const results = await this.membersService.searchMembers(trimmed, {
+        status: this.saleCatalogMode() === 'products' ? 'active_or_trial' : undefined,
+        archived: false,
+        limit: 30,
+      });
+      this.remoteSearchedMembers.set(results);
+      this.searchingMembers.set(false);
+    }, 250);
+  }
+
+  toggleMemberDropdown(): void {
+    const next = !this.isMemberDropdownOpen();
+    this.isMemberDropdownOpen.set(next);
+    if (next) {
+      this.memberSearchQuery.set('');
+    }
+  }
+
+  closeMemberDropdown(): void {
+    this.isMemberDropdownOpen.set(false);
+  }
+
+  selectMemberFromDropdown(memberId: string): void {
+    this.onMemberSelect(memberId);
+    this.isMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+  }
+
+  clearSelectedMember(event: Event): void {
+    event.stopPropagation();
+    this.selectMemberFromDropdown('');
+  }
 
   // Member's Active Package Info & Perks
   protected readonly memberPackageInfo = computed(() => {

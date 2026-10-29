@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { SaasBillingApi } from '../../../core/api/saas-billing.api';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { catchError, firstValueFrom, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { visiblePolling } from '../../../core/api/unwrap';
+import { PlatformNotification, PlatformNotificationsApi } from '../../../core/api/platform-notifications.api';
+import { SaasBillingApi, SaasNotice } from '../../../core/api/saas-billing.api';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -83,6 +86,9 @@ export interface ShellNotification {
   icon: string;
   read: boolean;
   link?: string;
+  linkLabel?: string;
+  /** saas: abonelik hatırlatması, platform: Odivon panelinden gelen işletme bildirimi. */
+  source?: 'saas' | 'platform';
 }
 
 /**
@@ -176,42 +182,102 @@ export class Shell {
   }
 
   private readonly saasBilling = inject(SaasBillingApi);
-  /** Gerçek bildirimler: yöneticiye Odivon abonelik hatırlatmaları (günlük iş üretir). */
+  private readonly platformNotices = inject(PlatformNotificationsApi);
+  /**
+   * Gerçek bildirimler:
+   * - Odivon yönetim panelinden gönderilen işletme bildirimleri (tüm personel görür),
+   * - yöneticiye Odivon abonelik hatırlatmaları.
+   * Sekme açıkken 2 dakikada bir yenilenir.
+   */
   protected readonly notifications = signal<ShellNotification[]>([]);
-  private readonly loadNotices = effect(() => {
-    if (!this.permissions.isAdmin() || !this.auth.profile()?.tenantId) {
-      this.notifications.set([]);
-      return;
-    }
-    firstValueFrom(this.saasBilling.notices()).then(
-      (notices) =>
-        this.notifications.set(
-          notices.map((n) => ({
-            id: n.id,
-            titleKey: '',
-            messageKey: '',
-            title: n.title,
-            message: n.body,
-            time: new Date(n.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
-            type: n.type === 'saas_grace' || n.daysLeft <= 1 ? 'warning' : 'info',
-            icon: 'event_busy',
-            read: Boolean(n.readAt),
-            link: '/admin/subscription',
-          })),
-        ),
-      () => this.notifications.set([]),
+  private readonly noticeContext = computed(() => ({
+    tenantId: this.auth.profile()?.tenantId ?? null,
+    staff: this.permissions.isStaff(),
+    admin: this.permissions.isAdmin(),
+  }));
+  private readonly loadNotices = toObservable(this.noticeContext)
+    .pipe(
+      switchMap((ctx) =>
+        !ctx.tenantId || !ctx.staff
+          ? of([] as ShellNotification[])
+          : visiblePolling(2 * 60_000).pipe(
+              startWith(0),
+              switchMap(() => this.fetchNotices(ctx.admin)),
+            ),
+      ),
+      takeUntilDestroyed(),
+    )
+    .subscribe((list) => this.notifications.set(list));
+
+  private fetchNotices(admin: boolean) {
+    const fmt = (iso: string) => new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+    return forkJoin({
+      platform: this.platformNotices.list().pipe(catchError(() => of([] as PlatformNotification[]))),
+      saas: admin ? this.saasBilling.notices().pipe(catchError(() => of([] as SaasNotice[]))) : of([] as SaasNotice[]),
+    }).pipe(
+      map(({ platform, saas }) => {
+        const fromPlatform: (ShellNotification & { at: string })[] = platform.map((n) => ({
+          id: n.id,
+          titleKey: '',
+          messageKey: '',
+          title: n.title,
+          message: n.body,
+          time: fmt(n.createdAt),
+          type: n.level === 'warning' || n.level === 'critical' ? 'warning' : n.level === 'success' ? 'success' : 'info',
+          icon: n.level === 'critical' ? 'priority_high' : n.level === 'warning' ? 'warning' : 'campaign',
+          read: n.read,
+          link: n.link ?? undefined,
+          linkLabel: n.linkLabel ?? undefined,
+          source: 'platform',
+          at: n.createdAt,
+        }));
+        const fromSaas: (ShellNotification & { at: string })[] = saas.map((n) => ({
+          id: n.id,
+          titleKey: '',
+          messageKey: '',
+          title: n.title,
+          message: n.body,
+          time: fmt(n.createdAt),
+          type: n.type === 'saas_grace' || n.daysLeft <= 1 ? 'warning' : 'info',
+          icon: 'event_busy',
+          read: Boolean(n.readAt),
+          link: '/admin/subscription',
+          source: 'saas',
+          at: n.createdAt,
+        }));
+        return [...fromPlatform, ...fromSaas]
+          .sort((a, b) => b.at.localeCompare(a.at))
+          .map(({ at: _at, ...n }) => n as ShellNotification);
+      }),
     );
-  });
+  }
 
   protected readonly unreadCount = computed(() => this.notifications().filter((n) => !n.read).length);
 
   markAllNotificationsAsRead(): void {
-    this.notifications.update((list) => list.map((n) => ({ ...n, read: true })));
-    void firstValueFrom(this.saasBilling.readNotices()).catch(() => undefined);
+    const list = this.notifications();
+    this.notifications.update((items) => items.map((n) => ({ ...n, read: true })));
+    if (list.some((n) => n.source === 'platform' && !n.read)) {
+      void firstValueFrom(this.platformNotices.markAllRead()).catch(() => undefined);
+    }
+    if (list.some((n) => n.source === 'saas' && !n.read)) {
+      void firstValueFrom(this.saasBilling.readNotices()).catch(() => undefined);
+    }
   }
 
-  markNotificationAsRead(id: string): void {
-    this.notifications.update((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  openNotification(item: ShellNotification): void {
+    if (!item.read) {
+      this.notifications.update((list) => list.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
+      if (item.source === 'platform') {
+        void firstValueFrom(this.platformNotices.markRead(item.id)).catch(() => undefined);
+      }
+    }
+    if (!item.link) return;
+    if (/^https?:\/\//i.test(item.link)) {
+      window.open(item.link, '_blank', 'noopener');
+    } else {
+      void this.router.navigateByUrl(item.link);
+    }
   }
 
   protected readonly isStaff = computed(() => this.permissions.isStaff());

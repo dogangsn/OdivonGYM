@@ -21,6 +21,7 @@ export interface AccessLog {
   gateId?: string;
   deviceUserId?: string | null;
   card?: string | null;
+  rfidCardNumber?: string | null;
   source?: 'agent' | 'panel' | 'scan';
 }
 
@@ -33,4 +34,7 @@ export interface CreateAccessLogInput {
   status: AccessStatus;
   gateName: string;
   notes?: string;
+  card?: string | null;
+  rfidCardNumber?: string | null;
+  deviceUserId?: string | null;
 }

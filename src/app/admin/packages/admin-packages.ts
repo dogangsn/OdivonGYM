@@ -406,15 +406,15 @@ import { TranslocoPipe } from '@jsverse/transloco';
                   Personel Prim Oranı (%)
                 </label>
                 <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 dark:text-slate-500 text-xs pointer-events-none select-none">%</span>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     formControlName="trainerCommissionRate"
-                    class="odv-input text-xs font-bold text-emerald-600 pl-8"
+                    class="odv-input !pl-8 text-xs font-bold text-emerald-600"
                     placeholder="Örn: 40"
                   />
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">%</span>
                 </div>
                 <span class="text-[10px] text-slate-400 mt-0.5 block">
                   Satış veya seans başına personele aktarılacak hakediş oranı.

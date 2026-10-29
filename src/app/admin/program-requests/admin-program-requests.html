@@ -1,105 +1,617 @@
-<div class="p-4 sm:p-6">
+<div class="font-sans space-y-6">
+  <!-- 1. Page Header -->
   <app-page-header
     icon="fitness_center"
     title="programRequests.title"
     description="programRequests.subtitle"
-  />
-
-  @if (loading()) {
-    <p class="text-sm text-slate-500">Yükleniyor…</p>
-  } @else if (requests().length === 0) {
-    <p class="text-sm text-slate-500">Henüz program talebi yok.</p>
-  } @else {
-    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900">
-          <tr>
-            <th class="px-4 py-3">Üye</th>
-            <th class="px-4 py-3">Hedef</th>
-            <th class="px-4 py-3">Gün</th>
-            <th class="px-4 py-3">Durum</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (request of requests(); track request.id) {
-            <tr
-              class="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-              (click)="open(request)"
-            >
-              <td class="px-4 py-3 font-semibold">{{ request.memberName }}</td>
-              <td class="px-4 py-3">{{ request.goal }}</td>
-              <td class="px-4 py-3">{{ request.daysPerWeek }}</td>
-              <td class="px-4 py-3">{{ statusLabel(request.status) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  >
+    <div actions class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="reload()"
+        [disabled]="loading()"
+        class="odv-btn-soft text-xs flex items-center gap-1.5"
+      >
+        <mat-icon class="icon-size-4" [class.animate-spin]="loading()">refresh</mat-icon>
+        <span>Yenile</span>
+      </button>
     </div>
-  }
+  </app-page-header>
+
+  <!-- 2. Executive KPI Cards (4-Column Grid) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <!-- KPI 1: Toplam Talep (Gradient Hero) -->
+    <div class="kpi-card p-6 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-indigo-500/25 relative overflow-hidden flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-white/90">Toplam Program Talebi</span>
+          <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center shadow-xs backdrop-blur-xs">
+            <mat-icon class="icon-size-5">fitness_center</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
+            {{ totalCount() }}
+          </div>
+          <div class="text-xs font-semibold text-white/90 mt-1.5">
+            Üye Antrenman Talepleri
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-white/20 text-xs text-white/80">
+        <span><strong class="text-white font-bold">%{{ completionRate() }}</strong> Tamamlanma</span>
+        <span class="inline-flex items-center gap-1.5 font-bold text-white">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Canlı Akış
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 2: Bekleyen Talepler -->
+    <div class="kpi-card flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Bekleyen Talepler</span>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">pending_actions</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            {{ pendingCount() }}
+          </div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+            Program Hazırlanması Beklenen
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+        <span class="text-slate-400">Öncelik Durumu</span>
+        <span class="font-bold text-amber-600 dark:text-amber-400">
+          {{ pendingCount() > 0 ? 'Aksiyon Bekliyor' : 'Tümü Tamamlandı' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 3: Programı Hazırlananlar -->
+    <div class="kpi-card flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Programı Atanan</span>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">task_alt</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            {{ fulfilledCount() }}
+          </div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+            Üyeye İletilen Programlar
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+        <span class="text-slate-400">Karşılama Oranı</span>
+        <span class="font-bold text-emerald-600 dark:text-emerald-400">%{{ completionRate() }} Başarılı</span>
+      </div>
+    </div>
+
+    <!-- KPI 4: Karşılanamayan / Reddedilen -->
+    <div class="kpi-card flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Karşılanamayan</span>
+          <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">cancel</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            {{ rejectedCount() }}
+          </div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+            Reddedilen / İptal Talepler
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+        <span class="text-slate-400">Durum</span>
+        <span class="font-semibold text-slate-500 dark:text-slate-400">Arşiv Kayıtları</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Filter & Search Toolbar -->
+  <div class="odv-card p-3.5 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+    <!-- Status Segmented Tabs -->
+    <div class="inline-flex flex-wrap p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 self-start sm:self-auto gap-1">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+        [class]="statusFilter() === 'all'
+          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span>Tümü</span>
+        <span
+          class="px-1.5 py-0.5 rounded-full text-[10px] font-black"
+          [class]="statusFilter() === 'all' ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+        >
+          {{ totalCount() }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('pending')"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+        [class]="statusFilter() === 'pending'
+          ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span>Bekleyenler</span>
+        <span
+          class="px-1.5 py-0.5 rounded-full text-[10px] font-black"
+          [class]="statusFilter() === 'pending' ? 'bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+        >
+          {{ pendingCount() }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('fulfilled')"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+        [class]="statusFilter() === 'fulfilled'
+          ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Tamamlananlar</span>
+        <span
+          class="px-1.5 py-0.5 rounded-full text-[10px] font-black"
+          [class]="statusFilter() === 'fulfilled' ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+        >
+          {{ fulfilledCount() }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="statusFilter.set('rejected')"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+        [class]="statusFilter() === 'rejected'
+          ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+      >
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span>Reddedilenler</span>
+        <span
+          class="px-1.5 py-0.5 rounded-full text-[10px] font-black"
+          [class]="statusFilter() === 'rejected' ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+        >
+          {{ rejectedCount() }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="relative flex-1 max-w-md">
+      <mat-icon class="icon-size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Üye adı, hedef, antrenör veya not ara…"
+        class="odv-input pl-9 pr-8 py-2 text-xs"
+      />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          (click)="searchQuery.set('')"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+        >
+          <mat-icon class="icon-size-3.5">clear</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 4. Requests Table Card -->
+  <div class="odv-card overflow-hidden">
+    @if (loading()) {
+      <div class="py-16 text-center space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
+          <mat-icon class="icon-size-5 animate-spin">sync</mat-icon>
+        </div>
+        <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 m-0">
+          Program talepleri yükleniyor…
+        </p>
+      </div>
+    } @else if (filteredRequests().length === 0) {
+      <div class="py-16 px-4 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-3 shadow-2xs">
+          <mat-icon class="icon-size-7">fitness_center</mat-icon>
+        </div>
+        @if (statusFilter() !== 'all' || searchQuery().trim()) {
+          <p class="text-sm font-bold text-slate-800 dark:text-slate-200 m-0">
+            Seçili filtrelere uygun program talebi bulunamadı.
+          </p>
+          <p class="text-xs text-slate-400 mt-1 mb-4">
+            Farklı bir durum sekmesi seçebilir veya arama filtresini sıfırlayabilirsiniz.
+          </p>
+          <button type="button" class="odv-btn-soft" (click)="clearFilters()">
+            Filtreleri Temizle
+          </button>
+        } @else {
+          <p class="text-sm font-bold text-slate-800 dark:text-slate-200 m-0">
+            Henüz üye antrenman programı talebi bulunmuyor.
+          </p>
+          <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+            Üyeler mobil uygulama veya üye paneli üzerinden antrenman programı talep ettiğinde burada listelenir.
+          </p>
+        }
+      </div>
+    } @else {
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+              <th class="odv-th">Üye & Antrenör</th>
+              <th class="odv-th">Antrenman Hedefi & Not</th>
+              <th class="odv-th">Haftalık Sıklık</th>
+              <th class="odv-th">Talep Tarihi</th>
+              <th class="odv-th">Durum</th>
+              <th class="odv-th text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+            @for (request of filteredRequests(); track request.id) {
+              <tr
+                class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                (click)="open(request)"
+              >
+                <!-- Üye & Antrenör -->
+                <td class="odv-td">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      {{ (request.memberName || 'Ü').charAt(0) }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-900 dark:text-white m-0 truncate">
+                        {{ request.memberName }}
+                      </p>
+                      <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <mat-icon class="icon-size-3 text-indigo-500">person</mat-icon>
+                        <span class="truncate">{{ request.trainerName || 'Genel Antrenör Havuzu' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Hedef & Not -->
+                <td class="odv-td">
+                  <p class="font-bold text-slate-800 dark:text-slate-200 m-0">
+                    {{ request.goal || 'Genel Fitness & Kondisyon' }}
+                  </p>
+                  @if (request.notes) {
+                    <p class="text-[11px] text-slate-400 truncate max-w-xs mt-0.5 m-0" [title]="request.notes">
+                      {{ request.notes }}
+                    </p>
+                  }
+                </td>
+
+                <!-- Haftalık Gün -->
+                <td class="odv-td whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 text-xs font-bold">
+                    <mat-icon class="icon-size-3.5">calendar_today</mat-icon>
+                    <span>Haftada {{ request.daysPerWeek }} Gün</span>
+                  </span>
+                </td>
+
+                <!-- Tarih -->
+                <td class="odv-td whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                  <div>{{ formatDate(request.createdAt) }}</div>
+                  @if (request.resolvedAt) {
+                    <div class="text-[10px] text-slate-400 mt-0.5">
+                      Yanıt: {{ formatDate(request.resolvedAt) }}
+                    </div>
+                  }
+                </td>
+
+                <!-- Durum -->
+                <td class="odv-td whitespace-nowrap">
+                  <span class="odv-badge inline-flex items-center gap-1.5" [ngClass]="statusBadgeClass(request.status)">
+                    <span
+                      class="w-1.5 h-1.5 rounded-full"
+                      [class]="request.status === 'pending' ? 'bg-amber-500 animate-pulse' : request.status === 'fulfilled' ? 'bg-emerald-500' : 'bg-rose-500'"
+                    ></span>
+                    <span>{{ statusLabel(request.status) }}</span>
+                  </span>
+                </td>
+
+                <!-- İşlem -->
+                <td class="odv-td text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+                  @if (request.status === 'pending') {
+                    <button
+                      type="button"
+                      (click)="open(request)"
+                      class="odv-btn-soft py-1.5 px-3 text-xs inline-flex items-center gap-1.5"
+                    >
+                      <mat-icon class="icon-size-4">edit_note</mat-icon>
+                      <span>Program Hazırla</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="open(request)"
+                      class="odv-icon-btn"
+                      title="Talep Detayını Gör"
+                    >
+                      <mat-icon class="icon-size-4">visibility</mat-icon>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 </div>
 
+<!-- 5. Program Hazırlama & Talep Detay Slide-Over Drawer -->
 @if (selected(); as request) {
-  <div class="fixed inset-0 z-40 bg-slate-900/40" (click)="close()"></div>
-  <aside class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-xl dark:bg-slate-950">
-    <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-      <div>
-        <h2 class="m-0 text-lg font-black">{{ request.memberName }}</h2>
-        <p class="m-0 text-sm text-slate-500">{{ statusLabel(request.status) }} · haftada {{ request.daysPerWeek }} gün</p>
+  <div class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs transition-opacity" (click)="close()"></div>
+  <aside class="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl font-sans">
+    <!-- Drawer Header -->
+    <header class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+          {{ (request.memberName || 'Ü').charAt(0) }}
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="m-0 text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
+              {{ request.memberName }}
+            </h2>
+            <span class="odv-badge text-[10px] py-0.5 px-2" [ngClass]="statusBadgeClass(request.status)">
+              {{ statusLabel(request.status) }}
+            </span>
+          </div>
+          <p class="m-0 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Haftada {{ request.daysPerWeek }} gün antrenman · {{ formatDate(request.createdAt) }}
+          </p>
+        </div>
       </div>
-      <button type="button" class="rounded-lg p-2" (click)="close()">
-        <mat-icon>close</mat-icon>
+      <button type="button" class="odv-icon-btn" (click)="close()" title="Kapat">
+        <mat-icon class="icon-size-5">close</mat-icon>
       </button>
     </header>
-    <div class="flex-1 space-y-4 overflow-y-auto p-4">
-      <p class="m-0 text-sm"><span class="font-semibold">Hedef:</span> {{ request.goal }}</p>
-      @if (request.notes) {
-        <p class="m-0 text-sm"><span class="font-semibold">Not:</span> {{ request.notes }}</p>
-      }
-      @if (request.trainerName) {
-        <p class="m-0 text-sm text-slate-500">Antrenör: {{ request.trainerName }}</p>
-      }
+
+    <!-- Drawer Body -->
+    <div class="flex-1 space-y-5 overflow-y-auto custom-scroll p-6">
+      <!-- Talep Özeti Kartı -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+            <mat-icon class="icon-size-4">flag</mat-icon>
+            <span>Üye Talep Özeti</span>
+          </span>
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+            Haftada {{ request.daysPerWeek }} Gün
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+          <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Antrenman Hedefi</span>
+            <span class="font-bold text-slate-900 dark:text-white mt-0.5 block">{{ request.goal || 'Belirtilmedi' }}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Tercih Edilen Antrenör</span>
+            <span class="font-bold text-slate-900 dark:text-white mt-0.5 block">{{ request.trainerName || 'Genel Antrenör Havuzu' }}</span>
+          </div>
+        </div>
+
+        @if (request.notes) {
+          <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Üye Notu / Özel Durum</span>
+            <p class="m-0 mt-0.5 text-slate-700 dark:text-slate-300 font-medium">{{ request.notes }}</p>
+          </div>
+        }
+      </div>
 
       @if (request.status === 'pending') {
-        <label class="block text-sm font-semibold">
-          Program adı
-          <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" [ngModel]="title()" (ngModelChange)="title.set($event)" />
-        </label>
-        <label class="block text-sm font-semibold">
-          Açıklama
-          <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" [ngModel]="description()" (ngModelChange)="description.set($event)" />
-        </label>
-        <app-workout-day-tabs
-          [tabs]="days.tabs()"
-          [active]="days.active()"
-          (select)="days.active.set($event)"
-          (add)="days.add()"
-          (rename)="days.rename($event.day, $event.name)"
-          (remove)="days.remove($event)"
-        />
-        <app-exercise-picker [maxHeight]="220" (pick)="addPreset($event)" />
-        <button type="button" class="text-sm font-semibold text-indigo-600" (click)="addBlank()">Serbest hareket ekle</button>
-        @for (exercise of exercises(); track $index) {
-          @if (days.isActive(exercise.dayName)) {
-          <div class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
-            <input class="col-span-2 rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" placeholder="Hareket" [ngModel]="exercise.name" (ngModelChange)="updateExercise($index, { name: $event })" />
-            <span class="self-center text-xs font-bold text-indigo-600">{{ exercise.dayName }}</span>
-            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" type="number" placeholder="Set" [ngModel]="exercise.sets" (ngModelChange)="updateExercise($index, { sets: +$event })" />
-            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" placeholder="Tekrar" [ngModel]="exercise.reps" (ngModelChange)="updateExercise($index, { reps: $event })" />
-            <input class="rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-900" type="number" placeholder="Kg" [ngModel]="exercise.weight" (ngModelChange)="updateExercise($index, { weight: +$event })" />
-            <button type="button" class="col-span-2 text-left text-xs text-rose-600" (click)="removeExercise($index)">Kaldır</button>
+        <!-- Program Temel Bilgileri -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+              Program Adı <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              class="odv-input text-xs font-semibold"
+              placeholder="Örn: Hipertrofi & Güç Programı"
+              [ngModel]="title()"
+              (ngModelChange)="title.set($event)"
+            />
           </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+              Program Açıklaması / Odak
+            </label>
+            <input
+              type="text"
+              class="odv-input text-xs"
+              placeholder="Örn: 8 Haftalık Bölgesel Antrenman"
+              [ngModel]="description()"
+              (ngModelChange)="description.set($event)"
+            />
+          </div>
+        </div>
+
+        <!-- Gün Sekmeleri & Egzersiz Kütüphanesi -->
+        <div class="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/50 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+              <mat-icon class="icon-size-4 text-indigo-600">calendar_view_week</mat-icon>
+              <span>Antrenman Günleri & Hareket Seçimi</span>
+            </span>
+            <button
+              type="button"
+              class="odv-btn-soft py-1 px-2.5 text-xs inline-flex items-center gap-1"
+              (click)="addBlank()"
+            >
+              <mat-icon class="icon-size-3.5">add</mat-icon>
+              <span>Serbest Hareket Ekle</span>
+            </button>
+          </div>
+
+          <app-workout-day-tabs
+            [tabs]="days.tabs()"
+            [active]="days.active()"
+            (select)="days.active.set($event)"
+            (add)="days.add()"
+            (rename)="days.rename($event.day, $event.name)"
+            (remove)="days.remove($event)"
+          />
+
+          <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5">
+            <app-exercise-picker [maxHeight]="200" (pick)="addPreset($event)" />
+          </div>
+        </div>
+
+        <!-- Seçili Günün Hareketleri -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              {{ days.label() }} Hareket Listesi ({{ activeDayExercisesCount() }})
+            </span>
+            <span class="text-[11px] text-slate-400">
+              Toplam {{ exercises().length }} hareket eklendi
+            </span>
+          </div>
+
+          @for (exercise of exercises(); track $index) {
+            @if (days.isActive(exercise.dayName)) {
+              <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <span class="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold shrink-0">
+                      {{ exercise.dayName }}
+                    </span>
+                    <input
+                      type="text"
+                      class="odv-input py-1.5 text-xs font-bold flex-1"
+                      placeholder="Hareket adı (Örn: Bench Press)"
+                      [ngModel]="exercise.name"
+                      (ngModelChange)="updateExercise($index, { name: $event })"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="odv-icon-btn odv-icon-btn-danger shrink-0"
+                    (click)="removeExercise($index)"
+                    title="Hareketi Kaldır"
+                  >
+                    <mat-icon class="icon-size-4">delete</mat-icon>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Set Sayısı</label>
+                    <input
+                      type="number"
+                      min="1"
+                      class="odv-input py-1.5 text-xs font-bold"
+                      placeholder="Set"
+                      [ngModel]="exercise.sets"
+                      (ngModelChange)="updateExercise($index, { sets: +$event })"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Tekrar / Süre</label>
+                    <input
+                      type="text"
+                      class="odv-input py-1.5 text-xs font-bold"
+                      placeholder="Örn: 10-12"
+                      [ngModel]="exercise.reps"
+                      (ngModelChange)="updateExercise($index, { reps: $event })"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Hedef Kg</label>
+                    <input
+                      type="number"
+                      min="0"
+                      class="odv-input py-1.5 text-xs font-bold"
+                      placeholder="Opsiyonel"
+                      [ngModel]="exercise.weight"
+                      (ngModelChange)="updateExercise($index, { weight: +$event })"
+                    />
+                  </div>
+                </div>
+              </div>
+            }
           }
-        }
-        <label class="block text-sm font-semibold">
-          Red notu
-          <textarea class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-900" rows="2" [ngModel]="rejectNote()" (ngModelChange)="rejectNote.set($event)"></textarea>
-        </label>
+
+          @if (activeDayExercisesCount() === 0) {
+            <div class="p-6 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center text-xs text-slate-400">
+              Bu gün için henüz hareket eklenmedi. Yukarıdaki kütüphaneden seçin veya <strong>"Serbest Hareket Ekle"</strong> butonuna tıklayın.
+            </div>
+          }
+        </div>
+
+        <!-- Red / Açıklama Notu -->
+        <div class="pt-2 border-t border-slate-200/80 dark:border-slate-800">
+          <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
+            Red Notu (Yalnızca talep reddedilecekse doldurun)
+          </label>
+          <textarea
+            class="odv-input text-xs resize-none"
+            rows="2"
+            placeholder="Talebin neden karşılanamadığını üyeye iletmek için not yazabilirsiniz…"
+            [ngModel]="rejectNote()"
+            (ngModelChange)="rejectNote.set($event)"
+          ></textarea>
+        </div>
       }
     </div>
+
+    <!-- Drawer Footer -->
     @if (request.status === 'pending') {
-      <footer class="flex gap-2 border-t border-slate-200 p-4 dark:border-slate-800">
-        <button type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold" [disabled]="saving()" (click)="reject()">Reddet</button>
-        <button type="button" class="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white" [disabled]="saving()" (click)="assign()">Programı ata</button>
+      <footer class="flex items-center justify-between gap-3 border-t border-slate-200/80 dark:border-slate-800 px-6 py-4 bg-slate-50/60 dark:bg-slate-900/60">
+        <button
+          type="button"
+          class="px-4 py-2.5 rounded-xl border border-rose-200 dark:border-rose-800/80 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-300 text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5 disabled:opacity-50"
+          [disabled]="saving()"
+          (click)="reject()"
+        >
+          <mat-icon class="icon-size-4">close</mat-icon>
+          <span>Talebi Reddet</span>
+        </button>
+
+        <button
+          type="button"
+          class="odv-btn-primary flex-1 justify-center"
+          [disabled]="saving()"
+          (click)="assign()"
+        >
+          <mat-icon class="icon-size-4">check_circle</mat-icon>
+          <span>{{ saving() ? 'Kaydediliyor…' : 'Programı Ata ve Üyeye Bildir' }}</span>
+        </button>
+      </footer>
+    } @else {
+      <footer class="flex items-center justify-end border-t border-slate-200/80 dark:border-slate-800 px-6 py-4 bg-slate-50/60 dark:bg-slate-900/60">
+        <button type="button" class="odv-btn-ghost" (click)="close()">
+          Kapat
+        </button>
       </footer>
     }
   </aside>

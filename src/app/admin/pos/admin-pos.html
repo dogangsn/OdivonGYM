@@ -88,19 +88,19 @@
             (click)="addToCart(prod)"
             class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all cursor-pointer flex flex-col justify-between text-left active:scale-[0.98] group"
           >
-            <div>
+            <span class="block w-full">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                 {{ prod.category }}
               </span>
-              <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-2 m-0">
+              <span class="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-2 m-0">
                 {{ prod.name }}
-              </h3>
-            </div>
+              </span>
+            </span>
 
-            <div class="flex items-baseline justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 w-full">
+            <span class="flex items-baseline justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 w-full">
               <span class="text-sm font-black text-slate-900 dark:text-white">{{ money(prod.price) }}</span>
               <span class="text-[10px] font-semibold text-slate-400">Stok: {{ prod.stock }}</span>
-            </div>
+            </span>
           </button>
         } @empty {
           <div class="col-span-full py-16 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
@@ -115,23 +115,195 @@
     <div class="lg:col-span-5">
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 sticky top-4">
         
-        <!-- Üye Seçimi (Opsiyonel E-Cüzdan) -->
+        <!-- Üye Seçimi (Aramalı Seçim Menüsü & Opsiyonel E-Cüzdan) -->
         <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+          <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             Müşteri / Üye (Opsiyonel)
           </label>
-          <select
-            [ngModel]="selectedMemberId()"
-            (ngModelChange)="selectedMemberId.set($event)"
-            class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none"
-          >
-            <option value="">👤 Misafir / Ayaktan Müşteri</option>
-            @for (mem of members(); track mem.uid) {
-              <option [value]="mem.uid">
-                {{ mem.displayName }} (Bakiye: {{ money(mem.walletBalance || 0) }})
-              </option>
+          <div class="relative">
+            <!-- Trigger Button -->
+            <button
+              type="button"
+              (click)="toggleMemberDropdown()"
+              class="w-full px-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 transition-all cursor-pointer flex items-center justify-between gap-2.5 text-left shadow-2xs"
+              [class.pr-16]="selectedMemberId()"
+            >
+              @if (selectedMember(); as selMem) {
+                <span class="flex items-center gap-2.5 min-w-0">
+                  @if (selMem.photoURL) {
+                    <img [src]="selMem.photoURL" class="w-8 h-8 rounded-xl object-cover shrink-0 border border-indigo-200 dark:border-indigo-800" alt="avatar" />
+                  } @else {
+                    <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                      {{ (selMem.displayName || selMem.email || 'Ü').charAt(0) }}
+                    </span>
+                  }
+                  <span class="block min-w-0">
+                    <span class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                        {{ selMem.displayName || selMem.email }}
+                      </span>
+                      <span class="px-1.5 py-0.5 rounded bg-indigo-100/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
+                        #{{ selMem.memberNumber || selMem.uid.slice(0, 5) }}
+                      </span>
+                    </span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
+                      <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                        Bakiye: {{ money(selMem.walletBalance || 0) }}
+                      </span>
+                      @if (selMem.phone) {
+                        <span>· {{ selMem.phone }}</span>
+                      }
+                    </span>
+                  </span>
+                </span>
+              } @else {
+                <span class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-8 h-8 rounded-xl bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                    <mat-icon class="icon-size-4">person</mat-icon>
+                  </span>
+                  <span class="block min-w-0">
+                    <span class="block text-xs font-bold text-slate-900 dark:text-white">
+                      Misafir / Ayaktan Müşteri
+                    </span>
+                    <span class="block text-[10px] text-slate-400 truncate">
+                      Üye aramak veya E-Cüzdan kullanmak için tıklayın…
+                    </span>
+                  </span>
+                </span>
+              }
+
+              <mat-icon
+                class="icon-size-4.5 text-slate-400 transition-transform duration-200 shrink-0"
+                [class.rotate-180]="isMemberDropdownOpen()"
+              >
+                expand_more
+              </mat-icon>
+            </button>
+
+            @if (selectedMemberId()) {
+              <button
+                type="button"
+                (click)="clearSelectedMember($event)"
+                class="absolute right-9 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors cursor-pointer border-none bg-transparent"
+                title="Misafir Müşteri'ye Sıfırla"
+              >
+                <mat-icon class="icon-size-3.5">close</mat-icon>
+              </button>
             }
-          </select>
+
+            <!-- Searchable Dropdown Popover -->
+            @if (isMemberDropdownOpen()) {
+              <div class="fixed inset-0 z-30" (click)="closeMemberDropdown()"></div>
+              <div class="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+                <!-- Sticky Search Input Bar -->
+                <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+                  <div class="relative flex items-center">
+                    <mat-icon class="icon-size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+                    <input
+                      type="text"
+                      [ngModel]="memberSearchQuery()"
+                      (ngModelChange)="memberSearchQuery.set($event)"
+                      (click)="$event.stopPropagation()"
+                      placeholder="Aktif üye adı, #üye no, telefon veya kart no ara..."
+                      class="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    @if (memberSearchQuery()) {
+                      <button
+                        type="button"
+                        (click)="memberSearchQuery.set(''); $event.stopPropagation()"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer border-none bg-transparent"
+                      >
+                        <mat-icon class="icon-size-3.5">clear</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Member Options List -->
+                <div class="max-h-64 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <!-- Misafir Option -->
+                  <button
+                    type="button"
+                    (click)="selectMemberFromDropdown('')"
+                    class="w-full px-3 py-2 text-left hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
+                    [ngClass]="!selectedMemberId() ? 'bg-indigo-50 dark:bg-indigo-950/40' : ''"
+                  >
+                    <span class="flex items-center gap-2.5 min-w-0">
+                      <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                        <mat-icon class="icon-size-4">person_outline</mat-icon>
+                      </span>
+                      <span class="block min-w-0">
+                        <span class="block text-xs font-bold text-slate-900 dark:text-white">
+                          Misafir / Ayaktan Müşteri
+                        </span>
+                        <span class="block text-[10px] text-slate-400">
+                          Hızlı nakit veya kart satışı
+                        </span>
+                      </span>
+                    </span>
+                    @if (!selectedMemberId()) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+
+                  <!-- Filtered Members -->
+                  @for (mem of filteredMembers(); track mem.uid) {
+                    <button
+                      type="button"
+                      (click)="selectMemberFromDropdown(mem.uid)"
+                      class="w-full px-3 py-2 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
+                      [ngClass]="selectedMemberId() === mem.uid ? 'bg-indigo-50 dark:bg-indigo-950/40' : ''"
+                    >
+                      <span class="flex items-center gap-2.5 min-w-0">
+                        @if (mem.photoURL) {
+                          <img [src]="mem.photoURL" class="w-7 h-7 rounded-lg object-cover shrink-0" alt="avatar" />
+                        } @else {
+                          <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center justify-center shrink-0">
+                            {{ (mem.displayName || mem.email || 'Ü').charAt(0) }}
+                          </span>
+                        }
+                        <span class="block min-w-0">
+                          <span class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {{ mem.displayName || mem.email }}
+                            </span>
+                            <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px] font-semibold">
+                              #{{ mem.memberNumber || mem.uid.slice(0, 5) }}
+                            </span>
+                          </span>
+                          <span class="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                              Bakiye: {{ money(mem.walletBalance || 0) }}
+                            </span>
+                            @if (mem.phone) {
+                              <span>· {{ mem.phone }}</span>
+                            }
+                            @if (mem.packageLabel) {
+                              <span class="truncate">· {{ mem.packageLabel }}</span>
+                            }
+                          </span>
+                        </span>
+                      </span>
+
+                      @if (selectedMemberId() === mem.uid) {
+                        <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                      }
+                    </button>
+                  } @empty {
+                    <div class="px-3 py-6 text-center text-xs text-slate-400 space-y-1">
+                      <mat-icon class="icon-size-5 text-slate-300 dark:text-slate-600 mx-auto block">person_search</mat-icon>
+                      <p class="m-0 font-medium">Aramaya uygun aktif müşteri/üye bulunamadı.</p>
+                    </div>
+                  }
+                </div>
+                @if (filteredMembers().length >= 30) {
+                  <div class="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center">
+                    Performans için ilk 30 aktif üye listeleniyor. Tam eşleşme için yukarıdan arayın.
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
 
         <!-- Fiş Sepeti -->
