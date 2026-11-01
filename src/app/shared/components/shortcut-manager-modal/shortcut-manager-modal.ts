@@ -126,3 +126,4 @@ export class ShortcutManagerModal {
     return SHORTCUT_COLOR_THEMES[color] || SHORTCUT_COLOR_THEMES.indigo;
   }
 }
+

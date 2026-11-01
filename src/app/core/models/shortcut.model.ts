@@ -123,3 +123,4 @@ export const DEFAULT_USER_SHORTCUTS: UserShortcut[] = [
     order: 3,
   },
 ];
+
