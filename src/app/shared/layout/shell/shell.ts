@@ -28,6 +28,8 @@ import { ChangePasswordService } from '../../components/change-password-modal/ch
 import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 import { AppLockService } from '../../../core/services/app-lock.service';
+import { ShortcutService } from '../../../core/services/shortcut.service';
+import { ShortcutManagerModal } from '../../components/shortcut-manager-modal/shortcut-manager-modal';
 
 import { FormsModule } from '@angular/forms';
 
@@ -113,6 +115,7 @@ export interface ShellNotification {
     TrainingWizardModal,
     AiAssistantModal,
     ChangePasswordModal,
+    ShortcutManagerModal,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
@@ -132,6 +135,7 @@ export class Shell {
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly lockService = inject(AppLockService);
+  protected readonly shortcutService = inject(ShortcutService);
   private readonly router = inject(Router);
 
   protected readonly languageNames = LANGUAGE_NAMES;

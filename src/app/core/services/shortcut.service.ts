@@ -58,8 +58,8 @@ export class ShortcutService {
   }
 
   private get storageKey(): string {
-    const tenantId = this.auth.tenantId() || 'default';
-    const userId = this.auth.currentUser()?.uid || 'user';
+    const tenantId = this.auth.profile()?.tenantId || 'default';
+    const userId = this.auth.user()?.uid || 'user';
     return `${STORAGE_PREFIX}${tenantId}_${userId}`;
   }
 

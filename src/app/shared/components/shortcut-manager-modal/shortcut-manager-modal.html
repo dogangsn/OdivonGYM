@@ -1,0 +1,264 @@
+<app-slide-over
+  [open]="shortcutService.drawerOpen()"
+  title="Hızlı Ekran Kısayolları"
+  subtitle="Sık kullandığınız ekranları üst araç çubuğuna sabitleyin (Alt+1 ... Alt+9)"
+  width="2xl"
+  submitLabel="Kapat"
+  [submitting]="false"
+  (closed)="shortcutService.closeDrawer()"
+  (submitted)="shortcutService.closeDrawer()">
+
+  <div class="space-y-5 text-xs font-sans">
+
+    <!-- 1. BULUNULAN SAYFAYI HIZLI EKLE BANNERI -->
+    @if (!isCurrentPagePinned() && currentRoute() !== '/dashboard') {
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-indigo-950/50 dark:via-purple-950/30 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/60 shadow-2xs flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">
+            <mat-icon class="icon-size-5">{{ currentPageObj()?.icon || 'bookmark_add' }}</mat-icon>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                {{ currentPageObj()?.title || currentRoute() }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300">
+                Şu Anki Ekran
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono truncate m-0">
+              {{ currentRoute() }}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="addCurrentPage()"
+          class="odv-btn-primary text-xs py-2 px-3.5 shrink-0 flex items-center gap-1.5 shadow-xs">
+          <mat-icon class="icon-size-4">push_pin</mat-icon>
+          <span>Kısayol Yap</span>
+        </button>
+      </div>
+    }
+
+    <!-- 2. YENİ KISAYOL TASARLA & EKLE KARTI -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">add_link</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Kısayol Belirle</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">İstediğiniz sayfayı, özel başlık ve renk temasıyla üst bara ekleyin</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+          {{ shortcutService.count() }}/10 Kısayol
+        </span>
+      </div>
+
+      <!-- Sayfa Seçimi -->
+      <div>
+        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Hangi Sayfa? <span class="text-rose-500">*</span>
+        </label>
+        <select
+          [ngModel]="selectedPageLink()"
+          (ngModelChange)="onPageSelect($event)"
+          class="odv-select text-xs font-semibold">
+          <option value="">Lütfen kısayol yapılacak sayfayı seçin...</option>
+          @for (p of shortcutService.availablePages(); track p.link) {
+            <option [value]="p.link" [disabled]="shortcutService.isPinned(p.link)">
+              {{ p.category }} → {{ p.title }} {{ shortcutService.isPinned(p.link) ? '(Ekli)' : '' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      @if (selectedPageLink()) {
+        <!-- Özel Başlık & Renk Teması (2 Kolon) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1 animate-fade-in">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Kısayol Buton Yazısı (Özel İsim) <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              [ngModel]="customTitle()"
+              (ngModelChange)="customTitle.set($event)"
+              placeholder="Örn: Günlük Kasa, VIP Üyeler"
+              class="odv-input font-semibold text-xs" />
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Renk Teması
+            </label>
+            <div class="flex items-center gap-1.5 pt-1">
+              @for (c of colorOptions; track c.id) {
+                <button
+                  type="button"
+                  (click)="selectedColor.set(c.id)"
+                  class="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2"
+                  [class]="c.bg"
+                  [class.ring-2]="selectedColor() === c.id"
+                  [class.ring-offset-2]="selectedColor() === c.id"
+                  [class.ring-indigo-500]="selectedColor() === c.id"
+                  [class.border-white]="selectedColor() === c.id"
+                  [class.border-transparent]="selectedColor() !== c.id"
+                  [title]="c.label">
+                  @if (selectedColor() === c.id) {
+                    <mat-icon class="text-white text-[14px] w-3.5 h-3.5">check</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Buton Önizleme & Ekleme Butonu -->
+        <div class="pt-2 flex items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-400">Önizleme:</span>
+            <div
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs"
+              [class]="getColorTheme(selectedColor()).pillClass">
+              <mat-icon class="icon-size-3.5">{{ customIcon() }}</mat-icon>
+              <span>{{ customTitle() || 'Kısayol' }}</span>
+              <span class="text-[9px] px-1 py-0.2 rounded bg-black/10 dark:bg-white/10 font-mono font-bold">
+                Alt+{{ shortcutService.count() + 1 }}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            (click)="saveNewShortcut()"
+            [disabled]="!customTitle().trim() || !selectedPageLink()"
+            class="odv-btn-primary text-xs py-2 px-4 flex items-center gap-1.5 disabled:opacity-50 shadow-xs">
+            <mat-icon class="icon-size-4">add</mat-icon>
+            <span>Kısayolu Kaydet</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- 3. MEVCUT KISAYOLLAR LİSTESİ -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">dashboard_customize</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Üst Bara Sabitlenen Kısayollar</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Sıralamayı ok butonları ile değiştirebilirsiniz</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="shortcutService.resetToDefaults()"
+          class="text-[11px] font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer border-none bg-transparent p-0 transition-colors">
+          <mat-icon class="icon-size-3.5">restart_alt</mat-icon>
+          <span>Varsayılana Sıfırla</span>
+        </button>
+      </div>
+
+      <div class="divide-y divide-slate-100 dark:divide-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        @for (item of shortcutService.shortcuts(); track item.id; let idx = $index) {
+          <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <!-- Sol: İkon & İsim & Link -->
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-6 text-center font-mono text-[11px] font-bold text-slate-400">
+                #{{ idx + 1 }}
+              </span>
+
+              <div
+                class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs"
+                [class]="getColorTheme(item.color).pillClass">
+                <mat-icon class="icon-size-4">{{ item.icon }}</mat-icon>
+              </div>
+
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-slate-900 dark:text-white truncate">
+                    {{ item.title }}
+                  </span>
+                  @if (item.hotkey) {
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      {{ item.hotkey }}
+                    </span>
+                  }
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono block truncate">
+                  {{ item.link }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Sağ: Sıralama & Silme İşlemleri -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                [disabled]="idx === 0"
+                (click)="shortcutService.moveShortcut(idx, 'up')"
+                class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed border-none bg-transparent"
+                title="Yukarı Taşı">
+                <mat-icon class="icon-size-4">arrow_upward</mat-icon>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="idx === shortcutService.shortcuts().length - 1"
+                (click)="shortcutService.moveShortcut(idx, 'down')"
+                class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed border-none bg-transparent"
+                title="Aşağı Taşı">
+                <mat-icon class="icon-size-4">arrow_downward</mat-icon>
+              </button>
+
+              <button
+                type="button"
+                (click)="shortcutService.removeShortcut(item.id)"
+                class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center cursor-pointer transition-colors border-none bg-transparent ml-1"
+                title="Kısayoldan Kaldır">
+                <mat-icon class="icon-size-4">delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-8 text-center text-slate-400 text-xs">
+            Henüz eklenmiş bir kısayol bulunmuyor.
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 4. HIZLI SAYFA HAVUZU (TEK TIKLA EKLE) -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+      <div class="flex items-center justify-between">
+        <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 m-0">
+          Sık Tercih Edilen Ekranlar (Tek Tıkla Ekle)
+        </h4>
+        <span class="text-[10px] text-slate-400">Önerilenler</span>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        @for (page of shortcutService.availablePages().slice(0, 8); track page.link) {
+          @if (!shortcutService.isPinned(page.link)) {
+            <button
+              type="button"
+              (click)="shortcutService.togglePinCurrent(page)"
+              class="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-all border border-slate-200/80 dark:border-slate-700 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+              <mat-icon class="icon-size-3.5">{{ page.icon }}</mat-icon>
+              <span>+ {{ page.title }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+
+  </div>
+</app-slide-over>
