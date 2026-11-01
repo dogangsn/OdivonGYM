@@ -1,7 +1,7 @@
-<aside class="sidebar" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
+<aside class="sidebar" [class.collapsed]="isEffectiveCollapsed()" [class.mobile-open]="mobileOpen()">
   <!-- 1. Header (Brand, Version & Toggle) -->
   <div class="sidebar__brand">
-    @if (!collapsed()) {
+    @if (!isEffectiveCollapsed()) {
     <div class="brand-wrapper">
       <a routerLink="/dashboard" class="brand-link" (click)="closeMobile.emit()">
         <div class="brand-logo-ring">
@@ -30,8 +30,8 @@
     }
 
     <button type="button" class="icon-btn collapse-btn" (click)="$event.stopPropagation(); collapseToggle.emit()"
-      [matTooltip]="(collapsed() ? 'sidebar.expand' : 'sidebar.collapse') | transloco" matTooltipPosition="right">
-      <mat-icon>{{ collapsed() ? 'chevron_right' : 'menu_open' }}</mat-icon>
+      [matTooltip]="(isEffectiveCollapsed() ? 'sidebar.expand' : 'sidebar.collapse') | transloco" matTooltipPosition="right">
+      <mat-icon>{{ isEffectiveCollapsed() ? 'chevron_right' : 'menu_open' }}</mat-icon>
     </button>
     <button type="button" class="icon-btn mobile-close" (click)="closeMobile.emit()"
       [attr.aria-label]="'sidebar.closeMenu' | transloco">
@@ -40,7 +40,7 @@
   </div>
 
   <!-- 2. Menüde Arama & Grupları Kapatma / Açma Kontrol Barı -->
-  @if (!collapsed()) {
+  @if (!isEffectiveCollapsed()) {
   <div class="sidebar__search-bar">
     <div class="search-box">
       <mat-icon class="search-icon">search</mat-icon>
@@ -65,7 +65,7 @@
 
   <!-- 3. SaaS Süresi Doldu Uyarısı (Eğer Expired İse) -->
   @if (isExpired()) {
-  @if (!collapsed()) {
+  @if (!isEffectiveCollapsed()) {
   <div class="sidebar__saas-alert">
     <div class="saas-alert-header">
       <mat-icon class="alert-icon">lock_clock</mat-icon>
@@ -101,7 +101,7 @@
     }
 
     @for (group of groups(); track group.titleKey) {
-    @if (!collapsed()) {
+    @if (!isEffectiveCollapsed()) {
     <div class="group-container">
       <button type="button" class="group-summary" (click)="toggleGroup(group, $event)">
         <span class="group-title">
@@ -162,7 +162,7 @@
   <div class="sidebar__footer">
     <div class="system-status">
       <span class="status-indicator" [class.bg-rose-500]="isExpired()"></span>
-      @if (!collapsed()) {
+      @if (!isEffectiveCollapsed()) {
       <span class="status-text">{{ isExpired() ? ('sidebar.restrictedMode' | transloco) : ('sidebar.systemOnline' |
         transloco) }}</span>
       }

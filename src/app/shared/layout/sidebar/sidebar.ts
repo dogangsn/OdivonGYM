@@ -200,12 +200,8 @@ export class Sidebar {
     if (custom !== undefined) {
       return custom;
     }
-    // Arama yapılıyorsa eşleşen tüm gruplar açık gelsin
-    if (this.menuSearch().trim().length > 0) {
-      return true;
-    }
-    // Varsayılan olarak sadece "Genel" grubu açık gelsin
-    return group.titleKey === 'sidebar.groups.general';
+    // Arama yapılıyorsa veya varsayılan durumda tüm gruplar açık gelsin (kullanıcı tek tek kapatabilir)
+    return true;
   }
 
   toggleGroup(group: NavGroup, event: Event): void {
@@ -254,6 +250,12 @@ export class Sidebar {
   /** Masaüstünde ikon-şeridine daraltma; dar ekranda overlay açık/kapalı. */
   readonly collapsed = input(false);
   readonly mobileOpen = input(false);
+
+  /** Mobilde çekmece açıkken ASLA ikon-rayı (collapsed) olarak açılmamalı */
+  protected readonly isEffectiveCollapsed = computed(() => {
+    if (this.mobileOpen()) return false;
+    return this.collapsed();
+  });
 
   readonly collapseToggle = output<void>();
   readonly closeMobile = output<void>();

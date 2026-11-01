@@ -14,12 +14,18 @@ const SOLID_ICONS = [
   'beaker',
   'scale',
   'user-plus',
+  'user-group',
   'magnifying-glass',
   'users',
   'arrow-trending-up',
   'clock',
   'banknotes',
   'information-circle',
+  'shopping-bag',
+  'plus',
+  'ticket',
+  'building-office-2',
+  'identification',
 ];
 
 const OUTLINE_ICONS = ['pencil', 'x-mark'];

@@ -12,7 +12,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminAccountingService } from '../accounting/admin-accounting.service';
 import { AdminAccessControlService } from '../access-control/admin-access-control.service';
-import { formatMoney, toMillis } from '../../shared/ui/ui-utils';
+import { formatMoney, toJsDate, toMillis } from '../../shared/ui/ui-utils';
 import { AccessLog } from '../../core/models/access-log.model';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -507,8 +507,9 @@ export class AdminOverview {
     const currentYear = now.getFullYear();
 
     return this.accountingEntries().filter((e) => {
-      if (e.type !== 'income') return false;
-      const d = e.entryDate.toDate();
+      if (e.type !== 'income' || !e.entryDate) return false;
+      const d = toJsDate(e.entryDate);
+      if (!d || isNaN(d.getTime())) return false;
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
   });
@@ -524,7 +525,8 @@ export class AdminOverview {
 
   protected formatTime(ts: any): string {
     if (!ts) return 'Bugün';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    const date = toJsDate(ts);
+    if (!date || isNaN(date.getTime())) return 'Bugün';
     return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   }
 
@@ -542,7 +544,7 @@ export class AdminOverview {
       link: '/admin/members',
     },
     {
-      icon: 'nfc',
+      icon: 'qr-code',
       accent: 'emerald',
       title: 'Turnike Sistemi',
       desc: 'Canlı turnike geçişleri, QR okuyucu ve kapı kontrolü.',

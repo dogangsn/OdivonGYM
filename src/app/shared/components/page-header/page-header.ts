@@ -24,12 +24,12 @@ import { TranslocoPipe } from '@jsverse/transloco';
             </span>
           }
           <h1 class="m-0 text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {{ title().includes('.') ? (title() | transloco) : title() }}
+            {{ isKey(title()) ? (title() | transloco) : title() }}
           </h1>
         </div>
         @if (description()) {
           <p class="mt-1.5 mb-0 max-w-[60ch] text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-            {{ description().includes('.') ? (description() | transloco) : description() }}
+            {{ isKey(description()) ? (description() | transloco) : description() }}
           </p>
         }
       </div>
@@ -43,4 +43,8 @@ export class PageHeader {
   readonly title = input.required<string>();
   readonly description = input<string>('');
   readonly icon = input<string>('');
+
+  protected isKey(val: string): boolean {
+    return Boolean(val && val.includes('.') && !val.includes(' ') && !val.includes('\n'));
+  }
 }
