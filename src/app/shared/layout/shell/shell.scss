@@ -9,6 +9,9 @@
   display: flex;
   height: 100%;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: var(--odivon-bg-default);
   color: var(--odivon-text-default);
 }
@@ -21,20 +24,24 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 40;
   border: none;
   padding: 0;
-  background: color-mix(in srgb, black 45%, transparent);
+  background: color-mix(in srgb, black 50%, transparent);
   backdrop-filter: blur(2px);
-  display: none;
+  display: block;
+  cursor: pointer;
 }
 
 .shell__body {
   flex: 1;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-x: hidden;
 }
 
 // ---- SaaS Süresi Doldu Sticky Global Banner ----
@@ -114,22 +121,29 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding: 10px 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 16px;
   padding-top: max(10px, env(safe-area-inset-top));
   background: color-mix(in srgb, var(--odivon-bg-card) 85%, transparent);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--odivon-border);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
+  box-sizing: border-box;
+
+  @media (min-width: 1024px) {
+    padding: 10px 24px;
+  }
 }
 
 .topbar__menu-btn {
-  display: none;
-
-  @media (max-width: 1024px) {
-    display: flex;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .topbar__search-wrapper {
@@ -288,34 +302,37 @@
 
 .content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-y: auto;
-  padding: 28px 32px;
+  overflow-x: hidden;
+  padding: 24px 20px;
+
+  @media (min-width: 1280px) {
+    padding: 28px 32px;
+  }
 }
 
 .content > * {
-  max-width: 1280px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-inline: auto;
 }
 
 @media (max-width: 899px) {
   .topbar {
-    padding: 10px 14px;
-    gap: 8px;
-  }
-
-  .topbar__menu-btn {
-    display: flex;
+    padding: 10px 12px;
+    gap: 6px;
   }
 
   .topbar__search {
     display: none;
   }
 
-  .backdrop {
-    display: block;
-  }
-
   .content {
-    padding: 18px 16px 32px;
+    padding: 16px 12px 90px;
   }
 }

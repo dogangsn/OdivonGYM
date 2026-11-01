@@ -9,7 +9,6 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 import { LogoMark } from '../../components/logo-mark/logo-mark';
 import { VersionService } from '../../../core/version/version.service';
-import { ShortcutService } from '../../../core/services/shortcut.service';
 
 export interface NavItem {
   icon: string;
@@ -189,7 +188,6 @@ export class Sidebar {
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly version = inject(VersionService);
-  protected readonly shortcutService = inject(ShortcutService);
 
   /** Menü içi canlı arama filtresi */
   readonly menuSearch = signal<string>('');
