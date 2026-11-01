@@ -23,7 +23,6 @@ import {
 import { UserProfile } from '../../core/models/user-profile.model';
 import { GymPackage } from '../../core/models/gym-package.model';
 import { SlideOver } from '../../shared/ui/slide-over';
-import { Field } from '../../shared/ui/field';
 import { formatMoney } from '../../shared/ui/ui-utils';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
 import { downloadFile, generateGibQrCodePayload, generateUblTr21Xml, turkishNumberToWords } from './gib-ubl.helper';
@@ -93,7 +92,6 @@ const PROVIDER_NAMES: Record<InvoiceProvider, string> = {
     MatTooltipModule,
     PageHeader,
     SlideOver,
-    Field,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -132,6 +130,41 @@ export class AdminEInvoice {
   readonly submittingInvoice = signal(false);
   readonly invoiceError = signal('');
   readonly selectedMemberId = signal<string>('');
+
+  // Gelişmiş Üye Arama Popover Durumu
+  readonly isMemberDropdownOpen = signal(false);
+  readonly memberSearchQuery = signal('');
+
+  // Düzenleme Saati: Kayıt Anında Otomatik Atansın mı?
+  readonly useCurrentTimeOnSave = signal(true);
+
+  readonly filteredMembers = computed(() => {
+    const q = this.memberSearchQuery().toLowerCase().trim();
+    const list = this.members() || [];
+    if (!q) return list.slice(0, 50);
+    return list
+      .filter((m) =>
+        (m.displayName || '').toLowerCase().includes(q) ||
+        (m.phone || '').includes(q) ||
+        (m.nationalId || '').includes(q) ||
+        (m.packageLabel || '').toLowerCase().includes(q),
+      )
+      .slice(0, 50);
+  });
+
+  readonly selectedMember = computed(() => {
+    const id = this.selectedMemberId();
+    if (!id) return null;
+    return this.members().find((m) => m.uid === id) || null;
+  });
+
+  readonly outboundCount = computed(() => {
+    return this.invoices().filter((i) => (i.direction || 'outbound') === 'outbound').length;
+  });
+
+  readonly inboundCount = computed(() => {
+    return this.invoices().filter((i) => i.direction === 'inbound').length;
+  });
 
   // Fatura Önizleme / GİB Standart Görüntüleyici Modalı
   readonly selectedInvoiceForView = signal<EInvoiceItem | null>(null);
@@ -318,7 +351,84 @@ export class AdminEInvoice {
     );
   }
 
-  // Üye Seçildiğinde Formu Otomatik Doldurma
+  // Popover Üye Arama Kontrolleri
+  openMemberDropdown(): void {
+    this.memberSearchQuery.set('');
+    this.isMemberDropdownOpen.set(true);
+  }
+
+  closeMemberDropdown(): void {
+    this.isMemberDropdownOpen.set(false);
+  }
+
+  toggleMemberDropdown(): void {
+    if (this.isMemberDropdownOpen()) {
+      this.closeMemberDropdown();
+    } else {
+      this.openMemberDropdown();
+    }
+  }
+
+  selectMember(m: UserProfile): void {
+    this.selectedMemberId.set(m.uid);
+    const nationalId = m.nationalId?.trim() || '11111111110';
+    this.invoiceForm.patchValue({
+      recipientName: m.displayName || '',
+      recipientVknOrTckn: nationalId,
+      recipientPhone: m.phone || '',
+      recipientEmail: m.email || '',
+      recipientAddress: m.branchName ? `${m.branchName} Şubesi Kayıtlı Üyesi` : 'Türkiye',
+    });
+
+    if (m.packageLabel) {
+      this.formLineItems.set([
+        {
+          name: `${m.packageLabel} Spor & Fitness Üyeliği`,
+          quantity: 1,
+          unit: 'Paket',
+          unitPrice: m.packagePrice || 1500,
+          discountRate: 0,
+          kdvRate: 20,
+        },
+      ]);
+    }
+    this.closeMemberDropdown();
+    this.alertService.toastSuccess(`"${m.displayName || 'Üye'}" seçildi ve bilgileri aktarıldı.`);
+  }
+
+  clearSelectedMember(): void {
+    this.selectedMemberId.set('');
+    this.invoiceForm.patchValue({
+      recipientName: '',
+      recipientVknOrTckn: '',
+      recipientPhone: '',
+      recipientEmail: '',
+      recipientAddress: '',
+    });
+  }
+
+  initials(name?: string): string {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  async copyEttn(ettn?: string): Promise<void> {
+    if (!ettn) return;
+    try {
+      await navigator.clipboard.writeText(ettn);
+      this.alertService.toastSuccess('ETTN panoya kopyalandı.');
+    } catch {
+      // fallback
+    }
+  }
+
+  // Üye Seçildiğinde Formu Otomatik Doldurma (Eski Select için uyumluluk)
   onMemberSelected(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const uid = select.value;
@@ -330,7 +440,7 @@ export class AdminEInvoice {
 
     this.invoiceForm.patchValue({
       recipientName: m.displayName || '',
-      recipientVknOrTckn: m.nationalId || '',
+      recipientVknOrTckn: m.nationalId || '11111111110',
       recipientPhone: m.phone || '',
       recipientEmail: m.email || '',
       recipientAddress: m.branchName ? `${m.branchName} Şubesi Kayıtlı Üyesi` : 'Türkiye',
@@ -352,9 +462,9 @@ export class AdminEInvoice {
   }
 
   // Hızlı Paket Ekleme
-  addGymPackageToLines(pkgId: string): void {
-    if (!pkgId) return;
-    const pkg = this.packages().find((p) => p.id === pkgId);
+  addGymPackageToLines(pkgOrId: string | GymPackage): void {
+    if (!pkgOrId) return;
+    const pkg = typeof pkgOrId === 'string' ? this.packages().find((p) => p.id === pkgOrId) : pkgOrId;
     if (!pkg) return;
 
     this.formLineItems.update((items) => [
@@ -371,6 +481,32 @@ export class AdminEInvoice {
     this.alertService.toastSuccess(`"${pkg.name}" kalemi eklendi.`);
   }
 
+  calcLineItemTotal(item: FormLineItem): number {
+    const qty = item.quantity || 1;
+    const price = item.unitPrice || 0;
+    const discount = (price * qty * (item.discountRate || 0)) / 100;
+    const net = price * qty - discount;
+    const kdv = (net * (item.kdvRate || 0)) / 100;
+    return net + kdv;
+  }
+
+  regenerateInvoiceNumber(): void {
+    const cfg = this.config();
+    const currentProvider = cfg?.provider || 'manuel';
+    const prefix = cfg?.prefix || (currentProvider === 'gib_portal' ? 'GIB' : currentProvider === 'manuel' ? 'FAT' : 'ODV');
+    const year = new Date().getFullYear();
+    const autoNumber = `${prefix}${year}${String(Date.now()).slice(-9)}`;
+    this.invoiceForm.patchValue({ invoiceNumber: autoNumber });
+    this.alertService.toastSuccess('Yeni fatura seri numarası üretildi.');
+  }
+
+  setCurrentTimeNow(): void {
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    this.invoiceForm.patchValue({ issueTime: timeStr });
+    this.alertService.toastSuccess(`Saat "${timeStr}" olarak ayarlandı.`);
+  }
+
   openCreateDrawer(): void {
     if (this.saasSub.isExpired()) {
       void this.alertService.error(
@@ -381,6 +517,9 @@ export class AdminEInvoice {
     }
     this.invoiceError.set('');
     this.selectedMemberId.set('');
+    this.isMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+    this.useCurrentTimeOnSave.set(true);
     const cfg = this.config();
     const currentProvider = cfg?.provider || 'manuel';
     const prefix = cfg?.prefix || (currentProvider === 'gib_portal' ? 'GIB' : currentProvider === 'manuel' ? 'FAT' : 'ODV');
@@ -519,6 +658,10 @@ export class AdminEInvoice {
       const v = this.invoiceForm.getRawValue();
       const subtotal = this.calcSubtotal();
       const discountTotal = this.calcDiscountTotal();
+      const now = new Date();
+      const actualSaveTime = this.useCurrentTimeOnSave() || !v.issueTime?.trim()
+        ? now.toTimeString().split(' ')[0]
+        : v.issueTime.trim();
 
       const lineItems: InvoiceLineItem[] = items.map((it) => {
         const gross = (it.quantity || 1) * (it.unitPrice || 0);
@@ -553,12 +696,14 @@ export class AdminEInvoice {
         amount: subtotal,
         discountTotal,
         kdvRate: items[0]?.kdvRate ?? 20,
+        kdvAmount: this.calcKdvTotal(),
+        totalAmount: this.calcGrandTotal(),
         invoiceType: v.invoiceType,
         invoiceProfile: v.invoiceProfile,
         invoiceTypeCode: v.invoiceTypeCode,
         provider: v.provider,
         issueDate: v.issueDate,
-        issueTime: v.issueTime,
+        issueTime: actualSaveTime,
         currency: 'TRY',
         paymentMethod: v.paymentMethod,
         paymentStatus: v.paymentStatus,
@@ -622,14 +767,24 @@ export class AdminEInvoice {
 
   formatDate(ts: any): string {
     if (!ts) return 'Bugün';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    try {
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
+      if (isNaN(date.getTime())) return 'Bugün';
+      return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return 'Bugün';
+    }
   }
 
   formatTime(ts: any, customTime?: string): string {
     if (customTime) return customTime;
     if (!ts) return '12:00:00';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    try {
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
+      if (isNaN(date.getTime())) return '12:00:00';
+      return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return '12:00:00';
+    }
   }
 }

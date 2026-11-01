@@ -21,6 +21,28 @@ export interface SupplierCategoryItem {
   updatedAt?: any;
 }
 
+/**
+ * Tedarikçi kategorisinin her zaman dolu ve benzersiz bir `key` değerine sahip olmasını sağlar.
+ */
+export function ensureSupplierCategoryKey(cat: Partial<SupplierCategoryItem> & Record<string, any>, fallbackIndex = 0): string {
+  const rawKey = (cat.key || cat['code'] || cat['slug'] || '').toString().trim();
+  if (rawKey && rawKey !== 'undefined') return rawKey;
+  const rawName = (cat.name || cat['label'] || '').toString().trim();
+  if (rawName && rawName !== 'undefined') {
+    return rawName
+      .toLocaleLowerCase('tr')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ı/g, 'i')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || `sup_cat_${fallbackIndex}`;
+  }
+  return (cat.id || `sup_cat_${fallbackIndex}`).toString().trim();
+}
+
 export const DEFAULT_SUPPLIER_CATEGORIES: Omit<SupplierCategoryItem, 'id' | 'tenantId'>[] = [
   {
     key: 'equipment',

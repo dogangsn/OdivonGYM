@@ -1,25 +1,17 @@
 <div class="font-sans space-y-6">
   <!-- 1. Header -->
-  <app-page-header title="eInvoice.title" icon="receipt_long"
-    description="eInvoice.subtitle">
+  <app-page-header title="eInvoice.title" icon="receipt_long" description="eInvoice.subtitle">
     <div actions class="flex flex-wrap items-center gap-2">
-      @if (invoices().length === 0) {
       <button type="button" (click)="seedSampleInvoices()" [disabled]="seeding()"
         class="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5">
         <mat-icon class="icon-size-4">auto_awesome</mat-icon>
         <span>{{ seeding() ? 'Yükleniyor…' : 'Örnek Faturaları Yükle' }}</span>
       </button>
-      }
 
-      <button type="button" (click)="activeTab.set(activeTab() === 'invoices' ? 'settings' : 'invoices')"
-        class="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5">
-        <mat-icon class="icon-size-4">{{ activeTab() === 'invoices' ? 'settings' : 'receipt_long' }}</mat-icon>
-        <span>{{ activeTab() === 'invoices' ? 'Entegratör & Ayarlar' : 'Faturalara Dön' }}</span>
-      </button>
-
-      <button type="button" (click)="openCreateDrawer()" class="odv-btn-primary text-xs flex items-center gap-1.5 shadow-sm">
+      <button type="button" (click)="openCreateDrawer()"
+        class="odv-btn-primary text-xs flex items-center gap-1.5 shadow-sm">
         <mat-icon class="icon-size-4">add</mat-icon>
-        <span>+ Yeni Fatura Düzenle</span>
+        <span>Yeni Fatura Düzenle</span>
       </button>
     </div>
   </app-page-header>
@@ -46,97 +38,226 @@
   </div>
   }
 
-  <!-- 2. KPI Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Toplam Satış Hasılatı</span>
-      <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">₺{{ money(totalSalesAmount()) }}</div>
-      <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Resmi E-Arşiv & Satış Faturaları</span>
-    </div>
+  <!-- TAB GEÇİŞ SEKMELERİ (SEGMENTED TABS) -->
+  <div class="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold shadow-xs">
+    <button type="button" (click)="activeTab.set('invoices')"
+      class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer border-none"
+      [class.bg-white]="activeTab() === 'invoices'"
+      [class.dark:bg-slate-700]="activeTab() === 'invoices'"
+      [class.text-indigo-600]="activeTab() === 'invoices'"
+      [class.dark:text-indigo-400]="activeTab() === 'invoices'"
+      [class.shadow-xs]="activeTab() === 'invoices'"
+      [class.text-slate-500]="activeTab() !== 'invoices'"
+      [class.dark:text-slate-400]="activeTab() !== 'invoices'">
+      <mat-icon class="icon-size-4">receipt_long</mat-icon>
+      <span>Fatura & Belgeler</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+        [class.bg-indigo-50]="activeTab() === 'invoices'"
+        [class.dark:bg-indigo-950/80]="activeTab() === 'invoices'"
+        [class.text-indigo-600]="activeTab() === 'invoices'"
+        [class.dark:text-indigo-300]="activeTab() === 'invoices'"
+        [class.bg-slate-200]="activeTab() !== 'invoices'"
+        [class.dark:bg-slate-800]="activeTab() !== 'invoices'"
+        [class.text-slate-600]="activeTab() !== 'invoices'">
+        {{ invoices().length }}
+      </span>
+    </button>
 
-    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Toplam Alış / Gider</span>
-      <div class="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">₺{{ money(totalPurchaseAmount()) }}</div>
-      <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Tedarikçi & Hizmet Faturaları</span>
-    </div>
+    <button type="button" (click)="activeTab.set('settings')"
+      class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer border-none"
+      [class.bg-white]="activeTab() === 'settings'"
+      [class.dark:bg-slate-700]="activeTab() === 'settings'"
+      [class.text-indigo-600]="activeTab() === 'settings'"
+      [class.dark:text-indigo-400]="activeTab() === 'settings'"
+      [class.shadow-xs]="activeTab() === 'settings'"
+      [class.text-slate-500]="activeTab() !== 'settings'"
+      [class.dark:text-slate-400]="activeTab() !== 'settings'">
+      <mat-icon class="icon-size-4">tune</mat-icon>
+      <span>Entegratör & Resmi Firma Ayarları</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+        {{ activeProviderName() }}
+      </span>
+    </button>
+  </div>
 
-    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Hesaplanan KDV Tutarı</span>
-      <div class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-mono">₺{{ money(totalKdvAmount()) }}</div>
-      <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">GİB Beyanname Matrahı</span>
-    </div>
-
-    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Aktif Entegratör / Portal</span>
-      <div class="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5 mt-1 truncate">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-        <span class="truncate">{{ activeProviderName() }}</span>
+  <!-- 2. EXECUTIVE KPI CARDS (ODIVON DESIGN SYSTEM BLUEPRINT C) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <!-- KPI 1: Primary Gradient Hero Card -->
+    <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-indigo-500/25 relative overflow-hidden flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-white/90">TOPLAM SATIŞ GELİRİ</span>
+          <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center shadow-xs backdrop-blur-xs">
+            <mat-icon class="icon-size-5">trending_up</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none font-mono">
+            {{ money(totalSalesAmount()) }}
+          </div>
+          <div class="text-xs font-semibold text-white/90 mt-1.5">
+            Resmi E-Arşiv & Satış Faturaları
+          </div>
+        </div>
       </div>
-      <span class="text-[11px] font-semibold text-slate-400 font-mono">UBL-TR 2.1 Standardı</span>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-white/20 text-xs text-white/80">
+        <span><strong class="text-white font-bold">{{ outboundCount() }}</strong> Adet Fatura</span>
+        <span class="inline-flex items-center gap-1.5 font-bold text-white">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          GİB Beyannamesi
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 2: Emerald Positive Accent Card -->
+    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">TOPLAM ALIŞ / GİDER</span>
+          <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">shopping_bag</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
+            {{ money(totalPurchaseAmount()) }}
+          </div>
+          <div class="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1.5">
+            Tedarikçi & Hizmet Gider Faturaları
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <span class="text-slate-500 dark:text-slate-400">
+          <strong class="text-slate-900 dark:text-white font-bold">{{ inboundCount() }}</strong> Alış Belgesi
+        </span>
+        <span class="text-rose-600 dark:text-rose-400 font-bold">Gider Kalemi</span>
+      </div>
+    </div>
+
+    <!-- KPI 3: Sky Accent Card -->
+    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">HESAPLANAN TOPLAM KDV</span>
+          <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">account_balance</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
+            {{ money(totalKdvAmount()) }}
+          </div>
+          <div class="text-xs font-semibold text-sky-600 dark:text-sky-400 mt-1.5">
+            Resmi Vergi Dairesi Matrahı
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <span class="text-slate-500 dark:text-slate-400">%20 & %10 Ağırlıklı</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">GİB Matrah</span>
+      </div>
+    </div>
+
+    <!-- KPI 4: Interactive Provider Status Card -->
+    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">AKTİF ENTEGRATÖR</span>
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs">
+            <mat-icon class="icon-size-5">hub</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate leading-tight">
+            {{ activeProviderName() }}
+          </div>
+          <div class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>UBL-TR 2.1 E-Dönüşüm</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <span class="text-slate-500 dark:text-slate-400">Mod: {{ config()?.isTestEnvironment ? 'Test / Sandbox' : 'Canlı Üretim' }}</span>
+        <button type="button" (click)="activeTab.set('settings')" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer border-none bg-transparent p-0 text-xs">
+          Ayarla ➜
+        </button>
+      </div>
     </div>
   </div>
 
+  <!-- ========================================== -->
   <!-- TAB 1: FATURALAR LİSTESİ -->
+  <!-- ========================================== -->
   @if (activeTab() === 'invoices') {
-  <!-- Search and Filters Bar -->
+  <!-- Search and Filters Bar (Blueprint G) -->
   <div
-    class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+    class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
     <!-- Search Input -->
     <div class="relative flex-1">
-      <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4">search</mat-icon>
+      <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
       <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
         placeholder="Fatura No, cari / müşteri adı, TCKN/VKN, ETTN veya açıklama ara..."
-        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold" />
+        class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-semibold" />
+      @if (searchTerm()) {
+      <button type="button" (click)="searchTerm.set('')"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer border-none bg-transparent p-0 flex items-center">
+        <mat-icon class="icon-size-4">clear</mat-icon>
+      </button>
+      }
     </div>
 
-    <!-- Direction Filter Buttons -->
-    <div
-      class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-      <button type="button" (click)="directionFilter.set('all')"
-        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-        [class.bg-white]="directionFilter() === 'all'" [class.dark:bg-slate-900]="directionFilter() === 'all'"
-        [class.shadow-2xs]="directionFilter() === 'all'" [class.text-slate-900]="directionFilter() === 'all'"
-        [class.dark:text-white]="directionFilter() === 'all'" [class.text-slate-500]="directionFilter() !== 'all'">
-        Tümü
-      </button>
-      <button type="button" (click)="directionFilter.set('outbound')"
-        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-        [class.bg-white]="directionFilter() === 'outbound'" [class.dark:bg-slate-900]="directionFilter() === 'outbound'"
-        [class.shadow-2xs]="directionFilter() === 'outbound'"
-        [class.text-emerald-700]="directionFilter() === 'outbound'"
-        [class.dark:text-emerald-400]="directionFilter() === 'outbound'"
-        [class.text-slate-500]="directionFilter() !== 'outbound'">
-        <mat-icon class="icon-size-3.5 text-emerald-500">arrow_upward</mat-icon>
-        <span>Satış (Giden)</span>
-      </button>
-      <button type="button" (click)="directionFilter.set('inbound')"
-        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-        [class.bg-white]="directionFilter() === 'inbound'" [class.dark:bg-slate-900]="directionFilter() === 'inbound'"
-        [class.shadow-2xs]="directionFilter() === 'inbound'" [class.text-rose-700]="directionFilter() === 'inbound'"
-        [class.dark:text-rose-400]="directionFilter() === 'inbound'"
-        [class.text-slate-500]="directionFilter() !== 'inbound'">
-        <mat-icon class="icon-size-3.5 text-rose-500">arrow_downward</mat-icon>
-        <span>Alış (Gelen)</span>
-      </button>
-    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Direction Filter Segment -->
+      <div
+        class="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <button type="button" (click)="directionFilter.set('all')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none"
+          [class.bg-white]="directionFilter() === 'all'" [class.dark:bg-slate-900]="directionFilter() === 'all'"
+          [class.shadow-2xs]="directionFilter() === 'all'" [class.text-slate-900]="directionFilter() === 'all'"
+          [class.dark:text-white]="directionFilter() === 'all'" [class.text-slate-500]="directionFilter() !== 'all'">
+          Tümü ({{ invoices().length }})
+        </button>
+        <button type="button" (click)="directionFilter.set('outbound')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border-none"
+          [class.bg-white]="directionFilter() === 'outbound'" [class.dark:bg-slate-900]="directionFilter() === 'outbound'"
+          [class.shadow-2xs]="directionFilter() === 'outbound'"
+          [class.text-emerald-700]="directionFilter() === 'outbound'"
+          [class.dark:text-emerald-400]="directionFilter() === 'outbound'"
+          [class.text-slate-500]="directionFilter() !== 'outbound'">
+          <mat-icon class="icon-size-3.5 text-emerald-500">arrow_upward</mat-icon>
+          <span>Satış ({{ outboundCount() }})</span>
+        </button>
+        <button type="button" (click)="directionFilter.set('inbound')"
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border-none"
+          [class.bg-white]="directionFilter() === 'inbound'" [class.dark:bg-slate-900]="directionFilter() === 'inbound'"
+          [class.shadow-2xs]="directionFilter() === 'inbound'" [class.text-rose-700]="directionFilter() === 'inbound'"
+          [class.dark:text-rose-400]="directionFilter() === 'inbound'"
+          [class.text-slate-500]="directionFilter() !== 'inbound'">
+          <mat-icon class="icon-size-3.5 text-rose-500">arrow_downward</mat-icon>
+          <span>Alış ({{ inboundCount() }})</span>
+        </button>
+      </div>
 
-    <!-- Type Filter Select -->
-    <select [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)"
-      class="py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none">
-      <option value="all">Tüm Belge Tipleri</option>
-      <option value="earswive">E-Arşiv Fatura</option>
-      <option value="commercial">Ticari E-Fatura</option>
-      <option value="basic">Temel E-Fatura</option>
-      <option value="purchase">Alış Faturası</option>
-      <option value="sales">Satış Faturası</option>
-      <option value="refund">İade Faturası</option>
-    </select>
+      <!-- Type Filter Select -->
+      <select [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)"
+        class="py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer">
+        <option value="all">Tüm Belge Tipleri</option>
+        <option value="earswive">E-Arşiv Fatura</option>
+        <option value="commercial">Ticari E-Fatura</option>
+        <option value="basic">Temel E-Fatura</option>
+        <option value="purchase">Alış Faturası</option>
+        <option value="sales">Satış Faturası</option>
+        <option value="refund">İade Faturası</option>
+      </select>
+    </div>
   </div>
 
-  <!-- Invoices Data Table -->
+  <!-- Invoices Data Table (Blueprint H) -->
   <div
     class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto custom-scroll">
       <table class="w-full text-left border-collapse">
         <thead>
           <tr
@@ -155,59 +276,95 @@
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
           @for (inv of filteredInvoices(); track inv.id) {
           <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+            <!-- Yön & Fatura No -->
             <td class="py-3.5 px-6 whitespace-nowrap">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-3">
                 @if ((inv.direction || 'outbound') === 'outbound') {
                 <div
-                  class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"
-                  title="Satış (Giden)">
+                  class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800/60"
+                  title="Satış (Giden Gelir Faturası)">
                   <mat-icon class="icon-size-4">arrow_upward</mat-icon>
                 </div>
                 } @else {
                 <div
-                  class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"
-                  title="Alış (Gelen Gider)">
+                  class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-800/60"
+                  title="Alış (Gelen Gider/Tedarikçi Faturası)">
                   <mat-icon class="icon-size-4">arrow_downward</mat-icon>
                 </div>
                 }
                 <div>
-                  <strong class="font-mono font-bold text-slate-900 dark:text-white block">{{ inv.invoiceNumber }}</strong>
-                  <span class="text-[10px] text-slate-400 font-medium">{{ typeLabels[inv.invoiceType] || inv.invoiceType }}</span>
+                  <strong class="font-mono font-bold text-slate-900 dark:text-white block text-xs sm:text-sm tracking-tight">{{ inv.invoiceNumber }}</strong>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="text-[10px] text-slate-400 font-medium">{{ typeLabels[inv.invoiceType] || inv.invoiceType }}</span>
+                    @if (inv.gibUuid) {
+                    <button type="button" (click)="copyEttn(inv.gibUuid)"
+                      class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600 cursor-pointer border border-slate-200 dark:border-slate-700"
+                      title="ETTN UUID Kopyala">
+                      UUID ⧉
+                    </button>
+                    }
+                  </div>
                 </div>
               </div>
             </td>
+
+            <!-- Cari / Alıcı -->
             <td class="py-3.5 px-6">
-              <strong class="font-bold text-slate-900 dark:text-white block">{{ inv.recipientName }}</strong>
-              <span class="text-[11px] text-slate-400 line-clamp-1">{{ inv.description }}</span>
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[11px] font-bold shrink-0 border border-indigo-200/60 dark:border-indigo-800/50">
+                  {{ initials(inv.recipientName) }}
+                </span>
+                <div class="min-w-0 max-w-xs">
+                  <strong class="font-bold text-slate-900 dark:text-white block truncate">{{ inv.recipientName }}</strong>
+                  <span class="text-[11px] text-slate-400 line-clamp-1">{{ inv.description || 'Fatura Kalemi' }}</span>
+                </div>
+              </div>
             </td>
-            <td class="py-3.5 px-6 whitespace-nowrap font-mono text-slate-600 dark:text-slate-300 text-xs">
+
+            <!-- TCKN / VKN -->
+            <td class="py-3.5 px-6 whitespace-nowrap font-mono text-slate-600 dark:text-slate-300 text-xs font-semibold">
               {{ inv.recipientVknOrTckn }}
             </td>
+
+            <!-- Düzenleme Tarihi & Saati -->
             <td class="py-3.5 px-6 whitespace-nowrap text-slate-500 dark:text-slate-400 text-xs font-mono">
-              {{ formatDate(inv.issueDate) }}
+              <span class="font-bold text-slate-700 dark:text-slate-300">{{ formatDate(inv.issueDate) }}</span>
               <span class="text-[10px] text-slate-400 block">{{ formatTime(inv.issueDate, inv.issueTime) }}</span>
             </td>
+
+            <!-- Entegratör -->
             <td class="py-3.5 px-6 whitespace-nowrap">
               <span
                 class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 {{ providerNames[inv.provider] || inv.provider }}
               </span>
             </td>
+
+            <!-- Durum -->
             <td class="py-3.5 px-6 whitespace-nowrap">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
                 [class]="statusBadges[inv.status]">
                 {{ statusLabels[inv.status] || inv.status }}
               </span>
             </td>
+
+            <!-- KDV Tutarı -->
             <td class="py-3.5 px-6 text-right whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-xs">
-              ₺{{ money(inv.kdvAmount) }}
+              {{ money(inv.kdvAmount) }}
             </td>
+
+            <!-- Genel Toplam -->
             <td class="py-3.5 px-6 text-right whitespace-nowrap">
-              <strong class="text-sm font-black text-slate-900 dark:text-white font-mono"
-                [class.text-emerald-600]="(inv.direction || 'outbound') === 'outbound'">
-                ₺{{ money(inv.totalAmount) }}
+              <strong class="text-sm font-black font-mono"
+                [class.text-emerald-600]="(inv.direction || 'outbound') === 'outbound'"
+                [class.dark:text-emerald-400]="(inv.direction || 'outbound') === 'outbound'"
+                [class.text-rose-600]="inv.direction === 'inbound'"
+                [class.dark:text-rose-400]="inv.direction === 'inbound'">
+                {{ money(inv.totalAmount) }}
               </strong>
             </td>
+
+            <!-- GİB İşlemleri -->
             <td class="py-3.5 px-6 text-right whitespace-nowrap">
               <div class="flex items-center justify-end gap-1.5">
                 <!-- GİB Standart Görüntüle / Yazdır Butonu -->
@@ -238,13 +395,15 @@
           <tr>
             <td colspan="9" class="py-12 text-center text-slate-400 text-xs">
               <div class="max-w-md mx-auto space-y-3">
-                <mat-icon class="icon-size-10 text-slate-300 dark:text-slate-600">receipt_long</mat-icon>
-                <p class="font-bold text-slate-700 dark:text-slate-300 m-0">Henüz kayıtlı fatura bulunmuyor.</p>
-                <p class="text-slate-500 m-0">"+ Yeni Fatura Düzenle" butonunu kullanarak üyelik, paket veya özel fatura
-                  kesebilir ya da örnek faturaları yükleyebilirsiniz.</p>
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 flex items-center justify-center">
+                  <mat-icon class="icon-size-8">receipt_long</mat-icon>
+                </div>
+                <p class="font-bold text-slate-800 dark:text-slate-200 text-sm m-0">Henüz kayıtlı fatura bulunmuyor.</p>
+                <p class="text-slate-500 text-xs m-0">"Yeni Fatura Düzenle" butonunu kullanarak üyelik, paket veya özel fatura
+                  kesebilir ya da tek tıkla örnek faturaları yükleyebilirsiniz.</p>
                 <div class="pt-2 flex justify-center gap-2">
                   <button type="button" (click)="openCreateDrawer()" class="odv-btn-primary text-xs">
-                    + Yeni Fatura Düzenle
+                    Yeni Fatura Düzenle
                   </button>
                   <button type="button" (click)="seedSampleInvoices()" class="odv-btn-soft text-xs">
                     Örnek Faturaları Yükle
@@ -260,10 +419,12 @@
   </div>
   }
 
+  <!-- ========================================== -->
   <!-- TAB 2: ENTEGRATÖR VE FATURA AYARLARI -->
+  <!-- ========================================== -->
   @if (activeTab() === 'settings') {
   <div
-    class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm max-w-3xl space-y-6">
+    class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm max-w-4xl space-y-6">
     <div class="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
       <div
         class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -271,15 +432,16 @@
       </div>
       <div>
         <h3 class="text-base font-black text-slate-900 dark:text-white m-0">GİB Fatura & Entegratör Yapılandırması</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">GİB Portal, Uyumsoft, Sovos, QNB eFinans entegratörlerini
-          bağlayın veya bağımsız e-arşiv modunda çalışın.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">GİB Portal, Uyumsoft, Sovos, QNB eFinans entegratörlerini bağlayın veya bağımsız e-arşiv modunda çalışın.</p>
       </div>
     </div>
 
-    <form [formGroup]="configForm" (ngSubmit)="saveIntegratorConfig()" class="space-y-5 text-xs">
+    <form [formGroup]="configForm" (ngSubmit)="saveIntegratorConfig()" class="space-y-6 text-xs">
       <!-- 1. Entegratör Seçimi -->
       <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-2">Varsayılan Entegratör / Portal Modu *</label>
+        <label class="block font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider mb-2">
+          Varsayılan Entegratör / Portal Modu *
+        </label>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           @for (p of providers; track p.id) {
           <label class="p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3"
@@ -300,10 +462,13 @@
       </div>
 
       <!-- 2. Firma Resmi Fatura Bilgileri -->
-      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
-        <h4
-          class="font-bold text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400 m-0">
-          Firma Resmi Fatura & Satıcı Bilgileri (GİB Başlığı İçin)</h4>
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+        <div class="flex items-center gap-2">
+          <mat-icon class="icon-size-4 text-indigo-600">business</mat-icon>
+          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+            Firma Resmi Fatura & Satıcı Bilgileri (GİB Başlığı İçin)
+          </h4>
+        </div>
 
         <div>
           <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Şirket Resmi Ticari Unvanı *</label>
@@ -355,10 +520,13 @@
 
       <!-- 3. Web Servis / API Bilgileri (Özel entegratörler için) -->
       @if (configForm.get('provider')?.value !== 'manuel') {
-      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
-        <h4
-          class="font-bold text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400 m-0">
-          Entegratör Web Servis & API Bilgileri</h4>
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+        <div class="flex items-center gap-2">
+          <mat-icon class="icon-size-4 text-indigo-600">key</mat-icon>
+          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+            Entegratör Web Servis & API Bilgileri
+          </h4>
+        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -381,20 +549,20 @@
 
       <!-- 4. Otomasyon Seçenekleri -->
       <div
-        class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
-        <label class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
-          <input type="checkbox" formControlName="isTestEnvironment" class="rounded text-indigo-600" />
+        class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
+        <label class="flex items-center gap-3 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+          <input type="checkbox" formControlName="isTestEnvironment" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
           <span>Test / Sandbox Ortamı (Mali mühür ve GİB simülasyon modu)</span>
         </label>
-        <label class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
-          <input type="checkbox" formControlName="autoSendOnPayment" class="rounded text-indigo-600" />
+        <label class="flex items-center gap-3 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+          <input type="checkbox" formControlName="autoSendOnPayment" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
           <span>Kasa / POS ve Üyelik Satışlarında Otomatik E-Arşiv Faturası Oluştur</span>
         </label>
       </div>
 
       <div class="pt-2 flex justify-end">
         <button type="submit" [disabled]="savingConfig()"
-          class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50 border-none">
+          class="odv-btn-primary flex items-center gap-2">
           <mat-icon class="icon-size-4">save</mat-icon>
           <span>{{ savingConfig() ? 'Kaydediliyor…' : 'Entegratör Ayarlarını Kaydet' }}</span>
         </button>
@@ -407,189 +575,425 @@
 <!-- ========================================== -->
 <!-- 3. SLIDE-OVER: GELİŞMİŞ FATURALAŞTIRMA İŞLEMİ -->
 <!-- ========================================== -->
+<!-- ========================================== -->
+<!-- 3. SLIDE-OVER: GELİŞMİŞ FATURALAŞTIRMA İŞLEMİ -->
+<!-- ========================================== -->
 <app-slide-over [open]="createDrawerOpen()" title="Yeni Fatura Düzenle (GİB / E-Arşiv / E-Fatura)"
+  subtitle="GİB standartlarında e-Arşiv / e-Fatura oluşturma ve resmi entegratör gönderimi"
+  width="3xl"
   submitLabel="Faturayı Oluştur & Kaydet" [submitting]="submittingInvoice()" [errorMessage]="invoiceError()"
   (closed)="closeCreateDrawer()" (submitted)="submitInvoice()">
-  <div [formGroup]="invoiceForm" class="space-y-4 text-xs">
+  <div [formGroup]="invoiceForm" class="space-y-5 text-xs font-sans">
 
-    <!-- HIZLI ÜYE SEÇİMİ VE OTOMATİK DOLDURMA KARTI -->
-    <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 space-y-2">
-      <div class="flex items-center justify-between">
-        <label class="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
-          <mat-icon class="icon-size-4 text-indigo-600">person_search</mat-icon>
-          <span>Kayıtlı Üyeden Otomatik Doldur (Hızlı Fatura)</span>
-        </label>
-        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">İsteğe Bağlı</span>
+    <!-- 1. KART: MÜŞTERİ / CARİ BİLGİLERİ -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">person</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Alıcı / Müşteri / Cari Bilgileri</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Bireysel e-Arşiv veya kurumsal e-Fatura alıcısı</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+          GİB VKN/TCKN Zorunlu
+        </span>
       </div>
-      <div class="flex items-center gap-2">
-        <select (change)="onMemberSelected($event)" class="odv-select text-xs font-semibold flex-1">
-          <option value="">-- Kayıtlı Üyelerden Seçin (TCKN & Bilgiler Dolar) --</option>
-          @for (m of members(); track m.uid) {
-          <option [value]="m.uid">
-            {{ m.displayName }} (TC: {{ m.nationalId || 'Yok' }}) - {{ m.packageLabel || 'Paket Yok' }}
-          </option>
-          }
-        </select>
-      </div>
-    </div>
 
-    <!-- Fatura Yönü (Satış / Alış) -->
-    <div>
-      <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fatura Yönü *</label>
-      <div class="grid grid-cols-2 gap-2">
-        <label
-          class="p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5"
-          [class.border-emerald-600]="invoiceForm.get('direction')?.value === 'outbound'"
-          [class.bg-emerald-50]="invoiceForm.get('direction')?.value === 'outbound'"
-          [class.text-emerald-700]="invoiceForm.get('direction')?.value === 'outbound'"
-          [class.dark:bg-emerald-950/40]="invoiceForm.get('direction')?.value === 'outbound'"
-          [class.border-slate-200]="invoiceForm.get('direction')?.value !== 'outbound'">
-          <input type="radio" formControlName="direction" value="outbound" class="hidden" />
-          <mat-icon class="icon-size-4 text-emerald-600">arrow_upward</mat-icon>
-          <span>Satış / E-Arşiv Faturası (Gelir)</span>
+      <!-- Kayıtlı Üyeden Hızlı Doldur Trigger & Popover -->
+      <div class="relative">
+        <label class="block font-bold text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+          <span>Kayıtlı Üyelerden Hızlı Doldur</span>
+          <span class="text-[10px] text-indigo-500 font-semibold lowercase">opsiyonel</span>
         </label>
-        <label
-          class="p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5"
-          [class.border-rose-600]="invoiceForm.get('direction')?.value === 'inbound'"
-          [class.bg-rose-50]="invoiceForm.get('direction')?.value === 'inbound'"
-          [class.text-rose-700]="invoiceForm.get('direction')?.value === 'inbound'"
-          [class.dark:bg-rose-950/40]="invoiceForm.get('direction')?.value === 'inbound'"
-          [class.border-slate-200]="invoiceForm.get('direction')?.value !== 'inbound'">
-          <input type="radio" formControlName="direction" value="inbound" class="hidden" />
-          <mat-icon class="icon-size-4 text-rose-600">arrow_downward</mat-icon>
-          <span>Alış / Gider Faturası</span>
-        </label>
+
+        @if (selectedMember(); as mem) {
+        <!-- Seçili Üye Kartı -->
+        <div class="p-3.5 rounded-xl bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-indigo-950/50 dark:via-purple-950/30 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-between gap-3 shadow-2xs">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">
+              {{ initials(mem.displayName) }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-slate-900 dark:text-white truncate">{{ mem.displayName }}</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                  Seçildi
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2 mt-0.5 font-mono">
+                <span>TCKN: {{ mem.nationalId || '11111111110' }}</span>
+                @if (mem.phone) {
+                <span>• Tel: {{ mem.phone }}</span>
+                }
+                @if (mem.branchName) {
+                <span class="font-sans text-slate-400">({{ mem.branchName }})</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" (click)="toggleMemberDropdown()"
+              class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs">
+              Değiştir
+            </button>
+            <button type="button" (click)="clearSelectedMember()"
+              class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/60 text-slate-400 flex items-center justify-center transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
+              title="Seçimi Kaldır">
+              <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
+          </div>
+        </div>
+        } @else {
+        <!-- Üye Seçilmemiş: Şık Buton Trigger -->
+        <button type="button" (click)="toggleMemberDropdown()"
+          class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50/30 text-slate-600 dark:text-slate-400 text-xs font-semibold flex items-center justify-between cursor-pointer transition-all group">
+          <span class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <mat-icon class="icon-size-4">person_search</mat-icon>
+            </span>
+            <span class="group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              Kayıtlı üyelerden aramak için tıklayın... (TCKN, telefon ve paket otomatik aktarılır)
+            </span>
+          </span>
+          <mat-icon class="icon-size-4 text-slate-400 group-hover:text-indigo-500 transition-colors">arrow_drop_down</mat-icon>
+        </button>
+        }
+
+        <!-- Popover Search Menüsü -->
+        @if (isMemberDropdownOpen()) {
+        <div class="fixed inset-0 z-40" (click)="closeMemberDropdown()"></div>
+        <div class="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-80 ring-1 ring-slate-950/5">
+          <!-- Arama Input Bar -->
+          <div class="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+            <div class="relative">
+              <mat-icon class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4.5">search</mat-icon>
+              <input type="text" [ngModel]="memberSearchQuery()" (ngModelChange)="memberSearchQuery.set($event)"
+                (click)="$event.stopPropagation()"
+                placeholder="Üye adı, telefon, TCKN veya paket ara..."
+                class="w-full pl-10 pr-9 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+              @if (memberSearchQuery()) {
+              <button type="button" (click)="memberSearchQuery.set('')"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent p-0">
+                <mat-icon class="icon-size-4">clear</mat-icon>
+              </button>
+              }
+            </div>
+          </div>
+
+          <!-- Üye Listesi -->
+          <div class="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800/80 custom-scroll">
+            @for (m of filteredMembers(); track m.uid) {
+            <div (click)="selectMember(m)"
+              class="p-3 hover:bg-indigo-50/80 dark:hover:bg-slate-800/80 cursor-pointer transition-colors flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
+                  {{ initials(m.displayName) }}
+                </span>
+                <div class="min-w-0">
+                  <span class="font-bold text-xs text-slate-900 dark:text-white block truncate">{{ m.displayName }}</span>
+                  <div class="text-[10px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                    <span>TC: {{ m.nationalId || 'Yok' }}</span>
+                    <span>• Tel: {{ m.phone || 'Yok' }}</span>
+                  </div>
+                </div>
+              </div>
+              @if (m.packageLabel) {
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40 shrink-0">
+                {{ m.packageLabel }}
+              </span>
+              }
+            </div>
+            } @empty {
+            <div class="p-6 text-center text-slate-400 text-xs">
+              Kayıtlı üye bulunamadı.
+            </div>
+            }
+          </div>
+        </div>
+        }
       </div>
-    </div>
 
-    <!-- GİB Senaryosu & Fatura Tipi -->
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="GİB Fatura Senaryosu *">
-        <select formControlName="invoiceProfile" class="odv-select text-xs font-semibold">
-          <option value="EARSIVFATURA">EARŞİV FATURA (Bireysel / Nihai Tüketici)</option>
-          <option value="TICARIFATURA">TİCARİ FATURA (Kurumsal - Şirketler)</option>
-          <option value="TEMELFATURA">TEMEL FATURA</option>
-          <option value="KAMU">KAMU FATURASI</option>
-          <option value="IHRACAT">İHRACAT</option>
-        </select>
-      </app-field>
-
-      <app-field label="GİB Fatura Tipi *">
-        <select formControlName="invoiceTypeCode" class="odv-select text-xs font-semibold">
-          <option value="SATIS">SATIŞ</option>
-          <option value="IADE">İADE</option>
-          <option value="TEVKIFAT">TEVKİFATLI SATIŞ</option>
-          <option value="ISTISNA">İSTİSNA (KDV Muaf)</option>
-          <option value="OZELMATRAH">ÖZEL MATRAH</option>
-        </select>
-      </app-field>
-    </div>
-
-    <!-- Fatura No & Belge Tarihi / Saati -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <app-field label="16 Haneli GİB Fatura No *">
-        <input type="text" formControlName="invoiceNumber" placeholder="GIB2026000000001"
-          class="odv-input font-mono text-xs font-bold uppercase" />
-      </app-field>
-
-      <app-field label="Fatura Tarihi *">
-        <input type="date" formControlName="issueDate" class="odv-input text-xs font-mono" />
-      </app-field>
-
-      <app-field label="Düzenleme Saati">
-        <input type="time" formControlName="issueTime" class="odv-input text-xs font-mono" />
-      </app-field>
-    </div>
-
-    <!-- Alıcı (Müşteri) Bilgileri -->
-    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-3">
-      <span class="font-bold text-slate-800 dark:text-slate-200 block">Alıcı / Müşteri / Cari Bilgileri</span>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Alıcı Adı Soyadı / Şirket Unvanı *</label>
-          <input type="text" formControlName="recipientName" placeholder="Örn: Ahmet Yılmaz veya ABC Ltd. Şti."
+      <!-- Müşteri Form Alanları (2-Kolon) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+        <div class="sm:col-span-2">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            Alıcı Adı Soyadı / Şirket Unvanı <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" formControlName="recipientName" placeholder="Örn: Ahmet Yılmaz veya ABC Spor Ltd. Şti."
             class="odv-input text-xs font-semibold" />
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">TCKN (11 Hane) veya VKN (10 Hane) *</label>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            TCKN (11 Hane) veya VKN (10 Hane) <span class="text-rose-500">*</span>
+          </label>
           <input type="text" maxlength="11" formControlName="recipientVknOrTckn" placeholder="11111111110"
             class="odv-input font-mono text-xs font-bold" />
+          <span class="text-[10px] text-slate-400 mt-0.5 block">Nihai tüketici için varsayılan: 11111111110</span>
         </div>
-      </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vergi Dairesi (Kurumsal)</label>
-          <input type="text" formControlName="recipientTaxOffice" placeholder="Beşiktaş VD." class="odv-input text-xs" />
+          <input type="text" formControlName="recipientTaxOffice" placeholder="Örn: Beşiktaş VD."
+            class="odv-input text-xs" />
         </div>
-        <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon</label>
-          <input type="text" formControlName="recipientPhone" placeholder="0532..." class="odv-input text-xs" />
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">E-Posta (Fatura Gönderimi İçin)</label>
-          <input type="email" formControlName="recipientEmail" placeholder="ahmet@example.com" class="odv-input text-xs" />
-        </div>
-      </div>
 
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Adres / İlçe / Şehir</label>
-        <input type="text" formControlName="recipientAddress" placeholder="Örn: Barbaros Bulvarı No: 44 Beşiktaş / İstanbul"
-          class="odv-input text-xs" />
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon No</label>
+          <input type="text" formControlName="recipientPhone" placeholder="0532 000 00 00"
+            class="odv-input text-xs font-mono" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">E-Posta (E-Fatura İletimi)</label>
+          <input type="email" formControlName="recipientEmail" placeholder="ornek@musteri.com"
+            class="odv-input text-xs" />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fatura Adresi / İlçe / Şehir</label>
+          <input type="text" formControlName="recipientAddress"
+            placeholder="Örn: Barbaros Bulvarı No: 44 Beşiktaş / İstanbul" class="odv-input text-xs" />
+        </div>
       </div>
     </div>
 
-    <!-- HİZMET VE MAL KALEMLERİ TABLOSU -->
-    <div class="space-y-2">
-      <div class="flex items-center justify-between">
-        <label class="font-bold text-slate-800 dark:text-slate-200">Fatura Kalemleri (Mal & Hizmet Listesi) *</label>
-        <div class="flex items-center gap-1.5">
-          <!-- Paketlerden hızlı ekleme -->
-          @if (packages().length > 0) {
-          <select #pkgSelect (change)="addGymPackageToLines(pkgSelect.value); pkgSelect.value = ''"
-            class="py-1 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
-            <option value="">+ Paketten Kalem Ekle...</option>
-            @for (p of packages(); track p.id) {
-            <option [value]="p.id">{{ p.name }} (₺{{ money(p.price) }})</option>
-            }
-          </select>
-          }
 
-          <button type="button" (click)="addLineItem()"
-            class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-xs flex items-center gap-1 cursor-pointer border-none">
-            <mat-icon class="icon-size-3.5">add</mat-icon>
-            <span>Satır Ekle</span>
-          </button>
+    <!-- 2. KART: FATURA TÜRÜ & GİB BİLGİLERİ -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <span class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <mat-icon class="icon-size-4.5">receipt_long</mat-icon>
+        </span>
+        <div>
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Fatura Türü & GİB Düzenleme Detayları</h4>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Resmi fatura yönü, senaryosu ve belge numarası</p>
         </div>
       </div>
 
-      <div class="space-y-2">
+      <!-- Fatura Yönü (Satış Gelir / Alış Gider) -->
+      <div>
+        <label class="block font-bold text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+          Fatura Yönü <span class="text-rose-500">*</span>
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label
+            class="p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 select-none"
+            [class.border-emerald-500]="invoiceForm.get('direction')?.value === 'outbound'"
+            [class.bg-emerald-50/70]="invoiceForm.get('direction')?.value === 'outbound'"
+            [class.dark:bg-emerald-950/30]="invoiceForm.get('direction')?.value === 'outbound'"
+            [class.border-slate-200]="invoiceForm.get('direction')?.value !== 'outbound'"
+            [class.dark:border-slate-700]="invoiceForm.get('direction')?.value !== 'outbound'">
+            <input type="radio" formControlName="direction" value="outbound" class="hidden" />
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <mat-icon class="icon-size-5">arrow_upward</mat-icon>
+            </div>
+            <div>
+              <span class="font-bold text-xs text-slate-900 dark:text-white block">Satış / E-Arşiv (Gelir)</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block">Üyeye kesilen gelir faturası</span>
+            </div>
+          </label>
+
+          <label
+            class="p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 select-none"
+            [class.border-rose-500]="invoiceForm.get('direction')?.value === 'inbound'"
+            [class.bg-rose-50/70]="invoiceForm.get('direction')?.value === 'inbound'"
+            [class.dark:bg-rose-950/30]="invoiceForm.get('direction')?.value === 'inbound'"
+            [class.border-slate-200]="invoiceForm.get('direction')?.value !== 'inbound'"
+            [class.dark:border-slate-700]="invoiceForm.get('direction')?.value !== 'inbound'">
+            <input type="radio" formControlName="direction" value="inbound" class="hidden" />
+            <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+              <mat-icon class="icon-size-5">arrow_downward</mat-icon>
+            </div>
+            <div>
+              <span class="font-bold text-xs text-slate-900 dark:text-white block">Alış / Gider Faturası</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block">Tedarikçi ve gider belgesi</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- GİB Senaryosu & Fatura Tipi -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div class="min-w-0">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            GİB Fatura Senaryosu <span class="text-rose-500">*</span>
+          </label>
+          <select formControlName="invoiceProfile" class="odv-select text-xs font-semibold">
+            <option value="EARSIVFATURA">EARŞİV FATURA (Bireysel / Nihai Tüketici)</option>
+            <option value="TICARIFATURA">TİCARİ FATURA (Kurumsal Şirketler)</option>
+            <option value="TEMELFATURA">TEMEL FATURA</option>
+            <option value="KAMU">KAMU FATURASI</option>
+            <option value="IHRACAT">İHRACAT</option>
+          </select>
+        </div>
+
+        <div class="min-w-0">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            GİB Fatura Tipi <span class="text-rose-500">*</span>
+          </label>
+          <select formControlName="invoiceTypeCode" class="odv-select text-xs font-semibold">
+            <option value="SATIS">SATIŞ</option>
+            <option value="IADE">İADE</option>
+            <option value="TEVKIFAT">TEVKİFATLI SATIŞ</option>
+            <option value="ISTISNA">İSTİSNA (KDV Muaf)</option>
+            <option value="OZELMATRAH">ÖZEL MATRAH</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fatura No, Tarih ve Saat (3 Kolon) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+            <span>Fatura Seri & No <span class="text-rose-500">*</span></span>
+            <button type="button" (click)="regenerateInvoiceNumber()"
+              class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer border-none bg-transparent p-0">
+              Yeni Üret
+            </button>
+          </label>
+          <input type="text" formControlName="invoiceNumber" placeholder="GIB2026000000001"
+            class="odv-input font-mono text-xs font-bold uppercase tracking-wide" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            Fatura Tarihi <span class="text-rose-500">*</span>
+          </label>
+          <input type="date" formControlName="issueDate" class="odv-input text-xs font-mono" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-bold text-slate-700 dark:text-slate-300">Düzenleme Saati</label>
+            @if (useCurrentTimeOnSave()) {
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Kayıt Anı (Otomatik)
+            </span>
+            } @else {
+            <button type="button" (click)="useCurrentTimeOnSave.set(true)"
+              class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer border-none bg-transparent p-0">
+              ⚡ Kayıt Anına Dön
+            </button>
+            }
+          </div>
+
+          @if (useCurrentTimeOnSave()) {
+          <div class="flex items-center gap-1.5">
+            <div class="flex-1 py-2 px-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-between text-xs font-mono font-bold text-emerald-800 dark:text-emerald-300">
+              <span class="flex items-center gap-1.5">
+                <mat-icon class="icon-size-4 text-emerald-600">schedule</mat-icon>
+                <span>Kaydedildiği Anki Saat</span>
+              </span>
+              <span class="text-[10px] font-sans font-semibold text-emerald-600 dark:text-emerald-400">Canlı Sistem Saati</span>
+            </div>
+            <button type="button" (click)="useCurrentTimeOnSave.set(false)"
+              class="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0"
+              title="Manuel Saat Belirt">
+              Düzenle
+            </button>
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 block">Fatura kaydedildiği saniyenin saati otomatik atanacaktır.</span>
+          } @else {
+          <div class="flex items-center gap-1.5">
+            <input type="text" formControlName="issueTime" placeholder="HH:mm:ss"
+              class="odv-input text-xs font-mono font-bold flex-1" />
+            <button type="button" (click)="setCurrentTimeNow()"
+              class="px-2.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all border border-indigo-200 dark:border-indigo-800 cursor-pointer shrink-0"
+              title="Şu Anki Saati Doldur">
+              Şimdi
+            </button>
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 block">Örn: 14:30:00 (İsteğe bağlı manuel saat)</span>
+          }
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 3. KART: FATURA KALEMLERİ (MAL & HİZMET LİSTESİ) -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">shopping_cart</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Fatura Kalemleri (Mal & Hizmetler)</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Paket, üyelik veya perakende satırları</p>
+          </div>
+        </div>
+
+        <button type="button" (click)="addLineItem()"
+          class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors border border-indigo-200/60 dark:border-indigo-800/40">
+          <mat-icon class="icon-size-4">add</mat-icon>
+          <span>Yeni Kalem Ekle</span>
+        </button>
+      </div>
+
+      <!-- Quick package add chips -->
+      @if (packages().length > 0) {
+      <div class="space-y-1.5">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Hızlı Paket Ekle:</span>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          @for (p of packages().slice(0, 6); track p.id) {
+          <button type="button" (click)="addGymPackageToLines(p)"
+            class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold whitespace-nowrap transition-all border border-slate-200/80 dark:border-slate-700 cursor-pointer shrink-0 shadow-2xs">
+            + {{ p.name }} ({{ money(p.price) }})
+          </button>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Kalem Kartları -->
+      <div class="space-y-3">
         @for (item of formLineItems(); track $index) {
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-3">
+          <!-- Üst Başlık & Satır Toplamı & Sil Butonu -->
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase font-mono">Kalem #{{ $index + 1 }}</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono text-[10px] font-bold border border-indigo-200/60 dark:border-indigo-800/40">
+                Kalem #{{ $index + 1 }}
+              </span>
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Satır Toplamı: <strong class="text-indigo-600 dark:text-indigo-400 font-mono">{{ money(calcLineItemTotal(item)) }}</strong>
+              </span>
+            </div>
+
             <button type="button" (click)="removeLineItem($index)"
-              class="text-rose-500 hover:text-rose-700 text-xs font-semibold cursor-pointer border-none bg-transparent">
-              Satırı Kaldır
+              class="w-7 h-7 rounded-lg hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/60 text-slate-400 flex items-center justify-center cursor-pointer transition-colors border-none bg-transparent"
+              title="Bu satırı kaldır">
+              <mat-icon class="icon-size-4">delete_outline</mat-icon>
             </button>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-6 gap-2">
-            <div class="sm:col-span-3">
-              <input type="text" [value]="item.name" (input)="updateLineItem($index, { name: $any($event.target).value })"
-                placeholder="Mal / Hizmet Açıklaması (Örn: 6 Aylık Fitness Paketi)"
-                class="w-full py-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold" />
-            </div>
+          <!-- Kalem Adı -->
+          <div>
+            <label class="block font-semibold text-[11px] text-slate-600 dark:text-slate-400 mb-1">
+              Mal / Hizmet Açıklaması <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" [value]="item.name"
+              (input)="updateLineItem($index, { name: $any($event.target).value })"
+              placeholder="Örn: 6 Aylık Fitness & Spa Paketi"
+              class="odv-input text-xs font-semibold" />
+          </div>
 
-            <div class="sm:col-span-1">
-              <div class="flex items-center gap-1">
+          <!-- Miktar, Birim, Birim Fiyat, İskonto %, KDV % (4 Kolon) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div>
+              <label class="block font-semibold text-[10px] text-slate-500 mb-1">Miktar & Birim</label>
+              <div class="flex items-center gap-1.5">
                 <input type="number" min="1" [value]="item.quantity"
                   (input)="updateLineItem($index, { quantity: +$any($event.target).value })"
-                  class="w-14 py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-center" />
+                  class="w-14 py-2 px-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-center" />
                 <select [value]="item.unit" (change)="updateLineItem($index, { unit: $any($event.target).value })"
-                  class="flex-1 py-1.5 px-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
+                  class="odv-select py-2 px-2 text-[11px] font-semibold">
                   <option value="Ay">Ay</option>
                   <option value="Adet">Adet</option>
                   <option value="Gün">Gün</option>
@@ -600,16 +1004,24 @@
               </div>
             </div>
 
-            <div class="sm:col-span-1">
+            <div>
+              <label class="block font-semibold text-[10px] text-slate-500 mb-1">Birim Fiyat (KDV Hariç)</label>
               <input type="number" min="0" [value]="item.unitPrice"
                 (input)="updateLineItem($index, { unitPrice: +$any($event.target).value })"
-                placeholder="Birim Fiyat"
-                class="w-full py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-right" />
+                class="odv-input pl-3 pr-2 py-2 text-xs font-mono font-bold text-right" />
             </div>
 
-            <div class="sm:col-span-1">
+            <div>
+              <label class="block font-semibold text-[10px] text-slate-500 mb-1">İskonto (%)</label>
+              <input type="number" min="0" max="100" [value]="item.discountRate || 0"
+                (input)="updateLineItem($index, { discountRate: +$any($event.target).value })"
+                class="odv-input py-2 px-2 text-xs font-mono font-bold text-center" />
+            </div>
+
+            <div>
+              <label class="block font-semibold text-[10px] text-slate-500 mb-1">KDV Oranı</label>
               <select [value]="item.kdvRate" (change)="updateLineItem($index, { kdvRate: +$any($event.target).value })"
-                class="w-full py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-right">
+                class="odv-select py-2 px-2 text-xs font-bold text-right">
                 <option [value]="20">%20 KDV</option>
                 <option [value]="10">%10 KDV</option>
                 <option [value]="1">%1 KDV</option>
@@ -622,64 +1034,82 @@
       </div>
     </div>
 
-    <!-- CANLI VERGİ & TOPLAM MATRAH ÖZETİ -->
-    <div
-      class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-slate-50 dark:from-indigo-950/40 dark:to-slate-900/60 border border-indigo-200 dark:border-indigo-900/60 space-y-2 text-xs">
-      <div class="flex justify-between text-slate-600 dark:text-slate-300">
-        <span>Mal / Hizmet Matrahı (KDV Hariç):</span>
-        <span class="font-mono font-bold">₺{{ money(calcSubtotal()) }}</span>
+
+    <!-- 4. KART: VERGİ VE GENEL TOPLAM HESAPLAMA KARTI -->
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/90 via-purple-50/40 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-900/60 shadow-xs space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-indigo-100 dark:border-indigo-900/40 text-xs">
+        <span class="font-bold text-slate-700 dark:text-slate-300">Mal / Hizmet Matrahı (KDV Hariç):</span>
+        <span class="font-mono font-black text-slate-900 dark:text-white">{{ money(calcSubtotal()) }}</span>
       </div>
+
       @if (calcDiscountTotal() > 0) {
-      <div class="flex justify-between text-amber-600 dark:text-amber-400">
-        <span>Toplam İskonto:</span>
-        <span class="font-mono font-bold">-₺{{ money(calcDiscountTotal()) }}</span>
+      <div class="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400">
+        <span class="font-bold">Toplam İskonto Tutarı:</span>
+        <span class="font-mono font-black">-{{ money(calcDiscountTotal()) }}</span>
       </div>
       }
-      <div class="flex justify-between text-slate-600 dark:text-slate-300">
-        <span>Hesaplanan Toplam KDV:</span>
-        <span class="font-mono font-bold">₺{{ money(calcKdvTotal()) }}</span>
+
+      <div class="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+        <span class="font-bold">Hesaplanan Toplam KDV:</span>
+        <span class="font-mono font-black text-indigo-600 dark:text-indigo-400">{{ money(calcKdvTotal()) }}</span>
       </div>
-      <div
-        class="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-indigo-200/80 dark:border-indigo-800">
-        <span>Genel Toplam (Ödenecek Tutar):</span>
-        <span class="text-indigo-600 dark:text-indigo-400 font-mono text-base">₺{{ money(calcGrandTotal()) }}</span>
+
+      <div class="flex items-center justify-between pt-3 border-t border-indigo-200/80 dark:border-indigo-800">
+        <div>
+          <span class="text-sm font-black text-slate-900 dark:text-white block">Genel Toplam (Ödenecek Tutar)</span>
+          <span class="text-[10px] text-slate-500 font-medium">KDV ve vergiler dahil net fatura bedeli</span>
+        </div>
+        <div class="text-right">
+          <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-tight block">
+            {{ money(calcGrandTotal()) }}
+          </span>
+        </div>
       </div>
-      <div class="pt-1 text-[11px] text-slate-500 font-medium italic">
+
+      <div class="p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/60 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-300 font-mono text-center font-bold tracking-wide">
         {{ words(calcGrandTotal()) }}
       </div>
     </div>
 
-    <!-- Ödeme ve Yasal Bildirimler -->
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="Ödeme Şekli">
-        <select formControlName="paymentMethod" class="odv-select text-xs font-semibold">
-          <option value="card">POS / Kredi Kartı</option>
-          <option value="cash">Nakit Kasa</option>
-          <option value="transfer">Banka Havalesi / EFT</option>
-          <option value="open_account">Açık Hesap (Cari / Borç)</option>
-        </select>
-      </app-field>
 
-      <app-field label="Ödeme Durumu">
-        <select formControlName="paymentStatus" class="odv-select text-xs font-semibold">
-          <option value="paid">Tahsil Edildi / Ödendi</option>
-          <option value="pending">Ödeme Bekliyor</option>
-        </select>
-      </app-field>
-    </div>
+    <!-- 5. KART: ÖDEME ŞEKLİ & YASAL İRSALİYE BEYANI -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ödeme Yöntemi</label>
+          <select formControlName="paymentMethod" class="odv-select text-xs font-semibold">
+            <option value="card">💳 POS / Kredi Kartı</option>
+            <option value="cash">💵 Nakit Kasa</option>
+            <option value="transfer">🏦 Banka Havalesi / EFT</option>
+            <option value="open_account">📝 Açık Hesap (Cari / Borç)</option>
+          </select>
+        </div>
 
-    <!-- İrsaliye Yerine Geçer Onayı -->
-    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
-      <label class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
-        <input type="checkbox" formControlName="isDeliveryNoteReplacement" class="rounded text-indigo-600" />
-        <span>"İşbu e-Arşiv faturanın çıktısı 213 sayılı VUK uyarınca irsaliye yerine geçer."</span>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tahsilat Durumu</label>
+          <select formControlName="paymentStatus" class="odv-select text-xs font-semibold">
+            <option value="paid">✓ Tahsil Edildi / Ödendi</option>
+            <option value="pending">⏳ Ödeme Bekliyor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- İrsaliye Yerine Geçer Onayı -->
+      <label class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center gap-3 cursor-pointer select-none">
+        <input type="checkbox" formControlName="isDeliveryNoteReplacement"
+          class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300" />
+        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          "İşbu e-Arşiv faturanın çıktısı 213 sayılı VUK uyarınca <strong>irsaliye yerine geçer</strong>."
+        </span>
       </label>
+
+      <div>
+        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fatura Notu / Özel Açıklamalar</label>
+        <input type="text" formControlName="notes" placeholder="Örn: 2 taksit halinde tahsil edilecektir."
+          class="odv-input text-xs" />
+      </div>
     </div>
 
-    <app-field label="Fatura Notu / Açıklamalar">
-      <input type="text" formControlName="notes" placeholder="Örn: 2 taksit halinde tahsil edilecektir."
-        class="odv-input text-xs" />
-    </app-field>
   </div>
 </app-slide-over>
 
@@ -705,8 +1135,15 @@
               {{ statusLabels[inv.status] || inv.status }}
             </span>
           </div>
-          <p class="text-[11px] text-slate-500 font-mono m-0">
-            {{ inv.invoiceNumber }} · ETTN: {{ inv.gibUuid || 'Üretildi' }}
+          <p class="text-[11px] text-slate-500 font-mono m-0 flex items-center gap-1.5 mt-0.5">
+            <span>{{ inv.invoiceNumber }}</span>
+            <span>· ETTN: {{ inv.gibUuid || 'Üretildi' }}</span>
+            @if (inv.gibUuid) {
+            <button type="button" (click)="copyEttn(inv.gibUuid)"
+              class="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer border-none">
+              Kopyala
+            </button>
+            }
           </p>
         </div>
       </div>
@@ -764,7 +1201,8 @@
             Tel: {{ config()?.phone || '0850 300 00 00' }} · E-Posta: {{ config()?.email || 'muhasebe@odivongym.com' }}
           </p>
           <p class="text-slate-500 m-0 text-[10px] font-mono">
-            Tic. Sicil No: {{ config()?.tradeRegistryNo || '542190' }} · MERSİS: {{ config()?.mersisNo || '0729018491000001' }}
+            Tic. Sicil No: {{ config()?.tradeRegistryNo || '542190' }} · MERSİS: {{ config()?.mersisNo ||
+            '0729018491000001' }}
           </p>
           @if (config()?.website) {
           <p class="text-slate-500 m-0 text-[10px]">Web: {{ config()?.website }}</p>
@@ -776,9 +1214,13 @@
           <!-- GİB Resmi Hilalli Amblemi SVG -->
           <svg viewBox="0 0 100 100" class="w-14 h-14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="48" fill="#DC2626" />
-            <path d="M50 14C30.1178 14 14 30.1178 14 50C14 69.8822 30.1178 86 50 86C69.8822 86 86 69.8822 86 50C86 30.1178 69.8822 14 50 14ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80Z" fill="white"/>
-            <path d="M47 30C36 30 28 39 28 50C28 61 36 70 47 70C53 70 58 67 62 62C58 64 53 65 48 65C39 65 33 58 33 50C33 42 39 35 48 35C53 35 58 36 62 38C58 33 53 30 47 30Z" fill="white"/>
-            <path d="M56 38C52 40 50 45 50 50C50 55 52 60 56 62C61 59 64 55 64 50C64 45 61 41 56 38Z" fill="white"/>
+            <path
+              d="M50 14C30.1178 14 14 30.1178 14 50C14 69.8822 30.1178 86 50 86C69.8822 86 86 69.8822 86 50C86 30.1178 69.8822 14 50 14ZM50 80C33.4315 80 20 66.5685 20 50C20 33.4315 33.4315 20 50 20C66.5685 20 80 33.4315 80 50C80 66.5685 66.5685 80 50 80Z"
+              fill="white" />
+            <path
+              d="M47 30C36 30 28 39 28 50C28 61 36 70 47 70C53 70 58 67 62 62C58 64 53 65 48 65C39 65 33 58 33 50C33 42 39 35 48 35C53 35 58 36 62 38C58 33 53 30 47 30Z"
+              fill="white" />
+            <path d="M56 38C52 40 50 45 50 50C50 55 52 60 56 62C61 59 64 55 64 50C64 45 61 41 56 38Z" fill="white" />
           </svg>
 
           <span class="text-[10px] font-black uppercase tracking-wider text-slate-800 block">
@@ -787,7 +1229,8 @@
 
           <div class="gib-header-frame bg-red-50/50">
             <h1 class="text-sm font-black text-red-700 m-0 tracking-wide uppercase">
-              {{ inv.invoiceType === 'earswive' ? 'e-Arşiv Fatura' : (inv.invoiceType === 'commercial' ? 'Ticari e-Fatura' : 'e-Fatura') }}
+              {{ inv.invoiceType === 'earswive' ? 'e-Arşiv Fatura' : (inv.invoiceType === 'commercial' ? 'Ticari
+              e-Fatura' : 'e-Fatura') }}
             </h1>
             <span class="text-[9px] font-bold text-red-900 tracking-widest block uppercase">
               {{ inv.invoiceType === 'earswive' ? 'ELEKTRONİK ARŞİV FATURA' : 'ELEKTRONİK FATURA' }}
@@ -816,16 +1259,19 @@
       </div>
 
       <!-- ETTN (Evrensel Tekil Tanımlama Numarası) -->
-      <div class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded flex items-center justify-between text-[10px] font-mono">
+      <div
+        class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded flex items-center justify-between text-[10px] font-mono">
         <span class="font-bold text-slate-600">ETTN (UUID):</span>
-        <span class="font-bold text-slate-900 tracking-wider select-all">{{ inv.gibUuid || 'e9b8f21a-4d76-43b8-89c5-a6e54f910245' }}</span>
+        <span class="font-bold text-slate-900 tracking-wider select-all">{{ inv.gibUuid ||
+          'e9b8f21a-4d76-43b8-89c5-a6e54f910245' }}</span>
       </div>
 
       <!-- 2. ALICI BİLGİLERİ VE SEVK / SİPARİŞ KUTULARI -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <!-- Alıcı Bilgileri -->
         <div class="gib-box space-y-1">
-          <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 block border-b border-slate-200 pb-1">
+          <span
+            class="text-[10px] font-black uppercase tracking-wider text-slate-500 block border-b border-slate-200 pb-1">
             SAYIN / ALICI BİLGİLERİ
           </span>
           <p class="text-xs font-black text-slate-900 m-0 leading-snug">{{ inv.recipientName }}</p>
@@ -847,7 +1293,8 @@
 
         <!-- Sevk, İrsaliye & Ödeme Bilgileri -->
         <div class="gib-box space-y-1">
-          <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 block border-b border-slate-200 pb-1">
+          <span
+            class="text-[10px] font-black uppercase tracking-wider text-slate-500 block border-b border-slate-200 pb-1">
             ÖDEME & İRSALİYE BİLGİLERİ
           </span>
           <p class="text-[11px] m-0">
@@ -895,11 +1342,11 @@
             <td class="font-semibold text-slate-800">{{ item.name }}</td>
             <td class="text-center font-mono font-bold">{{ item.quantity }}</td>
             <td class="text-center text-slate-600">{{ item.unit || 'Adet' }}</td>
-            <td class="text-right font-mono">₺{{ money(item.unitPrice) }}</td>
-            <td class="text-right font-mono text-slate-500">{{ item.discountAmount ? ('₺' + money(item.discountAmount)) : '₺0,00' }}</td>
+            <td class="text-right font-mono">{{ money(item.unitPrice) }}</td>
+            <td class="text-right font-mono text-slate-500">{{ item.discountAmount ? money(item.discountAmount) : '₺0,00' }}</td>
             <td class="text-right font-mono">%{{ item.kdvRate }}</td>
-            <td class="text-right font-mono">₺{{ money(item.kdvAmount) }}</td>
-            <td class="text-right font-bold text-slate-900 font-mono">₺{{ money(item.total) }}</td>
+            <td class="text-right font-mono">{{ money(item.kdvAmount) }}</td>
+            <td class="text-right font-bold text-slate-900 font-mono">{{ money(item.total) }}</td>
           </tr>
           }
           } @else {
@@ -908,11 +1355,11 @@
             <td class="font-semibold text-slate-800">{{ inv.description || 'Spor & Fitness Hizmet Bedeli' }}</td>
             <td class="text-center font-mono font-bold">1</td>
             <td class="text-center text-slate-600">Ay</td>
-            <td class="text-right font-mono">₺{{ money(inv.amount) }}</td>
+            <td class="text-right font-mono">{{ money(inv.amount) }}</td>
             <td class="text-right font-mono text-slate-500">₺0,00</td>
             <td class="text-right font-mono">%{{ inv.kdvRate || 20 }}</td>
-            <td class="text-right font-mono">₺{{ money(inv.kdvAmount) }}</td>
-            <td class="text-right font-bold text-slate-900 font-mono">₺{{ money(inv.amount) }}</td>
+            <td class="text-right font-mono">{{ money(inv.kdvAmount) }}</td>
+            <td class="text-right font-bold text-slate-900 font-mono">{{ money(inv.amount) }}</td>
           </tr>
           }
         </tbody>
@@ -950,25 +1397,25 @@
             <tbody>
               <tr class="border-b border-slate-200">
                 <td class="p-1.5 text-slate-600 font-semibold">Mal / Hizmet Toplam Tutarı</td>
-                <td class="p-1.5 text-right font-mono font-bold text-slate-800">₺{{ money(inv.amount) }}</td>
+                <td class="p-1.5 text-right font-mono font-bold text-slate-800">{{ money(inv.amount) }}</td>
               </tr>
               @if (inv.discountTotal && inv.discountTotal > 0) {
               <tr class="border-b border-slate-200 text-amber-700">
                 <td class="p-1.5 font-semibold">Toplam İskonto</td>
-                <td class="p-1.5 text-right font-mono font-bold">-₺{{ money(inv.discountTotal) }}</td>
+                <td class="p-1.5 text-right font-mono font-bold">-{{ money(inv.discountTotal) }}</td>
               </tr>
               }
               <tr class="border-b border-slate-200">
                 <td class="p-1.5 text-slate-600 font-semibold">Hesaplanan KDV (%{{ inv.kdvRate || 20 }})</td>
-                <td class="p-1.5 text-right font-mono font-bold text-slate-800">₺{{ money(inv.kdvAmount) }}</td>
+                <td class="p-1.5 text-right font-mono font-bold text-slate-800">{{ money(inv.kdvAmount) }}</td>
               </tr>
               <tr class="border-b border-slate-200">
                 <td class="p-1.5 text-slate-600 font-semibold">Vergiler Dahil Toplam Tutar</td>
-                <td class="p-1.5 text-right font-mono font-bold text-slate-900">₺{{ money(inv.totalAmount) }}</td>
+                <td class="p-1.5 text-right font-mono font-bold text-slate-900">{{ money(inv.totalAmount) }}</td>
               </tr>
               <tr class="bg-slate-100 font-black">
                 <td class="p-2 text-slate-900 text-xs uppercase">Ödenecek Tutar</td>
-                <td class="p-2 text-right font-mono text-sm text-red-700">₺{{ money(inv.totalAmount) }}</td>
+                <td class="p-2 text-right font-mono text-sm text-red-700">{{ money(inv.totalAmount) }}</td>
               </tr>
             </tbody>
           </table>
@@ -985,7 +1432,8 @@
         </div>
 
         <div class="text-right">
-          <span class="inline-block px-3 py-1 rounded bg-slate-100 border border-slate-300 font-mono text-[10px] font-bold text-slate-700">
+          <span
+            class="inline-block px-3 py-1 rounded bg-slate-100 border border-slate-300 font-mono text-[10px] font-bold text-slate-700">
             Mali Mühür / Elektronik İmza ile İmzalanmıştır
           </span>
         </div>

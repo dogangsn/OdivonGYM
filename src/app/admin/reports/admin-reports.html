@@ -276,7 +276,7 @@
                 <td class="odv-td text-slate-500">{{ paymentLabel[entry.paymentMethod || 'cash'] || entry.paymentMethod }}</td>
                 <td class="odv-td text-right font-black font-mono"
                     [class]="entry.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
-                  {{ entry.type === 'income' ? '+' : '−' }}₺{{ money(entry.amount) }}
+                  {{ entry.type === 'income' ? '+' : '−' }}{{ money(entry.amount) }}
                 </td>
               </tr>
             }

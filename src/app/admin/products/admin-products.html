@@ -110,7 +110,7 @@
         @for (c of filterCategories(); track c.id) {
           <button
             type="button"
-            (click)="selectedCategory.set(c.id)"
+            (click)="toggleFilterCategory(c.id)"
             class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
             [class]="selectedCategory() === c.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
           >

@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
@@ -10,6 +11,9 @@ import { Field } from '../../shared/ui/field';
 import { firstError, formatDate, formatMoney, fromDateInput, sortDesc, toDateInput, todayInput } from '../../shared/ui/ui-utils';
 import { AccountingCategory, AdminAccountingService } from './admin-accounting.service';
 import { AccountingEntry } from '../../core/models/accounting-entry.model';
+import { AdminEInvoiceService } from '../e-invoice/admin-e-invoice.service';
+import { AdminMembersService } from '../members/admin-members.service';
+import { UserProfile } from '../../core/models/user-profile.model';
 import {
   GymDailyClosing,
   PreClosePreviewResponse,
@@ -32,7 +36,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 @Component({
   selector: 'app-admin-accounting',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, TranslocoPipe],
+  imports: [ReactiveFormsModule, FormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field, TranslocoPipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-accounting.html',
 })
@@ -40,6 +44,8 @@ export class AdminAccounting implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(AdminAccountingService);
   private readonly alertService = inject(AlertService);
+  private readonly eInvoiceService = inject(AdminEInvoiceService);
+  private readonly membersService = inject(AdminMembersService);
 
   // Active Main Tab
   protected readonly activeTab = signal<MainTab>('ledger');
@@ -62,6 +68,17 @@ export class AdminAccounting implements OnInit {
   private readonly data = toSignal(this.service.watchEntries(), { initialValue: null });
   protected readonly categories = toSignal(this.service.watchCategories(), { initialValue: [] as AccountingCategory[] });
 
+  // E-Fatura & Üye Entegrasyonu
+  protected readonly members = toSignal(this.membersService.watchMembers(), { initialValue: [] as UserProfile[] });
+  protected readonly eInvoiceConfig = toSignal(this.eInvoiceService.watchConfig(), { initialValue: null });
+  protected readonly createWithInvoice = signal(false);
+  protected readonly isMemberDropdownOpen = signal(false);
+  protected readonly memberSearchQuery = signal('');
+  protected readonly selectedMemberId = signal<string>('');
+  protected readonly kdvRate = signal<number>(20);
+  protected readonly isTaxIncluded = signal<boolean>(true);
+  protected readonly invoiceProfile = signal<'EARSIVFATURA' | 'TICARIFATURA'>('EARSIVFATURA');
+
   protected readonly categoryModalOpen = signal(false);
   protected readonly savingCategory = signal(false);
   protected newCategoryName = '';
@@ -78,8 +95,16 @@ export class AdminAccounting implements OnInit {
     category: ['', [Validators.required]],
     description: ['', [Validators.required]],
     entryDate: [todayInput(), [Validators.required]],
-    paymentMethod: [''],
+    paymentMethod: ['cash'],
     notes: [''],
+    // Fatura Alanları
+    invoiceNumber: [''],
+    recipientName: [''],
+    recipientVknOrTckn: [''],
+    recipientTaxOffice: [''],
+    recipientAddress: [''],
+    recipientPhone: [''],
+    recipientEmail: [''],
   });
 
   // -------------------------------------------------------------
@@ -173,17 +198,162 @@ export class AdminAccounting implements OnInit {
     return firstError(this.form.controls[name], messages);
   }
 
+  // --- E-FATURA & MÜŞTERİ COMPUTED VE METODLARI ---
+  protected readonly filteredMembers = computed(() => {
+    const q = this.memberSearchQuery().toLowerCase().trim();
+    const list = this.members() || [];
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter((m) =>
+        (m.displayName || '').toLowerCase().includes(q) ||
+        (m.phone || '').includes(q) ||
+        (m.nationalId || '').includes(q),
+      )
+      .slice(0, 30);
+  });
+
+  protected readonly selectedMember = computed(() => {
+    const id = this.selectedMemberId();
+    if (!id) return null;
+    return this.members().find((m) => m.uid === id) || null;
+  });
+
+  protected readonly calculatedNet = computed(() => {
+    const amt = Number(this.form.controls.amount.value || 0);
+    const rate = this.kdvRate();
+    if (this.isTaxIncluded()) {
+      return Math.round((amt / (1 + rate / 100)) * 100) / 100;
+    }
+    return amt;
+  });
+
+  protected readonly calculatedKdv = computed(() => {
+    const amt = Number(this.form.controls.amount.value || 0);
+    const rate = this.kdvRate();
+    const net = this.calculatedNet();
+    if (this.isTaxIncluded()) {
+      return Math.round((amt - net) * 100) / 100;
+    }
+    return Math.round(((amt * rate) / 100) * 100) / 100;
+  });
+
+  protected readonly calculatedGrandTotal = computed(() => {
+    if (this.isTaxIncluded()) {
+      return Number(this.form.controls.amount.value || 0);
+    }
+    return this.calculatedNet() + this.calculatedKdv();
+  });
+
+  openFormWithInvoice(): void {
+    this.openForm();
+    this.createWithInvoice.set(true);
+    this.generateNextInvoiceNumber();
+  }
+
+  quickCreateInvoiceForEntry(e: AccountingEntry): void {
+    this.openForm(e);
+    this.createWithInvoice.set(true);
+    if (e.recipientName) {
+      this.form.patchValue({ recipientName: e.recipientName });
+    }
+    if (e.recipientVknOrTckn) {
+      this.form.patchValue({ recipientVknOrTckn: e.recipientVknOrTckn });
+    }
+    this.generateNextInvoiceNumber();
+  }
+
+  generateNextInvoiceNumber(): string {
+    const cfg = this.eInvoiceConfig();
+    const currentProvider = cfg?.provider || 'manuel';
+    const prefix = cfg?.prefix || (currentProvider === 'gib_portal' ? 'GIB' : currentProvider === 'manuel' ? 'FAT' : 'ODV');
+    const year = new Date().getFullYear();
+    const autoNumber = `${prefix}${year}${String(Date.now()).slice(-9)}`;
+    this.form.patchValue({ invoiceNumber: autoNumber });
+    return autoNumber;
+  }
+
+  toggleCreateWithInvoice(): void {
+    const nextVal = !this.createWithInvoice();
+    this.createWithInvoice.set(nextVal);
+    if (nextVal && !this.form.controls.invoiceNumber.value) {
+      this.generateNextInvoiceNumber();
+    }
+  }
+
+  selectMember(m: UserProfile): void {
+    this.selectedMemberId.set(m.uid);
+    this.form.patchValue({
+      recipientName: m.displayName || '',
+      recipientVknOrTckn: m.nationalId?.trim() || '11111111110',
+      recipientPhone: m.phone || '',
+      recipientEmail: m.email || '',
+      recipientAddress: m.branchName ? `${m.branchName} Şubesi Üyesi` : 'Türkiye',
+    });
+    if (!this.form.controls.description.value) {
+      this.form.patchValue({
+        description: `${m.displayName} - ${m.packageLabel || 'Hizmet Bedeli'}`,
+      });
+    }
+    this.closeMemberDropdown();
+    this.alertService.toastSuccess(`"${m.displayName}" seçildi.`);
+  }
+
+  clearSelectedMember(): void {
+    this.selectedMemberId.set('');
+    this.form.patchValue({
+      recipientName: '',
+      recipientVknOrTckn: '',
+      recipientPhone: '',
+      recipientEmail: '',
+      recipientAddress: '',
+    });
+  }
+
+  toggleMemberDropdown(): void {
+    this.isMemberDropdownOpen.update((v) => !v);
+  }
+
+  closeMemberDropdown(): void {
+    this.isMemberDropdownOpen.set(false);
+  }
+
+  initials(name?: string): string {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
   protected openForm(entry: AccountingEntry | null = null): void {
     this.editing.set(entry);
     this.errorMessage.set('');
+    this.selectedMemberId.set('');
+    this.isMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+    this.createWithInvoice.set(false);
+    this.kdvRate.set(20);
+    this.isTaxIncluded.set(true);
+    this.invoiceProfile.set('EARSIVFATURA');
+
     this.form.reset({
       type: entry?.type ?? (this.typeFilter() === 'expense' ? 'expense' : 'income'),
       amount: entry?.amount ?? 0,
       category: entry?.category ?? '',
       description: entry?.description ?? '',
       entryDate: entry ? toDateInput(entry.entryDate) : todayInput(),
-      paymentMethod: entry?.paymentMethod ?? '',
+      paymentMethod: entry?.paymentMethod ?? 'cash',
       notes: entry?.notes ?? '',
+      invoiceNumber: entry?.invoiceNumber ?? '',
+      recipientName: entry?.recipientName ?? '',
+      recipientVknOrTckn: entry?.recipientVknOrTckn ?? '',
+      recipientTaxOffice: '',
+      recipientAddress: '',
+      recipientPhone: '',
+      recipientEmail: '',
     });
     this.drawerOpen.set(true);
   }
@@ -198,10 +368,71 @@ export class AdminAccounting implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+
+    const v = this.form.getRawValue();
+
+    if (this.createWithInvoice()) {
+      if (!v.recipientName?.trim()) {
+        this.errorMessage.set('E-Fatura için lütfen Alıcı / Müşteri Adı giriniz.');
+        return;
+      }
+    }
+
     this.submitting.set(true);
     this.errorMessage.set('');
+
     try {
-      const v = this.form.getRawValue();
+      let createdInvoiceId: string | undefined;
+      let finalInvoiceNo: string | undefined;
+
+      if (this.createWithInvoice()) {
+        finalInvoiceNo = v.invoiceNumber?.trim() || this.generateNextInvoiceNumber();
+        const tckn = v.recipientVknOrTckn?.trim() || '11111111110';
+        const now = new Date();
+        const issueTime = now.toTimeString().split(' ')[0];
+
+        createdInvoiceId = await this.eInvoiceService.createInvoice({
+          invoiceNumber: finalInvoiceNo,
+          direction: v.type === 'expense' ? 'inbound' : 'outbound',
+          recipientName: v.recipientName.trim(),
+          recipientVknOrTckn: tckn,
+          recipientTaxOffice: v.recipientTaxOffice?.trim() || undefined,
+          recipientAddress: v.recipientAddress?.trim() || undefined,
+          recipientPhone: v.recipientPhone?.trim() || undefined,
+          recipientEmail: v.recipientEmail?.trim() || undefined,
+          amount: this.calculatedNet(),
+          discountTotal: 0,
+          kdvRate: this.kdvRate(),
+          kdvAmount: this.calculatedKdv(),
+          totalAmount: this.calculatedGrandTotal(),
+          invoiceType: this.invoiceProfile() === 'TICARIFATURA' ? 'commercial' : (v.type === 'expense' ? 'purchase' : 'earswive'),
+          invoiceProfile: this.invoiceProfile(),
+          invoiceTypeCode: 'SATIS',
+          provider: this.eInvoiceConfig()?.provider || 'manuel',
+          paymentMethod: (v.paymentMethod as any) || 'cash',
+          paymentStatus: 'paid',
+          isDeliveryNoteReplacement: true,
+          issueTime,
+          description: v.description.trim(),
+          notes: v.notes ? `${v.notes} (Muhasebe Kaydı İle Otomatik Düzenlendi)` : 'Muhasebe kaydı ile otomatik düzenlendi.',
+          memberId: this.selectedMemberId() || undefined,
+          items: [
+            {
+              name: v.description.trim(),
+              quantity: 1,
+              unit: 'Adet',
+              unitPrice: this.calculatedNet(),
+              discountRate: 0,
+              discountAmount: 0,
+              kdvRate: this.kdvRate(),
+              total: this.calculatedNet(),
+              kdvAmount: this.calculatedKdv(),
+              grandTotal: this.calculatedGrandTotal(),
+            },
+          ],
+        });
+      }
+
       const payload = {
         type: v.type,
         amount: v.amount,
@@ -210,19 +441,33 @@ export class AdminAccounting implements OnInit {
         entryDate: fromDateInput(v.entryDate),
         paymentMethod: (v.paymentMethod || undefined) as AccountingEntry['paymentMethod'],
         notes: v.notes.trim(),
+        invoiceId: createdInvoiceId,
+        invoiceNumber: finalInvoiceNo,
+        recipientName: v.recipientName?.trim() || undefined,
+        recipientVknOrTckn: v.recipientVknOrTckn?.trim() || undefined,
+        referenceId: createdInvoiceId,
+        referenceType: (createdInvoiceId ? 'e-invoice' : undefined) as AccountingEntry['referenceType'],
       };
+
       const current = this.editing();
       if (current) {
         await this.service.updateEntry(current.id, payload);
       } else {
         await this.service.addEntry(payload);
       }
-      this.alertService.toastSuccess(current ? 'Kayıt güncellendi.' : 'Muhasebe kaydı eklendi.');
+
+      if (this.createWithInvoice()) {
+        this.alertService.toastSuccess(`✓ Muhasebe kaydı ve resmi e-faturası (${finalInvoiceNo}) başarıyla oluşturuldu!`);
+      } else {
+        this.alertService.toastSuccess(current ? 'Kayıt güncellendi.' : 'Muhasebe kaydı eklendi.');
+      }
+
       this.close();
       this.loadPreClosePreview();
       this.loadExpenseAnalytics();
-    } catch {
-      this.errorMessage.set('Kaydedilemedi, lütfen tekrar deneyin.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kaydedilemedi, lütfen tekrar deneyin.';
+      this.errorMessage.set(msg);
     } finally {
       this.submitting.set(false);
     }

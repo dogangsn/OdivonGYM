@@ -151,75 +151,8 @@
 
       <div class="topbar__spacer"></div>
 
-      <!-- Sağ: Turnike QR Butonu, Kurumsal Rozetler, Bildirim ve Profil Kartı -->
+      <!-- Sağ: Kilit, Dil, Bildirim ve Profil Kartı -->
       <div class="topbar__right flex items-center gap-2.5">
-        <!-- Turnike QR Geçiş Butonu (Mobil & Masaüstü Kolay Erişim) -->
-        <button
-          type="button"
-          (click)="openQrModal()"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all cursor-pointer active:scale-95"
-          [title]="'shell.turnstileCard' | transloco"
-        >
-          <mat-icon class="text-[16px] w-4 h-4">qr_code_scanner</mat-icon>
-          <span class="hidden sm:inline">{{ 'shell.turnstileQr' | transloco }}</span>
-        </button>
-
-        <!-- Paket Rozeti (SaaS) & Hızlı Menü -->
-        <button
-          type="button"
-          [matMenuTriggerFor]="proMenu"
-          class="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer"
-          [ngClass]="{
-            'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200': saasSub.activePlan().id === 'enterprise',
-            'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200': saasSub.activePlan().id === 'pro',
-            'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300': saasSub.activePlan().id === 'starter'
-          }"
-          [title]="'shell.saasManagement' | transloco"
-        >
-          <mat-icon class="text-[14px] w-3.5 h-3.5 text-current">workspace_premium</mat-icon>
-          <span>{{ saasSub.activePlan().name }}</span>
-          @if (saasSub.isTrial()) {
-            <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-white">
-              {{ saasSub.trialDaysLeft() }}G
-            </span>
-          }
-          <mat-icon class="text-[14px] w-3.5 h-3.5 opacity-60">expand_more</mat-icon>
-        </button>
-        <mat-menu #proMenu="matMenu" xPosition="before">
-          <div class="px-4 py-2.5 border-b border-slate-100 text-xs">
-            <div class="flex items-center justify-between gap-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-700">
-                ODIVON {{ saasSub.activePlan().name | uppercase }}
-              </span>
-              <span class="text-slate-400 text-[11px]">
-                {{ saasSub.isTrial() ? ('shell.trialVersion' | transloco) : ('shell.activeLicense' | transloco) }}
-              </span>
-            </div>
-            <p class="font-semibold text-slate-800 text-xs mt-1.5 mb-0">
-              {{ 'shell.quota' | transloco }}: {{ saasSub.branchCount() }}/{{ saasSub.activePlan().limits.maxBranches >= 9999 ? ('shell.unlimited' | transloco) : saasSub.activePlan().limits.maxBranches }} {{ 'shell.branch' | transloco }} · {{ saasSub.memberCount() }} {{ 'shell.member' | transloco }}
-            </p>
-            <p class="text-slate-500 text-[11px] m-0">
-              {{ saasSub.isTrial() ? ('shell.remainingDays' | transloco: { days: saasSub.trialDaysLeft() }) : (saasSub.billingCycle() === 'yearly' ? ('shell.yearlyLicense' | transloco) : ('shell.monthlyLicense' | transloco)) }}
-            </p>
-          </div>
-          <button mat-menu-item routerLink="/admin/subscription">
-            <mat-icon class="text-indigo-600">card_membership</mat-icon>
-            <span class="font-bold">{{ 'shell.saasManagement' | transloco }}</span>
-          </button>
-          <button mat-menu-item routerLink="/admin/packages">
-            <mat-icon class="text-purple-600">sell</mat-icon>
-            <span>{{ 'shell.menuPackagePricing' | transloco }}</span>
-          </button>
-          <button mat-menu-item routerLink="/admin/accounting">
-            <mat-icon class="text-indigo-600">account_balance</mat-icon>
-            <span>{{ 'shell.menuCashReports' | transloco }}</span>
-          </button>
-          <button mat-menu-item routerLink="/admin/e-invoice">
-            <mat-icon class="text-emerald-600">receipt_long</mat-icon>
-            <span>{{ 'shell.menuEInvoice' | transloco }}</span>
-          </button>
-        </mat-menu>
-
         <!-- AI Asistan Butonu (simüle cevaplar; gerçek servis bağlanana kadar gizli) -->
         @if (features.aiAssistant) {
         <button
@@ -233,12 +166,6 @@
           <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>
         </button>
         }
-
-        <!-- Canlı Çevrimiçi Rozeti -->
-        <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>{{ 'shell.online' | transloco }}</span>
-        </div>
 
         <!-- Uygulama Kilit Butonu (4 veya 6 haneli PIN) -->
         <button

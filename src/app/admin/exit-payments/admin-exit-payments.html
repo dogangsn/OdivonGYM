@@ -327,23 +327,134 @@
         <p class="text-xs font-bold text-slate-900 dark:text-white m-0">{{ tab.note }}</p>
       </div>
 
-      <!-- Müşteri Eşleştirme (İsteğe Bağlı) -->
-      <div>
-        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+      <!-- Müşteri Eşleştirme (Aramalı Popover) -->
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
           Üye / Müşteri (E-Cüzdan veya Hesap Eşleme)
         </label>
-        <select
-          [ngModel]="collectUserId()"
-          (ngModelChange)="collectUserId.set($event)"
-          class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
-        >
-          <option value="">👤 Misafir / Ayaktan (İsimsiz)</option>
-          @for (mem of members(); track mem.uid) {
-            <option [value]="mem.uid">
-              {{ mem.displayName }} (Cüzdan: {{ money(mem.walletBalance || 0) }})
-            </option>
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleCollectMemberDropdown()"
+            class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer"
+            [class.border-emerald-500]="collectMemberDropdownOpen()"
+            [class.ring-2]="collectMemberDropdownOpen()"
+            [class.ring-emerald-500/20]="collectMemberDropdownOpen()"
+          >
+            @if (collectUserId() && getMember(collectUserId()); as sel) {
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                  {{ getInitials(sel.displayName) }}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ sel.displayName }}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                      #{{ sel.memberNumber || '0000' }}
+                    </span>
+                  </div>
+                  <div class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+                    Cüzdan: {{ money(sel.walletBalance || 0) }}
+                    @if (sel.phone) { · {{ sel.phone }} }
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-slate-200/70 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-4">person_outline</mat-icon>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold truncate">Misafir / Ayaktan (İsimsiz)</div>
+                  <div class="text-[10px] text-slate-400 truncate">Kayıtlı üye seçmek için tıklayın</div>
+                </div>
+              </div>
+            }
+            <mat-icon class="icon-size-4 text-slate-400 transition-transform duration-200 shrink-0" [class.rotate-180]="collectMemberDropdownOpen()">expand_more</mat-icon>
+          </button>
+
+          @if (collectMemberDropdownOpen()) {
+            <div class="fixed inset-0 z-30" (click)="collectMemberDropdownOpen.set(false)"></div>
+            <div class="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-fade-in">
+              <div class="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+                <div class="relative flex items-center">
+                  <mat-icon class="icon-size-4 absolute left-3 text-slate-400 pointer-events-none">search</mat-icon>
+                  <input
+                    type="text"
+                    [ngModel]="memberSearchQuery()"
+                    (ngModelChange)="memberSearchQuery.set($event)"
+                    (click)="$event.stopPropagation()"
+                    placeholder="Üye adı, #takip no veya telefon ara..."
+                    class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500"
+                  />
+                  @if (memberSearchQuery()) {
+                    <button
+                      type="button"
+                      (click)="memberSearchQuery.set(''); $event.stopPropagation()"
+                      class="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-transparent border-0 p-0 cursor-pointer flex items-center"
+                    >
+                      <mat-icon class="icon-size-3.5">cancel</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 custom-scroll">
+                <button
+                  type="button"
+                  (click)="selectCollectMember('')"
+                  class="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer bg-transparent border-0"
+                  [class.bg-emerald-50/60]="!collectUserId()"
+                  [class.dark:bg-emerald-950/30]="!collectUserId()"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                      <mat-icon class="icon-size-4">person_outline</mat-icon>
+                    </div>
+                    <div>
+                      <div class="text-xs font-extrabold text-slate-800 dark:text-slate-200">Misafir / Ayaktan (İsimsiz)</div>
+                      <div class="text-[10px] text-slate-400">Üye hesabı eşleştirmeden tahsil et</div>
+                    </div>
+                  </div>
+                  @if (!collectUserId()) {
+                    <mat-icon class="icon-size-4 text-emerald-600 dark:text-emerald-400">check_circle</mat-icon>
+                  }
+                </button>
+
+                @for (mem of filteredMembersForPicker(); track mem.uid) {
+                  <button
+                    type="button"
+                    (click)="selectCollectMember(mem.uid)"
+                    class="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer bg-transparent border-0"
+                    [class.bg-emerald-50/80]="collectUserId() === mem.uid"
+                    [class.dark:bg-emerald-950/40]="collectUserId() === mem.uid"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0">
+                        {{ getInitials(mem.displayName) }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ mem.displayName }}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 shrink-0">
+                            #{{ mem.memberNumber || '0000' }}
+                          </span>
+                        </div>
+                        <div class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 truncate mt-0.5">
+                          Cüzdan: {{ money(mem.walletBalance || 0) }}
+                          @if (mem.phone) { <span class="text-slate-400 font-normal">· {{ mem.phone }}</span> }
+                        </div>
+                      </div>
+                    </div>
+                    @if (collectUserId() === mem.uid) {
+                      <mat-icon class="icon-size-4 text-emerald-600 dark:text-emerald-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
           }
-        </select>
+        </div>
       </div>
 
       <!-- Tahsil Edilecek Tutar -->
@@ -453,7 +564,7 @@
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <mat-icon class="icon-size-5">add</mat-icon>
+            <mat-icon class="icon-size-5">receipt_long</mat-icon>
           </div>
           <div>
             <h3 class="text-sm font-bold text-slate-900 dark:text-white m-0">Yeni Açık Fiş / Çıkış Kaydı</h3>
@@ -493,25 +604,164 @@
           [ngModel]="newTabAmount()"
           (ngModelChange)="newTabAmount.set($event)"
           placeholder="0.00"
-          class="w-full px-3 py-2 text-sm font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+          class="w-full px-3 py-2 text-sm font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
         />
       </div>
 
-      <!-- Üye / Misafir Seçimi (İsteğe Bağlı) -->
-      <div>
-        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-          Üye / Müşteri (Opsiyonel)
-        </label>
-        <select
-          [ngModel]="newTabUserId()"
-          (ngModelChange)="newTabUserId.set($event)"
-          class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
-        >
-          <option value="">👤 Misafir / Ayaktan (İsimsiz)</option>
-          @for (mem of members(); track mem.uid) {
-            <option [value]="mem.uid">{{ mem.displayName }}</option>
+      <!-- Üye / Misafir Seçimi (Modern Aramalı Popover) -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Üye / Müşteri Seçimi (Opsiyonel)
+          </label>
+          @if (newTabUserId()) {
+            <button
+              type="button"
+              (click)="clearNewTabMember($event)"
+              class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline bg-transparent border-0 p-0 cursor-pointer"
+            >
+              Misafir Olarak Değiştir
+            </button>
           }
-        </select>
+        </div>
+
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleNewTabMemberDropdown()"
+            class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer"
+            [class.border-indigo-500]="memberDropdownOpen()"
+            [class.ring-2]="memberDropdownOpen()"
+            [class.ring-indigo-500/20]="memberDropdownOpen()"
+          >
+            @if (newTabUserId() && getMember(newTabUserId()); as sel) {
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                  {{ getInitials(sel.displayName) }}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ sel.displayName }}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 shrink-0">
+                      #{{ sel.memberNumber || '0000' }}
+                    </span>
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-400 truncate">
+                    Cüzdan: {{ money(sel.walletBalance || 0) }}
+                    @if (sel.phone) { · {{ sel.phone }} }
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-slate-200/70 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center shrink-0">
+                  <mat-icon class="icon-size-4">person_search</mat-icon>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold truncate">Misafir / Ayaktan (İsimsiz)</div>
+                  <div class="text-[10px] text-slate-400 truncate">Üye adı, #numara veya telefon ile aramak için tıklayın</div>
+                </div>
+              </div>
+            }
+            <mat-icon class="icon-size-4 text-slate-400 transition-transform duration-200 shrink-0" [class.rotate-180]="memberDropdownOpen()">expand_more</mat-icon>
+          </button>
+
+          @if (memberDropdownOpen()) {
+            <div class="fixed inset-0 z-30" (click)="memberDropdownOpen.set(false)"></div>
+            <div class="absolute left-0 right-0 bottom-full mb-2 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-fade-in">
+              <!-- Sticky Search Input -->
+              <div class="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+                <div class="relative flex items-center">
+                  <mat-icon class="icon-size-4 absolute left-3 text-slate-400 pointer-events-none">search</mat-icon>
+                  <input
+                    type="text"
+                    [ngModel]="memberSearchQuery()"
+                    (ngModelChange)="memberSearchQuery.set($event)"
+                    (click)="$event.stopPropagation()"
+                    placeholder="Üye adı, #takip no veya telefon ara..."
+                    class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                  @if (memberSearchQuery()) {
+                    <button
+                      type="button"
+                      (click)="memberSearchQuery.set(''); $event.stopPropagation()"
+                      class="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-transparent border-0 p-0 cursor-pointer flex items-center"
+                    >
+                      <mat-icon class="icon-size-3.5">cancel</mat-icon>
+                    </button>
+                  }
+                </div>
+                <div class="flex items-center justify-between px-1 pt-1.5 text-[10px] font-bold text-slate-400">
+                  <span>Aktif Kulüp Üyeleri</span>
+                  @if (isSearchingRemote()) {
+                    <span class="text-indigo-600 dark:text-indigo-400 animate-pulse">Sunucuda aranıyor...</span>
+                  } @else {
+                    <span>{{ filteredMembersForPicker().length }} sonuç</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Dropdown Items -->
+              <div class="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 custom-scroll">
+                <!-- Misafir Option -->
+                <button
+                  type="button"
+                  (click)="selectNewTabMember('')"
+                  class="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer bg-transparent border-0"
+                  [class.bg-indigo-50/60]="!newTabUserId()"
+                  [class.dark:bg-indigo-950/30]="!newTabUserId()"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                      <mat-icon class="icon-size-4">person_outline</mat-icon>
+                    </div>
+                    <div>
+                      <div class="text-xs font-extrabold text-slate-800 dark:text-slate-200">Misafir / Ayaktan (İsimsiz)</div>
+                      <div class="text-[10px] text-slate-400">Üye seçmeden açık fiş oluştur</div>
+                    </div>
+                  </div>
+                  @if (!newTabUserId()) {
+                    <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400">check_circle</mat-icon>
+                  }
+                </button>
+
+                @for (mem of filteredMembersForPicker(); track mem.uid) {
+                  <button
+                    type="button"
+                    (click)="selectNewTabMember(mem.uid)"
+                    class="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 transition-colors cursor-pointer bg-transparent border-0"
+                    [class.bg-indigo-50/80]="newTabUserId() === mem.uid"
+                    [class.dark:bg-indigo-950/40]="newTabUserId() === mem.uid"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0">
+                        {{ getInitials(mem.displayName) }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ mem.displayName }}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 shrink-0">
+                            #{{ mem.memberNumber || '0000' }}
+                          </span>
+                        </div>
+                        <div class="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                          {{ mem.packageLabel || 'Standart Üye' }} · Cüzdan: {{ money(mem.walletBalance || 0) }}
+                        </div>
+                      </div>
+                    </div>
+                    @if (newTabUserId() === mem.uid) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                } @empty {
+                  <div class="p-4 text-center text-xs text-slate-400">
+                    Aranan kriterde aktif üye bulunamadı.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
       </div>
 
       <!-- Actions -->

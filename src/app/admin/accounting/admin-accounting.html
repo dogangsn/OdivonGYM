@@ -11,6 +11,14 @@
           <mat-icon class="icon-size-4">category</mat-icon>
           <span>{{ 'accounting.actions.manageCategories' | transloco }}</span>
         </button>
+        <button
+          type="button"
+          (click)="openFormWithInvoice()"
+          class="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
+        >
+          <mat-icon class="icon-size-4 text-purple-600">receipt_long</mat-icon>
+          <span>Fatura ile Kayıt</span>
+        </button>
         <button type="button" class="odv-btn-primary" (click)="openForm()">
           <mat-icon class="icon-size-4.5">add</mat-icon>
           <span>{{ 'accounting.actions.newEntry' | transloco }}</span>
@@ -166,7 +174,21 @@
                   <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                     <td class="odv-td text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ date(e.entryDate) }}</td>
                     <td class="odv-td">
-                      <p class="font-semibold text-slate-900 dark:text-white m-0">{{ e.description }}</p>
+                      <div class="flex items-center gap-2">
+                        <p class="font-semibold text-slate-900 dark:text-white m-0">{{ e.description }}</p>
+                        @if (e.invoiceNumber) {
+                          <a routerLink="/admin/e-invoice" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-50 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40 no-underline hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors" title="E-Fatura Sayfasına Git">
+                            <mat-icon class="icon-size-3 text-purple-600">receipt</mat-icon>
+                            <span>{{ e.invoiceNumber }}</span>
+                          </a>
+                        }
+                      </div>
+                      @if (e.recipientName) {
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0 font-medium">
+                          Alıcı: <strong class="text-slate-700 dark:text-slate-300">{{ e.recipientName }}</strong>
+                          @if (e.recipientVknOrTckn) { <span class="text-slate-400 font-mono">({{ e.recipientVknOrTckn }})</span> }
+                        </p>
+                      }
                       @if (e.notes) {
                         <p class="text-[11px] text-slate-400 m-0">{{ e.notes }}</p>
                       }
@@ -178,12 +200,17 @@
                     </td>
                     <td class="odv-td text-slate-600 dark:text-slate-300">{{ e.paymentMethod ? paymentLabel[e.paymentMethod] : '—' }}</td>
                     <td
-                      class="odv-td text-right font-bold whitespace-nowrap"
+                      class="odv-td text-right font-bold whitespace-nowrap font-mono"
                       [class]="e.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
                     >
                       {{ e.type === 'income' ? '+' : '−' }}{{ money(e.amount) }}
                     </td>
                     <td class="odv-td text-right whitespace-nowrap">
+                      @if (!e.invoiceNumber) {
+                        <button type="button" class="odv-icon-btn hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/60 mr-1" title="Bu Kayda E-Fatura Kes" (click)="quickCreateInvoiceForEntry(e)">
+                          <mat-icon class="icon-size-4">receipt_long</mat-icon>
+                        </button>
+                      }
                       <button type="button" class="odv-icon-btn" title="Düzenle" (click)="openForm(e)">
                         <mat-icon class="icon-size-4">edit</mat-icon>
                       </button>
@@ -629,8 +656,9 @@
 <!-- ============================================================= -->
 <app-slide-over
   [open]="drawerOpen()"
-  [title]="editing() ? 'Kaydı Düzenle' : 'Yeni Muhasebe Kaydı'"
-  [submitLabel]="editing() ? 'Değişiklikleri Kaydet' : 'Kaydı Ekle'"
+  [title]="editing() ? 'Kaydı Düzenle' : (createWithInvoice() ? 'Resmi Fatura ile Muhasebe Kaydı' : 'Yeni Muhasebe Kaydı')"
+  [submitLabel]="editing() ? 'Değişiklikleri Kaydet' : (createWithInvoice() ? 'Kaydı ve E-Faturayı Oluştur' : 'Kaydı Ekle')"
+  width="2xl"
   [submitting]="submitting()"
   [errorMessage]="errorMessage()"
   (closed)="close()"
@@ -639,29 +667,29 @@
   <div [formGroup]="form" class="space-y-4">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <app-field label="Tür" [required]="true">
-        <select formControlName="type" class="odv-input">
+        <select formControlName="type" class="odv-select font-semibold">
           <option value="income">Gelir (+)</option>
           <option value="expense">Gider (−)</option>
         </select>
       </app-field>
       <app-field label="Tutar (₺)" [required]="true" [error]="err('amount', { required: 'Tutar gerekli.', min: 'Sıfırdan büyük olmalı.' })">
-        <input type="number" min="0.01" step="0.01" formControlName="amount" class="odv-input font-bold" />
+        <input type="number" min="0.01" step="0.01" formControlName="amount" class="odv-input font-bold font-mono" />
       </app-field>
     </div>
 
     <div>
       <div class="flex items-center justify-between mb-1">
-        <label class="odv-label required m-0">Kategori</label>
+        <label class="odv-label required m-0 font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">Kategori</label>
         <button
           type="button"
           (click)="openCategoryModal()"
-          class="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-bold flex items-center gap-1 cursor-pointer"
+          class="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-bold flex items-center gap-1 cursor-pointer border-none bg-transparent"
         >
           <mat-icon class="icon-size-3.5">add_circle</mat-icon>
           <span>Yeni Kategori Tanımla</span>
         </button>
       </div>
-      <select formControlName="category" class="odv-input">
+      <select formControlName="category" class="odv-select">
         <option value="">-- Kategori Seçiniz --</option>
         @for (c of categoryOptions(); track c) {
           <option [value]="c">{{ c }}</option>
@@ -674,12 +702,11 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <app-field label="Tarih" [required]="true" [error]="err('entryDate', { required: 'Tarih gerekli.' })">
-        <input type="date" formControlName="entryDate" class="odv-input" />
+        <input type="date" formControlName="entryDate" class="odv-input font-mono" />
       </app-field>
       <app-field label="Ödeme Yöntemi">
-        <select formControlName="paymentMethod" class="odv-input">
-          <option value="">Belirtilmedi</option>
-          <option value="cash">Nakit</option>
+        <select formControlName="paymentMethod" class="odv-select">
+          <option value="cash">Nakit Kasa</option>
           <option value="card">Banka / Kredi Kartı</option>
           <option value="transfer">Havale / EFT</option>
           <option value="wallet">Üye Cüzdanı</option>
@@ -694,6 +721,189 @@
     <app-field label="Özel Not">
       <textarea formControlName="notes" rows="2" placeholder="Fatura no, dekont referansı vb." class="odv-input resize-none text-xs"></textarea>
     </app-field>
+
+    <!-- E-FATURA & E-ARŞİV KISA YOLU KARTI -->
+    <div
+      class="p-4 rounded-2xl border transition-all space-y-3.5"
+      [class.bg-purple-50/60]="createWithInvoice()"
+      [class.dark:bg-purple-950/30]="createWithInvoice()"
+      [class.border-purple-300]="createWithInvoice()"
+      [class.dark:border-purple-800]="createWithInvoice()"
+      [class.bg-slate-50]="!createWithInvoice()"
+      [class.dark:bg-slate-800/40]="!createWithInvoice()"
+      [class.border-slate-200]="!createWithInvoice()"
+      [class.dark:border-slate-700]="!createWithInvoice()"
+    >
+      <label class="flex items-center justify-between cursor-pointer select-none">
+        <div class="flex items-center gap-3">
+          <span
+            class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shadow-xs shrink-0 transition-colors"
+            [class.bg-purple-600]="createWithInvoice()"
+            [class.text-white]="createWithInvoice()"
+            [class.bg-slate-200]="!createWithInvoice()"
+            [class.text-slate-500]="!createWithInvoice()"
+          >
+            <mat-icon class="icon-size-5">receipt_long</mat-icon>
+          </span>
+          <div>
+            <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white block">Resmi E-Fatura / E-Arşiv Düzenle</span>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Bu işlem için GİB onaylı e-belge oluşturur</span>
+          </div>
+        </div>
+
+        <input
+          type="checkbox"
+          [checked]="createWithInvoice()"
+          (change)="toggleCreateWithInvoice()"
+          class="w-5 h-5 rounded text-purple-600 focus:ring-purple-500 border-slate-300 cursor-pointer"
+        />
+      </label>
+
+      @if (createWithInvoice()) {
+        <div class="pt-3 border-t border-purple-200/80 dark:border-purple-800/60 space-y-3">
+          <!-- Üye Arama Popover Dropdown -->
+          <div class="relative space-y-1">
+            <label class="block font-bold text-[10px] uppercase tracking-wider text-purple-800 dark:text-purple-300">
+              Kayıtlı Üye / Müşteri Seçimi (Opsiyonel)
+            </label>
+
+            @if (selectedMember(); as mem) {
+              <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 flex items-center justify-between gap-2 shadow-2xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {{ initials(mem.displayName) }}
+                  </span>
+                  <div class="min-w-0">
+                    <span class="font-bold text-xs text-slate-900 dark:text-white block truncate">{{ mem.displayName }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">TC: {{ mem.nationalId || '11111111110' }} · {{ mem.phone || 'Tel Yok' }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" (click)="toggleMemberDropdown()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer border-none">
+                    Değiştir
+                  </button>
+                  <button type="button" (click)="clearSelectedMember()" class="w-6 h-6 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer border-none bg-transparent">
+                    <mat-icon class="icon-size-3.5">close</mat-icon>
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button
+                type="button"
+                (click)="toggleMemberDropdown()"
+                class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-purple-300 dark:border-purple-700 hover:border-purple-500 text-slate-600 dark:text-slate-300 text-xs font-semibold flex items-center justify-between cursor-pointer transition-all"
+              >
+                <span class="flex items-center gap-2">
+                  <mat-icon class="icon-size-4 text-purple-600">person_search</mat-icon>
+                  <span>Kayıtlı üyelerden müşteri seç (TCKN & Adres otomatik dolar)...</span>
+                </span>
+                <mat-icon class="icon-size-4 text-slate-400">arrow_drop_down</mat-icon>
+              </button>
+            }
+
+            @if (isMemberDropdownOpen()) {
+              <div class="fixed inset-0 z-40" (click)="closeMemberDropdown()"></div>
+              <div class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-60">
+                <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                  <div class="relative">
+                    <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 icon-size-4">search</mat-icon>
+                    <input
+                      type="text"
+                      [ngModel]="memberSearchQuery()"
+                      (ngModelChange)="memberSearchQuery.set($event)"
+                      (click)="$event.stopPropagation()"
+                      placeholder="Üye adı, telefon, TCKN ara..."
+                      class="w-full pl-8 pr-7 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    />
+                    @if (memberSearchQuery()) {
+                      <button type="button" (click)="memberSearchQuery.set('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer border-none bg-transparent p-0">
+                        <mat-icon class="icon-size-3.5">clear</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div class="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800 custom-scroll">
+                  @for (m of filteredMembers(); track m.uid) {
+                    <div (click)="selectMember(m)" class="p-2 hover:bg-purple-50/70 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-6 h-6 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {{ initials(m.displayName) }}
+                        </span>
+                        <div class="min-w-0">
+                          <span class="font-bold text-xs text-slate-900 dark:text-white block truncate">{{ m.displayName }}</span>
+                          <span class="text-[10px] text-slate-400 font-mono">TC: {{ m.nationalId || 'Yok' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="p-4 text-center text-slate-400 text-xs">Üye bulunamadı.</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Alıcı Adı ve TCKN / VKN -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px] mb-1">
+                Alıcı Adı Soyadı / Unvan <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" formControlName="recipientName" placeholder="Örn: Ahmet Yılmaz" class="odv-input text-xs" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px] mb-1">
+                TCKN (11 Hane) veya VKN (10 Hane)
+              </label>
+              <input type="text" maxlength="11" formControlName="recipientVknOrTckn" placeholder="11111111110" class="odv-input font-mono text-xs font-bold" />
+            </div>
+          </div>
+
+          <!-- Senaryo, KDV Oranı ve KDV Dahil/Hariç Seçimi -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px] mb-1">Fatura Senaryosu</label>
+              <select [ngModel]="invoiceProfile()" (ngModelChange)="invoiceProfile.set($event)" [ngModelOptions]="{standalone: true}" class="odv-select text-xs font-semibold">
+                <option value="EARSIVFATURA">E-Arşiv Fatura (Bireysel)</option>
+                <option value="TICARIFATURA">Ticari Fatura (Şirket)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px] mb-1">KDV Oranı</label>
+              <select [ngModel]="kdvRate()" (ngModelChange)="kdvRate.set(+$event)" [ngModelOptions]="{standalone: true}" class="odv-select text-xs font-bold">
+                <option [value]="20">%20 KDV</option>
+                <option [value]="10">%10 KDV</option>
+                <option [value]="1">%1 KDV</option>
+                <option [value]="0">%0 (Muaf)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px] mb-1">Fatura No (Otomatik)</label>
+              <input type="text" formControlName="invoiceNumber" class="odv-input font-mono text-xs font-bold uppercase" />
+            </div>
+          </div>
+
+          <!-- Canlı Vergi ve Tutar Hesaplama Özeti -->
+          <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-purple-200/80 dark:border-purple-900/60 space-y-1.5 text-xs shadow-2xs">
+            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+              <span>Fatura Matrahı (KDV Hariç):</span>
+              <span class="font-mono font-bold">{{ money(calculatedNet()) }}</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+              <span>Hesaplanan KDV (%{{ kdvRate() }}):</span>
+              <span class="font-mono font-bold text-purple-600 dark:text-purple-400">{{ money(calculatedKdv()) }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-slate-800 font-bold">
+              <span class="text-slate-900 dark:text-white">Genel Fatura Toplamı:</span>
+              <span class="text-sm font-black text-purple-600 dark:text-purple-400 font-mono">{{ money(calculatedGrandTotal()) }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
   </div>
 </app-slide-over>
 

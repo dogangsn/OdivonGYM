@@ -73,7 +73,15 @@ export function turkishNumberToWords(num: number): string {
 export function generateGibQrCodePayload(inv: EInvoiceItem, config: EInvoiceConfig | null): string {
   const sellerVkn = config?.companyVkn || '7290184910';
   const buyerVkn = inv.recipientVknOrTckn || '11111111110';
-  const dateStr = inv.issueDate ? (inv.issueDate.toDate ? inv.issueDate.toDate().toISOString().split('T')[0] : String(inv.issueDate).split('T')[0]) : new Date().toISOString().split('T')[0];
+  let dateStr = new Date().toISOString().split('T')[0];
+  try {
+    if (inv.issueDate) {
+      const d = inv.issueDate.toDate ? inv.issueDate.toDate() : new Date(inv.issueDate as any);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toISOString().split('T')[0];
+      }
+    }
+  } catch {}
   const ettn = inv.gibUuid || '00000000-0000-0000-0000-000000000000';
   const total = (inv.totalAmount || 0).toFixed(2);
   const kdv = (inv.kdvAmount || 0).toFixed(2);
@@ -99,9 +107,17 @@ export function generateUblTr21Xml(inv: EInvoiceItem, config: EInvoiceConfig | n
   const buyerTaxOffice = escapeXml(inv.recipientTaxOffice || '');
   const buyerAddress = escapeXml(inv.recipientAddress || 'Türkiye');
 
-  const issueDateObj = inv.issueDate ? (inv.issueDate.toDate ? inv.issueDate.toDate() : new Date(inv.issueDate as any)) : new Date();
-  const issueDate = issueDateObj.toISOString().split('T')[0];
-  const issueTime = inv.issueTime || issueDateObj.toTimeString().split(' ')[0] || '12:00:00';
+  let issueDate = new Date().toISOString().split('T')[0];
+  let issueTime = inv.issueTime || '12:00:00';
+  try {
+    const issueDateObj = inv.issueDate ? (inv.issueDate.toDate ? inv.issueDate.toDate() : new Date(inv.issueDate as any)) : new Date();
+    if (!isNaN(issueDateObj.getTime())) {
+      issueDate = issueDateObj.toISOString().split('T')[0];
+      if (!inv.issueTime) {
+        issueTime = issueDateObj.toTimeString().split(' ')[0] || '12:00:00';
+      }
+    }
+  } catch {}
 
   const invoiceNo = inv.invoiceNumber || 'GIB2026000000001';
   const uuid = inv.gibUuid || 'f47ac10b-58cc-4372-a567-0e02b2c3d479';

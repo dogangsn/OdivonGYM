@@ -16,7 +16,12 @@ import { Supplier } from '../../core/models/supplier.model';
 import { AdminSuppliersService } from '../suppliers/admin-suppliers.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { of } from 'rxjs';
-import { StockCategoryItem, resolveCategoryEmoji } from '../../core/models/stock-category.model';
+import {
+  StockCategoryItem,
+  ensureCategoryKey,
+  matchesProductCategory,
+  resolveCategoryEmoji,
+} from '../../core/models/stock-category.model';
 
 @Component({
   selector: 'app-admin-products',
@@ -46,19 +51,40 @@ export class AdminProducts {
 
   protected readonly filterCategories = computed(() => {
     const list = this.stockCategories();
-    return [
-      { id: 'all', label: 'Tümü', icon: '⚡' },
-      ...list.map((c) => ({
-        id: c.key,
-        label: c.name,
-        icon: resolveCategoryEmoji(c.name || c.key, c.icon),
-        colorTag: c.colorTag || 'indigo',
-      })),
+    const seen = new Set<string>();
+    const items: Array<{ id: string; key: string; name: string; label: string; icon: string; colorTag: string; rawId?: string }> = [
+      { id: 'all', key: 'all', name: 'Tümü', label: 'Tümü', icon: '⚡', colorTag: 'indigo' },
     ];
+
+    list.forEach((c, idx) => {
+      const safeKey = ensureCategoryKey(c, idx);
+      if (seen.has(safeKey)) return;
+      seen.add(safeKey);
+      items.push({
+        id: safeKey,
+        key: safeKey,
+        name: c.name || safeKey,
+        label: c.name || safeKey,
+        icon: resolveCategoryEmoji(c.name || safeKey, c.icon),
+        colorTag: c.colorTag || 'indigo',
+        rawId: c.id,
+      });
+    });
+
+    return items;
   });
 
   protected readonly selectedCategory = signal<string>('all');
   protected readonly search = signal<string>('');
+
+  toggleFilterCategory(id: string): void {
+    const target = id && id.trim() ? id.trim() : 'all';
+    if (this.selectedCategory() === target) {
+      this.selectedCategory.set('all');
+    } else {
+      this.selectedCategory.set(target);
+    }
+  }
 
   // Data
   private readonly productData = toSignal(this.shopService.watchProducts(), { initialValue: null });
@@ -84,11 +110,17 @@ export class AdminProducts {
     const list = this.products();
     const cat = this.selectedCategory();
     const q = this.search().trim().toLowerCase();
+    const selectedCatObj = cat === 'all' ? null : this.filterCategories().find((c) => c.id === cat);
 
     return list.filter((p) => {
-      const pCat = (p.category ?? '').trim().toLowerCase();
-      const targetCat = (cat ?? '').trim().toLowerCase();
-      const matchCat = cat === 'all' || (!!targetCat && pCat === targetCat);
+      const matchCat =
+        cat === 'all' ||
+        matchesProductCategory(p.category, {
+          id: selectedCatObj?.rawId || cat,
+          key: selectedCatObj?.key || cat,
+          name: selectedCatObj?.name || cat,
+          label: selectedCatObj?.label || cat,
+        });
       const matchQuery =
         !q ||
         (!!p.name && p.name.toLowerCase().includes(q)) ||
@@ -126,13 +158,7 @@ export class AdminProducts {
 
   getCategoryItem(key?: string): StockCategoryItem | undefined {
     if (!key) return undefined;
-    const target = key.trim().toLowerCase();
-    return this.stockCategories().find(
-      (c) =>
-        (c.key && c.key.trim().toLowerCase() === target) ||
-        (c.name && c.name.trim().toLowerCase() === target) ||
-        (c.id && c.id.trim().toLowerCase() === target),
-    );
+    return this.stockCategories().find((c) => matchesProductCategory(key, c));
   }
 
   getCategoryLabel(key: string): string {
@@ -154,7 +180,7 @@ export class AdminProducts {
     this.errorMessage.set('');
     this.editingProduct.set(null);
     const firstCat = this.stockCategories()[0];
-    const defaultCat = firstCat?.key || firstCat?.name || 'protein';
+    const defaultCat = firstCat ? ensureCategoryKey(firstCat, 0) : 'protein';
     this.form.reset({
       name: '',
       sku: `PRD-${Date.now().toString().slice(-4)}`,
@@ -176,12 +202,13 @@ export class AdminProducts {
   openEdit(p: ShopProduct): void {
     this.errorMessage.set('');
     this.editingProduct.set(p);
+    const matchedCat = this.getCategoryItem(p.category);
     this.form.reset({
       name: p.name,
       sku: p.sku,
       price: p.price,
       stock: p.stock,
-      category: p.category,
+      category: matchedCat ? ensureCategoryKey(matchedCat) : p.category,
       description: p.description ?? '',
       cost: p.cost ?? 0,
       supplier: p.supplier ?? '',
@@ -214,7 +241,6 @@ export class AdminProducts {
     this.submitting.set(true);
     this.errorMessage.set('');
     const raw = this.form.getRawValue();
-    // Tedarikçi kaydı seçildiyse ad da ondan gelir; seçilmediyse serbest metin.
     const linked = this.suppliers().find((s) => s.id === raw.supplierId);
     const supplierFields = {
       supplier: linked?.name ?? raw.supplier,

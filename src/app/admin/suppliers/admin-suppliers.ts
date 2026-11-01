@@ -9,9 +9,13 @@ import { AlertService } from '../../core/services/alert.service';
 
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { AdminSuppliersService } from './admin-suppliers.service';
-import { Supplier, SupplierCategoryItem } from '../../core/models/supplier.model';
+import {
+  DEFAULT_SUPPLIER_CATEGORIES,
+  Supplier,
+  SupplierCategoryItem,
+  ensureSupplierCategoryKey,
+} from '../../core/models/supplier.model';
 import { SlideOver } from '../../shared/ui/slide-over';
-import { Field } from '../../shared/ui/field';
 import { firstError, formatMoney } from '../../shared/ui/ui-utils';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -35,7 +39,7 @@ const CATEGORY_BADGES: Record<string, string> = {
 @Component({
   selector: 'app-admin-suppliers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver, Field],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, PageHeader, SlideOver],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-suppliers.html',
 })
@@ -50,7 +54,36 @@ export class AdminSuppliers {
   protected readonly money = formatMoney;
 
   readonly suppliers = toSignal(this.suppliersService.watchSuppliers(), { initialValue: [] as Supplier[] });
-  readonly categories = toSignal(this.suppliersService.watchCategories(), { initialValue: [] as SupplierCategoryItem[] });
+  private readonly rawCategories = toSignal(this.suppliersService.watchCategories(), { initialValue: [] as SupplierCategoryItem[] });
+
+  readonly categories = computed<SupplierCategoryItem[]>(() => {
+    const fromApi = this.rawCategories();
+    const map = new Map<string, SupplierCategoryItem>();
+
+    // 1. Standart varsayılan kategoriler (her zaman hazır)
+    for (const def of DEFAULT_SUPPLIER_CATEGORIES) {
+      map.set(def.key, {
+        tenantId: '',
+        key: def.key,
+        name: def.name,
+        colorTag: def.colorTag,
+        badgeClass: def.badgeClass,
+        description: def.description,
+      });
+    }
+
+    // 2. Veritabanından gelen özel veya güncellenmiş kategoriler
+    for (const c of fromApi) {
+      const safeKey = ensureSupplierCategoryKey(c);
+      map.set(safeKey, {
+        ...c,
+        key: safeKey,
+        name: c.name || safeKey,
+      });
+    }
+
+    return Array.from(map.values());
+  });
 
   readonly searchTerm = signal('');
   readonly selectedCategory = signal<string>('all');
@@ -60,6 +93,12 @@ export class AdminSuppliers {
   readonly editingSupplier = signal<Supplier | null>(null);
   readonly submitting = signal(false);
   readonly errorMessage = signal('');
+
+  // Quick Inline Category in Drawer
+  readonly quickCategoryOpen = signal(false);
+  readonly quickCategoryName = signal('');
+  readonly quickCategoryColor = signal('indigo');
+  readonly savingQuickCategory = signal(false);
 
   // Category Management SlideOver
   readonly categoryModalOpen = signal(false);
@@ -90,6 +129,7 @@ export class AdminSuppliers {
     iban: [''],
     address: [''],
     notes: [''],
+    status: ['active' as 'active' | 'passive'],
   });
 
   readonly filteredSuppliers = computed(() => {
@@ -196,8 +236,34 @@ export class AdminSuppliers {
     }
   }
 
+  async addQuickCategory(): Promise<void> {
+    const name = this.quickCategoryName().trim();
+    if (!name) {
+      this.alertService.toastError('Lütfen kategori adını girin.');
+      return;
+    }
+    this.savingQuickCategory.set(true);
+    try {
+      const key = ensureSupplierCategoryKey({ name });
+      await this.suppliersService.createCategory({
+        name,
+        colorTag: this.quickCategoryColor(),
+      });
+      this.form.controls.category.setValue(key);
+      this.quickCategoryName.set('');
+      this.quickCategoryOpen.set(false);
+      this.alertService.toastSuccess(`"${name}" kategorisi eklendi ve seçildi.`);
+    } catch (err: any) {
+      this.alertService.toastError(err?.message || 'Kategori eklenemedi.');
+    } finally {
+      this.savingQuickCategory.set(false);
+    }
+  }
+
   openNewDrawer(): void {
     this.editingSupplier.set(null);
+    this.quickCategoryOpen.set(false);
+    this.quickCategoryName.set('');
     const defaultCat = this.categories()[0]?.key || 'equipment';
     this.form.reset({
       name: '',
@@ -211,12 +277,15 @@ export class AdminSuppliers {
       iban: '',
       address: '',
       notes: '',
+      status: 'active',
     });
     this.drawerOpen.set(true);
   }
 
   openEditDrawer(s: Supplier): void {
     this.editingSupplier.set(s);
+    this.quickCategoryOpen.set(false);
+    this.quickCategoryName.set('');
     this.form.reset({
       name: s.name,
       contactPerson: s.contactPerson || '',
@@ -229,6 +298,7 @@ export class AdminSuppliers {
       iban: s.iban || '',
       address: s.address || '',
       notes: s.notes || '',
+      status: s.status || 'active',
     });
     this.drawerOpen.set(true);
   }

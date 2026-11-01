@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { formatMoney, formatDateTime, toMillis } from '../../shared/ui/ui-utils'
 import { ExitPaymentsService } from './exit-payments.service';
 import { AdminMembersService } from '../members/admin-members.service';
 import { AdminShopService } from '../shop/admin-shop.service';
-import { ExitPayment, ExitPaymentStatus } from '../../core/models/exit-payment.model';
+import { ExitPayment } from '../../core/models/exit-payment.model';
 import { UserProfile } from '../../core/models/user-profile.model';
 import { ShopProduct } from '../../core/models/shop-product.model';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -63,6 +63,67 @@ export class AdminExitPayments {
   protected readonly products = computed(() =>
     (this.productsData() ?? []).filter((p) => p.status === 'active'),
   );
+
+  // Searchable Member Popover State (shared by New Tab & Collect Modals)
+  protected readonly memberDropdownOpen = signal(false);
+  protected readonly collectMemberDropdownOpen = signal(false);
+  protected readonly memberSearchQuery = signal('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  protected readonly isSearchingRemote = signal(false);
+  private memberSearchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly activeMembersPool = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.members()) {
+      if (m?.uid) map.set(m.uid, m);
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m?.uid && !map.has(m.uid)) map.set(m.uid, m);
+    }
+    return Array.from(map.values())
+      .filter((m) => !m.isArchived && (!m.membershipStatus || m.membershipStatus === 'active'))
+      .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'tr'));
+  });
+
+  protected readonly filteredMembersForPicker = computed(() => {
+    const list = this.activeMembersPool();
+    const q = this.memberSearchQuery().trim().toLocaleLowerCase('tr');
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter((m) => {
+        const name = (m.displayName || '').toLocaleLowerCase('tr');
+        const num = String(m.memberNumber || '').toLocaleLowerCase('tr');
+        const phone = String(m.phone || '').toLocaleLowerCase('tr');
+        return name.includes(q) || num.includes(q) || phone.includes(q);
+      })
+      .slice(0, 30);
+  });
+
+  constructor() {
+    effect(() => {
+      const q = this.memberSearchQuery().trim();
+      if (this.memberSearchDebounce) clearTimeout(this.memberSearchDebounce);
+      if (q.length < 2) {
+        this.isSearchingRemote.set(false);
+        return;
+      }
+      this.isSearchingRemote.set(true);
+      this.memberSearchDebounce = setTimeout(async () => {
+        try {
+          const results = await this.membersService.searchMembers(q, {
+            status: 'active',
+            archived: false,
+            limit: 30,
+          });
+          this.remoteSearchedMembers.set(results);
+        } catch {
+          // ignore
+        } finally {
+          this.isSearchingRemote.set(false);
+        }
+      }, 250);
+    });
+  }
 
   // Executive KPIs
   protected readonly openTabsCount = computed(
@@ -117,7 +178,6 @@ export class AdminExitPayments {
         return noteMatch || nameMatch || itemMatch;
       })
       .sort((a, b) => {
-        // Open tabs first, then newest
         if (a.status === 'open' && b.status !== 'open') return -1;
         if (a.status !== 'open' && b.status === 'open') return 1;
         return toMillis(b.createdAt) - toMillis(a.createdAt);
@@ -149,7 +209,54 @@ export class AdminExitPayments {
   // Helper for Member details
   getMember(uid?: string | null): UserProfile | undefined {
     if (!uid) return undefined;
-    return this.members().find((m) => m.uid === uid);
+    return this.activeMembersPool().find((m) => m.uid === uid) || this.members().find((m) => m.uid === uid);
+  }
+
+  protected getInitials(name?: string): string {
+    if (!name) return 'ÜY';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toLocaleUpperCase('tr');
+    return (parts[0][0] + parts[parts.length - 1][0]).toLocaleUpperCase('tr');
+  }
+
+  protected toggleNewTabMemberDropdown(): void {
+    const next = !this.memberDropdownOpen();
+    this.memberDropdownOpen.set(next);
+    if (next) {
+      this.memberSearchQuery.set('');
+    }
+  }
+
+  protected selectNewTabMember(uid: string): void {
+    this.newTabUserId.set(uid);
+    const m = this.getMember(uid);
+    if (m) {
+      this.newTabCustomerName.set(m.displayName);
+    } else {
+      this.newTabCustomerName.set('');
+    }
+    this.memberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+  }
+
+  protected clearNewTabMember(event: Event): void {
+    event.stopPropagation();
+    this.newTabUserId.set('');
+    this.newTabCustomerName.set('');
+  }
+
+  protected toggleCollectMemberDropdown(): void {
+    const next = !this.collectMemberDropdownOpen();
+    this.collectMemberDropdownOpen.set(next);
+    if (next) {
+      this.memberSearchQuery.set('');
+    }
+  }
+
+  protected selectCollectMember(uid: string): void {
+    this.collectUserId.set(uid);
+    this.collectMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
   }
 
   // --- ACTIONS ---
@@ -160,10 +267,13 @@ export class AdminExitPayments {
     this.collectAmount.set(tab.totalAmount);
     this.collectPaymentMethod.set('cash');
     this.collectUserId.set(tab.userId || '');
+    this.collectMemberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
   }
 
   closeCollectModal(): void {
     this.selectedTabForCollect.set(null);
+    this.collectMemberDropdownOpen.set(false);
   }
 
   async confirmCollect(): Promise<void> {
@@ -244,11 +354,14 @@ export class AdminExitPayments {
     this.newTabCustomerName.set('');
     this.newTabUserId.set('');
     this.newTabAmount.set(0);
+    this.memberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
     this.showNewTabModal.set(true);
   }
 
   closeNewTabModal(): void {
     this.showNewTabModal.set(false);
+    this.memberDropdownOpen.set(false);
   }
 
   async submitNewTab(): Promise<void> {

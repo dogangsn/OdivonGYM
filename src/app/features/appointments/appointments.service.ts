@@ -99,6 +99,7 @@ export class AppointmentsService {
         status: 'booked',
         userId: input.userId || null,
         memberName: input.memberName || null,
+        memberPhone: input.memberPhone || null,
         sessionType: input.sessionType || null,
         extras: {
           memberName: input.memberName || '',

@@ -101,6 +101,8 @@ export interface CreateInvoiceInput {
   amount: number;
   discountTotal?: number;
   kdvRate?: number;
+  kdvAmount?: number;
+  totalAmount?: number;
   invoiceType: InvoiceType;
   invoiceProfile?: 'EARSIVFATURA' | 'TICARIFATURA' | 'TEMELFATURA' | 'KAMU' | 'IHRACAT';
   invoiceTypeCode?: 'SATIS' | 'IADE' | 'TEVKIFAT' | 'ISTISNA' | 'OZELMATRAH';

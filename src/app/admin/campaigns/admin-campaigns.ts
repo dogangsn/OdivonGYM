@@ -14,12 +14,12 @@ import {
   CampaignType,
   CreateCampaignInput,
   DiscountType,
-  QuickBroadcastInput,
   TargetAudience,
 } from '../../core/models/campaign.model';
 import { AdminMembersService } from '../members/admin-members.service';
 import { toMillis } from '../../shared/ui/ui-utils';
 import { PermissionService } from '../../core/services/permission.service';
+import { PageHeader } from '../../shared/components/page-header/page-header';
 
 import { RouterLink } from '@angular/router';
 import { SaasSubscriptionService } from '../../core/services/saas-subscription.service';
@@ -30,7 +30,15 @@ type ActiveTab = 'campaigns' | 'quickBroadcast' | 'retentionRadar';
 @Component({
   selector: 'app-admin-campaigns',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatMenuModule,
+    RouterLink,
+    PageHeader,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-campaigns.html',
   styleUrl: './admin-campaigns.scss',
@@ -49,6 +57,12 @@ export class AdminCampaigns {
   readonly searchTerm = signal('');
   readonly selectedType = signal<CampaignType | 'all'>('all');
   readonly selectedStatus = signal<CampaignStatus | 'all'>('all');
+
+  // Popover states for modern dropdowns
+  readonly statusDropdownOpen = signal(false);
+  readonly formTypeDropdownOpen = signal(false);
+  readonly formDiscountTypeDropdownOpen = signal(false);
+  readonly formAudienceDropdownOpen = signal(false);
 
   readonly isDrawerOpen = signal(false);
   readonly editingCampaign = signal<Campaign | null>(null);
@@ -152,9 +166,42 @@ export class AdminCampaigns {
     return list.filter((m) => m.membershipStatus === 'trial').slice(0, 10);
   });
 
+  closeAllFormPopovers(): void {
+    this.formTypeDropdownOpen.set(false);
+    this.formDiscountTypeDropdownOpen.set(false);
+    this.formAudienceDropdownOpen.set(false);
+  }
+
+  getStatusFilterLabel(status: CampaignStatus | 'all'): string {
+    switch (status) {
+      case 'active':
+        return 'Sadece Aktifler';
+      case 'draft':
+        return 'Taslaklar';
+      case 'ended':
+        return 'Süresi Bitenler';
+      default:
+        return 'Tüm Durumlar';
+    }
+  }
+
+  getDiscountTypeLabel(dt: DiscountType): string {
+    switch (dt) {
+      case 'percentage':
+        return '% Oran';
+      case 'fixed_amount':
+        return '₺ Tutar';
+      case 'gift_service':
+        return 'Hediye';
+      default:
+        return '% Oran';
+    }
+  }
+
   // Drawer Controls
   openNewCampaignDrawer(): void {
     this.editingCampaign.set(null);
+    this.closeAllFormPopovers();
     this.formData = {
       title: '',
       description: '',
@@ -180,6 +227,7 @@ export class AdminCampaigns {
 
   editCampaign(campaign: Campaign): void {
     this.editingCampaign.set(campaign);
+    this.closeAllFormPopovers();
     this.formData = {
       title: campaign.title,
       description: campaign.description,
@@ -206,6 +254,7 @@ export class AdminCampaigns {
   closeDrawer(): void {
     this.isDrawerOpen.set(false);
     this.editingCampaign.set(null);
+    this.closeAllFormPopovers();
   }
 
   async onBackdropClick(): Promise<void> {

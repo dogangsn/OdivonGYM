@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject, firstValueFrom, of, startWith, switchMap } from 'rxjs';
 import { EinvoiceApi } from '../../core/api/einvoice.api';
@@ -74,6 +74,8 @@ export class AdminEInvoiceService {
         amount: 3000,
         discountTotal: 0,
         kdvRate: 20,
+        kdvAmount: 600,
+        totalAmount: 3600,
         invoiceType: 'earswive',
         invoiceProfile: 'EARSIVFATURA',
         invoiceTypeCode: 'SATIS',
@@ -125,6 +127,8 @@ export class AdminEInvoiceService {
         amount: 15000,
         discountTotal: 0,
         kdvRate: 20,
+        kdvAmount: 3000,
+        totalAmount: 18000,
         invoiceType: 'commercial',
         invoiceProfile: 'TICARIFATURA',
         invoiceTypeCode: 'SATIS',
@@ -162,6 +166,8 @@ export class AdminEInvoiceService {
         amount: 8500,
         discountTotal: 0,
         kdvRate: 10,
+        kdvAmount: 850,
+        totalAmount: 9350,
         invoiceType: 'purchase',
         invoiceProfile: 'TEMELFATURA',
         invoiceTypeCode: 'SATIS',

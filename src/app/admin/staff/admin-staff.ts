@@ -9,6 +9,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AlertService } from '../../core/services/alert.service';
+import { formatMoney } from '../../shared/ui/ui-utils';
 import { AdminStaffService } from './admin-staff.service';
 import { StaffMember, StaffStatus } from '../../core/models/staff.model';
 import { UserRole, ROLE_DEFINITIONS } from '../../core/models/user-role.model';
@@ -21,6 +22,8 @@ import { AdminDisciplinesService } from '../disciplines/admin-disciplines.servic
 import { DEFAULT_DISCIPLINES_PRESETS } from '../../core/models/sports-discipline.model';
 import { GymBranch } from '../../core/models/gym-branch.model';
 
+import { PageHeader } from '../../shared/components/page-header/page-header';
+
 type ActiveTab = 'staffList' | 'permissionMatrix' | 'roleSimulator' | 'payroll';
 
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -28,7 +31,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 @Component({
   selector: 'app-admin-staff',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule, TranslocoPipe],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MatMenuModule, TranslocoPipe, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-staff.html',
   styleUrl: './admin-staff.scss',
@@ -44,6 +47,8 @@ export class AdminStaff {
   protected readonly features = FEATURES;
   protected readonly branchContext = inject(BranchContextService);
   private readonly disciplinesService = inject(AdminDisciplinesService);
+
+  protected readonly money = formatMoney;
 
   readonly staffList = toSignal(this.staffService.watchStaff(), { initialValue: [] });
   readonly dbDisciplines = toSignal(this.disciplinesService.watchDisciplines(), { initialValue: [] });

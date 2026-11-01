@@ -16,7 +16,11 @@ export interface AccountingEntry {
   category: string; // membership, product, service, utilities, salary, etc.
   description: string;
   referenceId?: string; // link to transaction/sale
-  referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'other';
+  referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'e-invoice' | 'other';
+  invoiceId?: string;
+  invoiceNumber?: string;
+  recipientName?: string;
+  recipientVknOrTckn?: string;
   paymentMethod?: 'cash' | 'card' | 'transfer' | 'wallet';
   notes?: string;
   items?: AccountingItemDetail[];
@@ -31,7 +35,11 @@ export interface CreateAccountingEntryInput {
   category: string;
   description: string;
   referenceId?: string;
-  referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'other';
+  referenceType?: 'membership' | 'product-sale' | 'class' | 'pt' | 'e-invoice' | 'other';
+  invoiceId?: string;
+  invoiceNumber?: string;
+  recipientName?: string;
+  recipientVknOrTckn?: string;
   paymentMethod?: 'cash' | 'card' | 'transfer' | 'wallet';
   notes?: string;
   items?: AccountingItemDetail[];

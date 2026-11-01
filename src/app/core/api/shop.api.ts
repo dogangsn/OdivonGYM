@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { ApiClient } from '../http/api-client';
 import { ShopProduct, ShopSale } from '../models/shop-product.model';
-import { StockCategoryItem } from '../models/stock-category.model';
+import { StockCategoryItem, ensureCategoryKey } from '../models/stock-category.model';
 import { unwrapList } from './unwrap';
 
 @Injectable({ providedIn: 'root' })
@@ -12,7 +12,14 @@ export class ShopApi {
   listCategories() {
     return this.api
       .get<StockCategoryItem[]>('/gym/shop/categories', { limit: 100 })
-      .pipe(map((r) => unwrapList<StockCategoryItem>(r.data)));
+      .pipe(
+        map((r) =>
+          unwrapList<StockCategoryItem>(r.data).map((c, idx) => ({
+            ...c,
+            key: ensureCategoryKey(c, idx),
+          })),
+        ),
+      );
   }
 
   createCategory(body: unknown) {

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { ApiClient } from '../http/api-client';
-import { Supplier, SupplierCategoryItem } from '../models/supplier.model';
+import { Supplier, SupplierCategoryItem, ensureSupplierCategoryKey } from '../models/supplier.model';
 import { unwrapList } from './unwrap';
 
 @Injectable({ providedIn: 'root' })
@@ -11,7 +11,7 @@ export class SuppliersApi {
   listCategories() {
     return this.api
       .get<SupplierCategoryItem[]>('/gym/suppliers/categories', { limit: 100 })
-      .pipe(map((r) => unwrapList<SupplierCategoryItem>(r.data)));
+      .pipe(map((r) => unwrapList<SupplierCategoryItem>(r.data).map((c, idx) => ({ ...c, key: ensureSupplierCategoryKey(c, idx) }))));
   }
 
   createCategory(body: unknown) {

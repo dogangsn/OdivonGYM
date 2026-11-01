@@ -169,67 +169,247 @@
 </div>
 
 <!-- 5. Slide-Over Drawer (Tedarikçi Ekle / Düzenle) -->
-<app-slide-over [open]="drawerOpen()" [title]="editingSupplier() ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi Tanımla'"
-  submitLabel="Kaydet" [submitting]="submitting()" [errorMessage]="errorMessage()" (closed)="closeDrawer()" (submitted)="submit()">
-  <div [formGroup]="form" class="space-y-4">
-    <app-field label="Firma / Tedarikçi Adı" [required]="true"
-      [error]="fieldErr('name', { required: 'Firma adı zorunludur' })">
-      <input type="text" formControlName="name" placeholder="Örn: Technogym Fitness A.Ş." class="odv-input" />
-    </app-field>
+<app-slide-over
+  [open]="drawerOpen()"
+  [title]="editingSupplier() ? 'Tedarikçi Kartı Düzenle' : 'Yeni Tedarikçi Tanımla'"
+  subtitle="Tedarikçi cari kartı, faturalandırma ve finansal bakiye yönetimi"
+  width="2xl"
+  [submitLabel]="editingSupplier() ? 'Değişiklikleri Güncelle' : 'Tedarikçiyi Kaydet'"
+  [submitting]="submitting()"
+  [errorMessage]="errorMessage()"
+  (closed)="closeDrawer()"
+  (submitted)="submit()">
+  <div [formGroup]="form" class="space-y-5 text-xs font-sans">
 
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="Kategori" [required]="true">
-        <select formControlName="category" class="odv-input">
+    <!-- 1. KART: TEMEL FİRMA & KATEGORİ BİLGİLERİ -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">business</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Firma & Kategori Bilgileri</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Tedarikçi kimliği, yetkili ve ana faaliyet grubu</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+          Cari Kart
+        </span>
+      </div>
+
+      <!-- Firma Ünvanı -->
+      <div>
+        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+          Firma / Tedarikçi Unvanı <span class="text-rose-500">*</span>
+        </label>
+        <input
+          type="text"
+          formControlName="name"
+          placeholder="Örn: Technogym Fitness Ekipmanları A.Ş."
+          class="odv-input font-semibold text-xs" />
+        @if (form.controls.name.touched && form.controls.name.errors) {
+          <span class="text-[11px] text-rose-500 font-semibold mt-1 block">Firma adı zorunludur.</span>
+        }
+      </div>
+
+      <!-- Kategori Seçimi & Inline Hızlı Kategori Ekleme -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 m-0">
+            Tedarikçi Kategorisi <span class="text-rose-500">*</span>
+          </label>
+          <button
+            type="button"
+            (click)="quickCategoryOpen.set(!quickCategoryOpen())"
+            class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 cursor-pointer border-none bg-transparent p-0 transition-colors">
+            <mat-icon class="icon-size-3.5">{{ quickCategoryOpen() ? 'close' : 'add' }}</mat-icon>
+            <span>{{ quickCategoryOpen() ? 'Vazgeç' : '+ Yeni Kategori' }}</span>
+          </button>
+        </div>
+
+        <select formControlName="category" class="odv-select text-xs font-semibold">
           @for (cat of categories(); track cat.id || cat.key) {
-          <option [value]="cat.key">{{ cat.name }}</option>
+            <option [value]="cat.key">{{ cat.name }}</option>
           }
         </select>
-      </app-field>
 
-      <app-field label="Yetkili Kişi">
-        <input type="text" formControlName="contactPerson" placeholder="Ad Soyad" class="odv-input" />
-      </app-field>
+        <!-- Inline Hızlı Kategori Kartı -->
+        @if (quickCategoryOpen()) {
+          <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2.5 shadow-2xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
+                <mat-icon class="icon-size-3.5 text-indigo-600">category</mat-icon>
+                <span>Hızlı Kategori Tanımla</span>
+              </span>
+              <span class="text-[10px] text-slate-500">Doğrudan bu tedarikçiye atanır</span>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                [ngModel]="quickCategoryName()"
+                (ngModelChange)="quickCategoryName.set($event)"
+                [ngModelOptions]="{standalone: true}"
+                placeholder="Kategori adı (Örn: Matbaa & Promosyon)"
+                class="odv-input text-xs flex-1 bg-white dark:bg-slate-900" />
+              <select
+                [ngModel]="quickCategoryColor()"
+                (ngModelChange)="quickCategoryColor.set($event)"
+                [ngModelOptions]="{standalone: true}"
+                class="odv-select text-xs w-full sm:w-28 bg-white dark:bg-slate-900">
+                @for (opt of colorOptions; track opt.id) {
+                  <option [value]="opt.id">{{ opt.label }}</option>
+                }
+              </select>
+              <button
+                type="button"
+                (click)="addQuickCategory()"
+                [disabled]="savingQuickCategory() || !quickCategoryName().trim()"
+                class="odv-btn-primary text-xs py-2 px-3.5 shrink-0 disabled:opacity-50 flex items-center justify-center gap-1">
+                <mat-icon class="icon-size-3.5">check</mat-icon>
+                <span>{{ savingQuickCategory() ? 'Ekleniyor…' : 'Ekle' }}</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Yetkili Kişi & İletişim (2 Kolon) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Yetkili Kişi</label>
+          <input
+            type="text"
+            formControlName="contactPerson"
+            placeholder="Örn: Ahmet Yılmaz"
+            class="odv-input text-xs" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            Telefon Numarası <span class="text-rose-500">*</span>
+          </label>
+          <input
+            type="tel"
+            formControlName="phone"
+            placeholder="0532 000 00 00"
+            class="odv-input text-xs font-mono font-semibold" />
+          @if (form.controls.phone.touched && form.controls.phone.errors) {
+            <span class="text-[11px] text-rose-500 font-semibold mt-1 block">Telefon numarası zorunludur.</span>
+          }
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">E-Posta Adresi</label>
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="siparis@firma.com"
+            class="odv-input text-xs" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tedarikçi Durumu</label>
+          <select formControlName="status" class="odv-select text-xs font-semibold">
+            <option value="active">Aktif (Sipariş & Fatura Alınabilir)</option>
+            <option value="passive">Pasif (Dondurulmuş)</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="Telefon" [required]="true"
-        [error]="fieldErr('phone', { required: 'Telefon numarası zorunludur' })">
-        <input type="tel" formControlName="phone" placeholder="0212..." class="odv-input" />
-      </app-field>
+    <!-- 2. KART: RESMİ & MALİ BİLGİLER (VERGİ & FİNANS) -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <mat-icon class="icon-size-4.5">account_balance</mat-icon>
+          </span>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Resmi & Finansal Bilgiler</h4>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">GİB e-Fatura / e-Arşiv ve banka hesap kayıtları</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+          Mali Bilgiler
+        </span>
+      </div>
 
-      <app-field label="E-posta">
-        <input type="email" formControlName="email" placeholder="siparis@firma.com" class="odv-input" />
-      </app-field>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vergi Dairesi</label>
+          <input
+            type="text"
+            formControlName="taxOffice"
+            placeholder="Örn: Beşiktaş VD."
+            class="odv-input text-xs" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">VKN / TCKN</label>
+          <input
+            type="text"
+            maxlength="11"
+            formControlName="taxNumber"
+            placeholder="10 Haneli VKN veya 11 Haneli TCKN"
+            class="odv-input font-mono text-xs font-bold" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Banka IBAN No</label>
+          <input
+            type="text"
+            maxlength="34"
+            formControlName="iban"
+            placeholder="TR00 0000 0000 0000 0000 0000 00"
+            class="odv-input font-mono text-xs" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Başlangıç / Mevcut Cari Bakiye (₺)</label>
+          <input
+            type="number"
+            formControlName="balance"
+            placeholder="0.00"
+            class="odv-input font-mono text-xs font-bold text-rose-600 dark:text-rose-400" />
+          <span class="text-[10px] text-slate-400 mt-1 block">Tedarikçiye olan borcunuz (Örn: 2500.00)</span>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="Vergi Dairesi">
-        <input type="text" formControlName="taxOffice" placeholder="Kadıköy" class="odv-input" />
-      </app-field>
+    <!-- 3. KART: ADRES & ÖZEL NOTLAR -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+      <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <span class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <mat-icon class="icon-size-4.5">place</mat-icon>
+        </span>
+        <div>
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0">Adres & Operasyonel Notlar</h4>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 m-0">Sevkiyat adresi, sipariş ve ödeme vadesi detayları</p>
+        </div>
+      </div>
 
-      <app-field label="VKN / TCKN">
-        <input type="text" formControlName="taxNumber" placeholder="10 Haneli Vergi No" class="odv-input font-mono" />
-      </app-field>
+      <div>
+        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Firma / Depo Açık Adresi</label>
+        <textarea
+          rows="2"
+          formControlName="address"
+          placeholder="Mahalle, cadde, sokak, no, ilçe ve şehir bilgisi..."
+          class="odv-input text-xs resize-none"></textarea>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Özel Notlar & Anlaşma Koşulları</label>
+        <textarea
+          rows="2"
+          formControlName="notes"
+          placeholder="Ödeme vadesi (örn. 30 gün), kargo anlaşması, iskonto oranları vb."
+          class="odv-input text-xs resize-none"></textarea>
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <app-field label="Mevcut Cari Bakiye (₺)">
-        <input type="number" formControlName="balance" class="odv-input font-bold" />
-      </app-field>
-
-      <app-field label="Banka IBAN">
-        <input type="text" formControlName="iban" placeholder="TR..." class="odv-input font-mono text-xs" />
-      </app-field>
-    </div>
-
-    <app-field label="Adres">
-      <textarea rows="2" formControlName="address" class="odv-input text-xs"></textarea>
-    </app-field>
-
-    <app-field label="Özel Notlar">
-      <textarea rows="2" formControlName="notes" placeholder="Ödeme vadesi, indirim şartları vb."
-        class="odv-input text-xs"></textarea>
-    </app-field>
   </div>
 </app-slide-over>
 

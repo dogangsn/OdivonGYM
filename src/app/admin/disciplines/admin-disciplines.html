@@ -722,7 +722,7 @@
     <button type="button" (click)="openNewStockCategory()"
       class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 flex items-center gap-1.5 cursor-pointer whitespace-nowrap self-start sm:self-auto">
       <mat-icon class="icon-size-4">add</mat-icon>
-      <span>+ Yeni Kategori Ekle</span>
+      <span>Yeni Kategori Ekle</span>
     </button>
   </div>
 
@@ -814,14 +814,14 @@
             <h2 class="text-xl sm:text-2xl font-black text-white m-0 tracking-tight">
               Yeni Üye Hoş Geldin E-Postası & Turnike Geçiş Şablonu
             </h2>
-            <span
-              class="px-2.5 py-0.5 rounded-full text-xs font-black"
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-black"
               [ngClass]="mailTemplate().enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-700 text-slate-300'">
               {{ mailTemplate().enabled ? 'Otomatik Gönderim Açık' : 'Gönderim Kapalı' }}
             </span>
           </div>
           <p class="text-xs sm:text-sm text-slate-300 mt-1.5 mb-0 max-w-2xl leading-relaxed">
-            Yeni üye kaydında üyenin e-posta adresi doluysa; üyelik ve şifre bilgileri, mobil uygulama turnike QR geçiş rehberi ve salon bilgileri ile bu şablon kullanılarak otomatik hoş geldin e-postası iletilir.
+            Yeni üye kaydında üyenin e-posta adresi doluysa; üyelik ve şifre bilgileri, mobil uygulama turnike QR geçiş
+            rehberi ve salon bilgileri ile bu şablon kullanılarak otomatik hoş geldin e-postası iletilir.
           </p>
         </div>
       </div>
@@ -850,12 +850,10 @@
           class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-2xs space-y-6">
 
           <!-- 1. Enable/Disable Toggle Card -->
-          <div
-            class="p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-4"
+          <div class="p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-4"
             [ngClass]="mailTemplateForm.get('enabled')?.value ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'">
             <div class="flex items-center gap-3.5">
-              <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 [ngClass]="mailTemplateForm.get('enabled')?.value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'">
                 <mat-icon class="icon-size-5">forward_to_inbox</mat-icon>
               </div>
@@ -899,8 +897,7 @@
                 </label>
                 <span class="text-[11px] text-slate-400 font-semibold">Mail gövdesinin ana başlığı</span>
               </div>
-              <input type="text" formControlName="heading"
-                placeholder="Örn: Aramıza Hoş Geldiniz! 🏋️‍♂️"
+              <input type="text" formControlName="heading" placeholder="Örn: Aramıza Hoş Geldiniz! 🏋️‍♂️"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all" />
               @if (mailTemplateForm.get('heading')?.touched && mailTemplateForm.get('heading')?.hasError('required')) {
               <p class="text-xs text-rose-600 font-semibold mt-1 mb-0">Karşılama başlığı zorunludur.</p>
@@ -953,8 +950,7 @@
             </span>
 
             <!-- Include Credentials Toggle -->
-            <div
-              class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
+            <div class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
               [ngClass]="mailTemplateForm.get('includeCredentials')?.value ? 'bg-indigo-50/40 border-indigo-200' : 'bg-white'">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
@@ -963,7 +959,8 @@
                 <div>
                   <div class="text-xs sm:text-sm font-bold text-slate-900">Giriş ve Parola Bilgisi Kartı</div>
                   <div class="text-[11px] text-slate-500 mt-0.5">
-                    Üyenin kayıtlı e-posta adresini ve oluşturulan ilk giriş parolasını korumalı bilgi kartı olarak ekler.
+                    Üyenin kayıtlı e-posta adresini ve oluşturulan ilk giriş parolasını korumalı bilgi kartı olarak
+                    ekler.
                   </div>
                 </div>
               </div>
@@ -977,8 +974,7 @@
             </div>
 
             <!-- Include QR Code & Turnstile Info Toggle -->
-            <div
-              class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
+            <div class="p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 transition-all"
               [ngClass]="mailTemplateForm.get('includeQrCodeInfo')?.value ? 'bg-cyan-50/40 border-cyan-200' : 'bg-white'">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0">
@@ -1049,8 +1045,7 @@
               <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
               <span class="text-xs font-bold text-slate-400 ml-2">Canlı E-Posta Önizleme</span>
             </div>
-            <span
-              class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
               [ngClass]="previewState().enabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'">
               {{ previewState().enabled ? 'Aktif Şablon' : 'Pasif' }}
             </span>
@@ -1064,7 +1059,8 @@
             </div>
             <div class="flex items-center gap-2 text-slate-400">
               <span class="font-bold w-14 shrink-0 text-slate-500">Kime:</span>
-              <span class="text-slate-300 font-semibold truncate">Ahmet Yılmaz &lt;ahmet.yilmaz&#64;example.com&gt;</span>
+              <span class="text-slate-300 font-semibold truncate">Ahmet Yılmaz
+                &lt;ahmet.yilmaz&#64;example.com&gt;</span>
             </div>
             <div class="flex items-start gap-2 text-slate-400 pt-1">
               <span class="font-bold w-14 shrink-0 text-slate-500">Konu:</span>
@@ -1079,7 +1075,8 @@
             <!-- Brand & Club Banner -->
             <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-black text-white text-xs">
+                <div
+                  class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-black text-white text-xs">
                   OG
                 </div>
                 <div>
@@ -1087,7 +1084,8 @@
                   <div class="text-[10px] text-slate-400 font-semibold">Resmi Üyelik Bildirimi</div>
                 </div>
               </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30">
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30">
                 Yeni Üye
               </span>
             </div>
@@ -1103,13 +1101,15 @@
             </div>
 
             <!-- Custom Message Body -->
-            <div class="text-xs text-slate-300 leading-relaxed break-words whitespace-pre-line bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/60">
+            <div
+              class="text-xs text-slate-300 leading-relaxed break-words whitespace-pre-line bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/60">
               {{ renderedPreviewMessage() || 'Kulübümüze üyeliğiniz başarıyla tamamlanmıştır.' }}
             </div>
 
             <!-- Credentials Box (Conditional) -->
             @if (previewState().includeCredentials) {
-            <div class="p-4 rounded-xl bg-gradient-to-br from-indigo-950/70 to-slate-900 border border-indigo-500/30 space-y-2.5">
+            <div
+              class="p-4 rounded-xl bg-gradient-to-br from-indigo-950/70 to-slate-900 border border-indigo-500/30 space-y-2.5">
               <div class="flex items-center gap-2 text-indigo-400 text-xs font-bold">
                 <mat-icon class="icon-size-4">lock</mat-icon>
                 <span>Giriş Bilgileriniz</span>
@@ -1132,7 +1132,8 @@
 
             <!-- Turnstile QR Box (Conditional) -->
             @if (previewState().includeQrCodeInfo) {
-            <div class="p-4 rounded-xl bg-gradient-to-br from-cyan-950/60 to-slate-900 border border-cyan-500/30 space-y-3">
+            <div
+              class="p-4 rounded-xl bg-gradient-to-br from-cyan-950/60 to-slate-900 border border-cyan-500/30 space-y-3">
               <div class="flex items-center gap-2 text-cyan-300 text-xs font-bold">
                 <mat-icon class="icon-size-4">qr_code_scanner</mat-icon>
                 <span>Temassız Turnike Geçişi & Mobil Uygulama</span>
@@ -1142,7 +1143,8 @@
                   <mat-icon class="icon-size-8 text-slate-900">qr_code_2</mat-icon>
                 </div>
                 <div class="text-[11px] text-slate-300 leading-snug">
-                  Salonumuza girerken turnike üzerindeki okuyucuya mobil uygulamanızdaki <strong>QR Kodu</strong> göstererek saniyeler içinde geçiş yapabilirsiniz.
+                  Salonumuza girerken turnike üzerindeki okuyucuya mobil uygulamanızdaki <strong>QR Kodu</strong>
+                  göstererek saniyeler içinde geçiş yapabilirsiniz.
                 </div>
               </div>
               <div class="text-center pt-1">
@@ -1164,10 +1166,12 @@
         </div>
 
         <!-- Info Tip Card -->
-        <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-start gap-3 text-xs text-indigo-900">
+        <div
+          class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-start gap-3 text-xs text-indigo-900">
           <mat-icon class="icon-size-5 text-indigo-600 shrink-0 mt-0.5">info</mat-icon>
           <div class="leading-relaxed">
-            <strong>İpucu:</strong> Üye kayıt modalında parola girilmemiş olsa bile sistem otomatik olarak güvenli bir geçici şifre üretir ve üyeye bu şablona göre ulaştırır.
+            <strong>İpucu:</strong> Üye kayıt modalında parola girilmemiş olsa bile sistem otomatik olarak güvenli bir
+            geçici şifre üretir ve üyeye bu şablona göre ulaştırır.
           </div>
         </div>
       </div>

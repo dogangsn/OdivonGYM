@@ -1,15 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { AlertService } from '../../../core/services/alert.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ClassBooking, ClassSchedule as ScheduleModel } from '../../../core/models/class-schedule.model';
+import { ClassSchedule as ScheduleModel } from '../../../core/models/class-schedule.model';
 import { ClassRosterPanel } from '../class-roster/class-roster';
 import { SportsDiscipline } from '../../../core/models/sports-discipline.model';
 import { GymFacility } from '../../../core/models/gym-equipment.model';
-import { MemberDocument } from '../../../core/models/member-document.model';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { Field } from '../../../shared/ui/field';
@@ -84,6 +84,7 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
   selector: 'app-class-schedule',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     MatIconModule,
@@ -149,6 +150,210 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
         </div>
       </div>
 
+      <!-- MODERN ARAMA, GÜN & ÜYE FİLTRE ÇUBUĞU -->
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+          <!-- Ders / Eğitmen Arama -->
+          <div class="lg:col-span-5 relative">
+            <mat-icon class="icon-size-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+            <input
+              type="text"
+              [ngModel]="scheduleSearchQuery()"
+              (ngModelChange)="scheduleSearchQuery.set($event)"
+              placeholder="Ders adı, eğitmen, branş veya stüdyo ara..."
+              class="w-full pl-10 pr-8 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500 font-medium transition-all"
+            />
+            @if (scheduleSearchQuery()) {
+              <button
+                type="button"
+                (click)="scheduleSearchQuery.set('')"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer border-none bg-transparent"
+              >
+                <mat-icon class="icon-size-4">close</mat-icon>
+              </button>
+            }
+          </div>
+
+          <!-- Üyeye Göre Seans Filtresi (Aramalı Özel Popover Dropdown) -->
+          @if (!isMember) {
+            <div class="lg:col-span-4 relative">
+              <button
+                type="button"
+                (click)="toggleFilterMemberDropdown()"
+                class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer"
+                [ngClass]="
+                  isFilterMemberDropdownOpen()
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/25 bg-white dark:bg-slate-800'
+                    : filterMemberId()
+                      ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/40 dark:bg-indigo-950/30'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                "
+                [class.pr-14]="filterMemberId()"
+              >
+                @if (selectedFilterMember(); as fm) {
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
+                      {{ memberInitials(fm.displayName || fm.email) }}
+                    </span>
+                    <span class="block min-w-0">
+                      <span class="block text-xs font-extrabold text-slate-900 dark:text-white truncate leading-tight">
+                        {{ fm.displayName || fm.email }}
+                      </span>
+                      <span class="block text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold truncate leading-tight">
+                        #{{ fm.memberNumber || fm.uid.slice(0, 5) }} · Kayıtlı Olduğu Seanslar
+                      </span>
+                    </span>
+                  </span>
+                } @else {
+                  <span class="flex items-center gap-2.5 min-w-0 py-0.5">
+                    <span class="w-7 h-7 rounded-lg bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                      <mat-icon class="icon-size-4">person_search</mat-icon>
+                    </span>
+                    <span class="block min-w-0">
+                      <span class="block text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                        Üye Filtresi: Tüm Üyeler
+                      </span>
+                    </span>
+                  </span>
+                }
+                <mat-icon
+                  class="icon-size-4.5 text-slate-400 transition-transform duration-200 shrink-0"
+                  [class.rotate-180]="isFilterMemberDropdownOpen()"
+                >
+                  expand_more
+                </mat-icon>
+              </button>
+
+              @if (filterMemberId()) {
+                <button
+                  type="button"
+                  (click)="clearFilterMember($event)"
+                  class="absolute right-8 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors cursor-pointer border-none bg-transparent"
+                  title="Üye Filtresini Temizle"
+                >
+                  <mat-icon class="icon-size-3.5">close</mat-icon>
+                </button>
+              }
+
+              @if (isFilterMemberDropdownOpen()) {
+                <div class="fixed inset-0 z-30" (click)="closeFilterMemberDropdown()"></div>
+                <div class="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+                  <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+                    <div class="relative flex items-center">
+                      <mat-icon class="icon-size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+                      <input
+                        type="text"
+                        [ngModel]="filterMemberSearchQuery()"
+                        (ngModelChange)="filterMemberSearchQuery.set($event)"
+                        (click)="$event.stopPropagation()"
+                        placeholder="Üye adı, #üye no veya telefon ara..."
+                        class="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      @if (filterMemberSearchQuery()) {
+                        <button
+                          type="button"
+                          (click)="filterMemberSearchQuery.set(''); $event.stopPropagation()"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
+                        >
+                          <mat-icon class="icon-size-3.5">clear</mat-icon>
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="max-h-64 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <button
+                      type="button"
+                      (click)="selectFilterMember('')"
+                      class="w-full px-3 py-2 text-left hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
+                      [ngClass]="!filterMemberId() ? 'bg-indigo-50/80 dark:bg-indigo-950/40' : ''"
+                    >
+                      <span class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                          <mat-icon class="icon-size-4">groups</mat-icon>
+                        </span>
+                        <span class="block min-w-0">
+                          <span class="block text-xs font-bold text-slate-900 dark:text-white">Tüm Üyeler (Filtresiz)</span>
+                          <span class="block text-[10px] text-slate-400">Tüm haftalık seansları göster</span>
+                        </span>
+                      </span>
+                      @if (!filterMemberId()) {
+                        <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                      }
+                    </button>
+
+                    @for (mem of filteredScheduleMembers(); track mem.uid) {
+                      <button
+                        type="button"
+                        (click)="selectFilterMember(mem.uid)"
+                        class="w-full px-3 py-2 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
+                        [ngClass]="filterMemberId() === mem.uid ? 'bg-indigo-50/80 dark:bg-indigo-950/40' : ''"
+                      >
+                        <span class="flex items-center gap-2.5 min-w-0">
+                          @if (mem.photoURL) {
+                            <img [src]="mem.photoURL" alt="avatar" class="w-7 h-7 rounded-lg object-cover shrink-0" />
+                          } @else {
+                            <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center justify-center shrink-0">
+                              {{ memberInitials(mem.displayName || mem.email) }}
+                            </span>
+                          }
+                          <span class="block min-w-0">
+                            <span class="flex items-center gap-1.5 flex-wrap">
+                              <span class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                {{ mem.displayName || mem.email }}
+                              </span>
+                              <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px] font-semibold">
+                                #{{ mem.memberNumber || mem.uid.slice(0, 5) }}
+                              </span>
+                            </span>
+                            <span class="block text-[10px] text-slate-400 truncate mt-0.5">
+                              {{ mem.packageLabel || mem.phone || mem.email }}
+                            </span>
+                          </span>
+                        </span>
+                        @if (filterMemberId() === mem.uid) {
+                          <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                        }
+                      </button>
+                    } @empty {
+                      <div class="px-3 py-6 text-center text-xs text-slate-400">
+                        Aramaya uygun üye bulunamadı.
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Gün Filtresi (Hızlı Sekmeler) -->
+          <div [class]="isMember ? 'lg:col-span-7' : 'lg:col-span-3'" class="flex items-center gap-1 overflow-x-auto custom-scroll pb-0.5">
+            <button
+              type="button"
+              (click)="selectedDayFilter.set('all')"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0"
+              [class]="selectedDayFilter() === 'all'
+                ? 'bg-indigo-600 text-white shadow-2xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'"
+            >
+              Tümü
+            </button>
+            @for (d of dayOrder; track d) {
+              <button
+                type="button"
+                (click)="selectedDayFilter.set(d)"
+                class="px-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0"
+                [class]="selectedDayFilter() === d
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'"
+              >
+                {{ dayShortLabel[d] }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
       @if (schedules() === null) {
         <div class="odv-card py-20 text-center">
           <mat-icon class="icon-size-8 text-slate-300 animate-spin">refresh</mat-icon>
@@ -159,9 +364,13 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
           <mat-icon class="icon-size-10 text-slate-300">event_busy</mat-icon>
           <h3 class="mt-3 text-base font-bold text-slate-800 dark:text-white">Ders Bulunamadı</h3>
           <p class="text-xs text-slate-500 mt-1 mb-4">
-            {{ isTrainer() ? 'Adınıza tanımlı aktif bir seans bulunamadı.' : 'Şu an için aktif haftalık grup seansı bulunmamaktadır.' }}
+            {{ isTrainer() ? 'Adınıza tanımlı aktif bir seans bulunamadı.' : 'Seçilen filtreye uygun haftalık grup seansı bulunmamaktadır.' }}
           </p>
-          @if (isAdmin()) {
+          @if (scheduleSearchQuery() || selectedDayFilter() !== 'all' || filterMemberId()) {
+            <button type="button" class="odv-btn-soft text-xs" (click)="resetScheduleFilters()">
+              Filtreleri Temizle
+            </button>
+          } @else if (isAdmin()) {
             <button type="button" class="odv-btn-primary" (click)="openForm()">
               <mat-icon class="icon-size-4">add</mat-icon>
               İlk Dersi Tanımla
@@ -274,7 +483,6 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                       <!-- Yönetim & Öğrenci Atama Butonları -->
                       <div class="flex items-center gap-1.5">
                         @if (canManage()) {
-                          <!-- Antrenör & Resepsiyonist Öğrenci Yönetim Butonu -->
                           <button
                             type="button"
                             (click)="openStudentManager(c)"
@@ -293,7 +501,6 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                             <span>Yoklama</span>
                           </button>
                         } @else if (memberState(c); as m) {
-                          <!-- Üye: sıradaki seans için rezervasyon / bekleme listesi -->
                           <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{{ sessionLabel(m.sessionDate) }}</span>
                           @if (m.booked) {
                             <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">Rezervasyonlu</span>
@@ -346,16 +553,50 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
         </app-field>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <app-field label="Spor Branşı">
-            <select formControlName="disciplineId" class="odv-input bg-white dark:bg-slate-800">
-              <option value="">-- Branş Seçin --</option>
-              @for (d of disciplines(); track d.id) {
-                <option [value]="d.id">{{ d.name }}</option>
-              }
-            </select>
-          </app-field>
+          <!-- Spor Branşı (Özel Popover Dropdown) -->
+          <div class="relative space-y-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+              Spor Branşı
+            </label>
+            <button
+              type="button"
+              (click)="toggleFormDropdown('discipline')"
+              class="w-full px-3.5 py-2.5 rounded-xl text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 cursor-pointer transition-all"
+            >
+              <span class="truncate">
+                {{ getDiscipline(form.controls.disciplineId.value)?.name || '-- Branş Seçin --' }}
+              </span>
+              <mat-icon class="icon-size-4 text-slate-400 shrink-0" [class.rotate-180]="openFormDropdown() === 'discipline'">expand_more</mat-icon>
+            </button>
+            @if (openFormDropdown() === 'discipline') {
+              <div class="fixed inset-0 z-30" (click)="closeFormDropdown()"></div>
+              <div class="absolute left-0 right-0 mt-1 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden max-h-56 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                <button
+                  type="button"
+                  (click)="selectFormDiscipline('')"
+                  class="w-full px-3 py-2 text-left text-xs font-semibold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between cursor-pointer"
+                >
+                  <span>-- Branş Seçin --</span>
+                </button>
+                @for (d of disciplines(); track d.id) {
+                  <button
+                    type="button"
+                    (click)="selectFormDiscipline(d.id)"
+                    class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 text-xs font-bold text-slate-900 dark:text-white cursor-pointer"
+                    [ngClass]="form.controls.disciplineId.value === d.id ? 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : ''"
+                  >
+                    <span class="truncate">{{ d.name }}</span>
+                    @if (form.controls.disciplineId.value === d.id) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
 
-          <div class="space-y-1">
+          <!-- Salon / Stüdyo Alanı (Özel Popover Dropdown) -->
+          <div class="relative space-y-1">
             <div class="flex items-center justify-between">
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">
                 Salon / Stüdyo Alanı
@@ -372,40 +613,89 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                 </button>
               }
             </div>
-            <select formControlName="facilityId" class="odv-input bg-white dark:bg-slate-800">
-              <option value="">-- Alan Seçin --</option>
-              @for (f of facilities(); track f.id) {
-                <option [value]="f.id">{{ f.name }}</option>
-              }
-            </select>
+            <button
+              type="button"
+              (click)="toggleFormDropdown('facility')"
+              class="w-full px-3.5 py-2.5 rounded-xl text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 cursor-pointer transition-all"
+            >
+              <span class="truncate">
+                {{ getFacility(form.controls.facilityId.value)?.name || '-- Alan Seçin --' }}
+              </span>
+              <mat-icon class="icon-size-4 text-slate-400 shrink-0" [class.rotate-180]="openFormDropdown() === 'facility'">expand_more</mat-icon>
+            </button>
+            @if (openFormDropdown() === 'facility') {
+              <div class="fixed inset-0 z-30" (click)="closeFormDropdown()"></div>
+              <div class="absolute left-0 right-0 mt-1 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden max-h-56 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                <button
+                  type="button"
+                  (click)="selectFormFacility('')"
+                  class="w-full px-3 py-2 text-left text-xs font-semibold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between cursor-pointer"
+                >
+                  <span>-- Alan Seçin --</span>
+                </button>
+                @for (f of facilities(); track f.id) {
+                  <button
+                    type="button"
+                    (click)="selectFormFacility(f.id)"
+                    class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 text-xs font-bold text-slate-900 dark:text-white cursor-pointer"
+                    [ngClass]="form.controls.facilityId.value === f.id ? 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : ''"
+                  >
+                    <span class="truncate">📍 {{ f.name }}</span>
+                    @if (form.controls.facilityId.value === f.id) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            }
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <app-field label="Eğitmen Adı" [required]="true" [error]="err('instructorName', { required: 'Eğitmen adı gerekli.' })">
             @if (!isCustomTrainer()) {
-              <div class="flex items-center gap-2">
-                <select
-                  [value]="selectedTrainerValue()"
-                  (change)="onTrainerSelect($event)"
-                  class="odv-input bg-white dark:bg-slate-800 flex-1"
+              <div class="flex items-center gap-2 relative">
+                <button
+                  type="button"
+                  (click)="toggleFormDropdown('trainer')"
+                  class="flex-1 min-w-0 px-3 py-2.5 rounded-xl text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 cursor-pointer transition-all"
                 >
-                  <option value="">-- Antrenör Listesinden Seçin --</option>
-                  @for (t of trainers(); track t.id) {
-                    <option [value]="t.displayName">
-                      {{ t.displayName }} ({{ t.title || 'Antrenör' }})
-                    </option>
-                  }
-                </select>
+                  <span class="truncate">
+                    {{ selectedTrainerValue() || '-- Antrenör Seçin --' }}
+                  </span>
+                  <mat-icon class="icon-size-4 text-slate-400 shrink-0" [class.rotate-180]="openFormDropdown() === 'trainer'">expand_more</mat-icon>
+                </button>
                 <button
                   type="button"
                   (click)="toggleCustomTrainer(true)"
-                  class="px-2.5 py-2 rounded-xl text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1"
+                  class="px-2.5 py-2.5 rounded-xl text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1"
                   title="Listede olmayan farklı bir antrenör veya misafir eğitmen adı yazın"
                 >
                   <mat-icon class="icon-size-3">edit</mat-icon>
-                  <span>Özel Eğitmen</span>
+                  <span>Özel</span>
                 </button>
+
+                @if (openFormDropdown() === 'trainer') {
+                  <div class="fixed inset-0 z-30" (click)="closeFormDropdown()"></div>
+                  <div class="absolute left-0 right-0 top-full mt-1 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                    @for (t of trainers(); track t.id) {
+                      <button
+                        type="button"
+                        (click)="selectTrainerByName(t)"
+                        class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 text-xs cursor-pointer"
+                        [ngClass]="selectedTrainerValue() === t.displayName ? 'bg-indigo-50/80 dark:bg-indigo-950/40' : ''"
+                      >
+                        <span class="block min-w-0">
+                          <span class="block font-bold text-slate-900 dark:text-white truncate">{{ t.displayName }}</span>
+                          <span class="block text-[10px] text-indigo-600 dark:text-indigo-400 truncate">{{ t.title || 'Antrenör' }}</span>
+                        </span>
+                        @if (selectedTrainerValue() === t.displayName) {
+                          <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
               </div>
             } @else {
               <div class="flex items-center gap-2">
@@ -428,14 +718,36 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
             }
           </app-field>
 
-          <app-field label="Seviye">
-            <select formControlName="level" class="odv-input bg-white dark:bg-slate-800">
-              <option value="all">Tüm Seviyeler</option>
-              <option value="beginner">Başlangıç</option>
-              <option value="intermediate">Orta</option>
-              <option value="advanced">İleri Seviye</option>
-            </select>
-          </app-field>
+          <!-- Seviye (Özel Popover Dropdown) -->
+          <div class="relative space-y-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Seviye</label>
+            <button
+              type="button"
+              (click)="toggleFormDropdown('level')"
+              class="w-full px-3.5 py-2.5 rounded-xl text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 cursor-pointer transition-all"
+            >
+              <span>{{ levelLabel[form.controls.level.value] }}</span>
+              <mat-icon class="icon-size-4 text-slate-400 shrink-0" [class.rotate-180]="openFormDropdown() === 'level'">expand_more</mat-icon>
+            </button>
+            @if (openFormDropdown() === 'level') {
+              <div class="fixed inset-0 z-30" (click)="closeFormDropdown()"></div>
+              <div class="absolute left-0 right-0 mt-1 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                @for (lvl of levelOptions; track lvl.value) {
+                  <button
+                    type="button"
+                    (click)="selectFormLevel(lvl.value)"
+                    class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 text-xs font-bold text-slate-900 dark:text-white cursor-pointer"
+                    [ngClass]="form.controls.level.value === lvl.value ? 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : ''"
+                  >
+                    <span>{{ lvl.label }}</span>
+                    @if (form.controls.level.value === lvl.value) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
 
         <!-- Çoklu Gün Seçimi -->
@@ -447,13 +759,11 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
               <span class="text-rose-500">*</span>
             </label>
 
-            <!-- Hızlı Seçim Kısa Yolları -->
             <div class="flex items-center gap-1 flex-wrap">
               <button
                 type="button"
                 (click)="setPresetDays([1, 3, 5])"
                 class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
-                title="Pazartesi, Çarşamba, Cuma"
               >
                 Pzt-Çar-Cum
               </button>
@@ -461,7 +771,6 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                 type="button"
                 (click)="setPresetDays([2, 4, 6])"
                 class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
-                title="Salı, Perşembe, Cumartesi"
               >
                 Sal-Per-Cmt
               </button>
@@ -469,7 +778,6 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                 type="button"
                 (click)="setPresetDays([1, 2, 3, 4, 5])"
                 class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
-                title="Hafta İçi Tüm Günler"
               >
                 Hafta İçi
               </button>
@@ -477,14 +785,12 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                 type="button"
                 (click)="setPresetDays([6, 0])"
                 class="px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-white dark:bg-slate-800"
-                title="Cumartesi ve Pazar"
               >
                 Hafta Sonu
               </button>
             </div>
           </div>
 
-          <!-- Gün Seçim Butonları -->
           <div class="grid grid-cols-7 gap-1.5">
             @for (d of dayOrder; track d) {
               <button
@@ -526,16 +832,39 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
             <input type="number" min="1" formControlName="capacity" class="odv-input" />
           </app-field>
 
-          <app-field label="Durum">
-            <select formControlName="status" class="odv-input bg-white dark:bg-slate-800">
-              <option value="active">Aktif</option>
-              <option value="paused">Askıda</option>
-              <option value="cancelled">İptal</option>
-            </select>
-          </app-field>
+          <!-- Durum (Özel Popover Dropdown) -->
+          <div class="relative space-y-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Durum</label>
+            <button
+              type="button"
+              (click)="toggleFormDropdown('status')"
+              class="w-full px-3.5 py-2.5 rounded-xl text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 cursor-pointer transition-all"
+            >
+              <span>{{ statusLabel[form.controls.status.value] }}</span>
+              <mat-icon class="icon-size-4 text-slate-400 shrink-0" [class.rotate-180]="openFormDropdown() === 'status'">expand_more</mat-icon>
+            </button>
+            @if (openFormDropdown() === 'status') {
+              <div class="fixed inset-0 z-30" (click)="closeFormDropdown()"></div>
+              <div class="absolute left-0 right-0 mt-1 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                @for (st of statusOptions; track st.value) {
+                  <button
+                    type="button"
+                    (click)="selectFormStatus(st.value)"
+                    class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2 text-xs font-bold text-slate-900 dark:text-white cursor-pointer"
+                    [ngClass]="form.controls.status.value === st.value ? 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : ''"
+                  >
+                    <span>{{ st.label }}</span>
+                    @if (form.controls.status.value === st.value) {
+                      <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
 
-        <!-- Yaş Grubu / Hedef Kitle (Çocuk Grubu vb.) -->
+        <!-- Yaş Grubu / Hedef Kitle -->
         <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -629,83 +958,270 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
         [open]="studentDrawerOpen()"
         [title]="sc.name + ' · Katılımcı Yönetimi'"
         submitLabel="Kapat"
+        [confirmOnBackdrop]="false"
         (closed)="closeStudentManager()"
         (submitted)="closeStudentManager()"
       >
         <div class="space-y-5">
-          <!-- Seans Özeti -->
-          <div class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60">
-            <div class="flex items-center justify-between text-xs font-bold text-indigo-900 dark:text-indigo-200 mb-1">
-              <span>{{ dayLabel[sc.dayOfWeek] }} · {{ sc.startTime }} - {{ sc.endTime }}</span>
-              <span>Kontenjan: {{ (sc.enrolledMemberIds?.length || 0) }} / {{ sc.capacity }}</span>
+          <!-- Seans Özeti Kartı -->
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 border border-indigo-200/70 dark:border-indigo-900/60 space-y-2.5 shadow-2xs">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <mat-icon class="icon-size-4">schedule</mat-icon>
+                </span>
+                <div>
+                  <span class="block text-xs font-extrabold text-slate-900 dark:text-white">
+                    {{ dayLabel[sc.dayOfWeek] }} · {{ sc.startTime }} - {{ sc.endTime }}
+                  </span>
+                  <span class="block text-[11px] text-slate-500 dark:text-slate-400">
+                    Eğitmen: <strong class="text-indigo-600 dark:text-indigo-400">{{ sc.instructorName }}</strong>
+                  </span>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200/80 dark:border-indigo-800 text-xs font-black text-indigo-700 dark:text-indigo-300">
+                {{ sc.enrolledMemberIds?.length || 0 }} / {{ sc.capacity }} Kontenjan
+              </span>
             </div>
-            <p class="text-xs text-slate-600 dark:text-slate-400 m-0">Eğitmen: <strong>{{ sc.instructorName }}</strong></p>
+            <div class="w-full bg-slate-200/70 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all"
+                [class.bg-emerald-500]="(sc.enrolledMemberIds?.length || 0) < sc.capacity * 0.8"
+                [class.bg-amber-500]="(sc.enrolledMemberIds?.length || 0) >= sc.capacity * 0.8 && (sc.enrolledMemberIds?.length || 0) < sc.capacity"
+                [class.bg-rose-500]="(sc.enrolledMemberIds?.length || 0) >= sc.capacity"
+                [style.width.%]="((sc.enrolledMemberIds?.length || 0) / sc.capacity) * 100"
+              ></div>
+            </div>
           </div>
 
-          <!-- Yeni Öğrenci Ata Bölümü -->
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
-            <h4 class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white m-0">Seansa Öğrenci Ata</h4>
-            <div class="flex items-center gap-2">
-              <select [(ngModel)]="selectedMemberIdToAssign" class="odv-input text-xs flex-1">
-                <option value="">-- Salondan Üye Seçin --</option>
-                @for (m of unassignedMembers(); track m.uid) {
-                  <option [value]="m.uid">
-                    {{ m.displayName || m.email }} (No: {{ m.memberNumber || '—' }})
-                  </option>
+          <!-- Yeni Öğrenci Ata Bölümü (Aramalı Modern Üye Seçici) -->
+          <div class="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0 flex items-center gap-1.5">
+                <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400">person_add</mat-icon>
+                <span>Seansa Öğrenci Ata</span>
+              </h4>
+              <span class="text-[10px] font-semibold text-slate-400">Aktif üyeler içinde ara</span>
+            </div>
+
+            <div class="flex items-stretch gap-2">
+              <!-- Aramalı Üye Seçim Kutusu -->
+              <div class="relative flex-1 min-w-0">
+                <button
+                  type="button"
+                  (click)="toggleStudentMemberDropdown()"
+                  class="w-full h-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border transition-all flex items-center justify-between gap-2 text-left cursor-pointer shadow-2xs"
+                  [ngClass]="
+                    isStudentMemberDropdownOpen()
+                      ? 'border-indigo-500 ring-2 ring-indigo-500/25'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                  "
+                >
+                  @if (selectedMemberToAssign(); as selMem) {
+                    <span class="flex items-center gap-2.5 min-w-0">
+                      @if (selMem.photoURL) {
+                        <img [src]="selMem.photoURL" alt="avatar" class="w-8 h-8 rounded-lg object-cover shrink-0 border border-indigo-200 dark:border-indigo-800" />
+                      } @else {
+                        <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
+                          {{ memberInitials(selMem.displayName || selMem.email) }}
+                        </span>
+                      }
+                      <span class="block min-w-0">
+                        <span class="flex items-center gap-1.5">
+                          <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                            {{ selMem.displayName || selMem.email }}
+                          </span>
+                          <span class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold shrink-0">
+                            #{{ selMem.memberNumber || selMem.uid.slice(0, 5) }}
+                          </span>
+                        </span>
+                        <span class="block text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          {{ selMem.packageLabel || selMem.phone || 'Aktif Üye' }}
+                        </span>
+                      </span>
+                    </span>
+                  } @else {
+                    <span class="flex items-center gap-2.5 min-w-0">
+                      <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <mat-icon class="icon-size-4">person_search</mat-icon>
+                      </span>
+                      <span class="block min-w-0">
+                        <span class="block text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                          Salondan Üye Ara ve Seç…
+                        </span>
+                        <span class="block text-[10px] text-slate-400 truncate">
+                          Ad, #üye no, telefon veya paket ile filtreleyin
+                        </span>
+                      </span>
+                    </span>
+                  }
+                  <mat-icon
+                    class="icon-size-4.5 text-slate-400 transition-transform duration-200 shrink-0"
+                    [class.rotate-180]="isStudentMemberDropdownOpen()"
+                  >
+                    expand_more
+                  </mat-icon>
+                </button>
+
+                @if (isStudentMemberDropdownOpen()) {
+                  <div class="fixed inset-0 z-30" (click)="closeStudentMemberDropdown()"></div>
+                  <div class="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+                    <!-- Arama Çubuğu -->
+                    <div class="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+                      <div class="relative flex items-center">
+                        <mat-icon class="icon-size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+                        <input
+                          type="text"
+                          [ngModel]="studentMemberSearchQuery()"
+                          (ngModelChange)="studentMemberSearchQuery.set($event)"
+                          (click)="$event.stopPropagation()"
+                          placeholder="Üye adı, #üye no, telefon veya paket ara..."
+                          class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        @if (studentMemberSearchQuery()) {
+                          <button
+                            type="button"
+                            (click)="studentMemberSearchQuery.set(''); $event.stopPropagation()"
+                            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
+                          >
+                            <mat-icon class="icon-size-3.5">clear</mat-icon>
+                          </button>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Üye Listesi -->
+                    <div class="max-h-64 overflow-y-auto custom-scroll divide-y divide-slate-100 dark:divide-slate-800/60">
+                      @for (m of filteredUnassignedMembers(); track m.uid) {
+                        <button
+                          type="button"
+                          (click)="selectMemberToAssign(m.uid)"
+                          class="w-full px-3 py-2.5 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
+                          [ngClass]="selectedMemberIdToAssign() === m.uid ? 'bg-indigo-50/80 dark:bg-indigo-950/40' : ''"
+                        >
+                          <span class="flex items-center gap-2.5 min-w-0">
+                            @if (m.photoURL) {
+                              <img [src]="m.photoURL" alt="avatar" class="w-8 h-8 rounded-lg object-cover shrink-0" />
+                            } @else {
+                              <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                {{ memberInitials(m.displayName || m.email) }}
+                              </span>
+                            }
+                            <span class="block min-w-0">
+                              <span class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                  {{ m.displayName || m.email }}
+                                </span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px] font-semibold">
+                                  #{{ m.memberNumber || m.uid.slice(0, 5) }}
+                                </span>
+                                <span
+                                  class="w-1.5 h-1.5 rounded-full shrink-0"
+                                  [class]="m.membershipStatus === 'active' ? 'bg-emerald-500' : 'bg-amber-500'"
+                                ></span>
+                              </span>
+                              <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                <span class="text-indigo-600 dark:text-indigo-400 font-medium truncate">
+                                  {{ m.packageLabel || 'Standart Üye' }}
+                                </span>
+                                @if (m.phone) {
+                                  <span>· {{ m.phone }}</span>
+                                }
+                              </span>
+                            </span>
+                          </span>
+                          @if (selectedMemberIdToAssign() === m.uid) {
+                            <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400 shrink-0">check_circle</mat-icon>
+                          }
+                        </button>
+                      } @empty {
+                        <div class="px-4 py-7 text-center text-xs text-slate-400 space-y-1">
+                          <mat-icon class="icon-size-5 text-slate-300 dark:text-slate-600 mx-auto block">person_search</mat-icon>
+                          <p class="m-0 font-medium">Aramaya uygun atanabilir üye bulunamadı.</p>
+                        </div>
+                      }
+                    </div>
+
+                    @if (filteredUnassignedMembers().length >= 30) {
+                      <div class="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center">
+                        Performans için ilk 30 üye listeleniyor. Tam eşleşme için yukarıdan arayın.
+                      </div>
+                    }
+                  </div>
                 }
-              </select>
+              </div>
+
               <button
                 type="button"
                 (click)="assignSelectedMember()"
-                [disabled]="!selectedMemberIdToAssign"
-                class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer flex-shrink-0"
+                [disabled]="!selectedMemberIdToAssign()"
+                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-45 text-white text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs shadow-indigo-500/20"
               >
-                Derse Ekle
+                <mat-icon class="icon-size-4">add_circle</mat-icon>
+                <span>Derse Ekle</span>
               </button>
             </div>
           </div>
 
-          <!-- Kayıtlı Öğrenciler Listesi -->
-          <div>
-            <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              Kayıtlı Öğrenciler ({{ enrolledStudents().length }})
-            </h4>
+          <!-- Kayıtlı Öğrenciler Listesi & Filtresi -->
+          <div class="space-y-2.5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 m-0">
+                Kayıtlı Öğrenciler ({{ enrolledStudents().length }})
+              </h4>
+              @if (enrolledStudents().length > 3) {
+                <div class="relative w-full sm:w-52">
+                  <mat-icon class="icon-size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</mat-icon>
+                  <input
+                    type="text"
+                    [ngModel]="enrolledStudentSearchQuery()"
+                    (ngModelChange)="enrolledStudentSearchQuery.set($event)"
+                    placeholder="Kayıtlı öğrenci ara..."
+                    class="w-full pl-8 pr-6 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                  />
+                </div>
+              }
+            </div>
 
-            <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              @for (st of enrolledStudents(); track st.uid) {
-                <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div class="flex items-center gap-3">
-                    <span class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center flex-shrink-0">
-                      {{ st.displayName.charAt(0) || 'Ö' }}
-                    </span>
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <strong class="text-xs font-bold text-slate-900 dark:text-white">{{ st.displayName || st.email }}</strong>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
+              @for (st of filteredEnrolledStudents(); track st.uid) {
+                <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                  <div class="flex items-center gap-3 min-w-0">
+                    @if (st.photoURL) {
+                      <img [src]="st.photoURL" alt="avatar" class="w-9 h-9 rounded-xl object-cover shrink-0 border border-indigo-100 dark:border-indigo-900" />
+                    } @else {
+                      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/15 to-purple-500/15 dark:from-indigo-950 dark:to-purple-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800 font-extrabold text-xs flex items-center justify-center shrink-0">
+                        {{ memberInitials(st.displayName || st.email) }}
+                      </span>
+                    }
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <strong class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ st.displayName || st.email }}</strong>
                         @if (st.memberNumber) {
-                          <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono text-slate-500">#{{ st.memberNumber }}</span>
+                          <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">#{{ st.memberNumber }}</span>
                         }
                       </div>
-                      <p class="text-[11px] text-slate-400 m-0">{{ st.phone || st.email }}</p>
+                      <p class="text-[11px] text-slate-400 m-0 truncate mt-0.5">
+                        {{ st.packageLabel ? st.packageLabel + ' · ' : '' }}{{ st.phone || st.email }}
+                      </p>
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-2">
-                    <!-- E-İmza & Evrak Onay Butonu -->
+                  <div class="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       (click)="openDocSignModal(st)"
-                      class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
+                      class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
                       title="Evrak ve E-İmza Onayı"
                     >
-                      <mat-icon class="icon-size-3">draw</mat-icon>
+                      <mat-icon class="icon-size-3.5">draw</mat-icon>
                       <span>E-İmza / Evrak</span>
                     </button>
 
-                    <!-- Dersten Çıkar Butonu -->
                     <button
                       type="button"
                       (click)="removeStudentFromClass(st)"
-                      class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center justify-center cursor-pointer transition-colors"
+                      class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center justify-center cursor-pointer transition-colors"
                       title="Seans Kaydını Sil"
                     >
                       <mat-icon class="icon-size-4">person_remove</mat-icon>
@@ -713,8 +1229,11 @@ const STATUS_LABEL: Record<ScheduleModel['status'], string> = {
                   </div>
                 </div>
               } @empty {
-                <div class="p-8 text-center text-xs text-slate-400">
-                  Bu seansa henüz kayıtlı öğrenci bulunmuyor. Yukarıdaki alandan öğrenci ataması yapabilirsiniz.
+                <div class="p-8 text-center text-xs text-slate-400 space-y-1">
+                  <mat-icon class="icon-size-6 text-slate-300 dark:text-slate-600 mx-auto block">group_off</mat-icon>
+                  <p class="m-0 font-medium">
+                    {{ enrolledStudentSearchQuery() ? 'Aramaya uygun kayıtlı öğrenci bulunamadı.' : 'Bu seansa henüz kayıtlı öğrenci bulunmuyor. Yukarıdaki alandan öğrenci ataması yapabilirsiniz.' }}
+                  </p>
                 </div>
               }
             </div>
@@ -875,6 +1394,19 @@ export class ClassSchedule {
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly agePresets = AGE_PRESETS;
 
+  protected readonly levelOptions: ReadonlyArray<{ value: NonNullable<ScheduleModel['level']>; label: string }> = [
+    { value: 'all', label: 'Tüm Seviyeler' },
+    { value: 'beginner', label: 'Başlangıç' },
+    { value: 'intermediate', label: 'Orta' },
+    { value: 'advanced', label: 'İleri Seviye' },
+  ];
+
+  protected readonly statusOptions: ReadonlyArray<{ value: ScheduleModel['status']; label: string }> = [
+    { value: 'active', label: 'Aktif' },
+    { value: 'paused', label: 'Askıda' },
+    { value: 'cancelled', label: 'İptal' },
+  ];
+
   protected readonly isAdmin = computed(() => {
     const role = this.auth.profile()?.role;
     return role === 'admin' || role === 'owner';
@@ -882,9 +1414,7 @@ export class ClassSchedule {
 
   protected readonly isTrainer = computed(() => this.auth.profile()?.role === 'trainer');
   protected readonly isReceptionist = computed(() => this.auth.profile()?.role === 'receptionist');
-  /** Öğrenci ataması ve yoklama: yönetici, antrenör ve resepsiyon (MainApi'de classes:update izni). */
   protected readonly canManage = computed(() => this.isAdmin() || this.isTrainer() || this.isReceptionist());
-  /** Üye hesabı personel uçlarından (branş, alan, üye listesi) 403 alır; onları hiç istemez. */
   protected readonly isMember = this.service.isMember();
   protected readonly busyId = signal<string | null>(null);
   protected readonly currentUserId = computed(() => this.auth.profile()?.uid || '');
@@ -927,7 +1457,53 @@ export class ClassSchedule {
     { initialValue: [] as UserProfile[] },
   );
 
-  // Antrenör görünümünde yalnızca kendi derslerini filtreleme + çoklu gün desteği
+  // Ana Sayfa Ders / Gün / Üye Filtreleri
+  protected readonly scheduleSearchQuery = signal<string>('');
+  protected readonly selectedDayFilter = signal<Day | 'all'>('all');
+  protected readonly filterMemberId = signal<string>('');
+  protected readonly isFilterMemberDropdownOpen = signal<boolean>(false);
+  protected readonly filterMemberSearchQuery = signal<string>('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly activeMembersPool = computed(() => {
+    const map = new Map<string, UserProfile>();
+    for (const m of this.allMembers()) {
+      if (m.uid && !m.isArchived && !m.archivedAt && m.membershipStatus !== 'cancelled') {
+        map.set(m.uid, m);
+      }
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m.uid && !m.isArchived && !m.archivedAt && m.membershipStatus !== 'cancelled') {
+        map.set(m.uid, m);
+      }
+    }
+    return Array.from(map.values());
+  });
+
+  protected readonly selectedFilterMember = computed(() => {
+    const id = this.filterMemberId();
+    if (!id) return null;
+    return this.activeMembersPool().find((m) => m.uid === id) ?? this.allMembers().find((m) => m.uid === id) ?? null;
+  });
+
+  protected readonly filteredScheduleMembers = computed(() => {
+    const q = this.filterMemberSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.activeMembersPool();
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter(
+        (m) =>
+          (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+          String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.packageLabel ?? '').toLocaleLowerCase('tr').includes(q),
+      )
+      .slice(0, 30);
+  });
+
+  // Antrenör görünümünde yalnızca kendi derslerini filtreleme + arama/gün/üye filtreleri
   protected readonly days = computed(() => {
     let list = this.schedules() ?? [];
 
@@ -943,17 +1519,42 @@ export class ClassSchedule {
       list = list.filter((c) => c.status === 'active');
     }
 
-    return DAY_ORDER.map((day) => ({
-      day,
-      classes: list
-        .filter((c) => {
-          if (c.daysOfWeek && Array.isArray(c.daysOfWeek) && c.daysOfWeek.length > 0) {
-            return c.daysOfWeek.includes(day);
-          }
-          return c.dayOfWeek === day;
-        })
-        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    })).filter((g) => g.classes.length > 0);
+    const q = this.scheduleSearchQuery().trim().toLocaleLowerCase('tr');
+    if (q) {
+      list = list.filter((c) => {
+        const disc = this.getDiscipline(c.disciplineId)?.name ?? '';
+        const fac = this.getFacility(c.facilityId)?.name ?? '';
+        return (
+          (c.name ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (c.instructorName ?? '').toLocaleLowerCase('tr').includes(q) ||
+          disc.toLocaleLowerCase('tr').includes(q) ||
+          fac.toLocaleLowerCase('tr').includes(q) ||
+          (c.description ?? '').toLocaleLowerCase('tr').includes(q)
+        );
+      });
+    }
+
+    const memberFilter = this.filterMemberId();
+    if (memberFilter) {
+      list = list.filter((c) => (c.enrolledMemberIds ?? []).includes(memberFilter));
+    }
+
+    const dayFilter = this.selectedDayFilter();
+    const targetDays = dayFilter === 'all' ? DAY_ORDER : [dayFilter];
+
+    return targetDays
+      .map((day) => ({
+        day,
+        classes: list
+          .filter((c) => {
+            if (c.daysOfWeek && Array.isArray(c.daysOfWeek) && c.daysOfWeek.length > 0) {
+              return c.daysOfWeek.includes(day);
+            }
+            return c.dayOfWeek === day;
+          })
+          .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      }))
+      .filter((g) => g.classes.length > 0);
   });
 
   // Ders Oluşturma Formu
@@ -962,6 +1563,7 @@ export class ClassSchedule {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly selectedDocRequirements = signal<string[]>([]);
+  protected readonly openFormDropdown = signal<'discipline' | 'facility' | 'trainer' | 'level' | 'status' | null>(null);
 
   // Eğitmen Seçimi Durumu
   protected readonly isCustomTrainer = signal(false);
@@ -980,10 +1582,13 @@ export class ClassSchedule {
   // Yaş Grubu Seçimi
   protected readonly isCustomAge = signal(false);
 
-  // Öğrenci Yönetimi Slide-Over
+  // Öğrenci Yönetimi Slide-Over & Aramalı Üye Seçici
   protected readonly studentDrawerOpen = signal(false);
   protected readonly selectedScheduleForStudents = signal<ScheduleModel | null>(null);
-  protected selectedMemberIdToAssign = '';
+  protected readonly selectedMemberIdToAssign = signal<string>('');
+  protected readonly isStudentMemberDropdownOpen = signal<boolean>(false);
+  protected readonly studentMemberSearchQuery = signal<string>('');
+  protected readonly enrolledStudentSearchQuery = signal<string>('');
 
   // E-İmza Modal
   protected readonly signingStudent = signal<UserProfile | null>(null);
@@ -1003,6 +1608,86 @@ export class ClassSchedule {
     status: ['active' as ScheduleModel['status']],
     description: [''],
   });
+
+  constructor() {
+    effect(() => {
+      const q = (this.studentMemberSearchQuery() || this.filterMemberSearchQuery()).trim();
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      if (q.length < 2 || this.isMember) return;
+      this.searchTimer = setTimeout(async () => {
+        const res = await this.membersService.searchMembers(q, { archived: false, limit: 30 });
+        this.remoteSearchedMembers.set(res);
+      }, 250);
+    });
+  }
+
+  protected resetScheduleFilters(): void {
+    this.scheduleSearchQuery.set('');
+    this.selectedDayFilter.set('all');
+    this.filterMemberId.set('');
+  }
+
+  protected toggleFilterMemberDropdown(): void {
+    const next = !this.isFilterMemberDropdownOpen();
+    this.isFilterMemberDropdownOpen.set(next);
+    if (next) this.filterMemberSearchQuery.set('');
+  }
+
+  protected closeFilterMemberDropdown(): void {
+    this.isFilterMemberDropdownOpen.set(false);
+  }
+
+  protected selectFilterMember(memberId: string): void {
+    this.filterMemberId.set(memberId);
+    this.isFilterMemberDropdownOpen.set(false);
+    this.filterMemberSearchQuery.set('');
+  }
+
+  protected clearFilterMember(event: Event): void {
+    event.stopPropagation();
+    this.selectFilterMember('');
+  }
+
+  protected toggleFormDropdown(key: 'discipline' | 'facility' | 'trainer' | 'level' | 'status'): void {
+    this.openFormDropdown.set(this.openFormDropdown() === key ? null : key);
+  }
+
+  protected closeFormDropdown(): void {
+    this.openFormDropdown.set(null);
+  }
+
+  protected selectFormDiscipline(id: string): void {
+    this.form.controls.disciplineId.setValue(id);
+    this.closeFormDropdown();
+  }
+
+  protected selectFormFacility(id: string): void {
+    this.form.controls.facilityId.setValue(id);
+    this.closeFormDropdown();
+  }
+
+  protected selectTrainerByName(trainer: StaffMember): void {
+    this.form.patchValue({ instructorName: trainer.displayName });
+    this.selectedInstructorId = trainer.uid || trainer.id || '';
+    this.closeFormDropdown();
+  }
+
+  protected selectFormLevel(level: NonNullable<ScheduleModel['level']>): void {
+    this.form.controls.level.setValue(level);
+    this.closeFormDropdown();
+  }
+
+  protected selectFormStatus(status: ScheduleModel['status']): void {
+    this.form.controls.status.setValue(status);
+    this.closeFormDropdown();
+  }
+
+  protected memberInitials(name?: string | null): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'Ü';
+    if (parts.length === 1) return parts[0].slice(0, 2).toLocaleUpperCase('tr');
+    return (parts[0][0] + parts[parts.length - 1][0]).toLocaleUpperCase('tr');
+  }
 
   protected memberState(schedule: ScheduleModel) {
     return (schedule as Partial<MemberClassSchedule>).member ?? null;
@@ -1082,13 +1767,33 @@ export class ClassSchedule {
   // ---- Admin / Eğitmen: Öğrenci Yönetimi ----
   protected openStudentManager(schedule: ScheduleModel): void {
     this.selectedScheduleForStudents.set(schedule);
-    this.selectedMemberIdToAssign = '';
+    this.selectedMemberIdToAssign.set('');
+    this.isStudentMemberDropdownOpen.set(false);
+    this.studentMemberSearchQuery.set('');
+    this.enrolledStudentSearchQuery.set('');
     this.studentDrawerOpen.set(true);
   }
 
   protected closeStudentManager(): void {
     this.studentDrawerOpen.set(false);
+    this.isStudentMemberDropdownOpen.set(false);
     this.selectedScheduleForStudents.set(null);
+  }
+
+  protected toggleStudentMemberDropdown(): void {
+    const next = !this.isStudentMemberDropdownOpen();
+    this.isStudentMemberDropdownOpen.set(next);
+    if (next) this.studentMemberSearchQuery.set('');
+  }
+
+  protected closeStudentMemberDropdown(): void {
+    this.isStudentMemberDropdownOpen.set(false);
+  }
+
+  protected selectMemberToAssign(uid: string): void {
+    this.selectedMemberIdToAssign.set(uid);
+    this.isStudentMemberDropdownOpen.set(false);
+    this.studentMemberSearchQuery.set('');
   }
 
   protected readonly enrolledStudents = computed(() => {
@@ -1098,29 +1803,64 @@ export class ClassSchedule {
     return this.allMembers().filter((m) => enrolledIds.includes(m.uid));
   });
 
+  protected readonly filteredEnrolledStudents = computed(() => {
+    const q = this.enrolledStudentSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.enrolledStudents();
+    if (!q) return list;
+    return list.filter(
+      (m) =>
+        (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+        String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q),
+    );
+  });
+
   protected readonly unassignedMembers = computed(() => {
     const sc = this.selectedScheduleForStudents();
-    if (!sc) return this.allMembers();
-    const enrolledIds = sc.enrolledMemberIds || [];
-    return this.allMembers().filter((m) => !enrolledIds.includes(m.uid));
+    const enrolledIds = sc?.enrolledMemberIds || [];
+    return this.activeMembersPool().filter((m) => !enrolledIds.includes(m.uid));
+  });
+
+  protected readonly selectedMemberToAssign = computed(() => {
+    const id = this.selectedMemberIdToAssign();
+    if (!id) return null;
+    return this.unassignedMembers().find((m) => m.uid === id) ?? this.allMembers().find((m) => m.uid === id) ?? null;
+  });
+
+  protected readonly filteredUnassignedMembers = computed(() => {
+    const q = this.studentMemberSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.unassignedMembers();
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter(
+        (m) =>
+          (m.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.email ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.phone ?? '').toLocaleLowerCase('tr').includes(q) ||
+          String(m.memberNumber ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.packageLabel ?? '').toLocaleLowerCase('tr').includes(q) ||
+          (m.rfidCardNumber ?? '').toLocaleLowerCase('tr').includes(q),
+      )
+      .slice(0, 30);
   });
 
   protected async assignSelectedMember(): Promise<void> {
     const sc = this.selectedScheduleForStudents();
-    if (!sc || !this.selectedMemberIdToAssign) return;
+    const memberId = this.selectedMemberIdToAssign();
+    if (!sc || !memberId) return;
 
     try {
-      await this.service.assignMemberToClass(sc.id, this.selectedMemberIdToAssign);
+      await this.service.assignMemberToClass(sc.id, memberId);
       this.alertService.toastSuccess('Öğrenci başarıyla derse atandı.');
-      
-      // Update local state in schedule
-      const updatedIds = [...(sc.enrolledMemberIds || []), this.selectedMemberIdToAssign];
+
+      const updatedIds = [...(sc.enrolledMemberIds || []), memberId];
       this.selectedScheduleForStudents.set({
         ...sc,
         enrolledMemberIds: updatedIds,
         currentBookings: updatedIds.length,
       });
-      this.selectedMemberIdToAssign = '';
+      this.selectedMemberIdToAssign.set('');
     } catch (e: any) {
       this.alertService.toastError(e.message || 'Öğrenci atanamadı.');
     }
@@ -1185,6 +1925,7 @@ export class ClassSchedule {
   // ---- Eğitmen Listesi & Özel Eğitmen Girişi ----
   protected toggleCustomTrainer(custom: boolean): void {
     this.isCustomTrainer.set(custom);
+    this.closeFormDropdown();
     if (!custom) {
       const first = this.trainers()[0];
       if (first) {
@@ -1317,9 +2058,9 @@ export class ClassSchedule {
   protected openForm(schedule: ScheduleModel | null = null): void {
     this.editing.set(schedule);
     this.errorMessage.set('');
+    this.openFormDropdown.set(null);
     this.selectedDocRequirements.set(schedule?.requiredDocuments || []);
 
-    // 1. Gün Seçimi
     if (schedule?.daysOfWeek && schedule.daysOfWeek.length > 0) {
       this.selectedDays.set([...schedule.daysOfWeek] as Day[]);
     } else if (schedule?.dayOfWeek != null) {
@@ -1328,7 +2069,6 @@ export class ClassSchedule {
       this.selectedDays.set([1]);
     }
 
-    // 2. Eğitmen Seçimi
     const instructor = schedule?.instructorName ?? (this.isTrainer() ? this.currentUserName() : '');
     this.selectedInstructorId = schedule?.instructorId ?? (this.isTrainer() ? this.currentUserId() : '');
     const trainerExists = this.trainers().some((t) => t.displayName === instructor);
@@ -1340,7 +2080,6 @@ export class ClassSchedule {
       this.isCustomTrainer.set(true);
     }
 
-    // 3. Yaş Grubu
     const age = schedule?.ageGroup ?? '';
     const agePresetExists = AGE_PRESETS.some((p) => p.value === age);
     if (!age || agePresetExists) {
@@ -1368,6 +2107,7 @@ export class ClassSchedule {
 
   protected close(): void {
     this.drawerOpen.set(false);
+    this.openFormDropdown.set(null);
     this.editing.set(null);
   }
 

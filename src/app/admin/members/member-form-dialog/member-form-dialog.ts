@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked, DestroyRef } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -60,7 +61,7 @@ function addDays(dateStr: string, days: number): string {
 @Component({
   selector: 'app-member-form-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, MatTooltipModule, ConsentModal],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatTooltipModule, ConsentModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './member-form-dialog.html',
   styleUrl: './member-form-dialog.scss',
@@ -107,10 +108,76 @@ export class MemberFormDialog {
   protected readonly money = formatMoney;
   protected readonly debtInstallmentOptions = DEBT_INSTALLMENT_OPTIONS;
   protected readonly paymentMethods = [
-    { id: 'cash', label: 'Nakit' },
-    { id: 'card', label: 'Kredi Kartı' },
-    { id: 'transfer', label: 'Havale/EFT' },
+    { id: 'cash', label: 'Nakit', icon: 'payments' },
+    { id: 'card', label: 'Kredi Kartı', icon: 'credit_card' },
+    { id: 'transfer', label: 'Havale/EFT', icon: 'account_balance' },
   ] as const;
+
+  protected readonly bloodGroupOptions = [
+    { value: '', label: 'Bilinmiyor / Belirtilmedi', badge: '—' },
+    { value: 'A+', label: 'A Rh (+)', badge: 'A+' },
+    { value: 'A-', label: 'A Rh (-)', badge: 'A-' },
+    { value: 'B+', label: 'B Rh (+)', badge: 'B+' },
+    { value: 'B-', label: 'B Rh (-)', badge: 'B-' },
+    { value: 'AB+', label: 'AB Rh (+)', badge: 'AB+' },
+    { value: 'AB-', label: 'AB Rh (-)', badge: 'AB-' },
+    { value: '0+', label: '0 Rh (+)', badge: '0+' },
+    { value: '0-', label: '0 Rh (-)', badge: '0-' },
+  ] as const;
+
+  protected readonly genderOptions: ReadonlyArray<{
+    value: Gender;
+    label: string;
+    sub: string;
+    icon: string;
+  }> = [
+    { value: 'unspecified', label: 'Belirtilmek İstemiyor', sub: 'Cinsiyet tercihi belirtilmedi', icon: 'person_outline' },
+    { value: 'male', label: 'Erkek', sub: 'Erkek üye profili', icon: 'male' },
+    { value: 'female', label: 'Kadın', sub: 'Kadın üye profili', icon: 'female' },
+  ];
+
+  protected readonly membershipStatusOptions: ReadonlyArray<{
+    value: MembershipStatus;
+    label: string;
+    sub: string;
+    dotClass: string;
+    icon: string;
+  }> = [
+    {
+      value: 'active',
+      label: 'Aktif Üye (Tam Erişim)',
+      sub: 'Turnike ve salon kullanımına açık',
+      dotClass: 'bg-emerald-500',
+      icon: 'verified',
+    },
+    {
+      value: 'trial',
+      label: 'Ücretsiz Deneme (Trial)',
+      sub: 'Geçici deneme üyeliği',
+      dotClass: 'bg-amber-500',
+      icon: 'bolt',
+    },
+    {
+      value: 'expired',
+      label: 'Süresi Bitti (Erişim Kapalı)',
+      sub: 'Üyelik süresi sona ermiş',
+      dotClass: 'bg-slate-400',
+      icon: 'schedule',
+    },
+    {
+      value: 'cancelled',
+      label: 'İptal Edildi',
+      sub: 'Üyelik iptal edilmiş / pasif',
+      dotClass: 'bg-rose-500',
+      icon: 'block',
+    },
+  ];
+
+  protected readonly openDropdown = signal<
+    'trainer' | 'branch' | 'bloodGroup' | 'gender' | 'membershipStatus' | 'package' | 'paymentMethod' | 'debtInstallments' | null
+  >(null);
+  protected readonly trainerSearchQuery = signal<string>('');
+  protected readonly packageSearchQuery = signal<string>('');
   /** Salonun satıştaki paketleri (Paketler ekranında tanımlanan). */
   private readonly allPackages = toSignal(this.packagesService.watchPackages(), { initialValue: [] as GymPackage[] });
   protected readonly packages = computed(() => this.allPackages().filter((p) => p.status === 'active'));
@@ -220,6 +287,122 @@ export class MemberFormDialog {
     return key && key !== CUSTOM ? (this.packages().find((p) => p.id === key) ?? null) : null;
   });
 
+  protected readonly selectedTrainer = computed(() => {
+    const id = this.formValues().trainerId;
+    if (!id) return null;
+    return this.trainers().find((t) => t.id === id) ?? null;
+  });
+
+  protected readonly filteredTrainers = computed(() => {
+    const q = this.trainerSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.trainers();
+    if (!q) return list;
+    return list.filter(
+      (t) =>
+        (t.displayName ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (t.title ?? '').toLocaleLowerCase('tr').includes(q),
+    );
+  });
+
+  protected readonly selectedBranch = computed(() => {
+    const id = this.formValues().branchId;
+    if (!id) return null;
+    return this.branches().find((b) => b.id === id) ?? null;
+  });
+
+  protected readonly selectedBloodGroup = computed(() => {
+    const val = this.formValues().bloodGroup ?? '';
+    return this.bloodGroupOptions.find((o) => o.value === val) ?? this.bloodGroupOptions[0];
+  });
+
+  protected readonly selectedGender = computed(() => {
+    const val = this.formValues().gender ?? 'unspecified';
+    return this.genderOptions.find((o) => o.value === val) ?? this.genderOptions[0];
+  });
+
+  protected readonly selectedMembershipStatus = computed(() => {
+    const val = this.formValues().membershipStatus ?? 'active';
+    return this.membershipStatusOptions.find((o) => o.value === val) ?? this.membershipStatusOptions[0];
+  });
+
+  protected readonly filteredPackages = computed(() => {
+    const q = this.packageSearchQuery().trim().toLocaleLowerCase('tr');
+    const list = this.packages();
+    if (!q) return list;
+    return list.filter(
+      (p) =>
+        (p.name ?? '').toLocaleLowerCase('tr').includes(q) ||
+        (p.trainerName ?? '').toLocaleLowerCase('tr').includes(q),
+    );
+  });
+
+  protected readonly selectedPaymentMethod = computed(() => {
+    const id = this.formValues().paymentMethod ?? 'cash';
+    return this.paymentMethods.find((m) => m.id === id) ?? this.paymentMethods[0];
+  });
+
+  toggleDropdown(
+    key: 'trainer' | 'branch' | 'bloodGroup' | 'gender' | 'membershipStatus' | 'package' | 'paymentMethod' | 'debtInstallments',
+  ): void {
+    const next = this.openDropdown() === key ? null : key;
+    this.openDropdown.set(next);
+    if (next === 'trainer') this.trainerSearchQuery.set('');
+    if (next === 'package') this.packageSearchQuery.set('');
+  }
+
+  closeDropdown(): void {
+    this.openDropdown.set(null);
+  }
+
+  selectTrainer(id: string): void {
+    this.form.controls.trainerId.setValue(id);
+    this.form.controls.trainerId.markAsTouched();
+    this.closeDropdown();
+  }
+
+  selectBranch(id: string): void {
+    this.form.controls.branchId.setValue(id);
+    this.closeDropdown();
+  }
+
+  selectBloodGroup(val: string): void {
+    this.form.controls.bloodGroup.setValue(val);
+    this.closeDropdown();
+  }
+
+  selectGender(val: Gender): void {
+    this.form.controls.gender.setValue(val);
+    this.closeDropdown();
+  }
+
+  selectMembershipStatus(val: MembershipStatus): void {
+    this.form.controls.membershipStatus.setValue(val);
+    this.updateDateValidators();
+    this.closeDropdown();
+  }
+
+  selectPackage(key: string): void {
+    this.onPackageChange(key);
+    this.closeDropdown();
+  }
+
+  selectPaymentMethod(id: 'cash' | 'card' | 'transfer'): void {
+    this.form.controls.paymentMethod.setValue(id);
+    this.closeDropdown();
+  }
+
+  selectDebtInstallments(n: number): void {
+    this.form.controls.debtInstallments.setValue(n);
+    this.closeDropdown();
+  }
+
+  trainerInitials(name?: string | null): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'PT';
+    if (parts.length === 1) return parts[0].slice(0, 2).toLocaleUpperCase('tr');
+    return (parts[0][0] + parts[parts.length - 1][0]).toLocaleUpperCase('tr');
+  }
+
   /** Yeni kayıtta paket satışı: girilen/liste paket bedeli, kasaya giren ve kalan borç (kuruş hassasiyetinde). */
   protected readonly sale = computed(() => {
     const v = this.formValues();
@@ -244,6 +427,7 @@ export class MemberFormDialog {
       this.isEditMode.set(editMode);
       this.errorMessage.set('');
       this.hidePassword.set(editMode);
+      this.openDropdown.set(null);
 
       const startDate = m?.membershipStartsAt ? toDateInputValue(m.membershipStartsAt) : todayInputValue();
       // untracked: paket listesi sonradan yüklenince form sıfırlanmasın.

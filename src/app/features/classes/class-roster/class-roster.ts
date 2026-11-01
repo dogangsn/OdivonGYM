@@ -6,6 +6,7 @@ import { ClassesApi, ClassRoster } from '../../../core/api/classes.api';
 import { ClassSchedule } from '../../../core/models/class-schedule.model';
 import { UserProfile } from '../../../core/models/user-profile.model';
 import { AlertService } from '../../../core/services/alert.service';
+import { AdminMembersService } from '../../../admin/members/admin-members.service';
 import { toAppError } from '../../../shared/models/app-error.model';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -114,17 +115,138 @@ const ERRORS: Record<string, string> = {
               }
             </section>
 
-            <section class="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <h4 class="m-0 text-sm font-bold text-slate-800 dark:text-slate-100">Seansa üye ekle</h4>
-              <div class="flex gap-2">
-                <select class="odv-input flex-1" [ngModel]="memberToAdd()" (ngModelChange)="memberToAdd.set($event)">
-                  <option value="">Üye seçin…</option>
-                  @for (m of addable(); track m.uid) {
-                    <option [value]="m.uid">{{ m.displayName }}</option>
+            <section class="space-y-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div class="flex items-center justify-between">
+                <h4 class="m-0 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <mat-icon class="icon-size-4 text-primary-500">person_add</mat-icon>
+                  Seansa Üye Ekle
+                </h4>
+                <span class="text-[11px] font-bold text-slate-400">{{ addable().length }} uygun üye</span>
+              </div>
+
+              <div class="flex items-stretch gap-2">
+                <!-- Searchable Member Dropdown -->
+                <div class="relative flex-1 min-w-0">
+                  <button
+                    type="button"
+                    (click)="toggleMemberDropdown()"
+                    class="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 hover:border-primary-400 dark:hover:border-primary-500 focus:outline-hidden focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all flex items-center justify-between gap-2 text-left cursor-pointer"
+                    [class.border-primary-500]="memberDropdownOpen()"
+                    [class.ring-2]="memberDropdownOpen()"
+                    [class.ring-primary-500/20]="memberDropdownOpen()"
+                  >
+                    @if (selectedMemberToAdd(); as sel) {
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/80 text-primary-600 dark:text-primary-400 font-black text-[11px] flex items-center justify-center shrink-0 border border-primary-200/60 dark:border-primary-800/60">
+                          {{ getMemberInitials(sel.displayName) }}
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-xs font-extrabold text-slate-900 dark:text-white truncate leading-tight">
+                            {{ sel.displayName }}
+                          </div>
+                          <div class="text-[10px] font-semibold text-slate-400 truncate leading-tight">
+                            #{{ sel.memberNumber || '0000' }} @if (sel.packageLabel) { · {{ sel.packageLabel }} }
+                          </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="flex items-center gap-2 text-slate-400 dark:text-slate-500 min-w-0">
+                        <mat-icon class="icon-size-4 text-slate-400 shrink-0">person_search</mat-icon>
+                        <span class="text-xs font-semibold truncate">Üye ara veya seçin (Ad, No, Tel)...</span>
+                      </div>
+                    }
+                    <div class="flex items-center gap-1 shrink-0">
+                      @if (memberToAdd()) {
+                        <span
+                          (click)="clearMemberSelection($event)"
+                          class="w-5 h-5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                          title="Seçimi Temizle"
+                        >
+                          <mat-icon class="icon-size-3.5">close</mat-icon>
+                        </span>
+                      }
+                      <mat-icon class="icon-size-4 text-slate-400 transition-transform duration-200" [class.rotate-180]="memberDropdownOpen()">expand_more</mat-icon>
+                    </div>
+                  </button>
+
+                  @if (memberDropdownOpen()) {
+                    <div class="fixed inset-0 z-30" (click)="closeMemberDropdown()"></div>
+                    <div class="absolute left-0 right-0 bottom-full mb-2 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-fade-in">
+                      <div class="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+                        <div class="relative flex items-center">
+                          <mat-icon class="icon-size-4 absolute left-3 text-slate-400 pointer-events-none">search</mat-icon>
+                          <input
+                            type="text"
+                            [ngModel]="memberSearchQuery()"
+                            (ngModelChange)="memberSearchQuery.set($event)"
+                            (click)="$event.stopPropagation()"
+                            placeholder="Üye adı, takip no (#) veya telefon..."
+                            class="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                          />
+                          @if (memberSearchQuery()) {
+                            <button
+                              type="button"
+                              (click)="memberSearchQuery.set(''); $event.stopPropagation()"
+                              class="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-transparent border-0 p-0 cursor-pointer flex items-center"
+                            >
+                              <mat-icon class="icon-size-3.5">cancel</mat-icon>
+                            </button>
+                          }
+                        </div>
+                        <div class="flex items-center justify-between px-1 pt-1.5 text-[10px] font-bold text-slate-400">
+                          <span>Aktif Üyeler</span>
+                          @if (isSearchingRemote()) {
+                            <span class="text-primary-600 dark:text-primary-400 animate-pulse">Sunucuda aranıyor...</span>
+                          } @else {
+                            <span>{{ filteredAddable().length }} sonuç gösteriliyor</span>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 custom-scroll">
+                        @for (m of filteredAddable(); track m.uid) {
+                          <button
+                            type="button"
+                            (click)="selectMemberToAdd(m.uid)"
+                            class="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 hover:bg-primary-50/60 dark:hover:bg-primary-950/30 transition-colors cursor-pointer bg-transparent border-0"
+                            [class.bg-primary-50/80]="memberToAdd() === m.uid"
+                            [class.dark:bg-primary-950/40]="memberToAdd() === m.uid"
+                          >
+                            <div class="flex items-center gap-2.5 min-w-0">
+                              <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs flex items-center justify-center shrink-0">
+                                {{ getMemberInitials(m.displayName) }}
+                              </div>
+                              <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                  <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ m.displayName }}</span>
+                                  <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400 shrink-0">
+                                    #{{ m.memberNumber || '0000' }}
+                                  </span>
+                                </div>
+                                <div class="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                                  {{ m.packageLabel || 'Standart Üye' }}
+                                  @if (m.phone) { · {{ m.phone }} }
+                                </div>
+                              </div>
+                            </div>
+                            @if (memberToAdd() === m.uid) {
+                              <mat-icon class="icon-size-4 text-primary-600 dark:text-primary-400 shrink-0">check_circle</mat-icon>
+                            }
+                          </button>
+                        } @empty {
+                          <div class="p-5 text-center">
+                            <mat-icon class="icon-size-6 text-slate-300 dark:text-slate-600 mx-auto mb-1">person_off</mat-icon>
+                            <p class="m-0 text-xs font-bold text-slate-600 dark:text-slate-300">Uygun üye bulunamadı</p>
+                          </div>
+                        }
+                      </div>
+                    </div>
                   }
-                </select>
-                <button type="button" class="odv-btn-primary" [disabled]="!memberToAdd() || busy()" (click)="add()">
-                  {{ r.free === 0 ? 'Bekleme listesine ekle' : 'Seansa yaz' }}
+                </div>
+
+                <button type="button" class="odv-btn-primary !px-4 shrink-0" [disabled]="!memberToAdd() || busy()" (click)="add()">
+                  <mat-icon class="icon-size-4">person_add</mat-icon>
+                  {{ r.free === 0 ? 'Bekleme Listesine Ekle' : 'Seansa Yaz' }}
                 </button>
               </div>
               <p class="m-0 text-[11px] text-slate-400">
@@ -140,6 +262,7 @@ const ERRORS: Record<string, string> = {
 export class ClassRosterPanel {
   private readonly api = inject(ClassesApi);
   private readonly alert = inject(AlertService);
+  private readonly membersService = inject(AdminMembersService);
 
   readonly schedule = input<ClassSchedule | null>(null);
   readonly members = input<UserProfile[]>([]);
@@ -150,6 +273,11 @@ export class ClassRosterPanel {
   protected readonly loading = signal(false);
   protected readonly busy = signal(false);
   protected readonly memberToAdd = signal('');
+  protected readonly memberDropdownOpen = signal(false);
+  protected readonly memberSearchQuery = signal('');
+  protected readonly remoteSearchedMembers = signal<UserProfile[]>([]);
+  protected readonly isSearchingRemote = signal(false);
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly activeCount = computed(
     () => (this.roster()?.bookings ?? []).filter((b) => b.attendanceStatus === 'booked' || b.attendanceStatus === 'checked-in').length,
@@ -157,10 +285,38 @@ export class ClassRosterPanel {
   protected readonly addable = computed(() => {
     const r = this.roster();
     const taken = new Set([...(r?.bookings ?? []).filter((b) => b.attendanceStatus !== 'cancelled').map((b) => b.userId), ...(r?.waitlist ?? []).map((w) => w.userId)]);
-    return this.members()
-      .filter((m) => !m.isArchived && !taken.has(m.uid))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'tr'));
+    const map = new Map<string, UserProfile>();
+    for (const m of this.members()) {
+      if (m?.uid) map.set(m.uid, m);
+    }
+    for (const m of this.remoteSearchedMembers()) {
+      if (m?.uid && !map.has(m.uid)) map.set(m.uid, m);
+    }
+    return Array.from(map.values())
+      .filter((m) => !m.isArchived && (!m.membershipStatus || m.membershipStatus === 'active') && !taken.has(m.uid))
+      .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'tr'));
   });
+
+  protected readonly filteredAddable = computed(() => {
+    const list = this.addable();
+    const q = this.memberSearchQuery().trim().toLocaleLowerCase('tr');
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter((m) => {
+        const name = (m.displayName || '').toLocaleLowerCase('tr');
+        const num = String(m.memberNumber || '').toLocaleLowerCase('tr');
+        const phone = String(m.phone || '').toLocaleLowerCase('tr');
+        return name.includes(q) || num.includes(q) || phone.includes(q);
+      })
+      .slice(0, 30);
+  });
+
+  protected readonly selectedMemberToAdd = computed(() => {
+    const uid = this.memberToAdd();
+    if (!uid) return null;
+    return this.addable().find((m) => m.uid === uid) || this.members().find((m) => m.uid === uid) || null;
+  });
+
   protected readonly pastOrToday = computed(() => {
     const date = this.roster()?.sessionDate;
     return !!date && date <= istanbulToday();
@@ -171,6 +327,56 @@ export class ClassRosterPanel {
       const sc = this.schedule();
       if (sc) void this.load(sc.id);
     });
+
+    effect(() => {
+      const q = this.memberSearchQuery().trim();
+      if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+      if (q.length < 2) {
+        this.isSearchingRemote.set(false);
+        return;
+      }
+      this.isSearchingRemote.set(true);
+      this.searchDebounceTimer = setTimeout(async () => {
+        try {
+          const results = await this.membersService.searchMembers(q, { status: 'active', archived: false, limit: 30 });
+          this.remoteSearchedMembers.set(results);
+        } catch {
+          // ignore
+        } finally {
+          this.isSearchingRemote.set(false);
+        }
+      }, 250);
+    });
+  }
+
+  protected toggleMemberDropdown(): void {
+    const next = !this.memberDropdownOpen();
+    this.memberDropdownOpen.set(next);
+    if (next) {
+      this.memberSearchQuery.set('');
+    }
+  }
+
+  protected closeMemberDropdown(): void {
+    this.memberDropdownOpen.set(false);
+  }
+
+  protected selectMemberToAdd(uid: string): void {
+    this.memberToAdd.set(uid);
+    this.memberDropdownOpen.set(false);
+    this.memberSearchQuery.set('');
+  }
+
+  protected clearMemberSelection(event: Event): void {
+    event.stopPropagation();
+    this.memberToAdd.set('');
+  }
+
+  protected getMemberInitials(name?: string): string {
+    if (!name) return 'ÜY';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toLocaleUpperCase('tr');
+    return (parts[0][0] + parts[parts.length - 1][0]).toLocaleUpperCase('tr');
   }
 
   protected dayLabel(date: string | undefined): string {
@@ -223,6 +429,7 @@ export class ClassRosterPanel {
       full ? this.api.joinWaitlist(r.scheduleId, userId, r.sessionDate) : this.api.bookMember(r.scheduleId, userId, r.sessionDate),
     );
     this.memberToAdd.set('');
+    this.memberDropdownOpen.set(false);
   }
 
   private async run(action: () => Observable<unknown>): Promise<void> {
