@@ -14,7 +14,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="font-sans flex flex-wrap items-start justify-between gap-4 mb-6">
-      <div>
+      <div class="min-w-0 flex-1">
         <div class="flex items-center gap-3">
           @if (icon()) {
             <span
@@ -23,7 +23,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
               <mat-icon class="icon-size-5">{{ icon() }}</mat-icon>
             </span>
           }
-          <h1 class="m-0 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 class="m-0 text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {{ title().includes('.') ? (title() | transloco) : title() }}
           </h1>
         </div>
@@ -33,7 +33,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
           </p>
         }
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 justify-start sm:justify-end">
         <ng-content select="[actions]" />
       </div>
     </header>

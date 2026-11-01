@@ -150,11 +150,11 @@
   </div>
 
   <!-- 3. SEKME SEÇİCİ (TABS) -->
-  <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 w-fit overflow-x-auto custom-scroll">
+  <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 max-w-full overflow-x-auto custom-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
     <button
       type="button"
       (click)="activeTab.set('staffList')"
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
       [class]="activeTab() === 'staffList' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
     >
       <mat-icon class="icon-size-4">badge</mat-icon>
@@ -164,7 +164,7 @@
     <button
       type="button"
       (click)="activeTab.set('permissionMatrix')"
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
       [class]="activeTab() === 'permissionMatrix' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
     >
       <mat-icon class="icon-size-4">grid_view</mat-icon>
@@ -175,7 +175,7 @@
       <button
         type="button"
         (click)="activeTab.set('roleSimulator')"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
         [class]="activeTab() === 'roleSimulator' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
       >
         <mat-icon class="icon-size-4">psychology</mat-icon>
@@ -187,7 +187,7 @@
     <button
       type="button"
       (click)="activeTab.set('payroll')"
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
       [class]="activeTab() === 'payroll' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
     >
       <mat-icon class="icon-size-4">payments</mat-icon>
@@ -220,11 +220,11 @@
 
       <div class="flex items-center gap-2 flex-wrap">
         <!-- Rol Filtre Hapları -->
-        <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll">
+        <div class="flex items-center gap-1.5 overflow-x-auto max-w-full custom-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             (click)="selectedRole.set('all')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0"
             [class]="selectedRole() === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'"
           >
             Tümü
@@ -232,7 +232,7 @@
           <button
             type="button"
             (click)="selectedRole.set('owner')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 shrink-0"
             [class]="selectedRole() === 'owner' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 hover:bg-purple-100'"
           >
             <mat-icon class="icon-size-3.5">workspace_premium</mat-icon>
@@ -241,7 +241,7 @@
           <button
             type="button"
             (click)="selectedRole.set('admin')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 shrink-0"
             [class]="selectedRole() === 'admin' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100'"
           >
             <mat-icon class="icon-size-3.5">manage_accounts</mat-icon>
@@ -250,7 +250,7 @@
           <button
             type="button"
             (click)="selectedRole.set('trainer')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 shrink-0"
             [class]="selectedRole() === 'trainer' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100'"
           >
             <mat-icon class="icon-size-3.5">fitness_center</mat-icon>
@@ -259,7 +259,7 @@
           <button
             type="button"
             (click)="selectedRole.set('receptionist')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 shrink-0"
             [class]="selectedRole() === 'receptionist' ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 hover:bg-amber-100'"
           >
             <mat-icon class="icon-size-3.5">support_agent</mat-icon>
