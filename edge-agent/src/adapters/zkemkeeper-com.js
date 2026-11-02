@@ -61,7 +61,7 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
           return;
         }
         if (message.type === 'event') {
-          const event = bridgeMessageToEvent(device, message);
+          const event = bridgeMessageToEvent(device, message, { useAgentClock: credentials.useAgentClock === true });
           if (event) pending.push(event);
         } else if (message.type === 'device') {
           deviceInfo = message;
@@ -168,10 +168,15 @@ function bridgeArgs(device, credentials = {}) {
   return args;
 }
 
-function bridgeMessageToEvent(device, message) {
+/**
+ * `useAgentClock`: cihaz saati yanlışsa canlı (realtime) olayda bilgisayarın o anki saati kullanılır;
+ * cihazın yazdığı saat `raw.deviceTimestamp` içinde kalır. Geçmiş kayıtlar cihaz saatiyle kalır.
+ */
+function bridgeMessageToEvent(device, message, { useAgentClock = false, now = () => new Date() } = {}) {
   const userId = stringOrNull(message.enrollNumber);
   const card = stringOrNull(message.card);
-  const time = toIstanbulIso(message.timestamp);
+  const agentClock = useAgentClock && message.source === 'realtime';
+  const time = agentClock ? now().toISOString() : toIstanbulIso(message.timestamp);
   if (!time) return null;
   const verifyMode = message.verifyMethod == null ? null : String(message.verifyMethod);
   const attState = numberOrNull(message.attState);
@@ -211,6 +216,7 @@ function bridgeMessageToEvent(device, message) {
       attState,
       verifyMethod: numberOrNull(message.verifyMethod),
       workCode: numberOrNull(message.workCode),
+      ...(agentClock ? { deviceTimestamp: message.timestamp ?? null } : {}),
     },
   };
 }

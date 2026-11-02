@@ -68,6 +68,8 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
    ZK cihazının ayarına `"skipHistory": true` ekleyin; agent geçmişi atlayıp doğrudan canlı geçişleri
    dinler. `"skipUsers": true` cihazın kullanıcı listesini de okumaz (olaylarda kart/ad gelmez,
    üye numarası gelir). Açılış yine yavaşsa `"bridgeStartTimeoutMs"` (varsayılan 120000) artırılabilir.
+   Cihazın saati yanlışsa (ör. 2000 yılını gösteriyorsa) `"useAgentClock": true` ekleyin: canlı geçişler
+   bilgisayarın saatiyle kaydedilir, cihazın yazdığı saat `raw.deviceTimestamp` içinde saklanır.
    Cihaz parolası yalnızca bu bilgisayarda durur; MainApi'ye gönderilmez. ZK cihazında
    `CommKey` kapalıysa `0` kullanın. Cihazın `state` değerleri gerçekten giriş/çıkış
    yönünü ifade ediyorsa `directionByState` ile eşleyin; iki ayrı okuyucu varsa yönü

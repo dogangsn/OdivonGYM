@@ -77,3 +77,15 @@ test('köprü geçmiş ve kullanıcı okumayı yalnızca ayar açıksa atlar', (
     '--host', '192.168.1.202', '--port', '4370', '--machine', '2', '--skip-history', '--skip-users',
   ]);
 });
+
+test('cihaz saati yanlışsa canlı olayda bilgisayar saati kullanılır', () => {
+  const message = { type: 'event', source: 'realtime', enrollNumber: '14441', card: '9855037', attState: 0, timestamp: '2000-10-01T17:16:53' };
+  const now = () => new Date('2026-11-02T20:01:50Z');
+  const fixed = bridgeMessageToEvent({ host: '192.168.1.202' }, message, { useAgentClock: true, now });
+  assert.equal(fixed.time, '2026-11-02T20:01:50.000Z');
+  assert.equal(fixed.raw.deviceTimestamp, '2000-10-01T17:16:53');
+  const history = bridgeMessageToEvent({ host: '192.168.1.202' }, { ...message, source: 'history' }, { useAgentClock: true, now });
+  assert.equal(history.time, '2000-10-01T17:16:53+03:00');
+  const off = bridgeMessageToEvent({ host: '192.168.1.202' }, message, { now });
+  assert.equal(off.time, '2000-10-01T17:16:53+03:00');
+});
