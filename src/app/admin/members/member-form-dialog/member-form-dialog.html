@@ -5,33 +5,33 @@
   ></div>
 
   <div
-    class="font-sans fixed inset-y-0 right-0 max-w-2xl w-full bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-800"
+    class="font-sans fixed inset-y-0 right-0 w-full sm:max-w-xl md:max-w-2xl h-full max-h-[100dvh] bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l-0 sm:border-l border-slate-200 dark:border-slate-800"
   >
-    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-      <div>
-        <div class="flex items-center gap-2">
-          <h3 class="text-lg font-bold text-slate-900 dark:text-white m-0">
+    <div class="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0 truncate">
             {{ isEditMode() ? 'Üye Bilgilerini Düzenle' : 'Yeni Üye Kaydı' }}
           </h3>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+          <span class="px-2 sm:px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-mono font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shrink-0">
             #{{ form.controls.memberNumber.value || '-----' }}
           </span>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0">
+        <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-0 leading-relaxed">
           Üye profili, antrenör ataması, acil durum ve kart bilgilerini eksiksiz doldurun.
         </p>
       </div>
       <button
         type="button"
         (click)="cancel()"
-        class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+        class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
       >
         <mat-icon class="icon-size-5">close</mat-icon>
       </button>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex-1 flex flex-col min-h-0">
-      <div class="flex-1 overflow-y-auto p-6 space-y-5 custom-scroll">
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 custom-scroll">
         @if (errorMessage()) {
           <div class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
             <mat-icon class="icon-size-4.5 text-rose-500">error</mat-icon>
@@ -798,29 +798,31 @@
                   <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
                     Tahsil Edilen Tutar (₺ - Kasaya İşlenir)
                   </label>
-                  <div class="flex gap-2">
+                  <div class="flex flex-col sm:flex-row gap-2">
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       [max]="sale().price"
                       formControlName="paidAmount"
-                      class="flex-1 min-w-0 px-4 py-2.5 rounded-xl text-sm font-bold bg-white dark:bg-slate-800 border text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                      class="w-full sm:flex-1 min-w-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-slate-800 border text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-semibold"
                       [class]="sale().overpaid ? 'border-rose-400' : 'border-slate-200 dark:border-slate-700'"
                     />
-                    <div class="relative shrink-0">
+                    <div class="relative w-full sm:w-auto shrink-0">
                       <button
                         type="button"
                         (click)="toggleDropdown('paymentMethod')"
-                        class="h-full px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-slate-900 dark:text-white font-bold flex items-center gap-1.5 cursor-pointer transition-all"
+                        class="w-full sm:w-auto h-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-slate-900 dark:text-white font-bold flex items-center justify-between sm:justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                       >
-                        <mat-icon class="icon-size-4 text-indigo-500">{{ selectedPaymentMethod().icon }}</mat-icon>
-                        <span>{{ selectedPaymentMethod().label }}</span>
+                        <span class="flex items-center gap-1.5">
+                          <mat-icon class="icon-size-4 text-indigo-500">{{ selectedPaymentMethod().icon }}</mat-icon>
+                          <span>{{ selectedPaymentMethod().label }}</span>
+                        </span>
                         <mat-icon class="icon-size-4 text-slate-400" [class.rotate-180]="openDropdown() === 'paymentMethod'">expand_more</mat-icon>
                       </button>
                       @if (openDropdown() === 'paymentMethod') {
                         <div class="fixed inset-0 z-30" (click)="closeDropdown()"></div>
-                        <div class="absolute right-0 mt-1.5 w-44 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <div class="absolute right-0 left-0 sm:left-auto mt-1.5 w-full sm:w-44 z-40 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
                           @for (m of paymentMethods; track m.id) {
                             <button
                               type="button"
@@ -879,13 +881,13 @@
                       </p>
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-3 pt-1 border-t border-amber-200/60 dark:border-amber-800/60">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-amber-200/60 dark:border-amber-800/60">
                     <label class="block">
                       <span class="block text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1">İlk Vade Tarihi</span>
                       <input
                         type="date"
                         formControlName="debtDueDate"
-                        class="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-amber-500/30"
+                        class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-amber-500/30"
                       />
                     </label>
                     <div class="relative block">
@@ -893,7 +895,7 @@
                       <button
                         type="button"
                         (click)="toggleDropdown('debtInstallments')"
-                        class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 text-slate-900 dark:text-white font-semibold flex items-center justify-between gap-2 cursor-pointer"
+                        class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 text-slate-900 dark:text-white font-semibold flex items-center justify-between gap-2 cursor-pointer shadow-2xs"
                       >
                         <span class="truncate">
                           {{ form.controls.debtInstallments.value === 1 ? 'Tek seferde (1 ay sonra)' : form.controls.debtInstallments.value + ' aylık taksit' }}
@@ -956,19 +958,22 @@
         <!-- 3. GÜVENLİK & SAĞLIK BİLGİLERİ (TABLI PANEL) -->
         <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 shadow-xs overflow-hidden">
           <!-- Tab Bar -->
-          <div class="p-1.5 bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5">
+          <div class="p-1 sm:p-1.5 bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1 sm:gap-1.5">
             <button
               type="button"
               (click)="activeSafetyTab.set('emergency')"
               [class]="activeSafetyTab() === 'emergency'
                 ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold shadow-xs border-amber-200/90 dark:border-amber-900/60'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'"
-              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer select-none"
+              class="flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 sm:gap-2 border transition-all cursor-pointer select-none min-w-0"
             >
-              <mat-icon class="icon-size-4" [class.text-amber-600]="activeSafetyTab() === 'emergency'">contact_emergency</mat-icon>
-              <span>Acil Durum İletişim Bilgileri</span>
+              <mat-icon class="icon-size-4 shrink-0" [class.text-amber-600]="activeSafetyTab() === 'emergency'">contact_emergency</mat-icon>
+              <span class="truncate">
+                <span class="sm:hidden">Acil Durum</span>
+                <span class="hidden sm:inline">Acil Durum İletişim Bilgileri</span>
+              </span>
               @if (hasEmergencyContact()) {
-                <span class="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-100 dark:ring-amber-900" title="Kayıtlı veri var"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-100 dark:ring-amber-900 shrink-0" title="Kayıtlı veri var"></span>
               }
             </button>
 
@@ -978,12 +983,15 @@
               [class]="activeSafetyTab() === 'health'
                 ? 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-400 font-bold shadow-xs border-rose-200/90 dark:border-rose-900/60'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'"
-              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer select-none"
+              class="flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 sm:gap-2 border transition-all cursor-pointer select-none min-w-0"
             >
-              <mat-icon class="icon-size-4" [class.text-rose-600]="activeSafetyTab() === 'health'">health_and_safety</mat-icon>
-              <span>Sağlık, Alerjen ve Kronik Hastalıklar</span>
+              <mat-icon class="icon-size-4 shrink-0" [class.text-rose-600]="activeSafetyTab() === 'health'">health_and_safety</mat-icon>
+              <span class="truncate">
+                <span class="sm:hidden">Sağlık & Medikal</span>
+                <span class="hidden sm:inline">Sağlık, Alerjen ve Kronik Hastalıklar</span>
+              </span>
               @if (hasHealthInfo()) {
-                <span class="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-100 dark:ring-rose-900" title="Kayıtlı veri var"></span>
+                <span class="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-100 dark:ring-rose-900 shrink-0" title="Kayıtlı veri var"></span>
               }
             </button>
           </div>
@@ -1087,7 +1095,7 @@
         </div>
 
         <!-- 4. RFID / TURNİKE KARTI VE DEPOZİTO -->
-        <div class="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40">
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40">
           <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400 m-0 mb-3 flex items-center gap-1.5">
             <mat-icon class="icon-size-4 text-indigo-600">badge</mat-icon>
             <span>Turnike Kartı & Depozito</span>
@@ -1127,7 +1135,7 @@
                 class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-bold"
               />
             </div>
-            <div class="flex items-center pt-5">
+            <div class="flex items-center pt-1 sm:pt-5">
               <label class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input type="checkbox" formControlName="cardDepositPaid" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600" />
                 <span>Depozito Tahsil Edildi (Kasaya İşle)</span>
@@ -1286,18 +1294,18 @@
         </div>
       </div>
 
-      <div class="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+      <div class="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-2.5 sm:gap-3">
         <button
           type="button"
           (click)="cancel()"
-          class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+          class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer text-center"
         >
           Vazgeç
         </button>
         <button
           type="submit"
           [disabled]="submitting()"
-          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+          class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer text-center"
         >
           <span>{{ submitting() ? 'Kaydediliyor…' : isEditMode() ? 'Değişiklikleri Kaydet' : 'Üyeyi Kaydet' }}</span>
         </button>
