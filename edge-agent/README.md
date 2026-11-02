@@ -64,6 +64,10 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
       }
    }
    ```
+   Eski ZK cihazında açılış (tüm kullanıcıları ve geçmişi UDP ile okumak) dakikalar sürüyorsa
+   ZK cihazının ayarına `"skipHistory": true` ekleyin; agent geçmişi atlayıp doğrudan canlı geçişleri
+   dinler. `"skipUsers": true` cihazın kullanıcı listesini de okumaz (olaylarda kart/ad gelmez,
+   üye numarası gelir). Açılış yine yavaşsa `"bridgeStartTimeoutMs"` (varsayılan 120000) artırılabilir.
    Cihaz parolası yalnızca bu bilgisayarda durur; MainApi'ye gönderilmez. ZK cihazında
    `CommKey` kapalıysa `0` kullanın. Cihazın `state` değerleri gerçekten giriş/çıkış
    yönünü ifade ediyorsa `directionByState` ile eşleyin; iki ayrı okuyucu varsa yönü

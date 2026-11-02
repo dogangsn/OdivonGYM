@@ -34,7 +34,7 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
       let stderr = '';
       const bridge = spawnImpl(
         bridgePath,
-        ['--host', device.host, '--port', String(device.port ?? 4370), '--machine', String(credentials.machineNumber ?? 1)],
+        bridgeArgs(device, credentials),
         {
           cwd: path.dirname(bridgePath),
           windowsHide: true,
@@ -160,6 +160,14 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
   };
 }
 
+/** Köprü komut satırı. `skipHistory` / `skipUsers`: açılışta geçmişi / kullanıcı listesini okumadan canlı dinlemeye geç. */
+function bridgeArgs(device, credentials = {}) {
+  const args = ['--host', device.host, '--port', String(device.port ?? 4370), '--machine', String(credentials.machineNumber ?? 1)];
+  if (credentials.skipHistory === true) args.push('--skip-history');
+  if (credentials.skipUsers === true) args.push('--skip-users');
+  return args;
+}
+
 function bridgeMessageToEvent(device, message) {
   const userId = stringOrNull(message.enrollNumber);
   const card = stringOrNull(message.card);
@@ -229,4 +237,4 @@ function stringOrNull(value) {
   return String(value).trim() || null;
 }
 
-module.exports = { createZkemkeeperComAdapter, bridgeMessageToEvent, directionFromAttState };
+module.exports = { createZkemkeeperComAdapter, bridgeArgs, bridgeMessageToEvent, directionFromAttState };

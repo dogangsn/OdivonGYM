@@ -68,3 +68,12 @@ test('SDK giriş çıkış durumlarını yönlere eşler', () => {
   assert.equal(directionFromAttState(3, 'out'), 'in');
   assert.equal(directionFromAttState(null, 'out'), 'out');
 });
+
+test('köprü geçmiş ve kullanıcı okumayı yalnızca ayar açıksa atlar', () => {
+  const { bridgeArgs } = require('../src/adapters/zkemkeeper-com');
+  const device = { host: '192.168.1.202', port: 4370 };
+  assert.deepEqual(bridgeArgs(device, {}), ['--host', '192.168.1.202', '--port', '4370', '--machine', '1']);
+  assert.deepEqual(bridgeArgs(device, { machineNumber: 2, skipHistory: true, skipUsers: true }), [
+    '--host', '192.168.1.202', '--port', '4370', '--machine', '2', '--skip-history', '--skip-users',
+  ]);
+});

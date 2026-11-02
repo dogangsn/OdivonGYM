@@ -31,6 +31,9 @@ internal static class ZkemkeeperBridge
         string host = ReadArgument(args, "--host", null);
         int port = ReadIntArgument(args, "--port", 4370);
         MachineNumber = ReadIntArgument(args, "--machine", 1);
+        // Eski cihazlarda UDP ile tüm kullanıcıları / geçmişi okumak dakikalar sürebilir.
+        bool skipUsers = HasFlag(args, "--skip-users");
+        bool skipHistory = HasFlag(args, "--skip-history");
 
         if (String.IsNullOrWhiteSpace(host))
         {
@@ -60,9 +63,17 @@ internal static class ZkemkeeperBridge
                 return 3;
             }
 
-            LoadUsers();
+            if (!skipUsers)
+            {
+                Emit(new { type = "stage", stage = "users" });
+                LoadUsers();
+            }
             EmitDeviceInfo(host, port);
-            ReadHistoricalEvents();
+            if (!skipHistory)
+            {
+                Emit(new { type = "stage", stage = "history" });
+                ReadHistoricalEvents();
+            }
 
             if (!Device.RegEvent(MachineNumber, 65535))
             {
@@ -292,6 +303,15 @@ internal static class ZkemkeeperBridge
             if (String.Equals(args[index], name, StringComparison.OrdinalIgnoreCase)) return args[index + 1];
         }
         return fallback;
+    }
+
+    private static bool HasFlag(string[] args, string name)
+    {
+        foreach (string arg in args)
+        {
+            if (String.Equals(arg, name, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
     }
 
     private static int ReadIntArgument(string[] args, string name, int fallback)
