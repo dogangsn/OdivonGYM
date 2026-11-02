@@ -802,3 +802,4 @@ export class GuideModal {
     return GUIDE_TOPICS.filter((t) => t.category === this.guide.activeCategory());
   });
 }
+
