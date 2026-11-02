@@ -381,6 +381,9 @@
     "activeBranch": "Aktif Şube",
     "changeBranch": "Aktif Şubeyi Değiştir",
     "trainingWizard": "Eğitim Sihirbazı",
+    "userGuide": "Kullanım Kılavuzu",
+    "userGuideBadge": "EĞİTİM",
+    "userGuideTitle": "Kullanım Kılavuzu ve Ekran Eğitim Rehberi",
     "simulation": "Simülasyon",
     "simulationHint": "Simülasyon Modu Aktif - Normal Görünüme Dönmek İçin Tıklayın",
     "turnstileQr": "Turnike QR",
@@ -1056,7 +1059,7 @@
   "packages": {
     "title": "Paket & Fiyatlandırma Yönetimi",
     "subtitle": "Salon geneli üyelikler ile personele/eğitmene özel abonelik & PT paketlerini, prim oranlarını ve kurallarını yönetin.",
-    "addNew": "+ Yeni Paket Ekle",
+    "addNew": "Yeni Paket Ekle",
     "filterAll": "Tüm Paketler",
     "filterClub": "Salon Geneli",
     "filterStaff": "Personele Özel",

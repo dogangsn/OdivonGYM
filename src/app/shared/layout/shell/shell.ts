@@ -30,6 +30,8 @@ import { SaasSubscriptionService } from '../../../core/services/saas-subscriptio
 import { AppLockService } from '../../../core/services/app-lock.service';
 import { ShortcutService } from '../../../core/services/shortcut.service';
 import { ShortcutManagerModal } from '../../components/shortcut-manager-modal/shortcut-manager-modal';
+import { GuideService } from '../../../core/services/guide.service';
+import { GuideModal } from '../../components/guide-modal/guide-modal';
 
 import { FormsModule } from '@angular/forms';
 
@@ -116,6 +118,7 @@ export interface ShellNotification {
     AiAssistantModal,
     ChangePasswordModal,
     ShortcutManagerModal,
+    GuideModal,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
@@ -136,6 +139,7 @@ export class Shell {
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly lockService = inject(AppLockService);
   protected readonly shortcutService = inject(ShortcutService);
+  protected readonly guide = inject(GuideService);
   private readonly router = inject(Router);
 
   protected readonly languageNames = LANGUAGE_NAMES;

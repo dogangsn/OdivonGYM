@@ -167,9 +167,15 @@
         transloco) }}</span>
       }
     </div>
-    <button type="button" class="logout-icon-btn" (click)="logOutRequested.emit()"
-      [matTooltip]="'sidebar.menuLogout' | transloco" matTooltipPosition="right">
-      <mat-icon class="icon-size-4.5">logout</mat-icon>
-    </button>
+    <div class="flex items-center gap-1">
+      <button type="button" class="logout-icon-btn text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60" (click)="openGuide()"
+        matTooltip="Kullanım Kılavuzu & Eğitim" matTooltipPosition="right">
+        <mat-icon class="icon-size-4.5">menu_book</mat-icon>
+      </button>
+      <button type="button" class="logout-icon-btn" (click)="logOutRequested.emit()"
+        [matTooltip]="'sidebar.menuLogout' | transloco" matTooltipPosition="right">
+        <mat-icon class="icon-size-4.5">logout</mat-icon>
+      </button>
+    </div>
   </div>
 </aside>

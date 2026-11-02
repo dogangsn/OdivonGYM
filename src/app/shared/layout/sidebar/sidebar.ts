@@ -9,6 +9,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { SaasSubscriptionService } from '../../../core/services/saas-subscription.service';
 import { LogoMark } from '../../components/logo-mark/logo-mark';
 import { VersionService } from '../../../core/version/version.service';
+import { GuideService } from '../../../core/services/guide.service';
 
 export interface NavItem {
   icon: string;
@@ -188,6 +189,12 @@ export class Sidebar {
   protected readonly permissions = inject(PermissionService);
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly version = inject(VersionService);
+  protected readonly guide = inject(GuideService);
+
+  openGuide(): void {
+    this.closeMobile.emit();
+    this.guide.open();
+  }
 
   /** Menü içi canlı arama filtresi */
   readonly menuSearch = signal<string>('');
