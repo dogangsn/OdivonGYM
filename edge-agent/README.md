@@ -41,7 +41,26 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 | `zk-tcp-4370` | Eski cihazlarda 32-bit ZKEMKeeper COM köprüsüyle geçmiş + gerçek zamanlı olay okuma. EnrollNumber, kart, doğrulama, giriş/çıkış, geçerlilik ve WorkCode korunur. Üye/kart yazma kapalı; donanım testi gerekli. |
 | `vendor-sdk` | Tanımlı, henüz eklenmedi. |
 
-## Kurulum (Windows)
+## Kurulum (önerilen): tek dosya
+
+1. GitHub → Actions → **Edge Agent kurulum** → son çalıştırmadaki **OdivonEdgeAgentKurulum**
+   ekini indirin (ya da `scripts/build-edge-agent-installer.ps1` ile kendiniz üretin).
+2. Salon bilgisayarında `OdivonEdgeAgentKurulum-<sürüm>.exe` dosyasına çift tıklayın (yönetici izni ister).
+   Kurulum `C:\Odivon\EdgeAgent` klasörüne yapılır ve şunları kendisi yapar:
+   - Node.js'i pakete gömülü getirir (bilgisayara ayrıca Node kurulmaz).
+   - Eski ZK cihazları için 32-bit ZKEMKeeper SDK'sını Windows'a kaydeder.
+   - Güvenlik duvarına cihaz cevapları (UDP) için izin ekler.
+   - "Odivon Edge Agent" görevini kurar: bilgisayar açılınca, kimse oturum açmasa da başlar.
+   - Masaüstüne **Odivon Edge Agent** kısayolunu koyar.
+3. Kısayol yönetim arayüzünü açar (`http://127.0.0.1:47800`, yalnızca bu bilgisayardan):
+   **Eşleştirme** sekmesine panelden alınan kodu girin, **Cihaz ayarları**'nda cihaz bilgilerini
+   doldurun. **Durum**, **Geçişler** ve **Loglar** sekmelerinden canlı izleyin.
+   Günlük dosyaları: `C:\Odivon\EdgeAgent\app\data\logs`.
+
+Güncelleme için yeni sürümün kurulum dosyasını çalıştırmanız yeterli; `config.json` ve `data\`
+(eşleştirme, bekleyen geçişler) korunur. Kaldırma: Windows Ayarlar → Uygulamalar → Odivon Edge Agent.
+
+## Elle kurulum (Windows)
 
 1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)). npm ayrıca
    kullanılmaz; gerekli cihaz sürücüsü indirilen ZIP'in içindedir.

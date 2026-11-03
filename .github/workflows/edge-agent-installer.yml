@@ -1,0 +1,46 @@
+name: Edge Agent kurulum
+
+# edge-agent değişince Windows kurulum dosyasını üretir; Actions sayfasındaki
+# "OdivonEdgeAgentKurulum" ekinden indirilir. Panel yayınını etkilemez.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'edge-agent/**'
+      - 'scripts/build-edge-agent-installer.ps1'
+      - '.github/workflows/edge-agent-installer.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Testler
+        working-directory: edge-agent
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Kurulum dosyası
+        run: ./scripts/build-edge-agent-installer.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OdivonEdgeAgentKurulum
+          path: edge-agent/dist/*.exe
+          retention-days: 30

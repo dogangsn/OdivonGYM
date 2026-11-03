@@ -7,6 +7,11 @@ on:
   push:
     branches:
       - master
+    # Yalnızca agent değişen push'lar paneli yeniden yayınlamaz (bkz. edge-agent-installer.yml).
+    paths-ignore:
+      - 'edge-agent/**'
+      - 'scripts/build-edge-agent-installer.ps1'
+      - '.github/workflows/edge-agent-installer.yml'
   workflow_dispatch:
 
 concurrency:
