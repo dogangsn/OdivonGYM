@@ -17,6 +17,19 @@ export interface ExpenseSummary {
   count: number;
 }
 
+export interface BankPosClosing {
+  bankId: string;
+  bankName: string;
+  terminalNo?: string;
+  posTerminalNo?: string; // alias
+  expectedPos: number;
+  actualPos: number;
+  difference: number;
+  slipCount?: number;
+  isSlipPrinted?: boolean;
+  slipNotes?: string;
+}
+
 export interface GymDailyClosing {
   id: string;
   tenantId?: string;
@@ -43,6 +56,9 @@ export interface GymDailyClosing {
   actualPosCounted: number;
   posDifference: number;
 
+  // Bank POS Details (Ayrı Ayrı Banka Gün Sonu Slipleri)
+  bankPosClosings?: BankPosClosing[];
+
   // Carry-over & Bank Deposit
   retainedCashForNextDay: number;
   bankDepositAmount: number;
@@ -65,6 +81,7 @@ export interface PreClosePreviewResponse {
   expenseSummary: ExpenseSummary;
   expectedCash: number;
   expectedPos: number;
+  bankPosExpected?: Array<{ bankId: string; bankName: string; terminalNo?: string; expectedPos: number }>;
   isAlreadyClosed: boolean;
   existingClosing?: GymDailyClosing;
 }
@@ -75,9 +92,26 @@ export interface SubmitDailyCloseDto {
   branchName?: string;
   actualCashCounted: number;
   actualPosCounted?: number;
+  bankPosClosings?: BankPosClosing[];
   retainedCashForNextDay?: number;
   bankDepositAmount?: number;
   notes?: string;
+}
+
+export interface DailyCloseReminderSettings {
+  id?: string;
+  tenantId?: string;
+  enabled: boolean;
+  reminderTime: string; // 'HH:mm'
+  days?: string[]; // ['0','1','2','3','4','5','6']
+  notifyInApp?: boolean;
+}
+
+export interface UpdateDailyCloseReminderSettingsDto {
+  enabled: boolean;
+  reminderTime: string;
+  days?: string[];
+  notifyInApp?: boolean;
 }
 
 export interface CategoryExpenseBreakdown {

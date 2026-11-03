@@ -18,7 +18,11 @@ import {
   GymDailyClosing,
   PreClosePreviewResponse,
   ExpenseAnalyticsResponse,
+  BankPosClosing,
 } from '../../core/models/daily-close.model';
+import { GymBank } from '../../core/models/gym-bank.model';
+import { GymBankService } from '../../core/services/gym-bank.service';
+import { DailyCloseReminderService } from '../../core/services/daily-close-reminder.service';
 
 type MainTab = 'ledger' | 'daily-close' | 'analytics';
 type TypeFilter = 'all' | 'income' | 'expense';
@@ -46,6 +50,8 @@ export class AdminAccounting implements OnInit {
   private readonly alertService = inject(AlertService);
   private readonly eInvoiceService = inject(AdminEInvoiceService);
   private readonly membersService = inject(AdminMembersService);
+  private readonly gymBankService = inject(GymBankService);
+  protected readonly reminderService = inject(DailyCloseReminderService);
 
   // Active Main Tab
   protected readonly activeTab = signal<MainTab>('ledger');
@@ -121,6 +127,17 @@ export class AdminAccounting implements OnInit {
   protected readonly activeZReport = signal<GymDailyClosing | null>(null);
   protected readonly zReportModalOpen = signal(false);
 
+  // Anlaşmalı Bankalar
+  protected readonly banks = toSignal(this.gymBankService.watchBanks(), { initialValue: [] as GymBank[] });
+
+  // Gün Sonu Reaktif Değerler & Banka POS Slipleri
+  protected readonly actualCashCountedSignal = signal<number>(0);
+  protected readonly bankPosSlips = signal<Record<string, BankPosClosing>>({});
+  protected readonly bankPosList = computed(() => Object.values(this.bankPosSlips()));
+  protected readonly totalActualPosCounted = computed(() => {
+    return this.bankPosList().reduce((sum, s) => sum + (Number(s.actualPos) || 0), 0);
+  });
+
   protected readonly closeForm = this.fb.nonNullable.group({
     actualCashCounted: [0, [Validators.required, Validators.min(0)]],
     actualPosCounted: [0],
@@ -132,15 +149,27 @@ export class AdminAccounting implements OnInit {
   protected readonly liveCashDiff = computed(() => {
     const preview = this.preClosePreview();
     if (!preview) return 0;
-    const actual = Number(this.closeForm.controls.actualCashCounted.value || 0);
+    const actual = this.actualCashCountedSignal();
     return Math.round((actual - preview.expectedCash) * 100) / 100;
   });
 
   protected readonly livePosDiff = computed(() => {
     const preview = this.preClosePreview();
     if (!preview) return 0;
-    const actual = Number(this.closeForm.controls.actualPosCounted.value || 0);
+    const actual = this.totalActualPosCounted();
     return Math.round((actual - preview.expectedPos) * 100) / 100;
+  });
+
+  // Gün Sonu Hatırlatıcı Ayarları Modal State
+  protected readonly reminderModalOpen = signal(false);
+  protected readonly isSavingReminder = signal(false);
+  protected readonly reminderForm = this.fb.group({
+    enabled: [true],
+    reminderTime: ['22:00', [Validators.required]],
+    channel: ['in_app' as 'in_app' | 'browser_push' | 'both'],
+    notifyRoles: [['owner', 'manager']],
+    daysOfWeek: [[1, 2, 3, 4, 5, 6, 7]],
+    customMessage: [''],
   });
 
   // -------------------------------------------------------------
@@ -564,14 +593,94 @@ export class AdminAccounting implements OnInit {
     if (!preview) return;
 
     const existing = preview.existingClosing;
+    const initialCash = existing ? existing.actualCashCounted : preview.expectedCash;
+    const initialPos = existing ? existing.actualPosCounted : preview.expectedPos;
+
     this.closeForm.reset({
-      actualCashCounted: existing ? existing.actualCashCounted : preview.expectedCash,
-      actualPosCounted: existing ? existing.actualPosCounted : preview.expectedPos,
+      actualCashCounted: initialCash,
+      actualPosCounted: initialPos,
       retainedCashForNextDay: existing ? existing.retainedCashForNextDay : (preview.openingCash || 1000),
       bankDepositAmount: existing ? existing.bankDepositAmount : Math.max(0, (preview.expectedCash - (preview.openingCash || 1000))),
       notes: existing?.notes || '',
     });
+    this.actualCashCountedSignal.set(initialCash);
+
+    // Initialize Bank POS slips from active banks
+    const posBanks = this.banks().filter(
+      (b) => (b.hasPos || b.hasPosDevice) && (b.status === 'active' || b.isActive !== false),
+    );
+
+    const slipsMap: Record<string, BankPosClosing> = {};
+    const existingBankClosings = existing?.bankPosClosings || [];
+
+    if (posBanks.length > 0) {
+      for (const b of posBanks) {
+        const exist = existingBankClosings.find((x) => x.bankId === b.id);
+        const expectedItem = preview.bankPosExpected?.find((x) => x.bankId === b.id);
+        const expectedForBank = expectedItem?.expectedPos ?? 0;
+        const actualForBank = exist ? exist.actualPos : (expectedForBank || 0);
+        slipsMap[b.id] = {
+          bankId: b.id,
+          bankName: b.bankName || b.name || 'Banka',
+          terminalNo: b.posTerminalNo,
+          posTerminalNo: b.posTerminalNo,
+          expectedPos: expectedForBank,
+          actualPos: actualForBank,
+          difference: Math.round((actualForBank - expectedForBank) * 100) / 100,
+          isSlipPrinted: exist?.isSlipPrinted ?? false,
+          slipNotes: exist?.slipNotes || '',
+        };
+      }
+    } else if (existingBankClosings.length > 0) {
+      for (const exist of existingBankClosings) {
+        slipsMap[exist.bankId] = { ...exist };
+      }
+    }
+    this.bankPosSlips.set(slipsMap);
+
     this.closeDrawerOpen.set(true);
+  }
+
+  protected onCashCountedChange(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value || 0);
+    this.actualCashCountedSignal.set(val);
+    this.closeForm.controls.actualCashCounted.setValue(val);
+  }
+
+  protected onBankPosSlipChange(bankId: string, event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value || 0);
+    const slips = { ...this.bankPosSlips() };
+    if (!slips[bankId]) return;
+    const expected = slips[bankId].expectedPos || 0;
+    slips[bankId] = {
+      ...slips[bankId],
+      actualPos: val,
+      difference: Math.round((val - expected) * 100) / 100,
+    };
+    this.bankPosSlips.set(slips);
+    this.closeForm.controls.actualPosCounted.setValue(this.totalActualPosCounted());
+  }
+
+  protected onBankPosSlipPrintedToggle(bankId: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const slips = { ...this.bankPosSlips() };
+    if (!slips[bankId]) return;
+    slips[bankId] = {
+      ...slips[bankId],
+      isSlipPrinted: checked,
+    };
+    this.bankPosSlips.set(slips);
+  }
+
+  protected onBankPosSlipNotesChange(bankId: string, event: Event): void {
+    const val = (event.target as HTMLInputElement).value || '';
+    const slips = { ...this.bankPosSlips() };
+    if (!slips[bankId]) return;
+    slips[bankId] = {
+      ...slips[bankId],
+      slipNotes: val,
+    };
+    this.bankPosSlips.set(slips);
   }
 
   protected closeDailyCloseDrawer(): void {
@@ -586,12 +695,24 @@ export class AdminAccounting implements OnInit {
     this.submittingClose.set(true);
     try {
       const v = this.closeForm.getRawValue();
+      const bankClosingsList = Object.values(this.bankPosSlips()).map((s) => ({
+        bankId: s.bankId,
+        bankName: s.bankName,
+        posTerminalNo: s.posTerminalNo,
+        expectedPos: s.expectedPos,
+        actualPos: Number(s.actualPos) || 0,
+        difference: Math.round(((Number(s.actualPos) || 0) - s.expectedPos) * 100) / 100,
+        isSlipPrinted: Boolean(s.isSlipPrinted),
+        slipNotes: s.slipNotes,
+      }));
+
       const res = await this.service.submitDailyClose({
         date: this.dailyCloseDate(),
-        actualCashCounted: Number(v.actualCashCounted),
-        actualPosCounted: Number(v.actualPosCounted),
+        actualCashCounted: this.actualCashCountedSignal(),
+        actualPosCounted: this.totalActualPosCounted(),
         retainedCashForNextDay: Number(v.retainedCashForNextDay),
         bankDepositAmount: Number(v.bankDepositAmount),
+        bankPosClosings: bankClosingsList,
         notes: v.notes.trim(),
       });
       this.alertService.toastSuccess(`Z Raporu oluşturuldu: ${res.closingNumber}`);
@@ -761,6 +882,18 @@ export class AdminAccounting implements OnInit {
           <span>${this.money(closing.posDifference)}</span>
         </div>
 
+        ${closing.bankPosClosings && closing.bankPosClosings.length > 0 ? `
+          <div class="divider"></div>
+          <div class="font-bold text-center">BANKA POS SLİPLERİ (Z RAPORLARI)</div>
+          ${closing.bankPosClosings.map(b => `
+            <div class="row">
+              <span>${b.bankName} ${b.posTerminalNo ? '(' + b.posTerminalNo + ')' : ''}:</span>
+              <span>${this.money(b.actualPos)} ${b.isSlipPrinted ? '[Z-OK]' : ''}</span>
+            </div>
+            ${b.difference !== 0 ? `<div class="row" style="font-size:10px;"><span>- Beklenen: ${this.money(b.expectedPos)}</span><span>Fark: ${b.difference > 0 ? '+' : ''}${this.money(b.difference)}</span></div>` : ''}
+          `).join('')}
+        ` : ''}
+
         <div class="divider"></div>
         <div class="row">
           <span>ERTESİ GÜNE DEVİR KASASI:</span>
@@ -869,5 +1002,50 @@ export class AdminAccounting implements OnInit {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  // -------------------------------------------------------------
+  // GÜN SONU HATIRLATICI METODLARI
+  // -------------------------------------------------------------
+  protected async openReminderModal(): Promise<void> {
+    try {
+      await this.reminderService.loadSettings();
+      const s = this.reminderService.settings();
+      this.reminderForm.patchValue({
+        enabled: s.enabled,
+        reminderTime: s.reminderTime,
+      });
+      this.reminderModalOpen.set(true);
+    } catch {
+      this.reminderModalOpen.set(true);
+    }
+  }
+
+  protected closeReminderModal(): void {
+    this.reminderModalOpen.set(false);
+  }
+
+  protected async saveReminderSettings(): Promise<void> {
+    if (this.reminderForm.invalid || this.isSavingReminder()) return;
+    this.isSavingReminder.set(true);
+    try {
+      const v = this.reminderForm.value;
+      await this.reminderService.saveSettings({
+        enabled: v.enabled ?? true,
+        reminderTime: v.reminderTime || '22:00',
+        notifyInApp: true,
+      });
+      this.alertService.toastSuccess('Gün sonu hatırlatıcı ayarları kaydedildi.');
+      this.closeReminderModal();
+    } catch (e: any) {
+      this.alertService.toastError(e.message || 'Ayarlar kaydedilemedi.');
+    } finally {
+      this.isSavingReminder.set(false);
+    }
+  }
+
+  protected sendTestReminder(): void {
+    this.reminderService.sendTestNotification();
+    this.alertService.toastSuccess('Test bildirimi iletildi.');
   }
 }

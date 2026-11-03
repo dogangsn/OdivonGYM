@@ -32,6 +32,7 @@ import { ShortcutService } from '../../../core/services/shortcut.service';
 import { ShortcutManagerModal } from '../../components/shortcut-manager-modal/shortcut-manager-modal';
 import { GuideService } from '../../../core/services/guide.service';
 import { GuideModal } from '../../components/guide-modal/guide-modal';
+import { DailyCloseReminderService } from '../../../core/services/daily-close-reminder.service';
 
 import { FormsModule } from '@angular/forms';
 
@@ -141,6 +142,11 @@ export class Shell {
   protected readonly shortcutService = inject(ShortcutService);
   protected readonly guide = inject(GuideService);
   private readonly router = inject(Router);
+  private readonly dailyCloseReminder = inject(DailyCloseReminderService);
+
+  constructor() {
+    this.dailyCloseReminder.init();
+  }
 
   protected readonly languageNames = LANGUAGE_NAMES;
   protected readonly languages = Object.keys(LANGUAGE_NAMES) as SupportedLanguage[];

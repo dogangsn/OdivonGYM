@@ -43,6 +43,8 @@ import {
   MAIL_TEMPLATE_VARIABLES,
   MailTemplateVariable,
 } from '../../core/models/gym-mail-template.model';
+import { GymBank, CreateGymBankInput, TURKISH_POPULAR_BANKS } from '../../core/models/gym-bank.model';
+import { GymBankService } from '../../core/services/gym-bank.service';
 
 export type DisciplinesTab =
   | 'disciplines'
@@ -50,7 +52,8 @@ export type DisciplinesTab =
   | 'equipment'
   | 'facilities'
   | 'stock_categories'
-  | 'mail_template';
+  | 'mail_template'
+  | 'banks';
 
 export interface MuscleGroupDetail {
   key: MuscleGroup;
@@ -139,6 +142,7 @@ export const MUSCLE_DETAILS: MuscleGroupDetail[] = [
 export class AdminDisciplines {
   private readonly disciplinesService = inject(AdminDisciplinesService);
   private readonly shopService = inject(AdminShopService);
+  private readonly gymBankService = inject(GymBankService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly alertService = inject(AlertService);
@@ -217,6 +221,34 @@ export class AdminDisciplines {
   );
   protected readonly shopProducts = toSignal(this.canSeeShop ? this.shopService.watchProducts() : of([] as ShopProduct[]), {
     initialValue: [] as ShopProduct[],
+  });
+
+  // Banks & POS UI state
+  protected readonly banks = toSignal(this.gymBankService.watchBanks(), {
+    initialValue: [] as GymBank[],
+  });
+  protected readonly popularBanks = TURKISH_POPULAR_BANKS;
+  protected readonly bankModalOpen = signal(false);
+  protected readonly editingBank = signal<GymBank | null>(null);
+  protected readonly isSavingBank = signal(false);
+
+  protected readonly bankForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    code: [''],
+    accountNumber: [''],
+    branchCode: [''],
+    branchName: [''],
+    iban: [''],
+    currency: ['TRY', [Validators.required]],
+    hasPosDevice: [true],
+    posTerminalNo: [''],
+    posModel: [''],
+    commissionRate: [0, [Validators.min(0)]],
+    isDefaultPos: [false],
+    isActive: [true],
+    colorTag: ['indigo'],
+    icon: ['account_balance'],
+    notes: [''],
   });
 
   // Stock Categories UI state
@@ -335,13 +367,17 @@ export class AdminDisciplines {
   protected readonly totalFacilities = computed(() => this.facilities().length);
   protected readonly totalExercises = computed(() => this.exerciseLibrary().length);
   protected readonly totalStockCategories = computed(() => this.stockCategories().length);
+  protected readonly totalBanks = computed(() => this.banks().length);
+  protected readonly activePosCount = computed(
+    () => this.banks().filter((b) => b.hasPosDevice && b.isActive !== false).length,
+  );
 
   constructor() {
     const tabParam = this.route.snapshot.queryParamMap.get('tab') as DisciplinesTab;
     const url = this.route.snapshot.url.map((s) => s.path).join('/');
     if (
       tabParam &&
-      ['disciplines', 'muscles', 'equipment', 'facilities', 'stock_categories', 'mail_template'].includes(tabParam)
+      ['disciplines', 'muscles', 'equipment', 'facilities', 'stock_categories', 'mail_template', 'banks'].includes(tabParam)
     ) {
       this.activeTab.set(tabParam);
       if (tabParam === 'mail_template') {
@@ -352,6 +388,8 @@ export class AdminDisciplines {
       this.loadMailTemplate();
     } else if (url.includes('stock-categories')) {
       this.activeTab.set('stock_categories');
+    } else if (url.includes('banks')) {
+      this.activeTab.set('banks');
     } else if (url.includes('definitions')) {
       this.activeTab.set('muscles');
     }
@@ -1006,5 +1044,162 @@ export class AdminDisciplines {
     const newVal = currentVal ? `${currentVal} ${variableKey}` : variableKey;
     this.mailTemplateForm.get(field)?.setValue(newVal);
     this.mailTemplateForm.get(field)?.markAsDirty();
+  }
+
+  // ==========================================
+  // BANK & POS MANAGEMENT ACTIONS
+  // ==========================================
+  openCreateBankModal(): void {
+    this.editingBank.set(null);
+    this.bankForm.reset({
+      name: '',
+      code: '',
+      accountNumber: '',
+      branchCode: '',
+      branchName: '',
+      iban: '',
+      currency: 'TRY',
+      hasPosDevice: true,
+      posTerminalNo: '',
+      posModel: '',
+      commissionRate: 0,
+      isDefaultPos: this.banks().filter((b) => b.hasPosDevice).length === 0,
+      isActive: true,
+      colorTag: 'indigo',
+      icon: 'account_balance',
+      notes: '',
+    });
+    this.bankModalOpen.set(true);
+  }
+
+  openEditBankModal(bank: GymBank): void {
+    this.editingBank.set(bank);
+    const active = bank.status ? bank.status === 'active' : bank.isActive !== false;
+    this.bankForm.patchValue({
+      name: bank.bankName || bank.name || '',
+      code: bank.code || '',
+      accountNumber: bank.accountNumber || '',
+      branchCode: bank.branchCode || '',
+      branchName: bank.branchName || '',
+      iban: bank.iban || '',
+      currency: bank.currency || 'TRY',
+      hasPosDevice: bank.hasPos ?? bank.hasPosDevice ?? true,
+      posTerminalNo: bank.posTerminalNo || '',
+      posModel: bank.posModel || '',
+      commissionRate: bank.posCommissionRate ?? bank.commissionRate ?? 0,
+      isDefaultPos: bank.isDefaultPos ?? false,
+      isActive: active,
+      colorTag: bank.colorTag || 'indigo',
+      icon: bank.icon || 'account_balance',
+      notes: bank.notes || '',
+    });
+    this.bankModalOpen.set(true);
+  }
+
+  closeBankModal(): void {
+    this.bankModalOpen.set(false);
+    this.editingBank.set(null);
+  }
+
+  onSelectPopularBank(bankName: string): void {
+    const popular = this.popularBanks.find((b) => b.name === bankName);
+    if (!popular) return;
+    this.bankForm.patchValue({
+      name: popular.name,
+      code: popular.code,
+      colorTag: popular.color,
+    });
+  }
+
+  async saveBank(): Promise<void> {
+    if (this.bankForm.invalid) {
+      this.bankForm.markAllAsTouched();
+      return;
+    }
+    const val = this.bankForm.value;
+    const isAct = val.isActive !== false;
+    const payload: CreateGymBankInput = {
+      bankName: val.name?.trim() || '',
+      name: val.name?.trim() || '',
+      code: val.code?.trim() || undefined,
+      accountNumber: val.accountNumber?.trim() || undefined,
+      branchCode: val.branchCode?.trim() || undefined,
+      branchName: val.branchName?.trim() || undefined,
+      iban: val.iban?.trim() ? val.iban.trim().replace(/\s+/g, '') : undefined,
+      currency: val.currency || 'TRY',
+      hasPos: Boolean(val.hasPosDevice),
+      hasPosDevice: Boolean(val.hasPosDevice),
+      posTerminalNo: val.posTerminalNo?.trim() || undefined,
+      posModel: val.posModel?.trim() || undefined,
+      posCommissionRate: Number(val.commissionRate) || 0,
+      commissionRate: Number(val.commissionRate) || 0,
+      isDefaultPos: Boolean(val.isDefaultPos),
+      status: isAct ? 'active' : 'inactive',
+      isActive: isAct,
+      colorTag: val.colorTag || 'indigo',
+      icon: val.icon || 'account_balance',
+      notes: val.notes?.trim() || undefined,
+    };
+
+    this.isSavingBank.set(true);
+    try {
+      const editing = this.editingBank();
+      if (editing) {
+        await this.gymBankService.updateBank(editing.id, payload);
+        this.alertService.toastSuccess('Banka ve POS bilgileri güncellendi.');
+      } else {
+        await this.gymBankService.addBank(payload);
+        this.alertService.toastSuccess('Yeni anlaşmalı banka başarıyla kaydedildi.');
+      }
+      this.closeBankModal();
+    } catch (error) {
+      console.error('Banka kaydedilemedi:', error);
+      this.alertService.toastError((error as Error)?.message || 'Banka kaydedilemedi.');
+    } finally {
+      this.isSavingBank.set(false);
+    }
+  }
+
+  async toggleBankActive(bank: GymBank): Promise<void> {
+    try {
+      const isCurrentlyActive = bank.status ? bank.status === 'active' : bank.isActive !== false;
+      const nextStatus = isCurrentlyActive ? 'inactive' : 'active';
+      await this.gymBankService.updateBank(bank.id, {
+        status: nextStatus,
+        isActive: nextStatus === 'active',
+      });
+      this.alertService.toastSuccess(isCurrentlyActive ? 'Banka pasife alındı.' : 'Banka aktif edildi.');
+    } catch (error) {
+      this.alertService.toastError('Durum değiştirilemedi.');
+    }
+  }
+
+  async setAsDefaultPos(bank: GymBank): Promise<void> {
+    try {
+      await this.gymBankService.setDefaultPos(bank.id);
+      this.alertService.toastSuccess(`${bank.bankName || bank.name} varsayılan POS olarak ayarlandı.`);
+    } catch (error) {
+      this.alertService.toastError('Varsayılan POS güncellenemedi.');
+    }
+  }
+
+  async deleteBank(bank: GymBank): Promise<void> {
+    const ok = await this.alertService.deleteConfirm(bank.bankName || bank.name || 'Banka');
+    if (!ok) return;
+    try {
+      await this.gymBankService.deleteBank(bank.id);
+      this.alertService.toastSuccess('Banka tanımı silindi.');
+    } catch (error) {
+      this.alertService.toastError('Banka silinemedi.');
+    }
+  }
+
+  async seedDefaultBanks(): Promise<void> {
+    try {
+      await this.gymBankService.seedPopularBanks();
+      this.alertService.toastSuccess('Popüler Türkiye bankaları tanımlandı.');
+    } catch (error) {
+      this.alertService.toastError('Bankalar yüklenemedi.');
+    }
   }
 }

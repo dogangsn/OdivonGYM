@@ -5,7 +5,11 @@ import { AccountingApi } from '../../core/api/accounting.api';
 import { tenantReload } from '../../core/api/unwrap';
 import { AuthService } from '../../core/auth/auth.service';
 import { AccountingEntry, CreateAccountingEntryInput } from '../../core/models/accounting-entry.model';
-import { SubmitDailyCloseDto } from '../../core/models/daily-close.model';
+import {
+  SubmitDailyCloseDto,
+  DailyCloseReminderSettings,
+  UpdateDailyCloseReminderSettingsDto,
+} from '../../core/models/daily-close.model';
 
 export interface AccountingCategory {
   id?: string;
@@ -113,6 +117,14 @@ export class AdminAccountingService {
     const res = await firstValueFrom(this.api.verifyDailyClose(id, notes));
     this.reload$.next();
     return res;
+  }
+
+  async getReminderSettings(): Promise<DailyCloseReminderSettings> {
+    return firstValueFrom(this.api.getDailyCloseReminderSettings());
+  }
+
+  async updateReminderSettings(dto: UpdateDailyCloseReminderSettingsDto): Promise<DailyCloseReminderSettings> {
+    return firstValueFrom(this.api.updateDailyCloseReminderSettings(dto));
   }
 
   // Expense Analytics

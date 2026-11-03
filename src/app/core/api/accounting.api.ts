@@ -7,7 +7,10 @@ import {
   PreClosePreviewResponse,
   SubmitDailyCloseDto,
   ExpenseAnalyticsResponse,
+  DailyCloseReminderSettings,
+  UpdateDailyCloseReminderSettingsDto,
 } from '../models/daily-close.model';
+import { GymBank } from '../models/gym-bank.model';
 import { unwrapList } from './unwrap';
 
 export interface AccountingCategoryDto {
@@ -79,6 +82,36 @@ export class AccountingApi {
 
   verifyDailyClose(id: string, notes?: string) {
     return this.api.post<GymDailyClosing>(`/gym/daily-close/${id}/verify`, { notes }).pipe(map((r) => r.data));
+  }
+
+  // Daily Close Reminder Settings
+  getDailyCloseReminderSettings() {
+    return this.api.get<DailyCloseReminderSettings>('/gym/daily-close/reminder-settings').pipe(map((r) => r.data));
+  }
+
+  updateDailyCloseReminderSettings(body: UpdateDailyCloseReminderSettingsDto) {
+    return this.api.patch<DailyCloseReminderSettings>('/gym/daily-close/reminder-settings', body).pipe(map((r) => r.data));
+  }
+
+  // Contracted Banks & POS
+  listBanks() {
+    return this.api.get<GymBank[]>('/gym/banks').pipe(map((r) => unwrapList<GymBank>(r.data)));
+  }
+
+  getBankById(id: string) {
+    return this.api.get<GymBank>(`/gym/banks/${id}`).pipe(map((r) => r.data));
+  }
+
+  createBank(body: unknown) {
+    return this.api.post<GymBank>('/gym/banks', body).pipe(map((r) => r.data));
+  }
+
+  updateBank(id: string, body: unknown) {
+    return this.api.patch<GymBank>(`/gym/banks/${id}`, body).pipe(map((r) => r.data));
+  }
+
+  deleteBank(id: string) {
+    return this.api.delete<{ id: string }>(`/gym/banks/${id}`).pipe(map((r) => r.data));
   }
 
   // Expense Analytics

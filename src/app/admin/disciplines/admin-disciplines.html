@@ -61,6 +61,12 @@
         <mat-icon class="icon-size-4.5">{{ isMailTemplateSaving() ? 'hourglass_top' : 'save' }}</mat-icon>
         <span>{{ isMailTemplateSaving() ? 'Kaydediliyor...' : 'Şablonu Kaydet' }}</span>
       </button>
+      } @else if (activeTab() === 'banks') {
+      <button type="button" (click)="openCreateBankModal()"
+        class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer">
+        <mat-icon class="icon-size-4.5">add</mat-icon>
+        <span>Yeni Banka / POS Tanımla</span>
+      </button>
       }
     </div>
   </div>
@@ -211,6 +217,21 @@
         {{ mailTemplate().enabled ? 'Aktif' : 'Pasif' }}
       </span>
       @if (activeTab() === 'mail_template') {
+      <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
+      }
+    </button>
+
+    <button type="button" (click)="setTab('banks')"
+      class="pb-3 text-xs sm:text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer shrink-0"
+      [class]="activeTab() === 'banks' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'">
+      <mat-icon class="icon-size-4">account_balance</mat-icon>
+      <span>Anlaşmalı Bankalar & POS</span>
+      @if (banks().length > 0) {
+      <span class="px-2 py-0.2 rounded-full text-xs font-black bg-blue-50 text-blue-700">
+        {{ banks().length }} Banka · {{ activePosCount() }} POS
+      </span>
+      }
+      @if (activeTab() === 'banks') {
       <span class="absolute bottom-0 inset-x-0 h-0.5 bg-indigo-600 rounded-full"></span>
       }
     </button>
@@ -1178,6 +1199,214 @@
     </div>
   </div>
   }
+
+  <!-- ============================================== -->
+  <!-- TAB: ANLAŞMALI BANKALAR & POS CİHAZLARI       -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'banks') {
+  <div class="space-y-6">
+    <!-- Info & Overview Banner -->
+    <div class="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-xl relative overflow-hidden">
+      <div class="absolute -right-8 -bottom-8 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/20">
+            <mat-icon class="icon-size-4">point_of_sale</mat-icon>
+            <span>Muhasebe & Gün Sonu Entegrasyonu</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight m-0">
+            Anlaşmalı Bankalar & Kasa POS Cihazları
+          </h2>
+          <p class="text-xs sm:text-sm text-blue-200/80 max-w-2xl m-0 leading-relaxed">
+            Burada tanımladığınız her fiziki POS cihazı, <strong>Muhasebe & Kasa Gün Sonu (Z Raporu)</strong> ekranında otomatik olarak ayrı bir slip giriş satırı olarak listelenir. Böylece her bankanın gün sonu mutabakatını bağımsız takip edebilirsiniz.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          @if (banks().length === 0) {
+          <button type="button" (click)="seedDefaultBanks()"
+            class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer">
+            <mat-icon class="icon-size-4">bolt</mat-icon>
+            <span>Popüler Bankaları Yükle</span>
+          </button>
+          }
+          <button type="button" (click)="openCreateBankModal()"
+            class="px-4.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer">
+            <mat-icon class="icon-size-4.5">add</mat-icon>
+            <span>Yeni Banka / POS Ekle</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    @if (banks().length === 0) {
+    <div class="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+      <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+        <mat-icon class="icon-size-8">account_balance</mat-icon>
+      </div>
+      <h3 class="text-base font-black text-slate-900 m-0">Henüz anlaşmalı banka tanımlanmamış</h3>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
+        Kredi kartı tahsilatlarında kullandığınız bankaları ve POS cihazlarını tanımlayarak gün sonu mutabakatlarınızı banka bazlı ayrıştırın.
+      </p>
+      <div class="flex items-center justify-center gap-3 mt-5">
+        <button type="button" (click)="seedDefaultBanks()"
+          class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <mat-icon class="icon-size-4">bolt</mat-icon>
+          <span>Örnek Bankaları Otomatik Yükle</span>
+        </button>
+        <button type="button" (click)="openCreateBankModal()"
+          class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <mat-icon class="icon-size-4">add</mat-icon>
+          <span>İlk Bankayı Ekle</span>
+        </button>
+      </div>
+    </div>
+    } @else {
+    <!-- Bank Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      @for (bank of banks(); track bank.id) {
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+        <!-- Top Card Section -->
+        <div class="p-5 sm:p-6 space-y-4">
+          <!-- Header: Icon, Name & Badges -->
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-transform group-hover:scale-105"
+                [ngClass]="{
+                  'bg-emerald-100 text-emerald-800': bank.colorTag === 'emerald',
+                  'bg-rose-100 text-rose-800': bank.colorTag === 'rose',
+                  'bg-blue-100 text-blue-800': bank.colorTag === 'blue',
+                  'bg-amber-100 text-amber-800': bank.colorTag === 'amber',
+                  'bg-purple-100 text-purple-800': bank.colorTag === 'purple',
+                  'bg-indigo-100 text-indigo-800': !bank.colorTag || bank.colorTag === 'indigo'
+                }">
+                <mat-icon class="icon-size-6">{{ bank.icon || 'account_balance' }}</mat-icon>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 m-0 tracking-tight flex items-center gap-1.5">
+                  <span>{{ bank.bankName || bank.name }}</span>
+                </h3>
+                <div class="flex items-center gap-2 mt-0.5">
+                  @if (bank.code) {
+                  <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                    {{ bank.code }}
+                  </span>
+                  <span class="text-slate-300">·</span>
+                  }
+                  <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                    {{ bank.currency || 'TRY' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-end gap-1.5">
+              @if (bank.isDefaultPos) {
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-700 border border-amber-300 flex items-center gap-1">
+                <mat-icon class="icon-size-3">star</mat-icon>
+                <span>Varsayılan POS</span>
+              </span>
+              }
+              <button type="button" (click)="toggleBankActive(bank)"
+                class="px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-all border"
+                [ngClass]="(bank.status === 'active' || bank.isActive !== false) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'">
+                {{ (bank.status === 'active' || bank.isActive !== false) ? '● Aktif' : '○ Pasif' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- IBAN & Account Box -->
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 font-semibold">IBAN:</span>
+              <span class="font-mono font-bold text-slate-800 text-[11px] select-all tracking-wide">
+                {{ bank.iban || 'Belirtilmedi' }}
+              </span>
+            </div>
+            @if (bank.branchName || bank.branchCode || bank.accountNumber) {
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-200/60">
+              <span>Şube / Hesap:</span>
+              <span class="font-semibold text-slate-700">
+                {{ bank.branchName || bank.branchCode || 'Merkez' }} / {{ bank.accountNumber || '—' }}
+              </span>
+            </div>
+            }
+          </div>
+
+          <!-- POS Hardware & Settlement Settings -->
+          <div class="p-3.5 rounded-2xl border space-y-2"
+            [ngClass]="(bank.hasPos || bank.hasPosDevice) ? 'bg-blue-50/50 border-blue-100 text-blue-900' : 'bg-slate-50/60 border-slate-100 text-slate-600'">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-xs font-black">
+                <mat-icon class="icon-size-4" [ngClass]="(bank.hasPos || bank.hasPosDevice) ? 'text-blue-600' : 'text-slate-400'">
+                  {{ (bank.hasPos || bank.hasPosDevice) ? 'point_of_sale' : 'credit_card_off' }}
+                </mat-icon>
+                <span>{{ (bank.hasPos || bank.hasPosDevice) ? 'Fiziki POS Cihazı' : 'POS Cihazı Yok (Yalnızca Havale)' }}</span>
+              </div>
+              @if ((bank.hasPos || bank.hasPosDevice) && (bank.posCommissionRate || bank.commissionRate)) {
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100/80 text-blue-800">
+                Komisyon: %{{ bank.posCommissionRate ?? bank.commissionRate }}
+              </span>
+              }
+            </div>
+
+            @if (bank.hasPos || bank.hasPosDevice) {
+            <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-blue-200/50">
+              <div>
+                <span class="text-blue-600/70 font-semibold block">Terminal No (TID):</span>
+                <span class="font-mono font-bold text-blue-950">{{ bank.posTerminalNo || '—' }}</span>
+              </div>
+              <div>
+                <span class="text-blue-600/70 font-semibold block">POS Modeli:</span>
+                <span class="font-medium text-blue-950 truncate block">{{ bank.posModel || 'Otomatik' }}</span>
+              </div>
+            </div>
+            <div class="text-[10px] text-blue-700 flex items-center gap-1 font-semibold pt-0.5">
+              <mat-icon class="icon-size-3">check_circle</mat-icon>
+              <span>Kasa sayımında ayrı slip girişi ve Z Raporu aktif</span>
+            </div>
+            }
+          </div>
+
+          @if (bank.notes) {
+          <p class="text-xs text-slate-500 italic m-0 line-clamp-2">
+            "{{ bank.notes }}"
+          </p>
+          }
+        </div>
+
+        <!-- Card Footer Actions -->
+        <div class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1">
+            @if ((bank.hasPos || bank.hasPosDevice) && !bank.isDefaultPos) {
+            <button type="button" (click)="setAsDefaultPos(bank)"
+              class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-amber-700 border border-slate-200 hover:border-amber-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+              matTooltip="Kredi kartı çekimlerinde varsayılan POS olarak ayarla">
+              <mat-icon class="icon-size-3.5">star_outline</mat-icon>
+              <span>Varsayılan Yap</span>
+            </button>
+            }
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" (click)="openEditBankModal(bank)"
+              class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+              <mat-icon class="icon-size-3.5 text-slate-500">edit</mat-icon>
+              <span>Düzenle</span>
+            </button>
+            <button type="button" (click)="deleteBank(bank)"
+              class="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 flex items-center justify-center transition-all cursor-pointer"
+              matTooltip="Bankayı sil">
+              <mat-icon class="icon-size-4">delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
 </div>
 
 <!-- ============================================== -->
@@ -1620,6 +1849,191 @@
         <button type="submit" [disabled]="isSavingStockCategory()"
           class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer disabled:opacity-50">
           {{ isSavingStockCategory() ? 'Kaydediliyor...' : 'Kategoriyi Kaydet' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+<!-- ============================================== -->
+<!-- MODAL: ANLAŞMALI BANKA & POS EKLE / DÜZENLE    -->
+<!-- ============================================== -->
+@if (bankModalOpen()) {
+<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs z-50 transition-opacity"
+  (click)="closeBankModal()"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none overflow-y-auto">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 space-y-5 pointer-events-auto border border-slate-100 my-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          <mat-icon class="icon-size-5">account_balance</mat-icon>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900 m-0">
+            {{ editingBank() ? 'Banka & POS Cihazını Düzenle' : 'Yeni Anlaşmalı Banka & POS Ekle' }}
+          </h3>
+          <p class="text-xs text-slate-500 m-0">Kasa gün sonu ve tahsilat mutabakatı için banka tanımı</p>
+        </div>
+      </div>
+      <button type="button" (click)="closeBankModal()"
+        class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
+        <mat-icon class="icon-size-5">close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Quick preset chips (only if adding new) -->
+    @if (!editingBank()) {
+    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+        Hızlı Banka Seçimi (Otomatik Doldur):
+      </span>
+      <div class="flex flex-wrap gap-1.5">
+        @for (b of popularBanks; track b.code) {
+        <button type="button" (click)="onSelectPopularBank(b.name)"
+          class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 transition-all cursor-pointer">
+          {{ b.name }}
+        </button>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Bank Form -->
+    <form [formGroup]="bankForm" (ngSubmit)="saveBank()" class="space-y-4">
+      <!-- Row 1: Name & Code -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Banka Adı <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" formControlName="name" placeholder="Örn: Garanti BBVA, Akbank"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Banka Kodu</label>
+          <input type="text" formControlName="code" placeholder="GARANTI"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+      </div>
+
+      <!-- Row 2: IBAN & Currency -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-slate-700 mb-1">IBAN Numarası</label>
+          <input type="text" formControlName="iban" placeholder="TR00 0000 0000 0000 0000 0000 00"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 font-mono tracking-wider focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Para Birimi</label>
+          <select formControlName="currency"
+            class="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer">
+            <option value="TRY">₺ - Türk Lirası</option>
+            <option value="USD">$ - Dolar</option>
+            <option value="EUR">€ - Euro</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 3: Branch & Account -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Şube Adı</label>
+          <input type="text" formControlName="branchName" placeholder="Kadıköy Şubesi"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Şube Kodu</label>
+          <input type="text" formControlName="branchCode" placeholder="123"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Hesap No</label>
+          <input type="text" formControlName="accountNumber" placeholder="1234567"
+            class="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+      </div>
+
+      <!-- POS Device Configuration Box -->
+      <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-blue-950 flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" formControlName="hasPosDevice"
+              class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer" />
+            <span>Salonumuzda Bu Bankaya Ait Fiziki POS Cihazı Var</span>
+          </label>
+          <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Gün Sonu Entegre</span>
+        </div>
+
+        @if (bankForm.get('hasPosDevice')?.value) {
+        <div class="pt-2 border-t border-blue-200/60 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Terminal No (TID)</label>
+              <input type="text" formControlName="posTerminalNo" placeholder="Örn: 10482910"
+                class="w-full h-9 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cihaz Modeli</label>
+              <input type="text" formControlName="posModel" placeholder="Örn: Ingenico Move 5000"
+                class="w-full h-9 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Komisyon (%)</label>
+              <input type="number" step="0.01" min="0" formControlName="commissionRate" placeholder="2.5"
+                class="w-full h-9 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer pt-1">
+            <input type="checkbox" formControlName="isDefaultPos"
+              class="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 cursor-pointer" />
+            <span>Kredi kartı tahsilatlarında varsayılan POS olarak kullan</span>
+          </label>
+        </div>
+        }
+      </div>
+
+      <!-- Status & Color -->
+      <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+          <input type="checkbox" formControlName="isActive"
+            class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
+          <span>Banka ve POS Tanımı Aktif</span>
+        </label>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-medium">Tema:</span>
+          <select formControlName="colorTag"
+            class="h-8 px-2.5 rounded-lg border border-slate-300 text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer">
+            <option value="indigo">İndigo</option>
+            <option value="blue">Mavi</option>
+            <option value="emerald">Yeşil</option>
+            <option value="rose">Kırmızı</option>
+            <option value="amber">Turuncu/Sarı</option>
+            <option value="purple">Mor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Özel Notlar (Opsiyonel)</label>
+        <textarea formControlName="notes" rows="2" placeholder="Şube müşteri temsilcisi, POS destek numarası vb."
+          class="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" (click)="closeBankModal()"
+          class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer">
+          Vazgeç
+        </button>
+        <button type="submit" [disabled]="isSavingBank()"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+          <mat-icon class="icon-size-4">{{ isSavingBank() ? 'hourglass_top' : 'save' }}</mat-icon>
+          <span>{{ isSavingBank() ? 'Kaydediliyor...' : 'Bankayı Kaydet' }}</span>
         </button>
       </div>
     </form>
