@@ -281,3 +281,41 @@ test('kimlik reddedilince yeni kod istenir ve yeni kimlikle kaldığı yerden de
   await runtime.tick();
   assert.equal(api.logs.size, 3);
 });
+
+test('bitiş gününü tutamayan cihazda süresi dolan üye pasif yapılır', async (t) => {
+  const os = require('node:os');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'odivon-exp-'));
+  const store = new Store(path.join(dir, 'agent.db'));
+  t.after(() => store.close());
+  const applied = [];
+  const adapter = {
+    localExpiry: true,
+    async applyUser(item) {
+      applied.push(item);
+      return { verified: true };
+    },
+    async readEvents(cursor) {
+      return { events: [], cursor };
+    },
+    close() {},
+  };
+  const gate = { gateId: 'zk1', name: 'ZK', protocol: 'zk-tcp-4370', host: '192.168.1.202', capabilities: { events: false, userSync: true } };
+  store.saveDevices([gate]);
+  const runtime = new AgentRuntime({
+    client: {},
+    store,
+    logger: silent,
+    adapterFactory: () => adapter,
+    now: () => new Date('2026-11-04T09:00:00+03:00').getTime(),
+  });
+  store.setValidity('zk1', '14441', { name: 'A', validEnd: '20261103', enabled: true });
+  store.setValidity('zk1', '200', { name: 'B', validEnd: '20261104', enabled: true });
+  store.setValidity('zk1', '300', { name: 'C', validEnd: null, enabled: true });
+  await runtime.enforceExpiry();
+  assert.deepEqual(applied.map((i) => [i.userId, i.enabled]), [['14441', false]]);
+  assert.deepEqual(store.expiredUsers('20261104'), []);
+  await runtime.enforceExpiry();
+  assert.equal(applied.length, 1, 'bir kez kapatılan üye tekrar yazılmaz');
+});

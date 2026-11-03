@@ -16,6 +16,7 @@
  */
 
 const { createAdapter } = require('./adapters');
+const { istanbulDay } = require('./time');
 const { asDeviceError } = require('./adapters/errors');
 
 const EVENT_BATCH_SIZE = 500;
@@ -204,6 +205,7 @@ class AgentRuntime {
       return;
     }
     if (ack.result === 'applied') {
+      if (device.adapter.localExpiry) this.rememberValidity(device, item);
       this.log.info(`✅ ${item.enabled ? 'Yetki güncellendi' : 'Yetki kaldırıldı'}: ${label}`);
     } else {
       this.log.error(`❌ Cihaz işlemi başarısız (${label}): ${ack.error}`);
@@ -235,6 +237,86 @@ class AgentRuntime {
       this.markUnreachable(device, err);
       this.log.warn(`⚠️ ${device.config.name} logları okunamadı: ${err.message}`);
     }
+  }
+
+  rememberValidity(device, item) {
+    const validEnd = item.validEnd ? String(item.validEnd).replace(/\D/g, '').slice(0, 8) : null;
+    this.store.setValidity(device.config.gateId, item.userId, { name: item.name ?? null, validEnd, enabled: Boolean(item.enabled) });
+    if (item.replacesUserId && item.replacesUserId !== item.userId) {
+      this.store.setValidity(device.config.gateId, item.replacesUserId, { validEnd: null, enabled: false });
+    }
+  }
+
+  /**
+   * Bitiş gününü tutamayan cihazlarda (ZK) süresi dolan üyeleri cihazda pasif yapar.
+   * Bitiş günü "o günün sonuna kadar" geçerlidir: 20261103 bitişli üye 4 Kasım 00:00'da kapanır.
+   */
+  async enforceExpiry() {
+    if (this.revoked) return;
+    const today = istanbulDay(new Date(this.now()));
+    for (const row of this.store.expiredUsers(today)) {
+      const device = this.devices.get(row.gateId);
+      if (!device || !device.adapter.localExpiry) continue;
+      await this.withDevice(device, async () => {
+        try {
+          const { verified, detail } = await device.adapter.applyUser({ userId: row.userId, enabled: false });
+          if (!verified) throw new Error(detail || 'geri okuma doğrulanamadı');
+          this.markReachable(device);
+          this.store.setValidity(row.gateId, row.userId, { name: row.name, validEnd: row.validEnd, enabled: false });
+          this.log.info(`⌛ Üyelik süresi doldu, cihazda kapatıldı: ${row.name || row.userId} (${device.config.name}, bitiş ${row.validEnd})`);
+        } catch (err) {
+          this.log.warn(`⚠️ Süresi dolan üye kapatılamadı, tekrar denenecek (${row.userId}, ${device.config.name}): ${err.message}`);
+        }
+      });
+    }
+  }
+
+  /** Arayüzden elle işlem: cihazdaki kullanıcıyı oku / yaz / pasif yap / sil / listele. */
+  async manualUser(gateId, op, payload = {}) {
+    const device = this.devices.get(gateId);
+    if (!device) throw Object.assign(new Error('Cihaz bulunamadı.'), { status: 404 });
+    const adapter = device.adapter;
+    const need = (fn) => {
+      if (typeof adapter[fn] !== 'function') throw Object.assign(new Error('Bu cihaz türü bu işlemi desteklemiyor.'), { status: 400 });
+    };
+    return this.withDevice(device, async () => {
+      if (op === 'get') {
+        need('getUser');
+        const user = await adapter.getUser(payload.userId);
+        const local = this.store.validityFor(gateId).find((row) => row.userId === String(payload.userId)) ?? null;
+        return { user, validity: local };
+      }
+      if (op === 'tracked') return { validity: this.store.validityFor(gateId) };
+      if (op === 'list') {
+        need('listUsers');
+        return { users: await adapter.listUsers(), validity: this.store.validityFor(gateId) };
+      }
+      if (op === 'delete') {
+        need('deleteUser');
+        const result = await adapter.deleteUser(payload.userId);
+        this.store.setValidity(gateId, payload.userId, { validEnd: null, enabled: false });
+        this.log.info(`🗑️ Elle silindi: ${payload.userId} (${device.config.name})`);
+        return result;
+      }
+      if (op === 'set') {
+        const userId = String(payload.userId ?? '').trim();
+        if (!/^\d{1,9}$/.test(userId)) throw Object.assign(new Error('Üye numarası 1-9 haneli sayı olmalı.'), { status: 400 });
+        const validEnd = payload.validEnd ? String(payload.validEnd).replace(/\D/g, '').slice(0, 8) : null;
+        if (validEnd && !/^\d{8}$/.test(validEnd)) throw Object.assign(new Error('Bitiş günü YYYY-AA-GG olmalı.'), { status: 400 });
+        const today = istanbulDay(new Date(this.now()));
+        const enabled = payload.enabled !== false && (!validEnd || validEnd >= today);
+        const item = { userId, name: payload.name ?? null, card: payload.card || null, validEnd, enabled };
+        const result = await adapter.applyUser(item);
+        if (result.verified) {
+          if (adapter.localExpiry) this.rememberValidity(device, item);
+          this.log.info(`✍️ Elle ${enabled ? 'yazıldı' : 'pasif yapıldı'}: ${item.name || userId} (${device.config.name}${validEnd ? `, bitiş ${validEnd}` : ''})`);
+        } else {
+          this.log.warn(`⚠️ Elle yazma doğrulanamadı (${userId}, ${device.config.name}): ${result.detail ?? ''}`);
+        }
+        return { ...result, enabled };
+      }
+      throw Object.assign(new Error('Bilinmeyen işlem.'), { status: 400 });
+    });
   }
 
   rememberPasses(device, events) {

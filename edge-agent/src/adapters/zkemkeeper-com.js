@@ -8,6 +8,11 @@ const { DeviceError } = require('./errors');
 const { toIstanbulIso } = require('../time');
 
 const DEFAULT_START_TIMEOUT_MS = 120_000;
+const COMMAND_TIMEOUT_MS = 30_000;
+/** Tüm kullanıcı listesini UDP ile okumak eski cihazlarda dakikalar sürebilir. */
+const LIST_TIMEOUT_MS = 15 * 60_000;
+/** ZK cihazlarının çoğu en çok 24 karakter ad saklar; Türkçe harfler ASCII'ye indirgenir. */
+const MAX_NAME_LENGTH = 24;
 
 /** Eski 32-bit zkemkeeper.dll ile birebir olay sözleşmesini kullanan Windows adapteri. */
 function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spawn } = {}) {
@@ -21,6 +26,35 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
   let pending = [];
   let deviceInfo = null;
   let lastBridgeError = null;
+  let commandsSupported = false;
+  let nextCommandId = 1;
+  const inflight = new Map(); // id → { resolve, reject, timer }
+
+  function failInflight(error) {
+    for (const [id, waiter] of inflight) {
+      clearTimeout(waiter.timer);
+      waiter.reject(error);
+      inflight.delete(id);
+    }
+  }
+
+  /** Köprüye komut gönderir; yanıt `{"type":"result","id":…}` satırıyla gelir. */
+  async function command(cmd, payload = {}, timeoutMs = COMMAND_TIMEOUT_MS) {
+    await start();
+    if (!child?.stdin) throw new DeviceError('zkemkeeper köprüsü kapandı, tekrar denenecek.', { transient: true });
+    if (!commandsSupported) {
+      throw new DeviceError('Bu köprü sürümü cihaza yazmayı desteklemiyor; agent kurulumunu güncelleyin.');
+    }
+    const id = nextCommandId++;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        inflight.delete(id);
+        reject(new DeviceError(`Cihaz ${cmd} komutuna ${Math.round(timeoutMs / 1000)} sn içinde cevap vermedi.`, { transient: true }));
+      }, timeoutMs);
+      inflight.set(id, { resolve, reject, timer });
+      child.stdin.write(`${JSON.stringify({ id, cmd, ...payload })}\n`);
+    });
+  }
 
   function start() {
     if (connected && child) return Promise.resolve();
@@ -38,7 +72,8 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
         {
           cwd: path.dirname(bridgePath),
           windowsHide: true,
-          stdio: ['ignore', 'pipe', 'pipe'],
+          // stdin: agent → köprü komutları. Agent kapanınca stdin kapanır ve köprü de kapanır.
+          stdio: ['pipe', 'pipe', 'pipe'],
         },
       );
       child = bridge;
@@ -63,6 +98,14 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
         if (message.type === 'event') {
           const event = bridgeMessageToEvent(device, message, { useAgentClock: credentials.useAgentClock === true });
           if (event) pending.push(event);
+        } else if (message.type === 'result') {
+          const waiter = inflight.get(message.id);
+          if (waiter) {
+            inflight.delete(message.id);
+            clearTimeout(waiter.timer);
+            if (message.ok) waiter.resolve(message.data ?? {});
+            else waiter.reject(new DeviceError(message.error || 'Cihaz komutu başarısız.'));
+          }
         } else if (message.type === 'device') {
           deviceInfo = message;
         } else if (message.type === 'status') {
@@ -76,6 +119,7 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
           }
         } else if (message.type === 'ready') {
           connected = true;
+          commandsSupported = message.commands === true;
           lastBridgeError = null;
           if (!settled) {
             settled = true;
@@ -100,9 +144,11 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
           reject(wrapped);
         }
       });
+      bridge.stdin?.on('error', () => undefined);
       bridge.on('exit', (code) => {
         connected = false;
         child = null;
+        failInflight(new DeviceError(`zkemkeeper köprüsü kapandı (kod ${code ?? 'yok'}).`, { transient: true }));
         startPromise = null;
         lines.close();
         if (!settled) {
@@ -147,12 +193,62 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
       };
     },
 
-    async applyUser() {
-      throw new DeviceError('zkemkeeper COM adapterinde kullanıcı yazma henüz etkin değil.');
+    /** Bitiş günü cihazda tutulamadığı için agent tarafından uygulanır (bkz. runtime.enforceExpiry). */
+    localExpiry: true,
+
+    async getUser(userId) {
+      const data = await command('getUser', { enrollNumber: String(userId) });
+      return data.found ? data.user : null;
+    },
+
+    async listUsers() {
+      const data = await command('listUsers', {}, LIST_TIMEOUT_MS);
+      return data.users ?? [];
+    },
+
+    async deleteUser(userId) {
+      await command('deleteUser', { enrollNumber: String(userId) });
+      return { verified: (await this.getUser(userId)) === null };
+    },
+
+    /**
+     * MainApi'nin istediği durumu uygular. Yetki kapatma kullanıcıyı silmez, cihazda pasif yapar:
+     * parmak izi / yüz kayıtları kaybolmaz, üyelik yenilenince yeniden açılır.
+     */
+    async applyUser(item) {
+      if (!item.userId) throw new DeviceError('Üyenin üye numarası yok; cihaz kullanıcı kimliği oluşturulamaz.');
+      const userId = String(item.userId);
+
+      if (item.replacesUserId && String(item.replacesUserId) !== userId) {
+        const old = await this.getUser(item.replacesUserId);
+        if (old && old.enabled) await command('enableUser', { enrollNumber: String(item.replacesUserId), enabled: false });
+      }
+
+      if (!item.enabled) {
+        const existing = await this.getUser(userId);
+        if (!existing) return { verified: true };
+        if (existing.enabled) await command('enableUser', { enrollNumber: userId, enabled: false });
+        const after = await this.getUser(userId);
+        return after && after.enabled ? { verified: false, detail: 'kullanıcı hâlâ aktif' } : { verified: true };
+      }
+
+      const data = await command('setUser', {
+        enrollNumber: userId,
+        name: zkName(item.name) || userId,
+        card: item.card ? String(item.card) : null,
+        enabled: true,
+      });
+      const after = data.user ?? (await this.getUser(userId));
+      if (!after) return { verified: false, detail: 'cihazda kullanıcı bulunamadı' };
+      const diffs = [];
+      if (!after.enabled) diffs.push('kullanıcı pasif');
+      if (item.card && normCard(after.card) !== normCard(item.card)) diffs.push(`kart "${after.card ?? ''}" ≠ "${item.card}"`);
+      return diffs.length ? { verified: false, detail: diffs.join(', ') } : { verified: true };
     },
 
     close() {
       connected = false;
+      failInflight(new DeviceError('Cihaz bağlantısı kapatıldı.', { transient: true }));
       child?.kill();
       child = null;
       startPromise = null;
@@ -227,6 +323,20 @@ function directionFromAttState(attState, fallback) {
   return fallback === 'in' || fallback === 'out' ? fallback : null;
 }
 
+function zkName(name) {
+  const map = { ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' };
+  return String(name ?? '')
+    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => map[ch])
+    .normalize('NFKD')
+    .replace(/[^\x20-\x7E]/g, '')
+    .trim()
+    .slice(0, MAX_NAME_LENGTH);
+}
+
+function normCard(value) {
+  return String(value ?? '').trim().replace(/^0+(?=.)/, '');
+}
+
 function positiveInt(value, fallback) {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : fallback;
@@ -243,4 +353,4 @@ function stringOrNull(value) {
   return String(value).trim() || null;
 }
 
-module.exports = { createZkemkeeperComAdapter, bridgeArgs, bridgeMessageToEvent, directionFromAttState };
+module.exports = { createZkemkeeperComAdapter, bridgeArgs, bridgeMessageToEvent, directionFromAttState, zkName };

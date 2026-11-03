@@ -10,6 +10,10 @@
  *   PUT  /api/config          → ayarları kaydet ve cihaz bağlantılarını yeniden kur
  *   GET  /api/logs            → filtreli günlük (?level=&q=&kind=&afterSeq=&limit=)
  *   GET  /api/logs/stream     → canlı günlük (Server-Sent Events)
+ *   GET  /api/devices/:gateId/users          → cihazdaki tüm kullanıcılar (yavaş olabilir)
+ *   GET  /api/devices/:gateId/users/:userId  → tek kullanıcı + agent'ın bildiği bitiş günü
+ *   PUT  /api/devices/:gateId/users/:userId  → yaz {name, card, validEnd, enabled}
+ *   DELETE /api/devices/:gateId/users/:userId → sil
  *
  * Başka bir web sitesinin tarayıcı üzerinden bu uçlara istek atmasını engellemek için
  * Host başlığı localhost olmalı, değiştiren istekler JSON olmalı ve Origin (varsa) aynı olmalı.
@@ -22,7 +26,7 @@ const path = require('node:path');
 const MASK = '********';
 const INDEX_FILE = path.join(__dirname, '..', 'ui', 'index.html');
 
-function createUiServer({ port = 47800, host = '127.0.0.1', logger, getStatus, pair, readConfig, writeConfig }) {
+function createUiServer({ port = 47800, host = '127.0.0.1', logger, getStatus, pair, readConfig, writeConfig, deviceUsers = null }) {
   const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
 
   const server = http.createServer(async (req, res) => {
@@ -65,6 +69,15 @@ function createUiServer({ port = 47800, host = '127.0.0.1', logger, getStatus, p
         });
       }
       if (req.method === 'GET' && url.pathname === '/api/logs/stream') return stream(req, res, logger);
+      const users = /^\/api\/devices\/([^/]+)\/users(?:\/([^/]+))?$/.exec(url.pathname);
+      if (users && deviceUsers) {
+        const gateId = decodeURIComponent(users[1]);
+        const userId = users[2] ? decodeURIComponent(users[2]) : null;
+        if (req.method === 'GET' && !userId) return send(res, 200, await deviceUsers(gateId, url.searchParams.get('source') === 'device' ? 'list' : 'tracked'));
+        if (req.method === 'GET') return send(res, 200, await deviceUsers(gateId, 'get', { userId }));
+        if (req.method === 'PUT' && userId) return send(res, 200, await deviceUsers(gateId, 'set', { ...(await readJson(req)), userId }));
+        if (req.method === 'DELETE' && userId) return send(res, 200, await deviceUsers(gateId, 'delete', { userId }));
+      }
       return send(res, 404, { error: 'Bulunamadı.' });
     } catch (err) {
       return send(res, err.status && err.status < 500 ? err.status : 500, { error: err.message || String(err) });

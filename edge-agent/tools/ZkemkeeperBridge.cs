@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -23,6 +24,9 @@ internal static class ZkemkeeperBridge
     private static string LastHidCard;
     private static DateTime LastHidAtUtc;
     private static volatile bool Running = true;
+    private static volatile bool StdinClosed;
+    /** Agent'tan gelen komutlar (stdin, satır başına bir JSON). COM çağrıları ana iş parçacığında yapılır. */
+    private static readonly ConcurrentQueue<string> Commands = new ConcurrentQueue<string>();
 
     [STAThread]
     private static int Main(string[] args)
@@ -83,10 +87,15 @@ internal static class ZkemkeeperBridge
                 return 4;
             }
 
-            Emit(new { type = "ready", transport = "zkemkeeper-com", users = Users.Count });
+            StartCommandReader();
+            Emit(new { type = "ready", transport = "zkemkeeper-com", users = Users.Count, commands = true });
             while (Running)
             {
                 Application.DoEvents();
+                string line;
+                while (Commands.TryDequeue(out line)) HandleCommand(line);
+                // Agent kapandıysa köprü de kapanır; sahipsiz köprü cihaz bağlantısını tutmasın.
+                if (StdinClosed) Running = false;
                 Thread.Sleep(25);
             }
 
@@ -211,6 +220,249 @@ internal static class ZkemkeeperBridge
     private static void OnDisconnected()
     {
         Emit(new { type = "status", connected = false });
+        // SDK kendiliğinden yeniden bağlanmıyor: kapan, agent köprüyü yeniden başlatsın.
+        Running = false;
+    }
+
+    // ─── Agent komutları ─────────────────────────────────────────────────────
+    //  {"id":1,"cmd":"getUser","enrollNumber":"14441"}
+    //  {"id":2,"cmd":"setUser","enrollNumber":"14441","name":"AHMET Y","card":"9855037","enabled":true}
+    //  {"id":3,"cmd":"enableUser","enrollNumber":"14441","enabled":false}
+    //  {"id":4,"cmd":"deleteUser","enrollNumber":"14441"}
+    //  {"id":5,"cmd":"listUsers"}
+    // Yanıt: {"type":"result","id":1,"ok":true,"user":{...}} ya da {"type":"result","id":1,"ok":false,"error":"..."}
+
+    private static void StartCommandReader()
+    {
+        var reader = new Thread(delegate ()
+        {
+            try
+            {
+                string line;
+                while ((line = Console.In.ReadLine()) != null)
+                {
+                    if (!String.IsNullOrWhiteSpace(line)) Commands.Enqueue(line);
+                }
+            }
+            catch
+            {
+                // stdin kapandı
+            }
+            StdinClosed = true;
+        });
+        reader.IsBackground = true;
+        reader.Start();
+    }
+
+    private static void HandleCommand(string line)
+    {
+        object id = null;
+        try
+        {
+            var command = Json.DeserializeObject(line) as Dictionary<string, object>;
+            if (command == null) throw new InvalidOperationException("Komut JSON nesnesi olmalı.");
+            command.TryGetValue("id", out id);
+            string cmd = Text(command, "cmd");
+            string enroll = Normalize(Text(command, "enrollNumber"));
+            if (cmd != "listUsers" && enroll == null) throw new InvalidOperationException("enrollNumber zorunlu.");
+
+            object result;
+            if (cmd == "getUser") { UserRecord found = ReadUser(enroll); result = new { found = found != null, user = Public(found) }; }
+            else if (cmd == "setUser") result = new { user = WriteUser(enroll, Text(command, "name"), Text(command, "card"), Flag(command, "enabled", true)) };
+            else if (cmd == "enableUser") result = new { user = EnableUser(enroll, Flag(command, "enabled", true)) };
+            else if (cmd == "deleteUser") result = new { deleted = DeleteUser(enroll) };
+            else if (cmd == "listUsers") { LoadUsers(); result = new { users = Users.Values }; }
+            else throw new InvalidOperationException("Bilinmeyen komut: " + cmd);
+            Emit(new { type = "result", id = id, ok = true, data = result });
+        }
+        catch (Exception error)
+        {
+            Emit(new { type = "result", id = id, ok = false, error = error.Message });
+        }
+    }
+
+    private sealed class UserRecord
+    {
+        public string enrollNumber;
+        public string name;
+        public string card;
+        public bool enabled;
+        public int privilege;
+        public string password;
+    }
+
+    /** Önce SSR (dize kimlik), olmazsa eski siyah-beyaz cihaz (sayı kimlik) arayüzü denenir. */
+    private static UserRecord ReadUser(string enroll)
+    {
+        string name, password;
+        int privilege;
+        bool enabled;
+        bool found = false;
+        try
+        {
+            found = Device.SSR_GetUserInfo(MachineNumber, enroll, out name, out password, out privilege, out enabled);
+        }
+        catch
+        {
+            name = null; password = null; privilege = 0; enabled = false;
+        }
+        int numeric;
+        if (!found && Int32.TryParse(enroll, out numeric))
+        {
+            found = Device.GetUserInfo(MachineNumber, numeric, ref name, ref password, ref privilege, ref enabled);
+        }
+        if (!found) return null;
+        string card = null;
+        try
+        {
+            string readCard;
+            if (Device.GetStrCardNumber(out readCard)) card = Normalize(readCard);
+        }
+        catch
+        {
+            // kart alanı desteklenmiyor
+        }
+        return new UserRecord
+        {
+            enrollNumber = enroll,
+            name = Normalize(name),
+            card = card == "0" ? null : card,
+            enabled = enabled,
+            privilege = privilege,
+            password = password
+        };
+    }
+
+    private static UserRecord WriteUser(string enroll, string name, string card, bool enabled)
+    {
+        UserRecord existing = ReadUser(enroll);
+        // Var olan parola, yetki ve (yeni kart verilmediyse) kart korunur; parmak izi/yüz şablonlarına dokunulmaz.
+        string password = existing != null ? existing.password ?? "" : "";
+        int privilege = existing != null ? existing.privilege : 0;
+        string finalName = Normalize(name) ?? (existing != null ? existing.name : null) ?? "";
+        string finalCard = Normalize(card) ?? (existing != null ? existing.card : null);
+
+        Device.EnableDevice(MachineNumber, false);
+        try
+        {
+            Device.SetStrCardNumber(finalCard ?? "");
+            bool ok = false;
+            try
+            {
+                ok = Device.SSR_SetUserInfo(MachineNumber, enroll, finalName, password, privilege, enabled);
+            }
+            catch
+            {
+                ok = false;
+            }
+            int numeric;
+            if (!ok && Int32.TryParse(enroll, out numeric))
+            {
+                ok = Device.SetUserInfo(MachineNumber, numeric, finalName, password, privilege, enabled);
+            }
+            if (!ok) throw new InvalidOperationException("Cihaz kullanıcıyı yazmadı (hata " + LastError() + ").");
+            Device.RefreshData(MachineNumber);
+        }
+        finally
+        {
+            Device.EnableDevice(MachineNumber, true);
+        }
+        UserRecord after = ReadUser(enroll);
+        if (after != null) Users[enroll] = new DeviceUser { EnrollNumber = enroll, Name = after.name, Card = after.card };
+        return Public(after);
+    }
+
+    private static UserRecord EnableUser(string enroll, bool enabled)
+    {
+        UserRecord existing = ReadUser(enroll);
+        if (existing == null) throw new InvalidOperationException("Kullanıcı cihazda yok: " + enroll);
+        bool ok = false;
+        try
+        {
+            ok = Device.SSR_EnableUser(MachineNumber, enroll, enabled);
+        }
+        catch
+        {
+            ok = false;
+        }
+        int numeric;
+        if (!ok && Int32.TryParse(enroll, out numeric))
+        {
+            ok = Device.EnableUser(MachineNumber, numeric, MachineNumber, 0, enabled);
+        }
+        if (!ok)
+        {
+            // Bazı firmware'ler EnableUser desteklemez: aynı bilgilerle Enabled alanı yazılır.
+            return WriteUser(enroll, existing.name, existing.card, enabled);
+        }
+        Device.RefreshData(MachineNumber);
+        return Public(ReadUser(enroll));
+    }
+
+    private static bool DeleteUser(string enroll)
+    {
+        if (ReadUser(enroll) == null) return true;
+        bool ok = false;
+        Device.EnableDevice(MachineNumber, false);
+        try
+        {
+            try
+            {
+                ok = Device.SSR_DeleteEnrollData(MachineNumber, enroll, 12);
+            }
+            catch
+            {
+                ok = false;
+            }
+            int numeric;
+            if (!ok && Int32.TryParse(enroll, out numeric))
+            {
+                ok = Device.DeleteEnrollData(MachineNumber, numeric, MachineNumber, 12);
+            }
+            Device.RefreshData(MachineNumber);
+        }
+        finally
+        {
+            Device.EnableDevice(MachineNumber, true);
+        }
+        Users.Remove(enroll);
+        if (!ok && ReadUser(enroll) != null) throw new InvalidOperationException("Cihaz kullanıcıyı silmedi (hata " + LastError() + ").");
+        return true;
+    }
+
+    /** Parola dışarı verilmez. */
+    private static UserRecord Public(UserRecord user)
+    {
+        if (user == null) return null;
+        return new UserRecord { enrollNumber = user.enrollNumber, name = user.name, card = user.card, enabled = user.enabled, privilege = user.privilege };
+    }
+
+    private static int LastError()
+    {
+        int errorCode = 0;
+        try
+        {
+            Device.GetLastError(ref errorCode);
+        }
+        catch
+        {
+        }
+        return errorCode;
+    }
+
+    private static string Text(Dictionary<string, object> command, string key)
+    {
+        object value;
+        return command.TryGetValue(key, out value) && value != null ? Convert.ToString(value) : null;
+    }
+
+    private static bool Flag(Dictionary<string, object> command, string key, bool fallback)
+    {
+        object value;
+        if (!command.TryGetValue(key, out value) || value == null) return fallback;
+        if (value is bool) return (bool)value;
+        bool parsed;
+        return Boolean.TryParse(Convert.ToString(value), out parsed) ? parsed : fallback;
     }
 
     private static void EmitEvent(

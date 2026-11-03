@@ -47,6 +47,7 @@
   <nav id="tabs">
     <button data-tab="status" class="active">Durum</button>
     <button data-tab="passes">Geçişler</button>
+    <button data-tab="users">Üyeler</button>
     <button data-tab="logs">Loglar</button>
     <button data-tab="devices">Cihaz ayarları</button>
     <button data-tab="pair">Eşleştirme</button>
@@ -61,6 +62,31 @@
   <section id="tab-passes" class="hidden">
     <div class="card"><h2>Son geçişler</h2><p class="muted">Kart okutulduktan birkaç saniye sonra burada görünür.</p>
       <table><thead><tr><th>Saat</th><th>Cihaz</th><th>Üye no</th><th>Kart</th><th>Yön</th><th>Sonuç</th></tr></thead><tbody id="passRows"></tbody></table></div>
+  </section>
+
+  <section id="tab-users" class="hidden">
+    <div class="card"><h2>Cihaza üye gönder / güncelle</h2>
+      <p class="muted">Normalde üyeler admin panelinden otomatik gönderilir. Burası elle düzeltme içindir; panelde üye değişirse panelin bilgisi geçerli olur. Pasif yapılan üyenin parmak izi / yüz kaydı silinmez.</p>
+      <div class="grid">
+        <label>Cihaz<select id="uGate"></select></label>
+        <label>Üye no<input id="uId" inputmode="numeric" placeholder="14441"></label>
+        <label>Ad<input id="uName" placeholder="AHMET YILMAZ"></label>
+        <label>Kart no<input id="uCard" placeholder="9855037"></label>
+        <label>Bitiş günü (boş = süresiz)<input id="uEnd" type="date"></label>
+        <label class="check"><input type="checkbox" id="uEnabled" checked> Geçebilir (aktif)</label>
+      </div>
+      <div class="toolbar" style="margin-top:12px">
+        <button class="ghost" id="uRead">Cihazdan oku</button>
+        <button class="primary" id="uWrite">Cihaza yaz</button>
+        <button class="ghost" id="uDelete" style="color:var(--err)">Cihazdan sil</button>
+      </div>
+      <div class="msg" id="uMsg"></div>
+    </div>
+    <div class="card"><h2>Agent'ın takip ettiği bitiş günleri</h2>
+      <p class="muted">Bitiş gününü kendisi tutamayan cihazlarda (ZK) agent süresi dolan üyeyi ertesi gün 00:00'dan sonra en geç 5 dk içinde pasif yapar.</p>
+      <div class="toolbar"><button class="ghost" id="uTracked">Yenile</button><button class="ghost" id="uAll">Cihazdaki tüm üyeleri oku (birkaç dakika sürebilir)</button></div>
+      <table><thead><tr><th>Üye no</th><th>Ad</th><th>Kart</th><th>Bitiş</th><th>Durum</th></tr></thead><tbody id="uRows"></tbody></table>
+    </div>
   </section>
 
   <section id="tab-logs" class="hidden">
@@ -118,6 +144,7 @@ document.querySelectorAll('#tabs button').forEach((btn) => btn.onclick = () => {
   document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hidden', s.id !== `tab-${current}`));
   if (current === 'devices') loadConfig();
   if (current === 'logs') reloadLogs();
+  if (current === 'users') { fillGates(); loadTracked(); }
 });
 
 let lastStatus = null;
@@ -233,6 +260,62 @@ $('saveCfg').onclick = async () => {
   const msg = $('cfgMsg');
   try { cfg = await api('/api/config', { method: 'PUT', body: JSON.stringify(next) }); msg.className = 'msg ok'; msg.textContent = 'Kaydedildi. Cihaz bağlantıları yeniden kuruluyor; durumu Durum sekmesinden izleyin.'; }
   catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+};
+
+// ── Üyeler ──
+const ymd = (v) => v ? `${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}` : '';
+function fillGates() {
+  const sel = $('uGate'); const prev = sel.value;
+  sel.innerHTML = (lastStatus?.devices || []).map((d) => `<option value="${esc(d.gateId)}">${esc(d.name)} (${esc(d.host)})</option>`).join('') || '<option value="">Cihaz yok</option>';
+  if (prev) sel.value = prev;
+}
+const gatePath = (userId) => `/api/devices/${encodeURIComponent($('uGate').value)}/users${userId ? '/' + encodeURIComponent(userId) : ''}`;
+const uMsg = (text, ok) => { $('uMsg').className = `msg ${ok === undefined ? '' : ok ? 'ok' : 'err'}`; $('uMsg').textContent = text; };
+async function loadTracked() {
+  if (!$('uGate').value) return;
+  try { const { validity } = await api(gatePath()); renderUsers((validity || []).map((v) => ({ enrollNumber: v.userId, name: v.name, validEnd: v.validEnd, enabled: v.enabled }))); }
+  catch (err) { uMsg(err.message, false); }
+}
+function renderUsers(rows) {
+  $('uRows').innerHTML = rows.map((u) => `<tr><td>${esc(u.enrollNumber)}</td><td>${esc(u.name || '')}</td><td>${esc(u.card || '')}</td><td>${u.validEnd ? esc(ymd(u.validEnd)) : '<span class="muted">-</span>'}</td><td>${u.enabled ? '<span class="pill ok">Aktif</span>' : '<span class="pill err">Pasif</span>'}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">Kayıt yok.</td></tr>';
+}
+$('uTracked').onclick = loadTracked;
+$('uAll').onclick = async () => {
+  uMsg('Cihazdaki üyeler okunuyor, eski cihazlarda birkaç dakika sürebilir…');
+  try {
+    const { users, validity } = await api(gatePath() + '?source=device');
+    const ends = new Map((validity || []).map((v) => [v.userId, v.validEnd]));
+    renderUsers(users.map((u) => ({ ...u, validEnd: ends.get(u.enrollNumber) })));
+    uMsg(`${users.length} üye okundu.`, true);
+  } catch (err) { uMsg(err.message, false); }
+};
+$('uRead').onclick = async () => {
+  const id = $('uId').value.trim(); if (!id) return uMsg('Üye no girin.', false);
+  uMsg('Okunuyor…');
+  try {
+    const { user, validity } = await api(gatePath(id));
+    if (!user) return uMsg('Bu üye cihazda yok.', false);
+    $('uName').value = user.name || ''; $('uCard').value = user.card || ''; $('uEnabled').checked = user.enabled;
+    $('uEnd').value = ymd(validity?.validEnd);
+    uMsg(`Cihazda var: ${user.name || id}, ${user.enabled ? 'aktif' : 'pasif'}.`, true);
+  } catch (err) { uMsg(err.message, false); }
+};
+$('uWrite').onclick = async () => {
+  const id = $('uId').value.trim(); if (!id) return uMsg('Üye no girin.', false);
+  uMsg('Cihaza yazılıyor…');
+  try {
+    const r = await api(gatePath(id), { method: 'PUT', body: JSON.stringify({ name: $('uName').value.trim(), card: $('uCard').value.trim(), validEnd: $('uEnd').value || null, enabled: $('uEnabled').checked }) });
+    if (r.verified) uMsg(r.enabled ? 'Cihaza yazıldı ve geri okunarak doğrulandı.' : 'Üye cihazda pasif (bitiş günü geçmiş ya da aktif işaretli değil).', true);
+    else uMsg(`Cihaz yazdı ama doğrulanamadı: ${r.detail || ''}`, false);
+    loadTracked();
+  } catch (err) { uMsg(err.message, false); }
+};
+$('uDelete').onclick = async () => {
+  const id = $('uId').value.trim(); if (!id) return uMsg('Üye no girin.', false);
+  if (!confirm(`${id} numaralı üye cihazdan tamamen silinsin mi? Parmak izi / yüz kaydı da silinir. Sadece geçişi kapatmak için "Geçebilir" işaretini kaldırıp "Cihaza yaz" kullanın.`)) return;
+  try { const r = await api(gatePath(id), { method: 'DELETE' }); uMsg(r.verified ? 'Silindi.' : 'Silme doğrulanamadı.', r.verified); loadTracked(); }
+  catch (err) { uMsg(err.message, false); }
 };
 
 // ── Eşleştirme ──

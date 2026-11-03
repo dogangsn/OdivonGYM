@@ -8,6 +8,7 @@
  * - seen:    cihazdan daha önce okunmuş olay kimlikleri (tekrar kuyruğa
  *            almamak için). 45 günden eskiler budanır.
  * - cursors: cihaz başına log okuma imleci.
+ * - validity: bitiş gününü kendisi tutamayan cihazlar (ZK) için agent'ın uyguladığı bitiş günleri.
  */
 
 const { DatabaseSync } = require('node:sqlite');
@@ -39,6 +40,15 @@ class Store {
         gate_id TEXT PRIMARY KEY,
         value TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS validity (
+        gate_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        name TEXT,
+        valid_end TEXT,
+        enabled INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (gate_id, user_id)
+      );
     `);
     this.stmts = {
       seen: this.db.prepare('INSERT OR IGNORE INTO seen (gate_id, event_id, seen_at) VALUES (?, ?, ?)'),
@@ -52,6 +62,15 @@ class Store {
         'INSERT INTO cursors (gate_id, value) VALUES (?, ?) ON CONFLICT(gate_id) DO UPDATE SET value = excluded.value',
       ),
       prune: this.db.prepare('DELETE FROM seen WHERE seen_at < ?'),
+      setValidity: this.db.prepare(
+        `INSERT INTO validity (gate_id, user_id, name, valid_end, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(gate_id, user_id) DO UPDATE SET name = excluded.name, valid_end = excluded.valid_end,
+           enabled = excluded.enabled, updated_at = excluded.updated_at`,
+      ),
+      expired: this.db.prepare(
+        'SELECT gate_id, user_id, name, valid_end FROM validity WHERE enabled = 1 AND valid_end IS NOT NULL AND valid_end < ? ORDER BY gate_id',
+      ),
+      validityFor: this.db.prepare('SELECT user_id, name, valid_end, enabled, updated_at FROM validity WHERE gate_id = ? ORDER BY user_id'),
     };
   }
 
@@ -106,6 +125,26 @@ class Store {
 
   loadDevices() {
     return this.getCursor(DEVICES_KEY) ?? [];
+  }
+
+  /** validEnd: YYYYMMDD (o günün sonuna kadar geçerli) ya da null (süresiz). */
+  setValidity(gateId, userId, { name = null, validEnd = null, enabled }) {
+    this.stmts.setValidity.run(gateId, String(userId), name, validEnd, enabled ? 1 : 0, Date.now());
+  }
+
+  /** Bitiş günü `today`den (YYYYMMDD) önce olup cihazda hâlâ açık olanlar. */
+  expiredUsers(today) {
+    return this.stmts.expired.all(today).map((row) => ({ gateId: row.gate_id, userId: row.user_id, name: row.name, validEnd: row.valid_end }));
+  }
+
+  validityFor(gateId) {
+    return this.stmts.validityFor.all(gateId).map((row) => ({
+      userId: row.user_id,
+      name: row.name,
+      validEnd: row.valid_end,
+      enabled: row.enabled === 1,
+      updatedAt: new Date(Number(row.updated_at)).toISOString(),
+    }));
   }
 
   prune(now = Date.now()) {

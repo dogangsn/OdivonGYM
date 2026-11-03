@@ -186,6 +186,10 @@ async function run() {
       port: config.uiPort,
       logger: log,
       pair: pairWithCode,
+      deviceUsers: (gateId, op, payload) => {
+        if (!runtime) throw Object.assign(new Error('Agent henüz eşleştirilmedi.'), { status: 409 });
+        return runtime.manualUser(gateId, op, payload);
+      },
       readConfig: readRawConfig,
       writeConfig: async (next) => {
         writeRawConfig(next);
@@ -262,6 +266,8 @@ async function run() {
     loop(config.pollIntervalMs, () => runtime.tick()),
     loop(config.eventFlushIntervalMs, () => runtime.flushEvents()),
     loop(config.heartbeatIntervalMs, () => runtime.heartbeat()),
+    // Bitiş gününü tutamayan cihazlarda (ZK) süresi dolan üyeler 5 dk içinde kapatılır.
+    loop(5 * 60 * 1000, () => runtime.enforceExpiry()),
     setInterval(() => store.prune(), 6 * 60 * 60 * 1000),
   ];
 
