@@ -19,6 +19,8 @@ const { createAdapter } = require('./adapters');
 const { asDeviceError } = require('./adapters/errors');
 
 const EVENT_BATCH_SIZE = 500;
+/** Arayüzde gösterilen son geçiş sayısı. */
+const RECENT_PASSES = 200;
 /** Sunucu önerisinin sınırları; öneri yoksa (eski MainApi) her turda sorulur. */
 const MIN_WORK_POLL_MS = 2000;
 const MAX_WORK_POLL_MS = 60000;
@@ -52,6 +54,10 @@ class AgentRuntime {
     this.devices = new Map(); // gateId → { config, adapter, reachable, lastError, lastEventAt, deviceTime, lock }
     this.stopped = false;
     this.revoked = false;
+    this.recentPasses = [];
+    this.lastWorkAt = null;
+    this.lastWorkError = null;
+    this.lastFlushAt = null;
     this.setDevices(store.loadDevices());
   }
 
@@ -86,6 +92,40 @@ class AgentRuntime {
     this.devices = next;
   }
 
+  /** Arayüzden ayar değişince: tüm cihaz bağlantıları yeni ayarlarla yeniden kurulur. */
+  updateCredentials(credentials) {
+    this.credentials = credentials ?? {};
+    for (const device of this.devices.values()) device.adapter.close();
+    this.devices = new Map();
+    this.setDevices(this.store.loadDevices());
+  }
+
+  /** Arayüz için anlık durum. */
+  snapshot() {
+    return {
+      revoked: this.revoked,
+      queueDepth: this.store.queueDepth(),
+      lastWorkAt: this.lastWorkAt,
+      lastWorkError: this.lastWorkError,
+      lastFlushAt: this.lastFlushAt,
+      devices: [...this.devices.values()].map((device) => ({
+        gateId: device.config.gateId,
+        name: device.config.name,
+        protocol: device.config.protocol,
+        host: device.config.host,
+        port: device.config.port ?? null,
+        direction: device.config.direction ?? null,
+        capabilities: device.config.capabilities ?? {},
+        reachable: device.reachable,
+        lastError: device.lastError,
+        lastEventAt: device.lastEventAt,
+        deviceTime: device.deviceTime,
+        hasCredentials: Boolean(this.credentials[device.config.host]),
+      })),
+      recentPasses: this.recentPasses.slice(-50).reverse(),
+    };
+  }
+
   /** Aynı cihaza eşzamanlı istek gitmesin diye cihaz başına sıralı çalıştırır. */
   withDevice(device, fn) {
     const run = device.lock.then(fn, fn);
@@ -102,9 +142,12 @@ class AgentRuntime {
         this.setDevices(work.devices ?? []);
         this.store.saveDevices(work.devices ?? []);
         items = work.items ?? [];
+        this.lastWorkAt = new Date(this.now()).toISOString();
+        this.lastWorkError = null;
         this.nextWorkAt = this.now() + workPollDelay(work.pollAfterMs);
       } catch (err) {
         if (this.handleAuthError(err)) return;
+        this.lastWorkError = err.message;
         this.log.warn(`⚠️ MainApi'ye ulaşılamadı (iş alınamadı): ${err.message}`);
         this.nextWorkAt = this.now() + MIN_WORK_POLL_MS * 5;
       }
@@ -178,6 +221,7 @@ class AgentRuntime {
       if (events.length > 0) device.lastEventAt = events[events.length - 1].time;
       if (added > 0) {
         this.log.info(`📥 ${device.config.name}: ${added} yeni geçiş kaydı kuyruğa alındı.`);
+        this.rememberPasses(device, events.slice(-Math.min(added, RECENT_PASSES)));
         if (this.flushDueAt === null) this.flushDueAt = this.now() + this.eventFlushDelayMs;
         // Cihaz ayrı kart numarası bildirdiyse ilgili olayı hemen gönder.
         const unassignedCard = events.find((e) => e.card && (!e.userId || e.userId === '0'));
@@ -193,7 +237,35 @@ class AgentRuntime {
     }
   }
 
-  async flushEvents() {
+  rememberPasses(device, events) {
+    const many = events.length > 20;
+    for (const event of events) {
+      const pass = {
+        gateName: device.config.name,
+        userId: event.userId,
+        card: event.card,
+        direction: event.direction,
+        result: event.result,
+        time: event.time,
+      };
+      this.recentPasses.push(pass);
+      if (!many && typeof this.log.event === 'function') {
+        const who = [event.userId ? `üye ${event.userId}` : 'üye ?', event.card ? `kart ${event.card}` : null].filter(Boolean).join(' | ');
+        this.log.event('pass', `🪪 ${device.config.name}: ${who} | ${event.direction ?? '-'} | ${event.time}`, { gateId: device.config.gateId, pass });
+      }
+    }
+    if (this.recentPasses.length > RECENT_PASSES) this.recentPasses.splice(0, this.recentPasses.length - RECENT_PASSES);
+  }
+
+  /** Aynı anda tek gönderim: iki zamanlayıcı aynı paketi iki kez göndermesin. */
+  flushEvents() {
+    this.flushing ??= this.flushQueue().finally(() => {
+      this.flushing = null;
+    });
+    return this.flushing;
+  }
+
+  async flushQueue() {
     for (;;) {
       const batch = this.store.peekEvents(EVENT_BATCH_SIZE);
       if (batch.length === 0) {
@@ -214,6 +286,7 @@ class AgentRuntime {
           this.log.warn(`⚠️ Olay reddedildi (${rejected.eventId}): ${rejected.reason}`);
         }
         this.store.deleteEvents(batch.map((row) => row.rowId));
+        this.lastFlushAt = new Date(this.now()).toISOString();
       } catch (err) {
         if (this.handleAuthError(err)) return;
         this.log.warn(`⚠️ Olaylar gönderilemedi, kuyrukta bekliyor (${this.store.queueDepth()}): ${err.message}`);

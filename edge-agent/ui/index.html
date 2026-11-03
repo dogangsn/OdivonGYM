@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odivon Edge Agent</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --text:#1d2433; --muted:#6b7385; --line:#e3e6ec; --accent:#2f6fed; --ok:#18a058; --warn:#d58a00; --err:#d03050; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14161b; --card:#1d2027; --text:#e7e9ee; --muted:#9aa1b2; --line:#2c3039; --accent:#5b8cff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:16px; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; }
+  nav button { border:0; background:none; color:var(--muted); padding:8px 12px; border-radius:8px; cursor:pointer; font:inherit; }
+  nav button.active { background:var(--bg); color:var(--text); font-weight:600; }
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+  .kv { display:flex; flex-direction:column; gap:2px; }
+  .kv span:first-child { color:var(--muted); font-size:12px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .pill.ok { background:color-mix(in srgb, var(--ok) 15%, transparent); color:var(--ok); }
+  .pill.warn { background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); }
+  .pill.err { background:color-mix(in srgb, var(--err) 15%, transparent); color:var(--err); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  .logs { font:12px/1.5 ui-monospace, Consolas, monospace; max-height:65vh; overflow:auto; background:var(--bg); border-radius:8px; padding:8px; }
+  .logs div { white-space:pre-wrap; word-break:break-word; }
+  .logs .warn { color:var(--warn); } .logs .error { color:var(--err); } .logs .debug { color:var(--muted); }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  input, select { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+  label.check { flex-direction:row; align-items:center; gap:6px; color:var(--text); font-size:14px; }
+  button.primary { background:var(--accent); color:#fff; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font:inherit; }
+  button.ghost { background:none; border:1px solid var(--line); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font:inherit; }
+  .muted { color:var(--muted); } .hidden { display:none; }
+  .msg { margin-top:8px; } .msg.err { color:var(--err); } .msg.ok { color:var(--ok); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Odivon Edge Agent</h1>
+  <span id="headState" class="pill warn">Bağlanıyor…</span>
+  <nav id="tabs">
+    <button data-tab="status" class="active">Durum</button>
+    <button data-tab="passes">Geçişler</button>
+    <button data-tab="logs">Loglar</button>
+    <button data-tab="devices">Cihaz ayarları</button>
+    <button data-tab="pair">Eşleştirme</button>
+  </nav>
+</header>
+<main>
+  <section id="tab-status">
+    <div class="card"><h2>Agent</h2><div class="grid" id="agentInfo"></div></div>
+    <div class="card"><h2>Cihazlar</h2><table><thead><tr><th>Cihaz</th><th>Adres</th><th>Protokol</th><th>Durum</th><th>Son geçiş</th><th>Son hata</th></tr></thead><tbody id="deviceRows"></tbody></table></div>
+  </section>
+
+  <section id="tab-passes" class="hidden">
+    <div class="card"><h2>Son geçişler</h2><p class="muted">Kart okutulduktan birkaç saniye sonra burada görünür.</p>
+      <table><thead><tr><th>Saat</th><th>Cihaz</th><th>Üye no</th><th>Kart</th><th>Yön</th><th>Sonuç</th></tr></thead><tbody id="passRows"></tbody></table></div>
+  </section>
+
+  <section id="tab-logs" class="hidden">
+    <div class="card">
+      <div class="toolbar">
+        <select id="logLevel"><option value="debug">Tümü</option><option value="info" selected>Bilgi ve üstü</option><option value="warn">Uyarı ve hata</option><option value="error">Sadece hata</option></select>
+        <select id="logKind"><option value="">Tüm kayıtlar</option><option value="pass">Sadece geçişler</option></select>
+        <input id="logSearch" placeholder="Ara (cihaz adı, üye no, hata…)">
+        <label class="check"><input type="checkbox" id="logFollow" checked> Canlı takip</label>
+        <button class="ghost" id="logDownload">İndir</button>
+      </div>
+      <div class="logs" id="logBox"></div>
+    </div>
+  </section>
+
+  <section id="tab-devices" class="hidden">
+    <div class="card"><h2>Genel</h2>
+      <div class="grid">
+        <label>Bilgisayar adı (panelde görünür)<input id="cfgAgentName"></label>
+        <label>MainApi adresi<input id="cfgApi"></label>
+      </div>
+    </div>
+    <div id="deviceForms"></div>
+    <div class="card"><h2>Listede olmayan cihaz</h2><p class="muted">Cihazlar admin panelinde (Geçiş Kontrol → Cihazlar) eklenir ve buraya kendiliğinden gelir. Panelde ekli olup burada görünmüyorsa IP adresini yazıp ayarını önceden girebilirsiniz.</p>
+      <div class="toolbar"><input id="newHost" placeholder="192.168.1.202"><select id="newProto"><option value="zk">ZKTeco (eski, UDP/4370)</option><option value="yt">YT (HTTP Digest)</option></select><button class="ghost" id="addHost">Ekle</button></div>
+    </div>
+    <button class="primary" id="saveCfg">Kaydet ve bağlantıları yenile</button>
+    <div class="msg" id="cfgMsg"></div>
+  </section>
+
+  <section id="tab-pair" class="hidden">
+    <div class="card"><h2>Eşleştirme</h2>
+      <p>Admin panelinde <b>Geçiş Kontrol → Cihazlar → Agent eşleştir</b> ile 8 haneli kodu alın (10 dk geçerli, tek kullanımlık).</p>
+      <p id="pairState" class="muted"></p>
+      <div class="toolbar"><input id="pairCode" placeholder="ABCD2345" maxlength="12" style="text-transform:uppercase"><button class="primary" id="pairBtn">Eşleştir</button></div>
+      <div class="msg" id="pairMsg"></div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const fmt = (iso) => { if (!iso) return '-'; const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString('tr-TR'); };
+const api = async (path, opts = {}) => {
+  const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
+};
+
+let current = 'status';
+document.querySelectorAll('#tabs button').forEach((btn) => btn.onclick = () => {
+  current = btn.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hidden', s.id !== `tab-${current}`));
+  if (current === 'devices') loadConfig();
+  if (current === 'logs') reloadLogs();
+});
+
+let lastStatus = null;
+async function refreshStatus() {
+  try {
+    const s = await api('/api/status');
+    lastStatus = s;
+    const head = $('headState');
+    if (!s.paired) { head.className = 'pill warn'; head.textContent = 'Eşleştirilmemiş'; }
+    else if (s.lastWorkError) { head.className = 'pill err'; head.textContent = 'MainApi bağlantısı yok'; }
+    else { head.className = 'pill ok'; head.textContent = 'Çalışıyor'; }
+    $('agentInfo').innerHTML = [
+      ['Sürüm', s.agentVersion], ['Bilgisayar', s.hostname], ['Agent kimliği', s.agentId || '-'],
+      ['MainApi', s.mainApiUrl], ['Son sunucu bağlantısı', fmt(s.lastWorkAt)], ['Son gönderim', fmt(s.lastFlushAt)],
+      ['Gönderilmeyi bekleyen geçiş', s.queueDepth], ['Başlama', fmt(s.startedAt)],
+    ].map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
+      + (s.lastWorkError ? `<div class="kv"><span>Sunucu hatası</span><span style="color:var(--err)">${esc(s.lastWorkError)}</span></div>` : '');
+    $('deviceRows').innerHTML = (s.devices || []).map((d) => `<tr>
+      <td>${esc(d.name)}</td><td>${esc(d.host)}${d.port ? ':' + esc(d.port) : ''}</td><td>${esc(d.protocol)}</td>
+      <td>${!d.hasCredentials && d.protocol === 'yt-http-digest' ? '<span class="pill warn">Ayar eksik</span>' : d.reachable ? '<span class="pill ok">Bağlı</span>' : '<span class="pill err">Bağlı değil</span>'}</td>
+      <td>${fmt(d.lastEventAt)}</td><td class="muted">${esc(d.lastError || '')}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">Henüz cihaz yok. Eşleştirdikten sonra paneldeki cihazlar burada görünür.</td></tr>';
+    $('passRows').innerHTML = (s.recentPasses || []).map((p) => `<tr><td>${fmt(p.time)}</td><td>${esc(p.gateName)}</td><td>${esc(p.userId || '-')}</td><td>${esc(p.card || '-')}</td><td>${p.direction === 'in' ? 'Giriş' : p.direction === 'out' ? 'Çıkış' : '-'}</td><td>${p.result === 'granted' ? 'İzin' : p.result === 'denied' ? 'Red' : '-'}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">Bu açılıştan beri geçiş yok.</td></tr>';
+    $('pairState').textContent = s.paired ? `Bu bilgisayar eşleştirilmiş (${s.agentId}). Yeni kod girerseniz yeniden eşleştirilir.` : 'Bu bilgisayar henüz eşleştirilmemiş.';
+  } catch (err) {
+    $('headState').className = 'pill err'; $('headState').textContent = 'Agent çalışmıyor';
+  }
+}
+setInterval(refreshStatus, 3000); refreshStatus();
+
+// ── Loglar ──
+let logSeq = 0; let logLines = [];
+function logMatches(e) {
+  const order = ['debug','info','warn','error'];
+  if (order.indexOf(e.level) < order.indexOf($('logLevel').value)) return false;
+  if ($('logKind').value && e.kind !== $('logKind').value) return false;
+  const q = $('logSearch').value.trim().toLocaleLowerCase('tr');
+  return !q || e.message.toLocaleLowerCase('tr').includes(q);
+}
+function renderLogs() {
+  const box = $('logBox');
+  box.innerHTML = logLines.filter(logMatches).slice(-1500).map((e) => `<div class="${e.level}">${esc(fmt(e.time))}  ${esc(e.level.toUpperCase().padEnd(5))} ${esc(e.message)}</div>`).join('');
+  if ($('logFollow').checked) box.scrollTop = box.scrollHeight;
+}
+async function reloadLogs() {
+  const { entries } = await api('/api/logs?level=debug&limit=2000');
+  logLines = entries; logSeq = entries.length ? entries[entries.length - 1].seq : logSeq; renderLogs();
+}
+['logLevel','logKind','logSearch'].forEach((id) => $(id).addEventListener('input', renderLogs));
+const es = new EventSource('/api/logs/stream');
+es.onmessage = (m) => { const e = JSON.parse(m.data); if (e.seq <= logSeq) return; logSeq = e.seq; logLines.push(e); if (logLines.length > 3000) logLines.splice(0, logLines.length - 3000); if (current === 'logs') renderLogs(); };
+$('logDownload').onclick = () => {
+  const text = logLines.filter(logMatches).map((e) => `${e.time} ${e.level.toUpperCase()} ${e.message}`).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = 'odivon-agent-log.txt'; a.click();
+};
+
+// ── Cihaz ayarları ──
+let cfg = null;
+const ZK_FIELDS = [
+  ['driver', 'Sürücü', 'select', [['zkemkeeper-com', 'ZKEMKeeper SDK (eski cihazlar, önerilen)'], ['', 'zkteco-js (yeni cihazlar, TCP)']]],
+  ['machineNumber', 'Makine no', 'number'], ['commKey', 'Comm Key (şifre yoksa 0)', 'number'],
+  ['skipHistory', 'Açılışta eski kayıtları okuma', 'check'], ['skipUsers', 'Açılışta üye listesini okuma (hızlı açılış)', 'check'],
+  ['useAgentClock', 'Cihaz saati yanlış: geçişe bilgisayar saatini yaz', 'check'],
+  ['bridgeStartTimeoutSec', 'Bağlantı bekleme süresi (sn)', 'number'],
+];
+const YT_FIELDS = [['username', 'Kullanıcı adı', 'text'], ['password', 'Parola', 'password'], ['timeoutMs', 'Zaman aşımı (ms)', 'number']];
+function kindFor(host) {
+  const d = (lastStatus?.devices || []).find((x) => x.host === host);
+  if (d) return d.protocol === 'yt-http-digest' ? 'yt' : 'zk';
+  const c = cfg.credentials[host] || {};
+  return c.username !== undefined ? 'yt' : 'zk';
+}
+function deviceForm(host) {
+  const c = cfg.credentials[host] || {};
+  const kind = kindFor(host);
+  const d = (lastStatus?.devices || []).find((x) => x.host === host);
+  const fields = kind === 'yt' ? YT_FIELDS : ZK_FIELDS;
+  const value = (key) => key === 'bridgeStartTimeoutSec' ? (c.bridgeStartTimeoutMs ? c.bridgeStartTimeoutMs / 1000 : 120) : c[key];
+  const inputs = fields.map(([key, label, type, options]) => {
+    const id = `f_${host}_${key}`.replace(/\W/g, '_');
+    if (type === 'check') return `<label class="check"><input type="checkbox" id="${id}" ${value(key) ? 'checked' : ''}> ${esc(label)}</label>`;
+    if (type === 'select') return `<label>${esc(label)}<select id="${id}">${options.map(([v, t]) => `<option value="${esc(v)}" ${String(value(key) ?? '') === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+    return `<label>${esc(label)}<input id="${id}" type="${type}" value="${esc(value(key) ?? '')}"></label>`;
+  }).join('');
+  return `<div class="card"><h2>${esc(d?.name || 'Cihaz')} <span class="muted">${esc(host)} · ${kind === 'yt' ? 'YT HTTP Digest' : 'ZKTeco'}</span></h2><div class="grid">${inputs}</div></div>`;
+}
+async function loadConfig() {
+  cfg = await api('/api/config');
+  cfg.credentials ||= {};
+  for (const d of lastStatus?.devices || []) cfg.credentials[d.host] ||= d.protocol === 'yt-http-digest' ? { username: 'admin', password: '' } : { driver: 'zkemkeeper-com', machineNumber: 1, commKey: 0, skipHistory: true, bridgeStartTimeoutMs: 900000 };
+  $('cfgAgentName').value = cfg.agentName || ''; $('cfgApi').value = cfg.mainApiUrl || '';
+  $('deviceForms').innerHTML = Object.keys(cfg.credentials).map(deviceForm).join('');
+}
+$('addHost').onclick = () => {
+  const host = $('newHost').value.trim(); if (!host) return;
+  cfg.credentials[host] ||= $('newProto').value === 'yt' ? { username: 'admin', password: '' } : { driver: 'zkemkeeper-com', machineNumber: 1, commKey: 0, skipHistory: true, bridgeStartTimeoutMs: 900000 };
+  $('deviceForms').innerHTML = Object.keys(cfg.credentials).map(deviceForm).join(''); $('newHost').value = '';
+};
+$('saveCfg').onclick = async () => {
+  const next = structuredClone(cfg);
+  next.agentName = $('cfgAgentName').value.trim(); next.mainApiUrl = $('cfgApi').value.trim();
+  for (const host of Object.keys(next.credentials)) {
+    const c = next.credentials[host]; const kind = kindFor(host);
+    for (const [key, , type] of kind === 'yt' ? YT_FIELDS : ZK_FIELDS) {
+      const el = $(`f_${host}_${key}`.replace(/\W/g, '_')); if (!el) continue;
+      if (type === 'check') c[key] = el.checked;
+      else if (type === 'number') { const n = Number(el.value); if (key === 'bridgeStartTimeoutSec') c.bridgeStartTimeoutMs = Math.max(30, n || 120) * 1000; else if (el.value !== '') c[key] = n; else delete c[key]; }
+      else if (el.value !== '' || key === 'driver') { if (key === 'driver' && el.value === '') delete c.driver; else c[key] = el.value; }
+    }
+    delete c.bridgeStartTimeoutSec;
+  }
+  const msg = $('cfgMsg');
+  try { cfg = await api('/api/config', { method: 'PUT', body: JSON.stringify(next) }); msg.className = 'msg ok'; msg.textContent = 'Kaydedildi. Cihaz bağlantıları yeniden kuruluyor; durumu Durum sekmesinden izleyin.'; }
+  catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+};
+
+// ── Eşleştirme ──
+$('pairBtn').onclick = async () => {
+  const msg = $('pairMsg'); msg.className = 'msg'; msg.textContent = 'Eşleştiriliyor…';
+  try { const r = await api('/api/pair', { method: 'POST', body: JSON.stringify({ code: $('pairCode').value.trim().toUpperCase() }) }); msg.className = 'msg ok'; msg.textContent = `Eşleşti (${r.agentId}). ${r.gateCount} cihaz atandı.`; $('pairCode').value = ''; refreshStatus(); }
+  catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+};
+</script>
+</body>
+</html>
