@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -190,6 +190,7 @@ export class Sidebar {
   protected readonly saasSub = inject(SaasSubscriptionService);
   protected readonly version = inject(VersionService);
   protected readonly guide = inject(GuideService);
+  protected readonly router = inject(Router);
 
   openGuide(): void {
     this.closeMobile.emit();
@@ -207,8 +208,22 @@ export class Sidebar {
     if (custom !== undefined) {
       return custom;
     }
-    // Arama yapılıyorsa veya varsayılan durumda tüm gruplar açık gelsin (kullanıcı tek tek kapatabilir)
-    return true;
+    // Arama yapılıyorsa eşleşen sonuçların görünmesi için açık gelsin
+    if (this.menuSearch().trim().length > 0) {
+      return true;
+    }
+    // Açılış aşamasında yalnızca GENEL grubu (Dashboard, Salon Özeti) ve mevcut aktif sayfayı barındıran grup açık gelir; diğer gruplar kapalı başlar.
+    if (group.titleKey === 'sidebar.groups.general') {
+      return true;
+    }
+    return this.isGroupActive(group);
+  }
+
+  private isGroupActive(group: NavGroup): boolean {
+    const currentUrl = (this.router.url || '').split('?')[0].split('#')[0];
+    return group.items.some(
+      (item) => item.link && item.link !== '/' && (currentUrl === item.link || currentUrl.startsWith(item.link + '/')),
+    );
   }
 
   toggleGroup(group: NavGroup, event: Event): void {
