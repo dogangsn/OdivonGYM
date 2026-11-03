@@ -293,13 +293,14 @@ export class AdminMembers {
   async toggleArchive(member: UserProfile): Promise<void> {
     const isArchiving = !member.isArchived;
     const confirmMsg = isArchiving
-      ? `<strong>"${member.displayName}"</strong> adlı üyeyi arşive kaldırmak istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Arşivlenen üyeler aktif üye listesinde ve otomatik geçişlerde gizlenir, ancak geçmiş verileri ve bakiye hareketleri korunur.</span>`
-      : `<strong>"${member.displayName}"</strong> adlı üyeyi arşivden çıkarıp tekrar aktif üye listesine almak istediğinize emin misiniz?`;
+        ? `<strong>"${member.displayName}"</strong> adlı üyeyi arşive kaldırmak istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Arşivlenen üyeler aktif üye listesinde ve otomatik geçişlerde gizlenir, ancak geçmiş verileri, paketleri ve bakiye hareketleri korunur.</span>`
+        : `<strong>"${member.displayName}"</strong> adlı üyeyi arşivden çıkarıp tekrar aktif üye listesine almak istediğinize emin misiniz?`;
 
-    const ok = await this.alertService.deleteConfirm(
-      isArchiving ? 'Arşive Kaldır' : 'Arşivden Çıkar',
-      confirmMsg,
-    );
+    const ok = await this.alertService.archiveConfirm(
+        member.displayName,
+        isArchiving,
+        confirmMsg,
+      );
     if (!ok) return;
 
     try {

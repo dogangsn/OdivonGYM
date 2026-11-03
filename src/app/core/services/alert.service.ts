@@ -57,6 +57,45 @@ export class AlertService {
   }
 
   /**
+   * Arşivleme ve arşivden çıkarma işlemleri için özel onay penceresi.
+   * Silme işlemi olmadığı için kullanıcıyı yanıltmaz.
+   */
+  async archiveConfirm(
+    itemName: string,
+    isArchiving = true,
+    customMessage?: string,
+  ): Promise<boolean> {
+    const title = isArchiving
+      ? 'Arşive Kaldırmak İstediğinize Emin Misiniz?'
+      : 'Arşivden Çıkarmak İstediğinize Emin Misiniz?';
+
+    const confirmText = isArchiving ? 'Evet, Arşive Kaldır' : 'Evet, Aktifleştir';
+
+    const defaultMsg = isArchiving
+      ? `<strong>"${itemName}"</strong> adlı üyeyi arşive kaldırmak istediğinize emin misiniz?<br><br><span class="text-xs text-slate-500 dark:text-slate-400">Arşivlenen üyeler aktif üye listesinde ve otomatik geçişlerde gizlenir, ancak geçmiş verileri, paketleri ve bakiye hareketleri korunur.</span>`
+      : `<strong>"${itemName}"</strong> adlı üyeyi arşivden çıkarıp tekrar aktif üye listesine almak istediğinize emin misiniz?`;
+
+    const result = await this.modalMixin.fire({
+      title,
+      html: customMessage ?? defaultMsg,
+      icon: isArchiving ? 'question' : 'info',
+      showCancelButton: true,
+      confirmButtonText: confirmText,
+      cancelButtonText: 'Vazgeç',
+      reverseButtons: true,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: isArchiving
+          ? 'swal2-confirm odivon-btn-archive'
+          : 'swal2-confirm odivon-btn-primary',
+        cancelButton: 'swal2-cancel odivon-btn-cancel',
+      },
+    });
+
+    return !!result.isConfirmed;
+  }
+
+  /**
    * Özel eylem onay penceresi (Randevu iptali, Acil durum modu, Satış iadesi vb.).
    */
   async actionConfirm(
