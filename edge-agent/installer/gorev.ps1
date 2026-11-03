@@ -1,4 +1,4 @@
-# Odivon Edge Agent - Windows görevi (kurulum programı çağırır).
+﻿# Odivon Edge Agent - Windows görevi (kurulum programı çağırır).
 #   gorev.ps1 -AppDir "C:\Odivon\EdgeAgent" -Action kur|kaldir|durdur
 param(
   [Parameter(Mandatory = $true)][string]$AppDir,

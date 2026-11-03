@@ -203,7 +203,13 @@ function createZkemkeeperComAdapter(device, credentials = {}, { spawnImpl = spaw
 
     async listUsers() {
       const data = await command('listUsers', {}, LIST_TIMEOUT_MS);
-      return data.users ?? [];
+      // Eski köprü derlemesi alanları büyük harfle (EnrollNumber, Name, Card) ve aktiflik bilgisi olmadan gönderiyordu.
+      return (data.users ?? []).map((user) => ({
+        enrollNumber: user.enrollNumber ?? user.EnrollNumber ?? null,
+        name: user.name ?? user.Name ?? null,
+        card: user.card ?? user.Card ?? null,
+        enabled: user.enabled ?? user.Enabled ?? null,
+      }));
     },
 
     async deleteUser(userId) {

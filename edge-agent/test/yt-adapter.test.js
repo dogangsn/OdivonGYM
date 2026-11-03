@@ -133,6 +133,17 @@ test('yetki kapatma kullanıcıyı siler, yoksa da doğrulanır', async (t) => {
   assert.deepEqual(await adapter.applyUser({ userId: '9', enabled: false }), { verified: true });
 });
 
+test('arayüz için tek üyeyi okur ve siler; bitiş günü cihazdan gelir', async (t) => {
+  const { dev, adapter } = await setup(t);
+  dev.state.users.set('1042', { userId: '1042', name: 'AYSE', card: '0012345', vaildEnd: '20261031' });
+  dev.state.users.set('7', { userId: '7', name: 'SURESIZ', vaildEnd: '20991231' });
+  assert.deepEqual(await adapter.getUser('1042'), { enrollNumber: '1042', name: 'AYSE', card: '0012345', enabled: true, validEnd: '20261031' });
+  assert.equal((await adapter.getUser('7')).validEnd, null, 'süresiz üyede bitiş günü boş');
+  assert.equal(await adapter.getUser('404'), null);
+  assert.deepEqual(await adapter.deleteUser('1042'), { verified: true });
+  assert.equal(dev.state.users.has('1042'), false);
+});
+
 test('erişilemeyen cihaz geçici hata verir', async (t) => {
   const { dev, adapter } = await setup(t);
   dev.state.down = true;

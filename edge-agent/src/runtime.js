@@ -294,7 +294,7 @@ class AgentRuntime {
       if (op === 'delete') {
         need('deleteUser');
         const result = await adapter.deleteUser(payload.userId);
-        this.store.setValidity(gateId, payload.userId, { validEnd: null, enabled: false });
+        if (adapter.localExpiry) this.store.setValidity(gateId, payload.userId, { validEnd: null, enabled: false });
         this.log.info(`🗑️ Elle silindi: ${payload.userId} (${device.config.name})`);
         return result;
       }

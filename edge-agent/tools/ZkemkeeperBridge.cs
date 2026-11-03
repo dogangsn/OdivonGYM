@@ -14,6 +14,7 @@ internal static class ZkemkeeperBridge
         public string EnrollNumber;
         public string Name;
         public string Card;
+        public bool Enabled;
     }
 
     private static readonly object OutputLock = new object();
@@ -154,7 +155,8 @@ internal static class ZkemkeeperBridge
             {
                 EnrollNumber = normalizedEnroll,
                 Name = Normalize(name),
-                Card = card == "0" ? null : card
+                Card = card == "0" ? null : card,
+                Enabled = enabled
             };
         }
     }
@@ -271,7 +273,7 @@ internal static class ZkemkeeperBridge
             else if (cmd == "setUser") result = new { user = WriteUser(enroll, Text(command, "name"), Text(command, "card"), Flag(command, "enabled", true)) };
             else if (cmd == "enableUser") result = new { user = EnableUser(enroll, Flag(command, "enabled", true)) };
             else if (cmd == "deleteUser") result = new { deleted = DeleteUser(enroll) };
-            else if (cmd == "listUsers") { LoadUsers(); result = new { users = Users.Values }; }
+            else if (cmd == "listUsers") { LoadUsers(); result = new { users = PublicUsers() }; }
             else throw new InvalidOperationException("Bilinmeyen komut: " + cmd);
             Emit(new { type = "result", id = id, ok = true, data = result });
         }
@@ -279,6 +281,17 @@ internal static class ZkemkeeperBridge
         {
             Emit(new { type = "result", id = id, ok = false, error = error.Message });
         }
+    }
+
+    /** Agent'a giden liste: getUser ile aynı küçük harfli alanlar (parola yok). */
+    private static List<object> PublicUsers()
+    {
+        var list = new List<object>();
+        foreach (DeviceUser user in Users.Values)
+        {
+            list.Add(new { enrollNumber = user.EnrollNumber, name = user.Name, card = user.Card, enabled = user.Enabled });
+        }
+        return list;
     }
 
     private sealed class UserRecord
@@ -368,7 +381,7 @@ internal static class ZkemkeeperBridge
             Device.EnableDevice(MachineNumber, true);
         }
         UserRecord after = ReadUser(enroll);
-        if (after != null) Users[enroll] = new DeviceUser { EnrollNumber = enroll, Name = after.name, Card = after.card };
+        if (after != null) Users[enroll] = new DeviceUser { EnrollNumber = enroll, Name = after.name, Card = after.card, Enabled = after.enabled };
         return Public(after);
     }
 

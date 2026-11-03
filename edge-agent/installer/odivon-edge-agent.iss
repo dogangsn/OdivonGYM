@@ -1,4 +1,4 @@
-; Odivon Edge Agent kurulum programı (Inno Setup 6).
+﻿; Odivon Edge Agent kurulum programı (Inno Setup 6).
 ; Derleme: scripts/build-edge-agent-installer.ps1 ya da GitHub Actions "Edge Agent kurulum".
 ; build\ klasörü derleme betiği tarafından hazırlanır: build\node\node.exe ve build\app\...
 

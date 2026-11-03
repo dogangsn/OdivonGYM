@@ -68,6 +68,8 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
       ping: async () => { throw new DeviceError(reason); },
       readEvents: async () => { throw new DeviceError(reason); },
       applyUser: async () => { throw new DeviceError(reason); },
+      getUser: async () => { throw new DeviceError(reason); },
+      deleteUser: async () => { throw new DeviceError(reason); },
       close() {},
     };
   }
@@ -111,7 +113,7 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
     }
   }
 
-  async function getUser(userId) {
+  async function fetchUser(userId) {
     const res = await cmd(wire.requests.getUser(userId));
     if (wire.isNotFound(res)) return null;
     if (!wire.isOk(res)) throw new DeviceError(`GetUserInfo başarısız: ${wire.describe(res)}`);
@@ -201,7 +203,7 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
       // Üye numarası değiştiyse eski cihaz kullanıcısı önce silinir (yoksa eski kimlikle geçiş sürer).
       if (item.replacesUserId && item.replacesUserId !== item.userId) {
         const del = await cmd(wire.requests.deleteUser(item.replacesUserId));
-        if ((await getUser(item.replacesUserId)) !== null) {
+        if ((await fetchUser(item.replacesUserId)) !== null) {
           throw new DeviceError(`Eski kullanıcı silinemedi (${item.replacesUserId}): ${wire.describe(del)}`);
         }
       }
@@ -209,7 +211,7 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
       if (!item.enabled) {
         // Olmayan kullanıcıyı silmek de result_code 0 döner; sonuç geri okumayla doğrulanır.
         const res = await cmd(wire.requests.deleteUser(item.userId));
-        const after = await getUser(item.userId);
+        const after = await fetchUser(item.userId);
         if (after !== null && !wire.isOk(res)) {
           throw new DeviceError(`DeleteUserInfo başarısız: ${wire.describe(res)}`);
         }
@@ -227,9 +229,31 @@ function createYtHttpDigestAdapter(device, credentials, { fetchImpl, now = () =>
         throw new DeviceError(`SetUserInfo başarısız: ${wire.describe(res)}`);
       }
 
-      const after = await getUser(item.userId);
+      const after = await fetchUser(item.userId);
       const mismatch = describeMismatch(desired, after);
       return mismatch ? { verified: false, detail: mismatch } : { verified: true };
+    },
+
+    /** Arayüz için cihazdaki kullanıcı. Bitiş günü cihazın kendisinde tutulur ve cihaz uygular. */
+    async getUser(userId) {
+      const user = await fetchUser(userId);
+      if (!user) return null;
+      const end = String(user.vaildEnd ?? '').replace(/\D/g, '');
+      return {
+        enrollNumber: user.userId,
+        name: user.name,
+        card: user.card || null,
+        // Bu cihazda yetkisi kapatılan üye silinir; cihazda olan üye aktiftir.
+        enabled: true,
+        validEnd: !end || end === '00000000' || end === NO_END_DATE ? null : end,
+      };
+    },
+
+    async deleteUser(userId) {
+      const res = await cmd(wire.requests.deleteUser(userId));
+      const after = await fetchUser(userId);
+      if (after !== null && !wire.isOk(res)) throw new DeviceError(`DeleteUserInfo başarısız: ${wire.describe(res)}`);
+      return { verified: after === null };
     },
 
     close() {},

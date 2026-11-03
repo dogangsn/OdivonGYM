@@ -1,8 +1,9 @@
-# Odivon Edge Agent kurulum dosyasını (OdivonEdgeAgentKurulum-<sürüm>.exe) üretir.
-# Gerekli: Windows, Inno Setup 6 (ISCC.exe), internet (Node.js taşınabilir paketi için).
+﻿# Odivon Edge Agent kurulum dosyasını (OdivonEdgeAgentKurulum-<sürüm>.exe) üretir.
+# Gerekli: Windows (.NET Framework 4.8 hazır gelir), Node.js + npm, Inno Setup 6 (ISCC.exe),
+# internet (Node.js taşınabilir paketi için).
 #   powershell -ExecutionPolicy Bypass -File scripts\build-edge-agent-installer.ps1
 param(
-  [string]$NodeVersion = '22.23.3',
+  [string]$NodeVersion = '22.23.4',
   [string]$Iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 )
 $ErrorActionPreference = 'Stop'
@@ -34,6 +35,18 @@ $app = Join-Path $build 'app'
 foreach ($item in 'agent.js', 'package.json', 'package-lock.json', 'config.sample.json', 'README.md', 'src', 'ui', 'vendor') {
   Copy-Item (Join-Path $agentRoot $item) -Destination $app -Recurse
 }
+
+# 2b) ZK köprüsü her derlemede kaynaktan (tools\ZkemkeeperBridge.cs) üretilir; depodaki hazır exe eski kalabilir.
+#     32-bit olmalı: üretici SDK'sı (zkemkeeper.dll) 32-bit COM.
+$csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
+if (-not (Test-Path -LiteralPath $csc)) { throw "C# derleyicisi bulunamadı: $csc (.NET Framework 4.8 gerekli)" }
+$zkDir = Join-Path $app 'vendor\zkemkeeper'
+& $csc /nologo /target:exe /platform:x86 /optimize+ `
+  "/out:$(Join-Path $zkDir 'zkemkeeper-bridge.exe')" `
+  "/reference:$(Join-Path $zkDir 'Interop.zkemkeeper.dll')" `
+  /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll `
+  (Join-Path $agentRoot 'tools\ZkemkeeperBridge.cs')
+if ($LASTEXITCODE -ne 0) { throw "ZK köprüsü derlenemedi: $LASTEXITCODE" }
 Push-Location $app
 try {
   & npm ci --omit=dev --ignore-scripts --no-audit --no-fund

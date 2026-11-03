@@ -277,7 +277,7 @@ async function loadTracked() {
   catch (err) { uMsg(err.message, false); }
 }
 function renderUsers(rows) {
-  $('uRows').innerHTML = rows.map((u) => `<tr><td>${esc(u.enrollNumber)}</td><td>${esc(u.name || '')}</td><td>${esc(u.card || '')}</td><td>${u.validEnd ? esc(ymd(u.validEnd)) : '<span class="muted">-</span>'}</td><td>${u.enabled ? '<span class="pill ok">Aktif</span>' : '<span class="pill err">Pasif</span>'}</td></tr>`).join('')
+  $('uRows').innerHTML = rows.map((u) => `<tr><td>${esc(u.enrollNumber)}</td><td>${esc(u.name || '')}</td><td>${esc(u.card || '')}</td><td>${u.validEnd ? esc(ymd(u.validEnd)) : '<span class="muted">-</span>'}</td><td>${u.enabled == null ? '<span class="muted">-</span>' : u.enabled ? '<span class="pill ok">Aktif</span>' : '<span class="pill err">Pasif</span>'}</td></tr>`).join('')
     || '<tr><td colspan="5" class="muted">Kayıt yok.</td></tr>';
 }
 $('uTracked').onclick = loadTracked;
@@ -297,7 +297,7 @@ $('uRead').onclick = async () => {
     const { user, validity } = await api(gatePath(id));
     if (!user) return uMsg('Bu üye cihazda yok.', false);
     $('uName').value = user.name || ''; $('uCard').value = user.card || ''; $('uEnabled').checked = user.enabled;
-    $('uEnd').value = ymd(validity?.validEnd);
+    $('uEnd').value = ymd(user.validEnd ?? validity?.validEnd);
     uMsg(`Cihazda var: ${user.name || id}, ${user.enabled ? 'aktif' : 'pasif'}.`, true);
   } catch (err) { uMsg(err.message, false); }
 };

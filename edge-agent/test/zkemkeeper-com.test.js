@@ -160,6 +160,20 @@ test('ZK köprüsü üyeyi yazar, geri okur; yetki kapatma silmez, pasif yapar',
   adapter.close();
 });
 
+test('cihazdaki üye listesi aynı alan adlarıyla döner (eski köprü büyük harfli gönderse de)', async () => {
+  const users = new Map([
+    ['14441', { enrollNumber: '14441', name: 'AHMET', card: '9855037', enabled: true }],
+    ['20', { EnrollNumber: '20', Name: 'ESKI KOPRU', Card: null }],
+  ]);
+  const bridge = fakeBridge(users);
+  const adapter = createZkemkeeperComAdapter({ host: '192.168.1.202' }, {}, { spawnImpl: bridge.spawnImpl });
+  assert.deepEqual(await adapter.listUsers(), [
+    { enrollNumber: '14441', name: 'AHMET', card: '9855037', enabled: true },
+    { enrollNumber: '20', name: 'ESKI KOPRU', card: null, enabled: null },
+  ]);
+  adapter.close();
+});
+
 test('köprü kapanınca bekleyen komut geçici hatayla biter', async () => {
   const bridge = fakeBridge();
   const adapter = createZkemkeeperComAdapter({ host: '192.168.1.202' }, {}, { spawnImpl: bridge.spawnImpl });
