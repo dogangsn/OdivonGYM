@@ -199,7 +199,9 @@ function createZkTcpAdapter(device, credentials = {}, { driverFactory = defaultD
     },
 
     async applyUser() {
-      throw new DeviceError('ZK TCP/4370 için güvenli kullanıcı senkronu henüz etkin değil.');
+      throw new DeviceError(
+        'Bu sürücü (zkteco-js) cihaza üye yazamıyor. Agent arayüzünde Cihaz ayarları → Sürücü: ZKEMKeeper (zkemkeeper-com) seçin.',
+      );
     },
 
     close() {

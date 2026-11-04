@@ -115,14 +115,14 @@ test('CommKey etkinse sessizce başarısız olmak yerine açık hata verir', asy
   await assert.rejects(adapter.readEvents(null), /CommKey/);
 });
 
-test('ZK cihazına kullanıcı yazma güvenli doğrulama olmadan açılmaz', async () => {
+test('zkteco-js sürücüsü cihaza üye yazmaz, ZKEMKeeper sürücüsünü önerir', async () => {
   const { factory } = setupDriver();
   const adapter = createZkTcpAdapter(
     { gateId: 'g1', protocol: 'zk-tcp-4370', host: '192.168.1.10', port: 4370 },
     {},
     { driverFactory: factory },
   );
-  await assert.rejects(adapter.applyUser({ userId: '1' }), /kullanıcı senkronu/);
+  await assert.rejects(adapter.applyUser({ userId: '1' }), /üye yazamıyor.*zkemkeeper-com/);
 });
 
 test('zkteco-js iç içe ağ hataları geçici cihaz hatasına çevrilir', () => {
