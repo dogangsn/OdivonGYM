@@ -20,6 +20,24 @@ function Stop-Agent {
   Start-Sleep -Seconds 2
 }
 
+# Elle kurulmuş eski agent (servis-kur.bat) aynı görev adını kullanıyordu. Görev yeniden yazılmadan önce
+# onun klasöründeki eşleştirme, kuyruk ve cihaz ayarları yeni kuruluma alınır (bkz. eski-kurulum.js).
+function Import-OldInstall {
+  $script = Join-Path $AppDir 'eski-kurulum.js'
+  if (-not (Test-Path -LiteralPath $script)) { return }
+  try {
+    $old = (Get-ScheduledTask -TaskName $task -ErrorAction Stop).Actions[0].WorkingDirectory
+  } catch {
+    return
+  }
+  if ([string]::IsNullOrWhiteSpace($old)) { return }
+  try {
+    & $node $script $old.Trim('"') $app
+  } catch {
+    Write-Output "Eski kurulum taşınamadı: $_"
+  }
+}
+
 function Remove-FirewallRules {
   netsh advfirewall firewall delete rule name="Odivon Edge Agent - ZK kopru" 2>$null | Out-Null
   netsh advfirewall firewall delete rule name="Odivon Edge Agent - Node" 2>$null | Out-Null
@@ -34,6 +52,7 @@ switch ($Action) {
   }
   'kur' {
     Stop-Agent
+    Import-OldInstall
     # Eski cihazlar (ZK UDP/4370) cevabı gelen trafik olarak yollar; "Genel" ağ profilinde engellenmesin.
     Remove-FirewallRules
     netsh advfirewall firewall add rule name="Odivon Edge Agent - ZK kopru" dir=in action=allow program="$bridge" protocol=UDP profile=any | Out-Null

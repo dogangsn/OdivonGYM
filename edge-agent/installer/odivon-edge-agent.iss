@@ -32,6 +32,7 @@ Name: "tr"; MessagesFile: "compiler:Languages\Turkish.isl"
 Source: "..\build\node\*"; DestDir: "{app}\node"; Flags: recursesubdirs ignoreversion
 Source: "..\build\app\*"; DestDir: "{app}\app"; Excludes: "config.json,data\*"; Flags: recursesubdirs ignoreversion
 Source: "gorev.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "eski-kurulum.js"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
 Name: "{app}\app\data"

@@ -60,6 +60,11 @@ Sözleşme ve veri modeli: [`docs/access-agent-contract.md`](../docs/access-agen
 Güncelleme için yeni sürümün kurulum dosyasını çalıştırmanız yeterli; `config.json` ve `data\`
 (eşleştirme, bekleyen geçişler) korunur. Kaldırma: Windows Ayarlar → Uygulamalar → Odivon Edge Agent.
 
+Bilgisayarda daha önce elle kurulmuş (`servis-kur.bat`) bir agent varsa kurulum onun eşleştirmesini,
+bekleyen geçişlerini ve cihaz ayarlarını yeni klasöre taşır; yeniden eşleştirmek gerekmez. Eski klasördeki
+`data\identity.json` yeniden adlandırılır, böylece oradaki `baslat.bat` aynı kimlikle ikinci bir agent açamaz.
+İmzasız kurulum dosyasında Windows "bilgisayarınızı korudu" uyarısı çıkarsa **Ek bilgi → Yine de çalıştır**.
+
 ## Elle kurulum (Windows)
 
 1. **Node.js 22.13 veya üzeri** kurun ([nodejs.org](https://nodejs.org)). npm ayrıca
