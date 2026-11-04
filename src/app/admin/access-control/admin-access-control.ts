@@ -1178,21 +1178,29 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                 <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                   <div class="flex items-center gap-3.5">
                     <div class="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0">
-                      <mat-icon class="text-2xl">folder_zip</mat-icon>
+                      <mat-icon class="text-2xl">install_desktop</mat-icon>
                     </div>
                     <div>
                       <span class="font-extrabold text-sm sm:text-base block">OdivonGYM Edge Agent (Windows)</span>
-                      <span class="text-xs text-slate-300 mt-0.5 block">Yalnızca Node.js 22.13+ gerekir; npm, internet ve Firebase anahtarı gerekmez.</span>
+                      <span class="text-xs text-slate-300 mt-0.5 block">Tek dosyalık kurulum: Node.js, cihaz sürücüsü ve otomatik başlatma içinde gelir; ayrıca bir şey kurulmaz.</span>
                     </div>
                   </div>
-                  <a
-                    href="/downloads/odivon-gym-edge-agent.zip"
-                    download="odivon-gym-edge-agent.zip"
-                    class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer no-underline flex items-center gap-2"
-                  >
-                    <mat-icon class="icon-size-4">download</mat-icon>
-                    <span>Agent'ı İndir (.ZIP)</span>
-                  </a>
+                  <div class="flex flex-col items-start sm:items-end gap-1.5 self-start sm:self-auto">
+                    <a
+                      [href]="agentInstallerUrl"
+                      class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all whitespace-nowrap cursor-pointer no-underline flex items-center gap-2"
+                    >
+                      <mat-icon class="icon-size-4">download</mat-icon>
+                      <span>Kurulum Dosyasını İndir (.EXE)</span>
+                    </a>
+                    <a
+                      href="/downloads/odivon-gym-edge-agent.zip"
+                      download="odivon-gym-edge-agent.zip"
+                      class="text-[11px] text-slate-400 hover:text-slate-200 underline"
+                    >
+                      Eski elle kurulum paketi (.ZIP)
+                    </a>
+                  </div>
                 </div>
 
                 <!-- Adım 1: cihaz seç ve kod üret -->
@@ -1262,17 +1270,23 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
 
                 <!-- Adım 3 -->
                 <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">3. Başlatın</h4>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white m-0">3. Kurun ve başlatın</h4>
                   <p class="m-0">
-                    ZK TCP / 4370 cihazı kullanıyorsanız önce <b>zkemkeeper-kur.bat</b> dosyasını bir kez yönetici olarak
-                    çalıştırın. Bu adım eski cihazın 32-bit üretici SDK'sını Windows'a kaydeder.
+                    İndirilen <b>OdivonEdgeAgentKurulum.exe</b> dosyasına salon bilgisayarında çift tıklayın (yönetici izni
+                    ister). Windows "bilgisayarınızı korudu" uyarısı verirse <b>Ek bilgi → Yine de çalıştır</b> deyin.
+                    Kurulum ZK cihazları için 32-bit SDK kaydını, güvenlik duvarı iznini ve Windows açılışında otomatik
+                    başlatmayı kendisi yapar (kimse oturum açmasa bile çalışır).
                   </p>
                   <p class="m-0">
-                    <b>baslat.bat</b> dosyasına çift tıklayın; ilk açılışta eşleştirme kodunu sorar. Ardından yönetici izni
-                    isteyip agent'ı Windows açılışında otomatik başlayacak şekilde kurar (kimse oturum açmasa bile çalışır,
-                    kapanırsa 1 dakikada yeniden başlar). Pencereyi kapatabilirsiniz.
+                    Masaüstündeki <b>Odivon Edge Agent</b> kısayolu yönetim arayüzünü açar
+                    (<code>http://127.0.0.1:47800</code>). <b>Eşleştirme</b> sekmesine yukarıdaki kodu girin,
+                    <b>Cihaz ayarları</b>'ndan cihaz bilgilerini kontrol edin; <b>Durum</b>, <b>Geçişler</b> ve
+                    <b>Loglar</b> sekmelerinden canlı izleyin.
                   </p>
-                  <p class="m-0">Otomatik başlatmayı kaldırmak için: <code>servis-kur.bat kaldir</code></p>
+                  <p class="m-0">
+                    Güncellemek için yeni kurulum dosyasını çalıştırmanız yeterli; eşleştirme ve ayarlar korunur. Daha önce
+                    elle (ZIP ile) kurulmuş agent varsa kurulum onu otomatik taşır. Kaldırma: Windows Ayarlar → Uygulamalar.
+                  </p>
                 </div>
               }
 
@@ -1483,6 +1497,9 @@ export class AdminAccessControl implements OnInit {
   protected readonly deviceProtocols = DEVICE_PROTOCOLS;
 
   // Edge Agent penceresi
+  /** Her derlemede yenilenen kurulum dosyası (.github/workflows/edge-agent-installer.yml). */
+  protected readonly agentInstallerUrl =
+    'https://github.com/dogangsn/OdivonGYM/releases/download/edge-agent-latest/OdivonEdgeAgentKurulum.exe';
   protected readonly showAgentWizard = signal(false);
   protected readonly wizardTab = signal<'pair' | 'agents' | 'guide'>('pair');
   protected readonly wizardTabs = [

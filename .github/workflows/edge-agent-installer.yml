@@ -1,7 +1,9 @@
 name: Edge Agent kurulum
 
-# edge-agent değişince Windows kurulum dosyasını üretir; Actions sayfasındaki
-# "OdivonEdgeAgentKurulum" ekinden indirilir. Panel yayınını etkilemez.
+# edge-agent değişince Windows kurulum dosyasını üretir ve "edge-agent-latest" GitHub
+# Release'ine sabit adla yükler; panel indirme düğmesi bu adrese bağlıdır:
+# https://github.com/dogangsn/OdivonGYM/releases/download/edge-agent-latest/OdivonEdgeAgentKurulum.exe
+# Panel yayınını etkilemez.
 on:
   push:
     branches:
@@ -16,7 +18,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read
+      contents: write
     defaults:
       run:
         shell: pwsh
@@ -44,3 +46,25 @@ jobs:
           name: OdivonEdgeAgentKurulum
           path: edge-agent/dist/*.exe
           retention-days: 30
+
+      # Sabit adres: release etiketi ve dosya adı değişmez, her derlemede dosya yenilenir.
+      - name: Release (edge-agent-latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'edge-agent-latest'
+          $version = (Get-Content edge-agent/package.json -Raw | ConvertFrom-Json).version
+          $exe = Get-ChildItem edge-agent/dist/*.exe | Select-Object -First 1
+          if (-not $exe) { throw 'Kurulum dosyası bulunamadı.' }
+          $fixed = Join-Path $exe.DirectoryName 'OdivonEdgeAgentKurulum.exe'
+          Copy-Item $exe.FullName $fixed -Force
+          $notes = "OdivonGYM Edge Agent v$version kurulum dosyası (commit $env:GITHUB_SHA). Panelden indirilir."
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --target $env:GITHUB_SHA --title 'Edge Agent kurulum (son sürüm)' --notes $notes --latest=false
+            if ($LASTEXITCODE -ne 0) { throw "Release oluşturulamadı: $LASTEXITCODE" }
+          } else {
+            gh release edit $tag --notes $notes
+          }
+          gh release upload $tag $fixed $exe.FullName --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Release yüklemesi başarısız: $LASTEXITCODE" }
