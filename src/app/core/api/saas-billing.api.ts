@@ -53,4 +53,12 @@ export class SaasBillingApi {
   readNotices() {
     return this.api.post<{ updated: number }>('/gym/saas-billing/notices/read', {}).pipe(map((r) => r.data));
   }
+
+  removeNotice(id: string) {
+    return this.api.delete<{ ok: boolean }>(`/gym/saas-billing/notices/${encodeURIComponent(id)}`, { skipLoading: true }).pipe(map((r) => r.data));
+  }
+
+  clearReadNotices() {
+    return this.api.delete<{ count: number }>('/gym/saas-billing/notices/clear/read', { skipLoading: true }).pipe(map((r) => r.data));
+  }
 }

@@ -305,7 +305,8 @@
       "adminExitPayments": "Paiements à la sortie",
       "support": "Support & Demandes",
       "adminProgramRequests": "Demandes de programmes",
-      "adminSmsSettings": "Fournisseur SMS & Paramètres"
+      "adminSmsSettings": "Fournisseur SMS & Paramètres",
+      "adminNotifications": "Centre de Notifications"
     },
     "badges": {
       "renewal": "Renouvellement",

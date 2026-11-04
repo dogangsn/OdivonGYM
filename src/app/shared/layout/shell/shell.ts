@@ -1,9 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { catchError, firstValueFrom, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { visiblePolling } from '../../../core/api/unwrap';
-import { PlatformNotification, PlatformNotificationsApi } from '../../../core/api/platform-notifications.api';
-import { SaasBillingApi, SaasNotice } from '../../../core/api/saas-billing.api';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,6 +28,7 @@ import { ShortcutManagerModal } from '../../components/shortcut-manager-modal/sh
 import { GuideService } from '../../../core/services/guide.service';
 import { GuideModal } from '../../components/guide-modal/guide-modal';
 import { DailyCloseReminderService } from '../../../core/services/daily-close-reminder.service';
+import { AppNotification, NotificationCenterService } from '../../../core/services/notification-center.service';
 
 import { FormsModule } from '@angular/forms';
 
@@ -72,6 +68,7 @@ const SEARCHABLE_ROUTES: RouteSearchResult[] = [
   { titleKey: 'sidebar.items.adminBranches', categoryKey: 'sidebar.groups.management', icon: 'store', link: '/admin/branches', keywords: ['şube', 'branches'] },
   { titleKey: 'sidebar.items.adminGymInfo', categoryKey: 'sidebar.groups.management', icon: 'business', link: '/admin/gym-info', keywords: ['salon bilgileri', 'gym'] },
   { titleKey: 'sidebar.items.adminSubscription', categoryKey: 'sidebar.groups.management', icon: 'card_membership', link: '/admin/subscription', keywords: ['lisans', 'paket', 'subscription'] },
+  { titleKey: 'sidebar.items.adminNotifications', categoryKey: 'sidebar.groups.management', icon: 'notifications', link: '/admin/notifications', keywords: ['bildirim', 'bildirimler', 'duyuru', 'notifications', 'merkezi'] },
   { titleKey: 'sidebar.items.workoutPlan', categoryKey: 'sidebar.groups.fitness', icon: 'fitness_center', link: '/workout', keywords: ['antrenman', 'workout'] },
   { titleKey: 'sidebar.items.bodyMeasurements', categoryKey: 'sidebar.groups.health', icon: 'monitor_weight', link: '/measurements', keywords: ['ölçüm', 'measurements'] },
   { titleKey: 'sidebar.items.waterTracker', categoryKey: 'sidebar.groups.health', icon: 'water_drop', link: '/water', keywords: ['su', 'water'] },
@@ -195,97 +192,21 @@ export class Shell {
     }
   }
 
-  private readonly saasBilling = inject(SaasBillingApi);
-  private readonly platformNotices = inject(PlatformNotificationsApi);
-  /**
-   * Gerçek bildirimler:
-   * - Odivon yönetim panelinden gönderilen işletme bildirimleri (tüm personel görür),
-   * - yöneticiye Odivon abonelik hatırlatmaları.
-   * Sekme açıkken 2 dakikada bir yenilenir.
-   */
-  protected readonly notifications = signal<ShellNotification[]>([]);
-  private readonly noticeContext = computed(() => ({
-    tenantId: this.auth.profile()?.tenantId ?? null,
-    staff: this.permissions.isStaff(),
-    admin: this.permissions.isAdmin(),
-  }));
-  private readonly loadNotices = toObservable(this.noticeContext)
-    .pipe(
-      switchMap((ctx) =>
-        !ctx.tenantId || !ctx.staff
-          ? of([] as ShellNotification[])
-          : visiblePolling(2 * 60_000).pipe(
-              startWith(0),
-              switchMap(() => this.fetchNotices(ctx.admin)),
-            ),
-      ),
-      takeUntilDestroyed(),
-    )
-    .subscribe((list) => this.notifications.set(list));
-
-  private fetchNotices(admin: boolean) {
-    const fmt = (iso: string) => new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
-    return forkJoin({
-      platform: this.platformNotices.list().pipe(catchError(() => of([] as PlatformNotification[]))),
-      saas: admin ? this.saasBilling.notices().pipe(catchError(() => of([] as SaasNotice[]))) : of([] as SaasNotice[]),
-    }).pipe(
-      map(({ platform, saas }) => {
-        const fromPlatform: (ShellNotification & { at: string })[] = platform.map((n) => ({
-          id: n.id,
-          titleKey: '',
-          messageKey: '',
-          title: n.title,
-          message: n.body,
-          time: fmt(n.createdAt),
-          type: n.level === 'warning' || n.level === 'critical' ? 'warning' : n.level === 'success' ? 'success' : 'info',
-          icon: n.level === 'critical' ? 'priority_high' : n.level === 'warning' ? 'warning' : 'campaign',
-          read: n.read,
-          link: n.link ?? undefined,
-          linkLabel: n.linkLabel ?? undefined,
-          source: 'platform',
-          at: n.createdAt,
-        }));
-        const fromSaas: (ShellNotification & { at: string })[] = saas.map((n) => ({
-          id: n.id,
-          titleKey: '',
-          messageKey: '',
-          title: n.title,
-          message: n.body,
-          time: fmt(n.createdAt),
-          type: n.type === 'saas_grace' || n.daysLeft <= 1 ? 'warning' : 'info',
-          icon: 'event_busy',
-          read: Boolean(n.readAt),
-          link: '/admin/subscription',
-          source: 'saas',
-          at: n.createdAt,
-        }));
-        return [...fromPlatform, ...fromSaas]
-          .sort((a, b) => b.at.localeCompare(a.at))
-          .map(({ at: _at, ...n }) => n as ShellNotification);
-      }),
-    );
-  }
-
-  protected readonly unreadCount = computed(() => this.notifications().filter((n) => !n.read).length);
+  private readonly notificationCenter = inject(NotificationCenterService);
+  protected readonly notifications = this.notificationCenter.notifications;
+  protected readonly unreadCount = this.notificationCenter.unreadCount;
 
   markAllNotificationsAsRead(): void {
-    const list = this.notifications();
-    this.notifications.update((items) => items.map((n) => ({ ...n, read: true })));
-    if (list.some((n) => n.source === 'platform' && !n.read)) {
-      void firstValueFrom(this.platformNotices.markAllRead()).catch(() => undefined);
-    }
-    if (list.some((n) => n.source === 'saas' && !n.read)) {
-      void firstValueFrom(this.saasBilling.readNotices()).catch(() => undefined);
-    }
+    void this.notificationCenter.markAllAsRead();
   }
 
-  openNotification(item: ShellNotification): void {
-    if (!item.read) {
-      this.notifications.update((list) => list.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
-      if (item.source === 'platform') {
-        void firstValueFrom(this.platformNotices.markRead(item.id)).catch(() => undefined);
-      }
-    }
+  deleteNotification(item: AppNotification, event?: Event): void {
+    event?.stopPropagation();
+    void this.notificationCenter.deleteNotification(item);
+  }
+
+  openNotification(item: AppNotification): void {
+    void this.notificationCenter.markAsRead(item);
     if (!item.link) return;
     if (/^https?:\/\//i.test(item.link)) {
       window.open(item.link, '_blank', 'noopener');

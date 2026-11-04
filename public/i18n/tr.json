@@ -308,7 +308,8 @@
       "packages": "Paketler",
       "profile": "Profil & Ayarlar",
       "adminExitPayments": "Çıkışta Ödemeler",
-      "support": "Müşteri Talepleri & Destek"
+      "support": "Müşteri Talepleri & Destek",
+      "adminNotifications": "Bildirim Merkezi"
     },
     "badges": {
       "renewal": "Yenileme",

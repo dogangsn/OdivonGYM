@@ -305,7 +305,8 @@
       "adminExitPayments": "Оплата на выходе",
       "support": "Служба поддержки и заявки",
       "adminProgramRequests": "Запросы на программы",
-      "adminSmsSettings": "Настройки SMS и провайдеры"
+      "adminSmsSettings": "Настройки SMS и провайдеры",
+      "adminNotifications": "Центр уведомлений"
     },
     "badges": {
       "renewal": "Продление",

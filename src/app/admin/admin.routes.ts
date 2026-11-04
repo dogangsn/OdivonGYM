@@ -163,5 +163,11 @@ export const adminRoutes: Routes = [
       import('./sms-settings/admin-sms-settings').then((m) => m.AdminSmsSettings),
     title: 'SMS Sağlayıcı & Ayarları · OdivonGYM',
   },
+  {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./notifications/admin-notifications').then((m) => m.AdminNotifications),
+    title: 'Bildirim Merkezi & Olaylar · OdivonGYM',
+  },
 ];
 

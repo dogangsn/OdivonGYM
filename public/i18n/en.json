@@ -308,7 +308,8 @@
       "packages": "Packages",
       "profile": "Profile & Settings",
       "adminExitPayments": "Exit Payments (Open Tabs)",
-      "support": "Support & Requests"
+      "support": "Support & Requests",
+      "adminNotifications": "Notification Center"
     },
     "badges": {
       "renewal": "Renewal",

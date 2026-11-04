@@ -128,6 +128,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
       { icon: 'business', labelKey: 'sidebar.items.adminGymInfo', link: '/admin/gym-info' },
       { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription', badgeKey: 'sidebar.badges.plan', badgeClass: 'badge-purple' },
       { icon: 'sms', labelKey: 'sidebar.items.adminSmsSettings', link: '/admin/sms-settings' },
+      { icon: 'notifications', labelKey: 'sidebar.items.adminNotifications', link: '/admin/notifications' },
       { icon: 'support_agent', labelKey: 'sidebar.items.support', link: '/support' },
     ],
 

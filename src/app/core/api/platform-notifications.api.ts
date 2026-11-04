@@ -32,4 +32,12 @@ export class PlatformNotificationsApi {
   markAllRead() {
     return this.api.post<{ ok: boolean }>('/notifications/platform/read-all', {}, { skipLoading: true });
   }
+
+  remove(id: string) {
+    return this.api.delete<{ ok: boolean }>(`/notifications/platform/${encodeURIComponent(id)}`, { skipLoading: true });
+  }
+
+  clearRead() {
+    return this.api.delete<{ ok: boolean; count: number }>('/notifications/platform/clear/read', { skipLoading: true });
+  }
 }
