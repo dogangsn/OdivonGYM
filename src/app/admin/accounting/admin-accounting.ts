@@ -3,7 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NotificationCenterService } from '../../core/services/notification-center.service';
 import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
@@ -52,6 +53,8 @@ export class AdminAccounting implements OnInit {
   private readonly membersService = inject(AdminMembersService);
   private readonly gymBankService = inject(GymBankService);
   protected readonly reminderService = inject(DailyCloseReminderService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly notificationCenter = inject(NotificationCenterService);
 
   // Active Main Tab
   protected readonly activeTab = signal<MainTab>('ledger');
@@ -180,6 +183,10 @@ export class AdminAccounting implements OnInit {
   protected readonly loadingAnalytics = signal(false);
 
   ngOnInit(): void {
+    const tabParam = this.route.snapshot.queryParamMap.get('tab');
+    if (tabParam === 'daily-close' || tabParam === 'analytics') {
+      this.activeTab.set(tabParam as MainTab);
+    }
     this.service.seedDefaultCategoriesIfEmpty().catch(() => {});
     this.loadPreClosePreview();
     this.loadClosingsHistory();
@@ -716,6 +723,7 @@ export class AdminAccounting implements OnInit {
         notes: v.notes.trim(),
       });
       this.alertService.toastSuccess(`Z Raporu oluşturuldu: ${res.closingNumber}`);
+      this.notificationCenter.reload().catch(() => {});
       this.closeDailyCloseDrawer();
       await this.loadPreClosePreview();
       await this.loadClosingsHistory();

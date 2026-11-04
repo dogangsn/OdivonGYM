@@ -515,7 +515,34 @@ export class AdminStaff {
   }
 
   async saveStaff(): Promise<void> {
-    if (!this.formData.displayName.trim() || !this.formData.email.trim()) {
+    // 1. Temel zorunlu alan kontrolleri
+    if (!this.formData.displayName.trim()) {
+      this.alertService.toastWarning('Lütfen personelin Ad ve Soyadını giriniz.');
+      return;
+    }
+    if (!this.formData.email.trim()) {
+      this.alertService.toastWarning('Lütfen personelin e-posta adresini giriniz.');
+      return;
+    }
+
+    // 2. Parola Kontrolü: Yeni personel kaydında parola boş olamaz
+    const isNew = !this.editingStaff();
+    const rawPassword = this.formData.password?.trim() || '';
+
+    if (isNew) {
+      if (!rawPassword) {
+        this.alertService.warning(
+          'Parola Zorunludur',
+          'Yeni personel tanımlarken sisteme giriş parolası boş bırakılamaz.<br><br><span class="text-xs text-slate-500">Lütfen en az 6 karakterden oluşan bir parola giriniz veya <strong>"Şifre Üret"</strong> butonuna tıklayarak otomatik oluşturunuz.</span>'
+        );
+        return;
+      }
+      if (rawPassword.length < 6) {
+        this.alertService.toastWarning('Sisteme giriş parolası en az 6 karakter olmalıdır.');
+        return;
+      }
+    } else if (rawPassword && rawPassword.length < 6) {
+      this.alertService.toastWarning('Güncellenecek parola en az 6 karakter olmalıdır.');
       return;
     }
 
@@ -566,9 +593,13 @@ export class AdminStaff {
 
       this.closeDrawer();
       this.alertService.toastSuccess(current ? 'Personel güncellendi.' : 'Yeni personel başarıyla kaydedildi.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Personel kaydedilirken hata oluştu:', err);
-      this.alertService.toastError('Personel kaydedilirken bir hata oluştu.');
+      const apiMessage =
+        err?.error?.message ||
+        err?.message ||
+        'Personel kaydedilirken bir hata oluştu.';
+      this.alertService.error('Personel Kaydedilemedi', apiMessage);
     } finally {
       this.isSaving.set(false);
     }

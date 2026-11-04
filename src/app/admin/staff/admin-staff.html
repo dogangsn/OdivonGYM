@@ -1023,6 +1023,7 @@
                 <mat-icon class="icon-size-4 text-indigo-600 dark:text-indigo-400">lock</mat-icon>
                 <span>Sisteme Giriş Şifresi</span>
                 @if (!editingStaff()) {
+                  <span class="text-rose-500 font-bold">*</span>
                   <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">Otomatik Üretildi</span>
                 }
               </label>
@@ -1054,8 +1055,9 @@
               <input
                 [type]="showPassword() ? 'text' : 'password'"
                 [(ngModel)]="formData.password"
-                [placeholder]="editingStaff() ? 'Değiştirmek istemiyorsanız boş bırakın...' : 'Sistem giriş şifresi...'"
+                [placeholder]="editingStaff() ? 'Değiştirmek istemiyorsanız boş bırakın...' : 'Sistem giriş şifresi (en az 6 karakter)...'"
                 class="odv-input pl-3.5 pr-10 py-2.5 font-mono text-xs font-bold"
+                [class.border-rose-400]="!editingStaff() && !formData.password.trim()"
               />
               <button
                 type="button"
@@ -1066,6 +1068,18 @@
                 <mat-icon class="icon-size-4">{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
             </div>
+
+            @if (!editingStaff() && !formData.password.trim()) {
+              <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 text-xs flex items-center gap-2">
+                <mat-icon class="icon-size-4 text-amber-600 shrink-0">warning</mat-icon>
+                <span>Yeni personel için sisteme giriş parolası zorunludur. Boş bırakılamaz.</span>
+              </div>
+            } @else if (formData.password.trim() && formData.password.trim().length < 6) {
+              <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2">
+                <mat-icon class="icon-size-4 text-rose-600 shrink-0">error</mat-icon>
+                <span>Şifre en az 6 karakter olmalıdır.</span>
+              </div>
+            }
 
             <!-- Davet E-postası Seçeneği -->
             <label class="flex items-start gap-2.5 cursor-pointer select-none pt-1">

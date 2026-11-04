@@ -90,7 +90,7 @@ export class NotificationCenterService {
           message: n.body,
           time: fmt(n.createdAt),
           type: n.level === 'warning' || n.level === 'critical' ? 'warning' : n.level === 'success' ? 'success' : 'info',
-          icon: n.level === 'critical' ? 'priority_high' : n.level === 'warning' ? 'warning' : 'campaign',
+          icon: n.level === 'critical' ? 'priority_high' : n.title?.includes('Z Raporu') || n.title?.includes('Gün Sonu') ? 'receipt_long' : n.level === 'warning' ? 'warning' : 'campaign',
           read: n.read,
           link: n.link ?? undefined,
           linkLabel: n.linkLabel ?? undefined,
