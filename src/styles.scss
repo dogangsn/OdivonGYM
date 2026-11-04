@@ -184,15 +184,16 @@ div.swal2-container {
       margin-top: 1.25rem !important;
       gap: 0.75rem !important;
       width: 100% !important;
-      justify-content: flex-end !important;
+      justify-content: center !important;
       padding: 0 0.5rem !important;
 
       button {
         font-family: inherit !important;
         font-size: 0.8125rem !important;
         font-weight: 700 !important;
-        padding: 0.625rem 1.25rem !important;
+        padding: 0.625rem 1.35rem !important;
         border-radius: 0.75rem !important;
+        min-width: 105px !important;
         margin: 0 !important;
         cursor: pointer !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -213,6 +214,24 @@ div.swal2-container {
           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
           transform: translateY(-1px) !important;
           box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        &:active {
+          transform: translateY(0) !important;
+        }
+      }
+
+      // Blue Confirm button (Fresh Blue Gradient for Discard / Exit / Neutral confirms)
+      .swal2-confirm.odivon-btn-blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
         }
 
         &:active {
@@ -258,51 +277,111 @@ div.swal2-container {
 
       // Cancel button
       .swal2-cancel.odivon-btn-cancel {
-        background: transparent !important;
-        color: var(--odivon-text-secondary) !important;
-        border: 1px solid var(--odivon-border) !important;
+        background: #f8fafc !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
 
         &:hover {
-          background: var(--odivon-bg-hover) !important;
-          color: var(--odivon-text-default) !important;
+          background: #e2e8f0 !important;
+          color: #0f172a !important;
         }
       }
     }
 
-    // Icons
+    // Custom SVG / Clean Icon Container (Replaces default SweetAlert icon circle)
+    .swal2-icon.odivon-swal-custom-icon {
+      border: none !important;
+      background: transparent !important;
+      margin: 0.25rem auto 0.75rem !important;
+      width: auto !important;
+      height: auto !important;
+      box-shadow: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    // Modal variants
+    &.odivon-swal-discard-popup {
+      max-width: 26rem !important;
+      padding: 1.75rem 1.5rem !important;
+      text-align: center !important;
+
+      .swal2-title {
+        font-size: 1.15rem !important;
+        font-weight: 800 !important;
+        color: var(--odivon-text-default) !important;
+        letter-spacing: -0.015em !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .swal2-html-container {
+        margin: 0.5rem 0 1rem !important;
+        padding: 0 !important;
+      }
+
+      .swal2-actions {
+        margin-top: 0.75rem !important;
+        justify-content: center !important;
+      }
+    }
+
+    // Standard Icons (Squircle modern styling)
     .swal2-icon {
-      border-width: 3px !important;
-      margin: 1rem auto 0.5rem !important;
+      border-width: 2.5px !important;
+      margin: 0.75rem auto 0.5rem !important;
+      border-radius: 1.25rem !important;
+      width: 4rem !important;
+      height: 4rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
 
       &.swal2-warning {
         border-color: #f59e0b !important;
-        color: #f59e0b !important;
+        color: #d97706 !important;
+        background: #fffbeb !important;
+        box-shadow: 0 8px 20px -4px rgba(245, 158, 11, 0.2) !important;
+      }
+
+      &.swal2-info {
+        border-color: #3b82f6 !important;
+        color: #2563eb !important;
+        background: #eff6ff !important;
+        box-shadow: 0 8px 20px -4px rgba(59, 130, 246, 0.2) !important;
       }
 
       &.swal2-error {
         border-color: #f43f5e !important;
-        color: #f43f5e !important;
+        color: #e11d48 !important;
+        background: #fff1f2 !important;
+        box-shadow: 0 8px 20px -4px rgba(244, 63, 94, 0.2) !important;
 
         [class^='swal2-x-mark-line'] {
-          background-color: #f43f5e !important;
+          background-color: #e11d48 !important;
         }
       }
 
       &.swal2-success {
         border-color: #10b981 !important;
-        color: #10b981 !important;
+        color: #059669 !important;
+        background: #ecfdf5 !important;
+        box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.2) !important;
 
         .swal2-success-ring {
           border-color: rgba(16, 185, 129, 0.3) !important;
         }
         [class^='swal2-success-line'] {
-          background-color: #10b981 !important;
+          background-color: #059669 !important;
         }
       }
 
-      &.swal2-info {
-        border-color: #6366f1 !important;
-        color: #6366f1 !important;
+      &.swal2-question {
+        border-color: #8b5cf6 !important;
+        color: #7c3aed !important;
+        background: #f5f3ff !important;
+        box-shadow: 0 8px 20px -4px rgba(139, 92, 246, 0.2) !important;
       }
     }
 
@@ -322,6 +401,47 @@ div.swal2-container {
         margin: 0 0.5rem 0 0 !important;
         transform: scale(0.8) !important;
       }
+    }
+  }
+}
+
+html.dark .swal2-container {
+  .swal2-cancel.odivon-btn-cancel {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+
+    &:hover {
+      background: #334155 !important;
+      color: #f8fafc !important;
+    }
+  }
+
+  .swal2-icon {
+    &.swal2-warning {
+      background: rgba(120, 53, 15, 0.25) !important;
+      border-color: rgba(245, 158, 11, 0.45) !important;
+      color: #fbbf24 !important;
+    }
+    &.swal2-info {
+      background: rgba(30, 58, 138, 0.25) !important;
+      border-color: rgba(59, 130, 246, 0.45) !important;
+      color: #60a5fa !important;
+    }
+    &.swal2-error {
+      background: rgba(136, 19, 55, 0.25) !important;
+      border-color: rgba(244, 63, 94, 0.45) !important;
+      color: #fb7185 !important;
+    }
+    &.swal2-success {
+      background: rgba(6, 78, 59, 0.25) !important;
+      border-color: rgba(16, 185, 129, 0.45) !important;
+      color: #34d399 !important;
+    }
+    &.swal2-question {
+      background: rgba(76, 29, 149, 0.25) !important;
+      border-color: rgba(139, 92, 246, 0.45) !important;
+      color: #a78bfa !important;
     }
   }
 }

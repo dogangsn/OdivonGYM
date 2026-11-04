@@ -8,7 +8,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
-import { firstError, formatDate, toDateInput, toMillis } from '../../shared/ui/ui-utils';
+import { firstError, formatDate, fromDateInput, toDateInput, todayInput, toMillis } from '../../shared/ui/ui-utils';
 import { firstValueFrom } from 'rxjs';
 import { LeadsApi } from '../../core/api/leads.api';
 import { PermissionService } from '../../core/services/permission.service';
@@ -234,110 +234,289 @@ import { TranslocoPipe } from '@jsverse/transloco';
     <app-slide-over
       [open]="drawerOpen()"
       [title]="editing() ? 'Misafir Bilgisini Düzenle' : 'Yeni Misafir Ziyaretçi Kaydı'"
+      [subtitle]="editing() ? 'Aday bilgisi, görüşme notları ve takip planını güncelleyin.' : 'Salonu ziyaret eden potansiyel misafiri kaydedin ve satış sürecini başlatın.'"
       [submitLabel]="editing() ? 'Değişiklikleri Kaydet' : 'Misafiri Kaydet'"
       [submitting]="submitting()"
       [errorMessage]="errorMessage()"
+      width="xl"
       (closed)="close()"
       (submitted)="submit()"
     >
       <div [formGroup]="form" class="space-y-4 font-sans">
-        <app-field label="Misafir Ad Soyad" [required]="true" [error]="err('fullName', { required: 'Ad soyad gerekli.' })">
-          <input type="text" formControlName="fullName" class="odv-input" placeholder="Örn: Mehmet Can" />
-        </app-field>
+        <!-- Bilgilendirme Hero Kutusu -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-indigo-50/30 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-slate-900 border border-indigo-100/80 dark:border-indigo-900/50 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
+            <mat-icon class="icon-size-5">{{ editing() ? 'edit_note' : 'person_add' }}</mat-icon>
+          </div>
+          <div class="min-w-0">
+            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider m-0">
+              {{ editing() ? 'Misafir & Satış Kaydı' : 'Yeni Potansiyel Misafir' }}
+            </h4>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 m-0 mt-0.5">
+              İletişim, ilgi alanları ve takip randevusunu eksiksiz belirleyin.
+            </p>
+          </div>
+        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-field label="Telefon" [required]="true" [error]="err('phone', { required: 'Telefon gerekli.' })">
-            <input type="tel" formControlName="phone" class="odv-input" placeholder="05xx xxx xx xx" />
+        <!-- Bölüm 1: Kişisel & İletişim Bilgileri -->
+        <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+            <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <mat-icon class="icon-size-3.5">badge</mat-icon>
+            </span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Kişisel & İletişim Bilgileri</span>
+          </div>
+
+          <app-field label="Misafir Ad Soyad" [required]="true" [error]="err('fullName', { required: 'Ad soyad gerekli.' })">
+            <div class="relative">
+              <input type="text" formControlName="fullName" class="odv-input pl-9" placeholder="Örn: Mehmet Can" />
+              <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">person</mat-icon>
+            </div>
           </app-field>
 
-          <app-field label="E-posta">
-            <input type="email" formControlName="email" class="odv-input" placeholder="ornek@mail.com" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <app-field label="Telefon" [required]="true" [error]="err('phone', { required: 'Telefon gerekli.' })">
+              <div class="relative">
+                <input type="tel" formControlName="phone" class="odv-input pl-9" placeholder="05xx xxx xx xx" />
+                <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">phone</mat-icon>
+              </div>
+            </app-field>
+
+            <app-field label="E-posta">
+              <div class="relative">
+                <input type="email" formControlName="email" class="odv-input pl-9" placeholder="ornek@mail.com" />
+                <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">mail</mat-icon>
+              </div>
+            </app-field>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <app-field label="Cinsiyet">
+              <select formControlName="gender" class="odv-input">
+                <option value="unspecified">Belirtilmedi</option>
+                <option value="female">Kadın</option>
+                <option value="male">Erkek</option>
+              </select>
+            </app-field>
+
+            <app-field label="İlgilendiği Alan / Kategori">
+              <select formControlName="interestCategory" class="odv-input font-medium">
+                @for (cat of categories; track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
+            </app-field>
+          </div>
+        </div>
+
+        <!-- Bölüm 2: Ziyaret & Bütçe Beklentisi -->
+        <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+            <span class="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <mat-icon class="icon-size-3.5">fitness_center</mat-icon>
+            </span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Ziyaret Nedeni & Bütçe</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <app-field label="Ziyaret Nedeni">
+              <select formControlName="visitReason" class="odv-input">
+                @for (r of visitReasons; track r) {
+                  <option [value]="r">{{ r }}</option>
+                }
+              </select>
+            </app-field>
+
+            <app-field label="Bütçe Beklentisi">
+              <div class="relative">
+                <input type="text" formControlName="budgetRange" class="odv-input pl-9" placeholder="Örn: 2.000 - 3.500 ₺ / Ay" />
+                <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">payments</mat-icon>
+              </div>
+            </app-field>
+          </div>
+
+          <!-- Hızlı Bütçe Seçimi -->
+          <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+            <span class="text-[10px] font-bold uppercase text-slate-400 mr-0.5">Hızlı Bütçe:</span>
+            <button
+              type="button"
+              class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
+              (click)="setBudget('1.000 - 2.000 ₺ / Ay')"
+            >
+              1.000 - 2.000 ₺
+            </button>
+            <button
+              type="button"
+              class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
+              (click)="setBudget('2.000 - 3.500 ₺ / Ay')"
+            >
+              2.000 - 3.500 ₺
+            </button>
+            <button
+              type="button"
+              class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
+              (click)="setBudget('3.500 ₺+ / Ay')"
+            >
+              3.500 ₺+
+            </button>
+          </div>
+        </div>
+
+        <!-- Bölüm 3: Takip Tarihi & Satış Durumu -->
+        <div class="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-900/50 space-y-3.5">
+          <div class="flex items-center justify-between pb-2 border-b border-indigo-200/60 dark:border-indigo-900/60">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <mat-icon class="icon-size-3.5">event_available</mat-icon>
+              </span>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Takip Tarihi & Satış Durumu</span>
+            </div>
+            <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+              {{ followUpDateDisplay() }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <app-field label="Takip / Arama Tarihi" hint="Misafiri arayacağınız veya salona davet edeceğiniz tarih">
+                <div class="relative">
+                  <input type="date" formControlName="followUpDate" class="odv-input pl-9" />
+                  <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">calendar_month</mat-icon>
+                </div>
+              </app-field>
+
+              <!-- Hızlı Tarih Seçim Butonları -->
+              <div class="flex items-center gap-1.5 flex-wrap mt-2">
+                <span class="text-[10px] font-bold uppercase text-slate-400 mr-0.5">Hızlı:</span>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer transition-colors"
+                  [class]="isDateSelected(0) ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-400'"
+                  (click)="setQuickDate(0)"
+                >
+                  ⚡ Bugün
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer transition-colors"
+                  [class]="isDateSelected(1) ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-400'"
+                  (click)="setQuickDate(1)"
+                >
+                  📅 Yarın
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer transition-colors"
+                  [class]="isDateSelected(3) ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-400'"
+                  (click)="setQuickDate(3)"
+                >
+                  🕒 3 Gün
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer transition-colors"
+                  [class]="isDateSelected(7) ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-400'"
+                  (click)="setQuickDate(7)"
+                >
+                  🗓️ 1 Hafta
+                </button>
+                @if (form.controls.followUpDate.value) {
+                  <button
+                    type="button"
+                    class="px-1.5 py-0.5 rounded-lg text-[10px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                    title="Tarihi temizle"
+                    (click)="clearFollowUpDate()"
+                  >
+                    ✕ Temizle
+                  </button>
+                }
+              </div>
+            </div>
+
+            <app-field label="Satış Durumu / Aşama">
+              <select formControlName="status" class="odv-input font-bold" [class]="statusSelectClass()">
+                <option value="visited">🚶 Ziyaret Etti</option>
+                <option value="called">📞 Telefonla Görüşüldü</option>
+                <option value="trial">🏋️ Deneme Antrenmanı</option>
+                @if (editing()?.status === 'converted') {
+                  <option value="converted">✅ Üyeye Dönüştü</option>
+                }
+                <option value="lost">❌ İlgilenmiyor / İptal</option>
+              </select>
+            </app-field>
+          </div>
+
+          @if (form.controls.status.value === 'lost') {
+            <div class="p-3 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-2">
+              <app-field label="Kaybedilme Nedeni" [required]="true">
+                <input type="text" formControlName="lostReason" class="odv-input" placeholder="Örn: Fiyat yüksek, salon uzak, rakip tercihi" />
+              </app-field>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 mr-1">Hızlı Seçim:</span>
+                <button type="button" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer" (click)="setLostReason('Fiyat beklentisi yüksek geldi')">Fiyat Yüksek</button>
+                <button type="button" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer" (click)="setLostReason('Salon / Lokasyon uzak kaldı')">Lokasyon Uzak</button>
+                <button type="button" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer" (click)="setLostReason('Başka bir spor kulübü tercih etti')">Rakip Tercih</button>
+                <button type="button" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer" (click)="setLostReason('Zaman yetersizliği / Vazgeçti')">Zaman Yetersiz</button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Bölüm 4: Kaynak & Personel -->
+        <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+            <span class="w-6 h-6 rounded-lg bg-sky-100 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <mat-icon class="icon-size-3.5">share</mat-icon>
+            </span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Kaynak & Personel</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <app-field label="Geliş Kaynağı">
+              <select formControlName="source" class="odv-input">
+                <option value="">Belirtilmedi</option>
+                @for (s of sources; track s) {
+                  <option [value]="s">{{ source(s) }}</option>
+                }
+              </select>
+            </app-field>
+
+            <app-field label="Tavsiye Eden Üye" hint="Tavsiye programı ödülü için">
+              <select formControlName="referrerMemberId" class="odv-input">
+                <option value="">Yok / Doğrudan Başvuru</option>
+                @for (m of members(); track m.uid) {
+                  <option [value]="m.uid">{{ m.displayName }}</option>
+                }
+              </select>
+            </app-field>
+          </div>
+
+          <app-field label="Takip Eden Satış Personeli" hint="Adayla ilgilenen satış danışmanı veya antrenör">
+            <div class="relative">
+              <input type="text" formControlName="assignedStaffName" class="odv-input pl-9" placeholder="Örn: Ayşe Yılmaz (Satış Danışmanı)" />
+              <mat-icon class="icon-size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">support_agent</mat-icon>
+            </div>
           </app-field>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-field label="Cinsiyet">
-            <select formControlName="gender" class="odv-input">
-              <option value="unspecified">Belirtilmedi</option>
-              <option value="female">Kadın</option>
-              <option value="male">Erkek</option>
-            </select>
-          </app-field>
+        <!-- Bölüm 5: Görüşme & Hedef Notları -->
+        <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+            <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <mat-icon class="icon-size-3.5">speaker_notes</mat-icon>
+            </span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Görüşme & Hedef Notları</span>
+          </div>
 
-          <app-field label="İlgilendiği Alan / Kategori">
-            <select formControlName="interestCategory" class="odv-input">
-              @for (cat of categories; track cat) {
-                <option [value]="cat">{{ cat }}</option>
-              }
-            </select>
-          </app-field>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-field label="Ziyaret Nedeni">
-            <select formControlName="visitReason" class="odv-input">
-              @for (r of visitReasons; track r) {
-                <option [value]="r">{{ r }}</option>
-              }
-            </select>
-          </app-field>
-
-          <app-field label="Bütçe Beklentisi">
-            <input type="text" formControlName="budgetRange" class="odv-input" placeholder="Örn: 1.000 - 2.000 ₺ / Ay" />
+          <app-field label="Anket & Görüşme Notları" hint="Hedefleri, spor geçmişi ve görüşülen konuları yazın">
+            <textarea
+              formControlName="surveyNotes"
+              rows="3"
+              class="odv-input resize-none"
+              placeholder="Daha önce fitness yaptı, haftada 3 gün gelebilir, kilo vermek & sıkılaşmak istiyor."
+            ></textarea>
           </app-field>
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-field label="Takip / Arama Tarihi">
-            <input type="date" formControlName="followUpDate" class="odv-input" />
-          </app-field>
-
-          <app-field label="Durum">
-            <select formControlName="status" class="odv-input font-bold">
-              <option value="visited">Ziyaret Etti</option>
-              <option value="called">Telefonla Görüşüldü</option>
-              <option value="trial">Deneme Antrenmanı</option>
-              @if (editing()?.status === 'converted') {
-                <option value="converted">Üyeye Dönüştü</option>
-              }
-              <option value="lost">İlgilenmiyor / İptal</option>
-            </select>
-          </app-field>
-        </div>
-
-        @if (form.controls.status.value === 'lost') {
-          <app-field label="Kaybedilme nedeni">
-            <input type="text" formControlName="lostReason" class="odv-input" placeholder="Örn: Fiyat yüksek, uzak, başka salona gitti" />
-          </app-field>
-        }
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-field label="Kaynak">
-            <select formControlName="source" class="odv-input">
-              <option value="">Belirtilmedi</option>
-              @for (s of sources; track s) {
-                <option [value]="s">{{ source(s) }}</option>
-              }
-            </select>
-          </app-field>
-
-          <app-field label="Tavsiye eden üye" hint="Tavsiye programı için">
-            <select formControlName="referrerMemberId" class="odv-input">
-              <option value="">Yok</option>
-              @for (m of members(); track m.uid) {
-                <option [value]="m.uid">{{ m.displayName }}</option>
-              }
-            </select>
-          </app-field>
-        </div>
-
-        <app-field label="Takip eden personel">
-          <input type="text" formControlName="assignedStaffName" class="odv-input" placeholder="Örn: Ayşe (satış)" />
-        </app-field>
-
-        <app-field label="Anket, İlgi & Görüşme Notları" hint="Hedefleri, spor geçmişi ve görüşülen konuları yazın.">
-          <textarea formControlName="surveyNotes" rows="3" class="odv-input resize-none" placeholder="Daha önce fitness yaptı, haftada 3 gün gelebilir, kilo vermek istiyor."></textarea>
-        </app-field>
       </div>
     </app-slide-over>
   `,
@@ -420,7 +599,7 @@ export class AdminGuestMembers {
     this.editing.set(guest);
     this.errorMessage.set('');
 
-    const followUp = toDateInput(guest?.followUpDate ?? null);
+    const followUp = guest?.followUpDate ? toDateInput(guest.followUpDate) : todayInput();
 
     this.form.reset({
       fullName: guest?.fullName ?? '',
@@ -439,6 +618,72 @@ export class AdminGuestMembers {
       lostReason: guest?.lostReason ?? '',
     });
     this.drawerOpen.set(true);
+  }
+
+  protected isDateSelected(days: number): boolean {
+    const val = this.form.controls.followUpDate.value;
+    if (!val) return false;
+    if (days === 0) return val === todayInput();
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return val === toDateInput(d);
+  }
+
+  protected setQuickDate(days: number): void {
+    if (days === 0) {
+      this.form.controls.followUpDate.setValue(todayInput());
+    } else {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      this.form.controls.followUpDate.setValue(toDateInput(d));
+    }
+  }
+
+  protected clearFollowUpDate(): void {
+    this.form.controls.followUpDate.setValue('');
+  }
+
+  protected followUpDateDisplay(): string {
+    const val = this.form.controls.followUpDate.value;
+    if (!val) return 'Tarih seçilmedi';
+    const today = todayInput();
+    if (val === today) return `Bugün (${formatDate(val)})`;
+    const d = fromDateInput(val);
+    const now = new Date();
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetZero = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.round((targetZero.getTime() - todayZero.getTime()) / 86400000);
+    if (diffDays === 1) return `Yarın (${formatDate(val)})`;
+    if (diffDays === -1) return `Dün (${formatDate(val)})`;
+    if (diffDays > 1 && diffDays <= 14) return `${diffDays} gün sonra (${formatDate(val)})`;
+    if (diffDays < -1) return `${Math.abs(diffDays)} gün önce (${formatDate(val)})`;
+    return formatDate(val);
+  }
+
+  protected statusSelectClass(): string {
+    const s = this.form.controls.status.value;
+    switch (s) {
+      case 'visited':
+        return 'border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300';
+      case 'called':
+        return 'border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300';
+      case 'trial':
+        return 'border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300';
+      case 'converted':
+        return 'border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300';
+      case 'lost':
+        return 'border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300';
+      default:
+        return '';
+    }
+  }
+
+  protected setBudget(value: string): void {
+    this.form.controls.budgetRange.setValue(value);
+  }
+
+  protected setLostReason(reason: string): void {
+    this.form.controls.lostReason.setValue(reason);
   }
 
   protected close(): void {
@@ -463,7 +708,7 @@ export class AdminGuestMembers {
         interestCategory: v.interestCategory,
         visitReason: v.visitReason,
         budgetRange: v.budgetRange.trim(),
-        followUpDate: v.followUpDate ? new Date(v.followUpDate) : null,
+        followUpDate: v.followUpDate ? fromDateInput(v.followUpDate) : null,
         status: v.status,
         surveyNotes: v.surveyNotes.trim(),
         source: v.source || (v.referrerMemberId ? 'referral' : null),

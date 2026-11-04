@@ -803,14 +803,7 @@ export class MemberFormDialog {
   }
 
   async onBackdropClick(): Promise<void> {
-    const confirmed = await this.alertService.confirm({
-      title: 'Kaydetmeden Çıkmak İstiyor Musunuz?',
-      message: 'Girdiğiniz bilgiler kaydedilmeyecektir. Çıkmak istediğinize emin misiniz?',
-      icon: 'warning',
-      confirmText: 'Evet, Çık',
-      cancelText: 'Vazgeç',
-      isDestructive: true,
-    });
+    const confirmed = await this.alertService.discardConfirm();
     if (confirmed) {
       this.cancel();
     }

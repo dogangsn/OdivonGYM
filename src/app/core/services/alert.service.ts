@@ -8,6 +8,7 @@ export interface AlertConfirmOptions {
   confirmText?: string;
   cancelText?: string;
   isDestructive?: boolean;
+  variant?: 'primary' | 'danger' | 'warning' | 'blue' | 'archive';
 }
 
 @Injectable({
@@ -126,9 +127,58 @@ export class AlertService {
   }
 
   /**
+   * Formu kaydetmeden çıkış için özel, modern mavi temalı onay penceresi.
+   * Kırmızı silme uyarısı yerine nazik mavi buton ve modern çıkış ikonu kullanır.
+   */
+  async discardConfirm(customMessage?: string, title?: string): Promise<boolean> {
+    const exitIconSvg = `
+      <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-lg shadow-blue-500/15 mx-auto">
+        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </div>
+    `;
+
+    const htmlContent =
+      customMessage ??
+      '<div class="mt-1 space-y-1"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200 m-0">Girdiğiniz bilgiler kaydedilmeyecektir.</p><p class="text-xs text-slate-400 dark:text-slate-400 m-0">Sayfadan veya formdan çıkmak istediğinize emin misiniz?</p></div>';
+
+    const result = await this.modalMixin.fire({
+      title: title ?? 'Kaydetmeden Çıkmak İstiyor Musunuz?',
+      html: htmlContent,
+      iconHtml: exitIconSvg,
+      showCancelButton: true,
+      confirmButtonText: 'Evet, Çık',
+      cancelButtonText: 'Vazgeç',
+      reverseButtons: true,
+      buttonsStyling: false,
+      customClass: {
+        popup: 'odivon-swal-discard-popup',
+        icon: 'odivon-swal-custom-icon',
+        confirmButton: 'swal2-confirm odivon-btn-blue',
+        cancelButton: 'swal2-cancel odivon-btn-cancel',
+      },
+    });
+
+    return !!result.isConfirmed;
+  }
+
+  /**
    * Genel yapılandırılabilir onay penceresi.
    */
   async confirm(options: AlertConfirmOptions): Promise<boolean> {
+    const titleLower = (options.title ?? '').toLowerCase();
+    const isDiscard =
+      titleLower.includes('kaydetmeden') ||
+      titleLower.includes('çıkmak') ||
+      options.variant === 'blue';
+
+    if (isDiscard) {
+      return this.discardConfirm(options.message, options.title);
+    }
+
     const result = await this.modalMixin.fire({
       title: options.title ?? 'Onaylıyor musunuz?',
       html: options.message,
@@ -141,7 +191,11 @@ export class AlertService {
       customClass: {
         confirmButton: options.isDestructive
           ? 'swal2-confirm odivon-btn-danger'
-          : 'swal2-confirm odivon-btn-primary',
+          : options.variant === 'archive'
+            ? 'swal2-confirm odivon-btn-archive'
+            : options.variant === 'blue'
+              ? 'swal2-confirm odivon-btn-blue'
+              : 'swal2-confirm odivon-btn-primary',
         cancelButton: 'swal2-cancel odivon-btn-cancel',
       },
     });
