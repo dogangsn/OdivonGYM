@@ -40,7 +40,7 @@ export const DEVICE_PROTOCOLS: { value: DeviceProtocol; label: string; hint: str
   {
     value: 'zk-tcp-4370',
     label: 'ZK TCP / 4370',
-    hint: 'Geçmiş ve canlı geçiş olaylarını okur. Üye/kart yazma ve kapı açma güvenlik için kapalıdır.',
+    hint: 'Geçiş olaylarını okur. Üye gönderimi cihaz başına açılır (Edge Agent 2.4+, ZKEMKeeper sürücüsü). Kapı açma kapalıdır.',
     defaultPort: 4370,
   },
   {
@@ -70,6 +70,10 @@ export interface TurnstileGate {
   agentId?: string | null;
   /** Sunucu türetir; istemci yazmaz. */
   capabilities?: DeviceCapabilities;
+  /** ZK gibi üye gönderimi isteğe bağlı cihazlarda salonun açtığı ayar. */
+  userSync?: boolean;
+  /** Bu protokolde üye gönderimi cihaz başına açılıp kapanır. */
+  userSyncOptIn?: boolean;
   adapterStatus?: 'ready' | 'hardware_pending' | 'not_validated';
   /** Agent heartbeat'inden hesaplanır. */
   online?: boolean;
@@ -252,6 +256,12 @@ export class AdminAccessControlService {
     const created = await firstValueFrom(this.api.createGate(input));
     this.reload$.next();
     return (created as TurnstileGate).id ?? '';
+  }
+
+  /** ZK cihazına panelden otomatik üye gönderimini açar / kapatır (yalnızca owner/admin). */
+  async setGateUserSync(gateId: string, on: boolean): Promise<void> {
+    await firstValueFrom(this.api.updateGate(gateId, { userSync: on }));
+    this.reload$.next();
   }
 
   async deleteGate(gateId: string): Promise<void> {

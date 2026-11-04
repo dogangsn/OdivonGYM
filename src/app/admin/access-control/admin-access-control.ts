@@ -200,6 +200,16 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
                     <span class="text-rose-600 dark:text-rose-400">Hata <b>{{ syncCount(gate, 'error') }}</b></span>
                   </span>
                 </button>
+              } @else if (gate.userSyncOptIn && canManageGates()) {
+                <button
+                  type="button"
+                  (click)="enableGateUserSync(gate)"
+                  class="w-full mt-3 p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-dashed border-indigo-200 dark:border-indigo-800/60 hover:border-indigo-400 flex items-center justify-center gap-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 cursor-pointer transition-all"
+                  matTooltip="Üye kayıtları, kartları ve bitiş günleri panelden bu cihaza otomatik gönderilir."
+                >
+                  <mat-icon class="icon-size-3.5">sync</mat-icon>
+                  <span>Üyeleri bu cihaza otomatik gönder</span>
+                </button>
               }
             </div>
 
@@ -1078,6 +1088,17 @@ import { SaasSubscriptionService } from '../../core/services/saas-subscription.s
         (submitted)="resyncGate()"
       >
         <div class="space-y-3">
+          @if (syncGate()?.userSyncOptIn) {
+            <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300 flex items-start justify-between gap-3">
+              <span>
+                Bu cihaz bitiş gününü kendisi tutmaz; süresi biten üyeyi salondaki Edge Agent cihazda kapatır.
+                Agent'ta bu cihaz için ZKEMKeeper sürücüsü seçili olmalı.
+              </span>
+              @if (canManageGates()) {
+                <button type="button" (click)="disableGateUserSync()" class="shrink-0 font-bold underline cursor-pointer">Gönderimi kapat</button>
+              }
+            </div>
+          }
           <div class="inline-flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-xl text-xs font-semibold">
             @for (f of syncFilters; track f.value) {
               <button
@@ -1781,6 +1802,51 @@ export class AdminAccessControl implements OnInit {
   protected refreshData(): void {
     this.accessService.refresh();
     this.alertService.toastSuccess('Kayıtlar ve durumlar arka planda güncellendi.');
+  }
+
+  /** Cihaz ayarlarını (ör. otomatik üye gönderimi) yalnızca salon sahibi / yönetici değiştirir (sunucu da kontrol eder). */
+  protected canManageGates(): boolean {
+    return this.canChangeLive();
+  }
+
+  /** ZK gibi cihazlarda panelden otomatik üye gönderimini açar; ardından senkron penceresi açılır. */
+  protected async enableGateUserSync(gate: TurnstileGate): Promise<void> {
+    if (!gate.id) return;
+    const ok = await this.alertService.confirm({
+      title: 'Üyeler bu cihaza otomatik gönderilsin mi?',
+      message:
+        'Üye eklendiğinde, yenilendiğinde ya da kartı değiştiğinde cihaz kendiliğinden güncellenir; süresi biten üye cihazda kapatılır (silinmez).<br><br>' +
+        '<b>Dikkat:</b> Cihazda önceki programdan kalan kullanıcılar varsa aynı numaralı kullanıcı Odivon üyesiyle değiştirilir. ' +
+        'Cihazdaki numaralar Odivon üye numaralarıyla aynı değilse açmayın.',
+      confirmText: 'Aç',
+      icon: 'warning',
+    });
+    if (!ok) return;
+    try {
+      await this.accessService.setGateUserSync(gate.id, true);
+      this.alertService.toastSuccess(`${gate.name}: otomatik üye gönderimi açıldı. Mevcut üyeler için "Tümünü Yeniden Senkronla"ya basın.`);
+      await this.openSyncDrawer({ ...gate, userSync: true });
+    } catch {
+      this.alertService.toastError('Ayar kaydedilemedi.');
+    }
+  }
+
+  protected async disableGateUserSync(): Promise<void> {
+    const gate = this.syncGate();
+    if (!gate?.id) return;
+    const ok = await this.alertService.confirm({
+      title: 'Otomatik üye gönderimi kapatılsın mı?',
+      message: 'Cihazdaki üyeler silinmez; yalnızca bundan sonraki değişiklikler bu cihaza gönderilmez.',
+      confirmText: 'Kapat',
+    });
+    if (!ok) return;
+    try {
+      await this.accessService.setGateUserSync(gate.id, false);
+      this.alertService.toastSuccess(`${gate.name}: otomatik üye gönderimi kapatıldı.`);
+      this.closeSyncDrawer();
+    } catch {
+      this.alertService.toastError('Ayar kaydedilemedi.');
+    }
   }
 
   protected async resyncGate(): Promise<void> {
