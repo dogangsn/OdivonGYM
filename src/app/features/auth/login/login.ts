@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+
+const LOGIN_THEME_KEY = 'odivongym-login-theme';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -24,10 +25,8 @@ import { IdentityApi } from '../../../core/api/identity.api';
   standalone: true,
   imports: [
     CommonModule,
-    NgClass,
     ReactiveFormsModule,
     RouterLink,
-    MatCheckboxModule,
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
@@ -84,6 +83,37 @@ export class Login {
           : '',
   );
   readonly hidePassword = signal(true);
+
+  /** Login ekranına özel açık/koyu tema; varsayılan açık, seçim tarayıcıda saklanır. */
+  readonly loginDark = signal(Login.readLoginTheme() === 'dark');
+
+  /** Saate göre selam (Günaydın / İyi günler / İyi akşamlar / İyi geceler). */
+  readonly greetingKey = signal(Login.greetingFor(new Date().getHours()));
+
+  toggleLoginTheme(): void {
+    const next = !this.loginDark();
+    this.loginDark.set(next);
+    try {
+      localStorage.setItem(LOGIN_THEME_KEY, next ? 'dark' : 'light');
+    } catch {
+      // Storage may be blocked; the choice then lasts for this visit only.
+    }
+  }
+
+  private static readLoginTheme(): string | null {
+    try {
+      return localStorage.getItem(LOGIN_THEME_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  static greetingFor(hour: number): string {
+    if (hour < 6) return 'auth.loginV2.greetNight';
+    if (hour < 12) return 'auth.loginV2.greetMorning';
+    if (hour < 18) return 'auth.loginV2.greetDay';
+    return 'auth.loginV2.greetEvening';
+  }
 
   constructor() {
     this.destroyRef.onDestroy(() => {
