@@ -1,0 +1,359 @@
+<div class="landing min-h-screen w-full bg-[#f8fafc] dark:bg-[#0b1120] text-slate-900 dark:text-white font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- ÜST MENÜ -->
+  <header class="fixed top-0 inset-x-0 z-40 border-b border-white/10 bg-[#070b16]/80 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <a href="#top" class="flex items-center gap-2.5 shrink-0" (click)="closeMenu()">
+        <app-logo-mark [size]="34" />
+        <span class="font-black text-lg tracking-tight text-white">OdivonGYM</span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-300">
+        <a href="#ozellikler" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Özellikler</a>
+        <a href="#turnike" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Turnike</a>
+        <a href="#odeme" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Ödeme</a>
+        <a href="#raporlar" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Raporlar</a>
+        <a href="#paketler" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Paketler</a>
+        <a href="#sss" class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors">SSS</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <a routerLink="/auth/login"
+           class="px-3.5 sm:px-4 py-2 rounded-xl text-sm font-bold text-white border border-white/15 hover:bg-white/10 transition-colors">
+          Giriş Yap
+        </a>
+        <a routerLink="/auth/register"
+           class="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/30 transition-all">
+          Demo Hesap Oluştur
+        </a>
+        <button type="button" (click)="menuOpen.set(!menuOpen())"
+                class="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:bg-white/10"
+                [attr.aria-expanded]="menuOpen()" aria-label="Menü">
+          <mat-icon>{{ menuOpen() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    @if (menuOpen()) {
+      <nav class="lg:hidden border-t border-white/10 bg-[#070b16] px-4 py-3 flex flex-col text-sm font-semibold text-slate-200">
+        <a href="#ozellikler" (click)="closeMenu()" class="py-2.5">Özellikler</a>
+        <a href="#turnike" (click)="closeMenu()" class="py-2.5">Turnike</a>
+        <a href="#odeme" (click)="closeMenu()" class="py-2.5">Ödeme</a>
+        <a href="#raporlar" (click)="closeMenu()" class="py-2.5">Raporlar</a>
+        <a href="#paketler" (click)="closeMenu()" class="py-2.5">Paketler</a>
+        <a href="#sss" (click)="closeMenu()" class="py-2.5">SSS</a>
+        <a routerLink="/auth/register" class="mt-2 mb-1 text-center px-4 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600">Demo Hesap Oluştur</a>
+      </nav>
+    }
+  </header>
+
+  <!-- HERO -->
+  <section id="top" class="relative overflow-hidden bg-[#070b16] text-white pt-28 sm:pt-32 pb-16 sm:pb-24">
+    <img src="/images/athletes/hero-workout.jpg" alt="" aria-hidden="true"
+         class="absolute inset-0 w-full h-full object-cover object-top opacity-25 pointer-events-none select-none" />
+    <div class="absolute inset-0 bg-gradient-to-b from-[#070b16]/60 via-[#070b16]/85 to-[#070b16] pointer-events-none" aria-hidden="true"></div>
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-indigo-600/25 rounded-full blur-[140px] pointer-events-none" aria-hidden="true"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="max-w-3xl mx-auto text-center">
+        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-indigo-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Spor salonları için yönetim yazılımı
+        </span>
+        <h1 class="mt-6 text-4xl sm:text-6xl font-black tracking-tight leading-[1.05]">
+          Üyeden turnikeye,<br class="hidden sm:block" />
+          <span class="bg-gradient-to-r from-indigo-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">salonunuz tek panelde.</span>
+        </h1>
+        <p class="mt-6 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          OdivonGYM; üyelikleri, kapı geçişlerini, ödemeleri, dersleri ve raporları aynı yerde toplar.
+          Resepsiyon daha az uğraşır, siz salonunuzu büyütmeye odaklanırsınız.
+        </p>
+        <div class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <a routerLink="/auth/register"
+             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            Demo Hesap Oluştur
+            <mat-icon class="icon-size-5">arrow_forward</mat-icon>
+          </a>
+          <a href="#ozellikler"
+             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold text-white border border-white/15 hover:bg-white/10 transition-colors">
+            Özellikleri İncele
+          </a>
+        </div>
+        <p class="mt-4 text-xs font-semibold text-slate-400">14 gün tüm özellikler açık · Kart bilgisi gerekmez</p>
+      </div>
+
+      <!-- Ürün görüntüsü: Ana sayfa -->
+      <div class="relative mt-14 sm:mt-16 max-w-6xl mx-auto">
+        <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500/30 via-purple-500/20 to-fuchsia-500/30 rounded-[2rem] blur-2xl" aria-hidden="true"></div>
+        <figure class="relative rounded-2xl sm:rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl overflow-hidden">
+          <div class="flex items-center gap-1.5 px-4 h-9 border-b border-white/10 bg-slate-950/60">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-400/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/80"></span>
+            <span class="ml-3 text-[11px] font-semibold text-slate-400">gym.odivon.com/admin</span>
+          </div>
+          <img src="/images/landing/panel-dashboard.png" alt="OdivonGYM yönetim paneli ana sayfası"
+               class="block w-full h-auto" loading="eager" (error)="onShotError($event)" />
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- KISA ÖZET -->
+  <section class="border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+      <div>
+        <div class="text-sm font-black text-slate-900 dark:text-white">Turnike entegrasyonu</div>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Kartlı ve QR geçiş</div>
+      </div>
+      <div>
+        <div class="text-sm font-black text-slate-900 dark:text-white">Online ödeme</div>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Paket, cüzdan, borç</div>
+      </div>
+      <div>
+        <div class="text-sm font-black text-slate-900 dark:text-white">Çoklu şube</div>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Tek hesaptan yönetim</div>
+      </div>
+      <div>
+        <div class="text-sm font-black text-slate-900 dark:text-white">Üye paneli</div>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Telefondan randevu ve ödeme</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÖZELLİKLER -->
+  <section id="ozellikler" class="scroll-mt-20 py-20 sm:py-28">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="max-w-2xl">
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Özellikler</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Bir salonun her gün ihtiyaç duyduğu her şey</h2>
+        <p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+          Ayrı ayrı defterler, tablolar ve uygulamalar yerine tek bir sistem. Her modül diğerleriyle konuşur:
+          üyelik biterse turnike kapanır, ödeme gelirse kasa güncellenir.
+        </p>
+      </div>
+
+      <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        @for (f of features; track f.title) {
+          <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center {{ toneClass[f.tone] }}">
+              <mat-icon class="icon-size-5">{{ f.icon }}</mat-icon>
+            </div>
+            <h3 class="mt-5 text-base font-black tracking-tight">{{ f.title }}</h3>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{{ f.text }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- TURNİKE -->
+  <section id="turnike" class="scroll-mt-20 py-20 sm:py-24 bg-white dark:bg-slate-900 border-y border-slate-200/80 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Turnike ve Edge Agent</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Kapı kimin gireceğini bilir</h2>
+        <p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+          Edge Agent’ı salondaki bilgisayara tek dosyayla kurun. Turnikenize bağlanır, üyeleri cihaza yazar
+          ve her geçişi saniyeler içinde panele taşır.
+        </p>
+        <ul class="mt-7 space-y-3.5">
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-emerald-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Üyeliği biten üye kapıdan geçemez, geçerli olan saniyesinde girer</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-emerald-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Canlı akışta kim girdi, hangi kapıdan, ne zaman</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-emerald-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">İnternet kesilse de kapı çalışır, kayıtlar sonra eşitlenir</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-emerald-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Kartlı ve QR’lı turnike cihazlarıyla çalışır</span></li>
+        </ul>
+      </div>
+      <figure class="landing-shot">
+        <img src="/images/landing/panel-turnstile.png" alt="Turnike canlı geçiş ekranı" loading="lazy" (error)="onShotError($event)" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- ÖDEME -->
+  <section id="odeme" class="scroll-mt-20 py-20 sm:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <figure class="landing-shot order-2 lg:order-1">
+        <img src="/images/landing/panel-payments.png" alt="Üye ödemeleri ve kasa ekranı" loading="lazy" (error)="onShotError($event)" />
+      </figure>
+      <div class="order-1 lg:order-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Ödeme ve tahsilat</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Tahsilat kendiliğinden toplanır</h2>
+        <p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+          Üyeleriniz paketini online alır, cüzdanına yükleme yapar ya da taksidini öder. Ödeme salonunuzun
+          kendi hesabına geçer, kasa ve muhasebe kendiliğinden güncellenir.
+        </p>
+        <ul class="mt-7 space-y-3.5">
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-sky-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Kartla paket satışı, cüzdan yükleme ve borç ödeme</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-sky-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Parçalı ödeme, taksit planı ve alacak listesi</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-sky-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Satış noktası, gelir gider ve günlük kasa raporu</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- RAPORLAR -->
+  <section id="raporlar" class="scroll-mt-20 py-20 sm:py-24 bg-white dark:bg-slate-900 border-y border-slate-200/80 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Raporlar</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Salonunuzun nabzı her sabah önünüzde</h2>
+        <p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+          Bu ayki ciro, yeni kayıtlar, yenilemeyen üyeler ve en yoğun saatler. Kaybetmek üzere olduğunuz üyeleri
+          gitmeden önce görün.
+        </p>
+        <ul class="mt-7 space-y-3.5">
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-purple-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Ciro, aktif üye ve paket satış raporları</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-purple-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Kayıp riski ve geri kazanım listesi</span></li>
+          <li class="flex gap-3"><mat-icon class="icon-size-5 text-purple-500 shrink-0">check_circle</mat-icon><span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Ziyaretçiden üyeye dönüşüm hunisi</span></li>
+        </ul>
+      </div>
+      <figure class="landing-shot">
+        <img src="/images/landing/panel-reports.png" alt="Raporlar ve analiz ekranı" loading="lazy" (error)="onShotError($event)" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- NASIL BAŞLANIR -->
+  <section class="py-20 sm:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto">
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Nasıl başlanır</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Bugün kurun, yarın kullanın</h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-5">
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+          <div class="text-4xl font-black text-indigo-500/30">01</div>
+          <h3 class="mt-3 font-black">Demo hesabınızı açın</h3>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Salon adınız ve e-postanızla iki dakikada hesabınız hazır.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+          <div class="text-4xl font-black text-indigo-500/30">02</div>
+          <h3 class="mt-3 font-black">Kurulum sihirbazını bitirin</h3>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Şubenizi, paketlerinizi ve personelinizi adım adım tanımlayın.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+          <div class="text-4xl font-black text-indigo-500/30">03</div>
+          <h3 class="mt-3 font-black">Turnikenizi bağlayın</h3>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Edge Agent’ı kurun, üyeleriniz kartıyla geçmeye başlasın.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAKETLER (fiyatsız) -->
+  <section id="paketler" class="scroll-mt-20 py-20 sm:py-28 bg-[#070b16] text-white relative overflow-hidden">
+    <div class="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-purple-600/20 rounded-full blur-[140px] pointer-events-none" aria-hidden="true"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto">
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Paketler</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Salonunuzun büyüklüğüne göre seçin</h2>
+        <p class="mt-4 text-slate-400">Hangi paketi seçerseniz seçin, demo hesapla 14 gün tüm özellikleri deneyin.</p>
+      </div>
+
+      <div class="mt-14 grid lg:grid-cols-3 gap-5 items-stretch">
+        @for (plan of plans; track plan.id) {
+          <div class="relative flex flex-col p-7 rounded-3xl border transition-all"
+               [class]="plan.highlighted
+                 ? 'bg-gradient-to-b from-indigo-500/20 to-slate-900/80 border-indigo-400/50 shadow-2xl shadow-indigo-500/20 lg:-translate-y-3'
+                 : 'bg-slate-900/70 border-white/10'">
+            @if (plan.highlighted) {
+              <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-purple-600 shadow-md">En çok tercih edilen</span>
+            }
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-300">{{ plan.badge }}</span>
+            <h3 class="mt-2 text-2xl font-black tracking-tight">{{ plan.name }}</h3>
+            <p class="mt-2 text-sm text-slate-400 min-h-[2.5rem]">{{ plan.tagline }}</p>
+
+            <div class="mt-6 grid grid-cols-3 gap-2 text-center">
+              <div class="rounded-xl bg-white/5 border border-white/10 py-2.5">
+                <div class="text-sm font-black">{{ plan.limits.maxBranches >= 9999 ? 'Sınırsız' : plan.limits.maxBranches }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Şube</div>
+              </div>
+              <div class="rounded-xl bg-white/5 border border-white/10 py-2.5">
+                <div class="text-sm font-black">{{ plan.limits.maxMembers >= 9999 ? 'Sınırsız' : plan.limits.maxMembers.toLocaleString('tr-TR') }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Üye</div>
+              </div>
+              <div class="rounded-xl bg-white/5 border border-white/10 py-2.5">
+                <div class="text-sm font-black">{{ plan.limits.maxStaff >= 9999 ? 'Sınırsız' : plan.limits.maxStaff }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Personel</div>
+              </div>
+            </div>
+
+            <ul class="mt-6 space-y-2.5 flex-1">
+              @for (feature of plan.features; track feature.name) {
+                <li class="flex items-start gap-2.5 text-sm" [class.opacity-45]="!feature.included">
+                  <mat-icon class="icon-size-4.5 shrink-0 mt-0.5" [class]="feature.included ? 'text-emerald-400' : 'text-slate-500'">
+                    {{ feature.included ? 'check' : 'remove' }}
+                  </mat-icon>
+                  <span class="font-semibold text-slate-200">{{ feature.name }}</span>
+                </li>
+              }
+            </ul>
+
+            <a routerLink="/auth/register" [queryParams]="{ plan: plan.id }"
+               class="mt-8 inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all"
+               [class]="plan.highlighted
+                 ? 'text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/30'
+                 : 'text-white border border-white/15 hover:bg-white/10'">
+              Demo Hesap Oluştur
+              <mat-icon class="icon-size-4.5">arrow_forward</mat-icon>
+            </a>
+          </div>
+        }
+      </div>
+      <p class="mt-8 text-center text-xs font-semibold text-slate-500">Fiyat bilgisi için demo hesabınızı açın ya da bizimle iletişime geçin.</p>
+    </div>
+  </section>
+
+  <!-- SSS -->
+  <section id="sss" class="scroll-mt-20 py-20 sm:py-24">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+      <div class="text-center">
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Sık sorulan sorular</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Aklınıza takılanlar</h2>
+      </div>
+      <div class="mt-10 space-y-3">
+        @for (item of faqs; track item.q; let i = $index) {
+          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+            <button type="button" (click)="toggleFaq(i)" [attr.aria-expanded]="openFaq() === i"
+                    class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left cursor-pointer">
+              <span class="text-sm sm:text-base font-bold">{{ item.q }}</span>
+              <mat-icon class="text-slate-400 shrink-0 transition-transform" [class.rotate-180]="openFaq() === i">expand_more</mat-icon>
+            </button>
+            @if (openFaq() === i) {
+              <p class="px-5 pb-5 -mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{{ item.a }}</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- SON ÇAĞRI -->
+  <section class="px-4 sm:px-6 pb-20">
+    <div class="max-w-6xl mx-auto rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 text-white p-8 sm:p-14 text-center relative overflow-hidden">
+      <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" aria-hidden="true"></div>
+      <h2 class="relative text-3xl sm:text-4xl font-black tracking-tight">Salonunuzu bugün dijitale taşıyın</h2>
+      <p class="relative mt-4 text-indigo-100 max-w-xl mx-auto">Demo hesabınız birkaç dakikada hazır. Kurulumda takıldığınız her yerde yanınızdayız.</p>
+      <div class="relative mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a routerLink="/auth/register" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-bold bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg transition-colors">Demo Hesap Oluştur</a>
+        <a routerLink="/auth/login" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-bold border border-white/30 hover:bg-white/10 transition-colors">Giriş Yap</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALT BİLGİ -->
+  <footer class="border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+      <div class="flex items-center gap-2">
+        <app-logo-mark [size]="24" />
+        <span>© {{ year }} OdivonGYM</span>
+      </div>
+      <div class="flex items-center gap-5">
+        <a routerLink="/terms" class="hover:text-slate-900 dark:hover:text-white">Kullanım Şartları</a>
+        <a routerLink="/privacy" class="hover:text-slate-900 dark:hover:text-white">Gizlilik ve KVKK</a>
+        <a routerLink="/auth/login" class="hover:text-slate-900 dark:hover:text-white">Giriş Yap</a>
+      </div>
+    </div>
+  </footer>
+</div>

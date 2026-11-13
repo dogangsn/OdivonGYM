@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+
+.landing-shot {
+  position: relative;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgb(226 232 240 / 0.8);
+  background: #0f172a;
+  box-shadow: 0 30px 60px -20px rgb(15 23 42 / 0.35), 0 0 0 6px rgb(99 102 241 / 0.06);
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+:host-context(.dark) .landing-shot {
+  border-color: rgb(51 65 85 / 0.8);
+}
+
+:host ::ng-deep .landing-shot--empty {
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(99 102 241 / 0.35), transparent 60%),
+    radial-gradient(circle at 80% 80%, rgb(168 85 247 / 0.3), transparent 55%),
+    #0f172a;
+}

@@ -6,7 +6,14 @@ import { trialChildGuard, trialGuard, wizardGuard } from './core/auth/trial.guar
 import { Shell } from './shared/layout/shell/shell';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  {
+    // Tanıtım sayfası: oturum açmış kullanıcıyı guestGuard doğrudan panele gönderir.
+    path: '',
+    pathMatch: 'full',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
+    title: 'OdivonGYM · Spor Salonu Yönetim Yazılımı',
+  },
 
   {
     path: 'auth',
