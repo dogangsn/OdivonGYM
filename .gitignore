@@ -64,3 +64,6 @@ edge-agent/data/
 /public/version.json
 /src/app/core/version/build-info.generated.ts
 .wrangler/
+
+# Tanıtım sayfası ham ekran görüntüleri (kişisel veri içerir)
+.landing-shots/
