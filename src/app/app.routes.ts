@@ -12,7 +12,8 @@ export const routes: Routes = [
     pathMatch: 'full',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
-    title: 'OdivonGYM · Spor Salonu Yönetim Yazılımı',
+    title: 'OdivonGYM · Spor Salonu Yönetim Yazılımı ve Turnike Entegrasyonu',
+    data: { seoIndex: true },
   },
 
   {
@@ -27,7 +28,7 @@ export const routes: Routes = [
     title: 'Kullanım Şartları · OdivonGYM',
     data: {
       description: 'OdivonGYM SaaS Hizmet ve Kullanım Koşulları Sözleşmesi.',
-      keywords: 'kullanım şartları, üyelik sözleşmesi, odivon lisans, saas şartları',
+      seoIndex: true,
     },
   },
   {
@@ -36,7 +37,7 @@ export const routes: Routes = [
     title: 'Gizlilik Politikası ve KVKK · OdivonGYM',
     data: {
       description: 'OdivonGYM 6698 Sayılı KVKK ve GDPR uyumlu Gizlilik Politikası ve Aydınlatma Metni.',
-      keywords: 'gizlilik politikası, kvkk aydınlatma, çerez politikası, veri güvenliği',
+      seoIndex: true,
     },
   },
 

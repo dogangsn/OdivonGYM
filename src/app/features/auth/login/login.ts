@@ -16,6 +16,7 @@ import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.ser
 import { SupportedLanguage } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
 import { CookieService } from '../../../core/services/cookie.service';
+import { AnalyticsService } from '../../../core/services/analytics.service';
 
 import { firstValueFrom } from 'rxjs';
 import { IdentityApi } from '../../../core/api/identity.api';
@@ -48,6 +49,7 @@ export class Login {
   protected readonly theme = inject(ThemeService);
   protected readonly language = inject(LanguageService);
   protected readonly cookieService = inject(CookieService);
+  private readonly analytics = inject(AnalyticsService);
 
   protected readonly languages: SupportedLanguage[] = ['tr', 'en', 'ru', 'nl', 'fr'];
   protected readonly languageNames = LANGUAGE_NAMES;
@@ -170,6 +172,7 @@ export class Login {
         this.cookieService.clearRememberedEmail();
       }
 
+      this.analytics.trackEvent('login', { method: 'email' });
       await this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
       const errCode = (error as { code?: string })?.code;

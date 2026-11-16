@@ -1,20 +1,12 @@
-# OdivonGYM - Robots Directive
-# https://gym.odivon.com
+# OdivonGYM · https://gym.odivon.com
+#
+# Yalnızca tanıtım sayfası (/), /terms ve /privacy arama sonuçlarına girer.
+# Giriş ve kayıt ekranları taranabilir ama sayfa içinde "noindex" taşır (SeoService);
+# Google'ın bu etiketi görebilmesi için burada engellenmezler.
+# Panel ve ödeme ekranları oturum ister; taranmaları engellenir.
 
 User-agent: *
 Allow: /
-Allow: /auth/login
-Allow: /auth/register
-Allow: /terms
-Allow: /privacy
-Allow: /404
-Allow: /llms.txt
-Allow: /llms-full.txt
-Allow: /sitemap.xml
-Allow: /favicon.ico
-Allow: /favicon.svg
-
-# Disallow private/authenticated dashboard and administrative paths
 Disallow: /dashboard
 Disallow: /workout
 Disallow: /classes
@@ -24,28 +16,13 @@ Disallow: /measurements
 Disallow: /wallet
 Disallow: /packages
 Disallow: /profile
+Disallow: /support
+Disallow: /suppliers
+Disallow: /e-invoice
 Disallow: /admin/
 Disallow: /onboarding/
 Disallow: /subscription-result
 Disallow: /payment-result
 Disallow: /api/
 
-# Friendly directives for LLM & Search Indexers
-User-agent: GPTBot
-Allow: /
-Disallow: /admin/
-Disallow: /dashboard
-
-User-agent: ClaudeBot
-Allow: /
-Disallow: /admin/
-Disallow: /dashboard
-
-User-agent: PerplexityBot
-Allow: /
-Disallow: /admin/
-Disallow: /dashboard
-
-# Sitemaps
 Sitemap: https://gym.odivon.com/sitemap.xml
-Host: https://gym.odivon.com

@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { LogoMark } from '../../shared/components/logo-mark/logo-mark';
 import { SAAS_PLANS_CONFIG, SaasPlan } from '../../core/models/saas-plan.model';
+import { AnalyticsService } from '../../core/services/analytics.service';
 
 interface LandingFeature {
   icon: string;
@@ -30,6 +31,7 @@ interface LandingFaq {
   styleUrl: './landing.scss',
 })
 export class Landing {
+  private readonly analytics = inject(AnalyticsService);
   protected readonly year = new Date().getFullYear();
   protected readonly menuOpen = signal(false);
   protected readonly openFaq = signal<number | null>(0);
@@ -125,6 +127,16 @@ export class Landing {
 
   toggleFaq(index: number): void {
     this.openFaq.update((current) => (current === index ? null : index));
+  }
+
+  /** Kayıt / giriş düğmesi tıklaması (GA4 `cta_click`). Gerçek dönüşüm kayıt sonrası `sign_up`. */
+  protected cta(location: string, plan?: string): void {
+    this.closeMenu();
+    this.analytics.trackEvent('cta_click', {
+      cta_location: location,
+      cta_target: location.endsWith('login') ? 'login' : 'register',
+      ...(plan ? { plan } : {}),
+    });
   }
 
   closeMenu(): void {

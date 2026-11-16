@@ -1,29 +1,24 @@
-# OdivonGYM - AI & LLM Index
+# OdivonGYM
 
-> OdivonGYM is a next-generation SaaS gym and athlete management platform engineered for fitness centers, martial arts clubs, crossfit boxes, and sports studios.
+> OdivonGYM, Türkiye'deki spor salonları, fitness merkezleri ve stüdyolar için bulut tabanlı bir spor salonu yönetim yazılımıdır. Üyelikleri, turnike geçişlerini, online ödemeleri, dersleri ve raporları tek panelde toplar. (OdivonGYM is a cloud gym management software for gyms and fitness studios in Turkey: memberships, turnstile access, online payments, classes and reports in one panel.)
 
-## Project Overview
-- **Product Name**: OdivonGYM
-- **Core Platform**: Cloud-native SaaS (Angular 20 Standalone Frontend + NestJS Microservices Backend + Firestore Realtime Database)
-- **Primary Domain**: https://gym.odivon.com
-- **API Base**: https://mainapi.odivon.com/api/v1
-- **Target Audience**: Gym owners, fitness coaches, personal trainers, studio operators, and athletic club members.
+## Özellikler
+- Üye ve üyelik yönetimi: kayıt, paket, dondurma, uzatma, üye geçmişi; biten üyelikler otomatik işaretlenir.
+- Turnike ve kart geçişi: Edge Agent salondaki Windows bilgisayara kurulur, kartlı ve QR'lı turnikelerle çalışır; üyeliği biten üye geçemez, her geçiş anında panele düşer, internet kesilse de kapı çalışır.
+- Online ödeme ve tahsilat: paket satın alma, cüzdan yükleme ve borç ödeme; ödeme salonun kendi hesabına geçer.
+- Taksit, borç ve kasa: parçalı ödeme, alacak takibi, gelir gider, günlük kasa.
+- Raporlar: ciro, aktif üye, süresi biten ve bitmek üzere olan üyeler, kayıp riski, dönüşüm hunisi.
+- Grup dersleri ve PT randevuları: ders takvimi, kontenjan, antrenör randevusu; üye telefonundan yer ayırtır.
+- Hatırlatma ve kampanyalar: üyelik bitiş hatırlatmaları, arkadaşını getir, geri kazanım listeleri.
+- Personel, rol ve şubeler: yönetici, resepsiyon, antrenör yetkileri; çoklu şube; işlem kayıtları.
+- Üye paneli: üyeler paketini, randevularını, ölçümlerini ve antrenman programını görür, online ödeme yapar.
 
-## Key Capabilities & Modules
-- **Access Control & Hardware Telemetry**: Real-time turnstile relay integration, QR-code entry pass, face-recognition biometric kiosk, edge-agent daemon for offline/LAN door access.
-- **Member Management**: Comprehensive member profiles, biometric & body measurement logs, multi-tenant RBAC permissions.
-- **Classes & PT Appointments**: Interactive calendar, personal trainer slot booking, capacity-managed group sessions.
-- **Billing & Subscriptions**: Integrated iyzico payment gateway, automated invoice & e-archive (GİB e-Fatura) delivery, in-app digital member wallet.
-- **Athlete Workout & Nutrition**: Tailored exercise routine assignment, set/rep tracking, water consumption telemetry.
+## Paketler
+- Başlangıç, Profesyonel ve Enterprise paketleri; şube, üye ve personel sınırına göre ayrılır. Fiyatlar sayfada yayımlanmaz, demo hesapta görülür.
+- 14 günlük ücretsiz demo hesap, tüm özellikler açık, kart bilgisi gerekmez.
 
-## Core Navigation & Endpoints
-- [Home / Dashboard](https://gym.odivon.com/dashboard): Central member & coach portal.
-- [Login](https://gym.odivon.com/auth/login): Secure member & staff authentication.
-- [Register](https://gym.odivon.com/auth/register): 14-day free trial instant club registration.
-- [Terms of Service](https://gym.odivon.com/terms): Complete SaaS licensing and platform usage terms.
-- [Privacy Policy & KVKK](https://gym.odivon.com/privacy): KVKK (Law No. 6698) and GDPR compliance notice.
-
-## Additional Documentation
-- [Full LLM Specification](https://gym.odivon.com/llms-full.txt): Deep technical specification, architecture, and API schemas.
-- [Sitemap](https://gym.odivon.com/sitemap.xml): Machine-readable XML sitemap.
-- [Robots Directive](https://gym.odivon.com/robots.txt): Crawler and AI agent guidelines.
+## Bağlantılar
+- [Tanıtım sayfası](https://gym.odivon.com/): ürün özellikleri, paketler, sık sorulan sorular
+- [Demo hesap oluştur](https://gym.odivon.com/auth/register): 14 günlük ücretsiz deneme
+- [Kullanım Şartları](https://gym.odivon.com/terms)
+- [Gizlilik Politikası ve KVKK](https://gym.odivon.com/privacy)

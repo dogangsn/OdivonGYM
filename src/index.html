@@ -2,38 +2,87 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <title>OdivonGYM · Yeni Nesil Spor Salonu ve Üye Yönetim Platformu</title>
+  <title>OdivonGYM · Spor Salonu Yönetim Yazılımı ve Turnike Entegrasyonu</title>
   <base href="/">
   
-  <!-- Primary Meta Tags -->
+  <!-- Temel meta etiketleri. Rota bazlı başlık, açıklama, robots ve canonical'ı
+       SeoService (src/app/core/services/seo.service.ts) tarayıcıda günceller. -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="title" content="OdivonGYM · Yeni Nesil Spor Salonu ve Üye Yönetim Platformu">
-  <meta name="description" content="OdivonGYM ile spor salonunuzu, antrenörlerinizi, turnike ve QR geçişlerinizi, e-fatura ve üye cüzdanlarınızı tek ekrandan modern ve güvenli bir şekilde yönetin.">
-  <meta name="keywords" content="spor salonu yazılımı, gym management, üye takip programı, turnike geçiş sistemi, qr giriş, pt randevu, sporcu cüzdanı, fitness otomasyonu">
-  <meta name="author" content="Odivon Software Technologies">
-  <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#101828">
+  <meta name="description" content="Spor salonu yönetim yazılımı: üyelik takibi, turnike ve QR geçiş, online ödeme, taksit ve borç takibi, grup dersleri ve raporlar tek panelde. 14 gün ücretsiz deneyin.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="theme-color" content="#070b16">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="canonical" href="https://gym.odivon.com/">
+  <!-- Search Console HTML etiketi ile doğrulama seçilirse buraya eklenir (DNS doğrulaması tercih edilir):
+  <meta name="google-site-verification" content="..."> -->
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph (WhatsApp, Facebook, LinkedIn önizlemesi) -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://gym.odivon.com">
+  <meta property="og:url" content="https://gym.odivon.com/">
   <meta property="og:site_name" content="OdivonGYM">
-  <meta property="og:title" content="OdivonGYM · Yeni Nesil Spor Salonu ve Üye Yönetim Platformu">
-  <meta property="og:description" content="Turnike donanım entegrasyonu, QR geçiş, PT randevu, online ödeme ve cüzdan yönetimi ile spor kulübünüzü geleceğe taşıyın.">
-  <meta property="og:image" content="https://gym.odivon.com/images/athletes/hero-workout.jpg">
+  <meta property="og:title" content="OdivonGYM · Spor Salonu Yönetim Yazılımı ve Turnike Entegrasyonu">
+  <meta property="og:description" content="Üyelik, turnike geçişi, online ödeme, ders ve raporlar tek panelde. Spor salonunuzu OdivonGYM ile yönetin, 14 gün ücretsiz deneyin.">
+  <meta property="og:image" content="https://gym.odivon.com/images/og/odivongym-og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="OdivonGYM yönetim paneli: üyeden turnikeye, salonunuz tek panelde">
   <meta property="og:locale" content="tr_TR">
 
-  <!-- Twitter Card -->
+  <!-- Twitter / X kartı -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://gym.odivon.com">
-  <meta name="twitter:title" content="OdivonGYM · Yeni Nesil Spor Salonu ve Üye Yönetim Platformu">
-  <meta name="twitter:description" content="Turnike donanım entegrasyonu, QR geçiş, PT randevu, online ödeme ve cüzdan yönetimi ile spor kulübünüzü geleceğe taşıyın.">
-  <meta name="twitter:image" content="https://gym.odivon.com/images/athletes/hero-workout.jpg">
+  <meta name="twitter:title" content="OdivonGYM · Spor Salonu Yönetim Yazılımı ve Turnike Entegrasyonu">
+  <meta name="twitter:description" content="Üyelik, turnike geçişi, online ödeme, ders ve raporlar tek panelde. Spor salonunuzu OdivonGYM ile yönetin, 14 gün ücretsiz deneyin.">
+  <meta name="twitter:image" content="https://gym.odivon.com/images/og/odivongym-og.jpg">
+  <meta name="twitter:image:alt" content="OdivonGYM yönetim paneli">
 
-  <!-- Canonical Link -->
-  <link rel="canonical" href="https://gym.odivon.com">
+  <!-- Yapılandırılmış veri (Google zengin sonuçları ve yapay zekâ aramaları) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://gym.odivon.com/#organization",
+        "name": "Odivon",
+        "url": "https://gym.odivon.com/",
+        "logo": "https://gym.odivon.com/icons/icon-512x512.png"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://gym.odivon.com/#website",
+        "name": "OdivonGYM",
+        "url": "https://gym.odivon.com/",
+        "inLanguage": "tr-TR",
+        "publisher": { "@id": "https://gym.odivon.com/#organization" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://gym.odivon.com/#software",
+        "name": "OdivonGYM",
+        "url": "https://gym.odivon.com/",
+        "description": "Spor salonu yönetim yazılımı: üyelik takibi, turnike ve QR geçiş, online ödeme, taksit ve borç takibi, grup dersleri ve raporlar tek panelde. 14 gün ücretsiz deneyin.",
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "Spor salonu yönetim yazılımı",
+        "operatingSystem": "Web, Windows (Edge Agent)",
+        "inLanguage": "tr-TR",
+        "image": "https://gym.odivon.com/images/og/odivongym-og.jpg",
+        "screenshot": "https://gym.odivon.com/images/landing/panel-dashboard-1440.webp",
+        "featureList": [
+          "Üye ve üyelik yönetimi",
+          "Turnike, kartlı ve QR geçiş entegrasyonu",
+          "Online ödeme, cüzdan ve borç tahsilatı",
+          "Taksit, alacak ve kasa takibi",
+          "Grup dersleri ve PT randevuları",
+          "Üyelik hatırlatmaları ve kampanyalar",
+          "Raporlar ve kayıp riski analizi",
+          "Personel rolleri ve çoklu şube"
+        ],
+        "publisher": { "@id": "https://gym.odivon.com/#organization" }
+      }
+    ]
+  }
+  </script>
 
   <!-- Favicons -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -46,11 +95,82 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..100,700..900&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
+  <style>
+    /* index.html içindeki metin özeti: ekranda görünmez, Angular açılınca silinir. */
+    .seo-fallback { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  </style>
+
   <!-- Manifest for PWA -->
   <link rel="manifest" href="manifest.webmanifest">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden selection:bg-indigo-500 selection:text-white">
-  <app-root></app-root>
+  <app-root>
+    <!-- JavaScript çalıştırmayan tarayıcılar ve arama/yapay zekâ botları için tanıtım
+         sayfasının metin özeti. Angular açılınca bu içerik silinir ve yerine gerçek sayfa
+         çizilir; görsel olarak gizlidir. Tanıtım metni değişirse
+         src/app/features/landing/landing.html ile birlikte güncelleyin. -->
+    <div class="seo-fallback">
+      <header>
+        <a href="/">OdivonGYM</a>
+        <nav aria-label="Ana menü">
+          <a href="/#ozellikler">Özellikler</a>
+          <a href="/#turnike">Turnike</a>
+          <a href="/#odeme">Ödeme</a>
+          <a href="/#raporlar">Raporlar</a>
+          <a href="/#paketler">Paketler</a>
+          <a href="/#sss">SSS</a>
+          <a href="/auth/login">Giriş Yap</a>
+          <a href="/auth/register">Demo Hesap Oluştur</a>
+        </nav>
+      </header>
+      <main>
+        <h1>Üyeden turnikeye, salonunuz tek panelde.</h1>
+        <p>OdivonGYM spor salonu yönetim yazılımı; üyelikleri, kapı geçişlerini, ödemeleri, dersleri ve raporları aynı yerde toplar. Resepsiyon daha az uğraşır, siz salonunuzu büyütmeye odaklanırsınız. 14 gün tüm özellikler açık, kart bilgisi gerekmez.</p>
+        <section id="ozellikler">
+          <h2>Bir salonun her gün ihtiyaç duyduğu her şey</h2>
+          <ul>
+            <li><h3>Üye ve üyelik yönetimi</h3><p>Kayıt, paket, dondurma, uzatma ve üye geçmişi tek ekranda. Biten üyelikleri sistem kendisi işaretler.</p></li>
+            <li><h3>Turnike ve kart geçişi</h3><p>Edge Agent salonunuzdaki turnikeye bağlanır. Üyeliği biten üye kapıdan geçemez, her geçiş anında panele düşer.</p></li>
+            <li><h3>Online ödeme ve tahsilat</h3><p>Üyeleriniz paketini kartla alır, cüzdanına para yükler, borcunu öder. Para doğrudan salonunuzun hesabına geçer.</p></li>
+            <li><h3>Taksit, borç ve kasa</h3><p>Parçalı ödemeler, alacak takibi, gelir gider ve günlük kasa.</p></li>
+            <li><h3>Raporlar ve analiz</h3><p>Ciro, aktif üye, kayıp riski olan üyeler ve dönüşüm hunisi.</p></li>
+            <li><h3>Grup dersleri ve PT randevuları</h3><p>Ders takvimi, kontenjan ve antrenör randevuları. Üye yerini kendi telefonundan ayırtır.</p></li>
+            <li><h3>Hatırlatma ve kampanyalar</h3><p>Üyelik bitişi yaklaşanlara otomatik hatırlatma, arkadaşını getir kampanyaları ve geri kazanım listeleri.</p></li>
+            <li><h3>Personel, rol ve şubeler</h3><p>Yönetici, resepsiyon ve antrenör yetkileri ayrı. Birden fazla şubeyi tek hesaptan yönetin.</p></li>
+          </ul>
+        </section>
+        <section id="turnike">
+          <h2>Turnike ve Edge Agent: kapı kimin gireceğini bilir</h2>
+          <p>Edge Agent salondaki bilgisayara tek dosyayla kurulur, turnikeye bağlanır, üyeleri cihaza yazar ve her geçişi saniyeler içinde panele taşır. İnternet kesilse de kapı çalışır, kayıtlar sonra eşitlenir. Kartlı ve QR'lı turnike cihazlarıyla çalışır.</p>
+        </section>
+        <section id="odeme">
+          <h2>Ödeme ve tahsilat</h2>
+          <p>Üyeler paketini online alır, cüzdanına yükleme yapar ya da taksidini öder. Ödeme salonun kendi hesabına geçer, kasa ve muhasebe kendiliğinden güncellenir.</p>
+        </section>
+        <section id="raporlar">
+          <h2>Yenileme ve raporlar</h2>
+          <p>Süresi biten ve 7 gün içinde bitecek üyeler tek listede. Tek tıkla yenileme ve süre uzatma; ciro, paket, market ve turnike raporları.</p>
+        </section>
+        <section id="paketler">
+          <h2>Paketler: Başlangıç, Profesyonel ve Enterprise</h2>
+          <p>Salonunuzun büyüklüğüne ve şube sayısına göre paket seçin. Hangi paketi seçerseniz seçin, demo hesapla 14 gün tüm özellikleri deneyin. <a href="/auth/register">Demo hesap oluşturun</a>.</p>
+        </section>
+        <section id="sss">
+          <h2>Sık sorulan sorular</h2>
+          <h3>Demo hesap ücretli mi?</h3>
+          <p>Hayır. Salonunuz 14 gün boyunca tüm özelliklerle açılır, kart bilgisi istenmez.</p>
+          <h3>Mevcut turnikemle çalışır mı?</h3>
+          <p>Edge Agent, salondaki bir Windows bilgisayara kurulur ve yaygın kartlı ve QR'lı turnikelerle konuşur.</p>
+          <h3>Üyelerim de sistemi kullanabilir mi?</h3>
+          <p>Evet. Üyeler kendi hesaplarıyla paketini, ders randevusunu, ölçümlerini ve antrenman programını görür, online ödeme yapar.</p>
+        </section>
+      </main>
+      <footer>
+        <a href="/terms">Kullanım Şartları</a>
+        <a href="/privacy">Gizlilik ve KVKK</a>
+      </footer>
+    </div>
+  </app-root>
   <noscript>OdivonGYM platformunu kullanabilmek için tarayıcınızda JavaScript'in etkin olması gerekmektedir.</noscript>
 </body>
 </html>

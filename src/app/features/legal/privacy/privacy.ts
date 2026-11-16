@@ -62,7 +62,7 @@ import { CookieService } from '../../../core/services/cookie.service';
             Gizlilik Politikası ve Kişisel Verilerin Korunması
           </h1>
           <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 m-0">
-            Son Güncelleme: 24 Ekim 2026 · Versiyon 2.1 · OdivonGYM Güvenlik Standartları
+            Son Güncelleme: 16 Kasım 2026 · Versiyon 2.2 · OdivonGYM Güvenlik Standartları
           </p>
         </div>
 
@@ -126,7 +126,13 @@ import { CookieService } from '../../../core/services/cookie.service';
               Çerezler (Cookies) ve Yerel Depolama
             </h2>
             <p>
-              OdivonGYM, güvenli oturum açma, dil tercihlerinin hatırlanması ve anonim performans analitiği için çerezler ve tarayıcı yerel depolama (LocalStorage) teknolojilerini kullanır. Çerez tercihlerinizi dilediğiniz zaman aşağıdaki butona tıklayarak güncelleyebilirsiniz:
+              OdivonGYM, güvenli oturum açma ve dil, tema, "Beni Hatırla" gibi tercihlerin hatırlanması için çerezler ve tarayıcı yerel depolama (LocalStorage) teknolojilerini kullanır.
+            </p>
+            <p>
+              <strong>Google Analytics:</strong> Yalnızca çerez bildiriminde Analitik çerezlere izin verirseniz Google Analytics 4 (Google LLC) yüklenir. Ziyaret edilen sayfaları, ziyaretin geldiği kaynağı, kullanılan cihaz ve tarayıcı türünü ve demo hesap oluşturma, giriş yapma gibi adımları istatistik amacıyla ölçeriz. Ad, e-posta, telefon gibi bilgiler gönderilmez; adreslerdeki kimlik ve kodlar gizlenir; reklam kişiselleştirmesi ve Google sinyalleri kapalıdır. Bu veriler, açık rızanıza dayanarak (KVKK m.5/1 ve m.9) Google'ın yurt dışındaki sunucularına aktarılabilir. İzin vermezseniz Google Analytics hiç yüklenmez; verdiğiniz izni dilediğiniz an geri alabilirsiniz.
+            </p>
+            <p>
+              Çerez tercihlerinizi dilediğiniz zaman aşağıdaki butona tıklayarak güncelleyebilirsiniz:
             </p>
             <div class="pt-2">
               <button

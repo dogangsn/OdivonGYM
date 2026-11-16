@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Title, Meta } from '@angular/platform-browser';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -6,7 +7,6 @@ import { filter } from 'rxjs/operators';
 export interface SeoConfig {
   title?: string;
   description?: string;
-  keywords?: string;
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
@@ -14,29 +14,38 @@ export interface SeoConfig {
   robots?: string;
 }
 
-const DEFAULT_SEO: SeoConfig = {
-  title: 'OdivonGYM · Yeni Nesil Spor Salonu ve Üye Yönetim Platformu',
+export const SITE_ORIGIN = 'https://gym.odivon.com';
+
+const INDEX = 'index, follow, max-image-preview:large';
+/** Panel, giriş ve ödeme ekranları arama sonuçlarına girmesin. */
+const NO_INDEX = 'noindex, nofollow';
+
+const DEFAULT_SEO: Required<Pick<SeoConfig, 'title' | 'description' | 'ogImage'>> = {
+  title: 'OdivonGYM · Spor Salonu Yönetim Yazılımı ve Turnike Entegrasyonu',
   description:
-    'OdivonGYM ile spor salonunuzu, antrenörlerinizi, turnike ve QR geçişlerinizi, e-fatura ve üye cüzdanlarınızı tek ekrandan modern ve güvenli bir şekilde yönetin.',
-  keywords:
-    'spor salonu yazılımı, gym management, üye takip programı, turnike geçiş sistemi, qr giriş, pt randevu, sporcu cüzdanı, fitness otomasyonu',
-  ogImage: 'https://gym.odivon.com/images/athletes/hero-workout.jpg',
-  canonicalUrl: 'https://gym.odivon.com',
-  robots: 'index, follow',
+    'Spor salonu yönetim yazılımı: üyelik takibi, turnike ve QR geçiş, online ödeme, taksit ve borç takibi, grup dersleri ve raporlar tek panelde. 14 gün ücretsiz deneyin.',
+  ogImage: `${SITE_ORIGIN}/images/og/odivongym-og.jpg`,
 };
 
+/**
+ * Rota verisinden başlık, açıklama, robots ve canonical etiketlerini uygular.
+ *
+ * Yalnızca `data: { seoIndex: true }` taşıyan rotalar (tanıtım, kullanım şartları,
+ * gizlilik) indekslenir; diğer her rota `noindex` alır. Böylece yeni eklenen bir panel
+ * ekranı unutulsa bile arama sonuçlarına düşmez.
+ */
 @Injectable({ providedIn: 'root' })
 export class SeoService {
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly document = inject(DOCUMENT);
 
-  /** Router olaylarını dinleyerek aktif rota verisindeki SEO meta etiketlerini uygular */
   init(): void {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => {
+      .subscribe((event) => {
         let route = this.activatedRoute;
         while (route.firstChild) {
           route = route.firstChild;
@@ -44,65 +53,55 @@ export class SeoService {
 
         const data = route.snapshot.data;
         const pageTitle = route.snapshot.title || data['title'];
+        const indexable = data['seoIndex'] === true;
+        const path = event.urlAfterRedirects.split(/[?#]/)[0] || '/';
 
         this.updateMeta({
-          title: pageTitle ? `${pageTitle}` : DEFAULT_SEO.title,
+          title: pageTitle || DEFAULT_SEO.title,
           description: data['description'] || DEFAULT_SEO.description,
-          keywords: data['keywords'] || DEFAULT_SEO.keywords,
           ogTitle: data['ogTitle'] || pageTitle || DEFAULT_SEO.title,
           ogDescription: data['ogDescription'] || data['description'] || DEFAULT_SEO.description,
           ogImage: data['ogImage'] || DEFAULT_SEO.ogImage,
-          canonicalUrl: `https://gym.odivon.com${this.router.url.split('?')[0]}`,
+          canonicalUrl: `${SITE_ORIGIN}${path}`,
+          robots: indexable ? INDEX : NO_INDEX,
         });
       });
   }
 
-  /** Belirli bir sayfa için dinamik meta etiketlerini günceller */
   updateMeta(config: SeoConfig): void {
     const fullTitle = config.title
       ? config.title.includes('OdivonGYM')
         ? config.title
         : `${config.title} · OdivonGYM`
-      : DEFAULT_SEO.title!;
+      : DEFAULT_SEO.title;
 
     this.titleService.setTitle(fullTitle);
 
-    const desc = config.description || DEFAULT_SEO.description!;
-    const keywords = config.keywords || DEFAULT_SEO.keywords!;
-    const ogImg = config.ogImage || DEFAULT_SEO.ogImage!;
-    const canonical = config.canonicalUrl || DEFAULT_SEO.canonicalUrl!;
-    const robots = config.robots || DEFAULT_SEO.robots!;
+    const desc = config.description || DEFAULT_SEO.description;
+    const ogImg = config.ogImage || DEFAULT_SEO.ogImage;
+    const canonical = config.canonicalUrl || `${SITE_ORIGIN}/`;
 
-    // Standard Meta Tags
     this.metaService.updateTag({ name: 'description', content: desc });
-    this.metaService.updateTag({ name: 'keywords', content: keywords });
-    this.metaService.updateTag({ name: 'robots', content: robots });
+    this.metaService.updateTag({ name: 'robots', content: config.robots || NO_INDEX });
 
-    // OpenGraph
     this.metaService.updateTag({ property: 'og:title', content: config.ogTitle || fullTitle });
     this.metaService.updateTag({ property: 'og:description', content: config.ogDescription || desc });
     this.metaService.updateTag({ property: 'og:image', content: ogImg });
     this.metaService.updateTag({ property: 'og:url', content: canonical });
-    this.metaService.updateTag({ property: 'og:type', content: 'website' });
-    this.metaService.updateTag({ property: 'og:site_name', content: 'OdivonGYM' });
 
-    // Twitter Card
-    this.metaService.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.metaService.updateTag({ name: 'twitter:title', content: config.ogTitle || fullTitle });
     this.metaService.updateTag({ name: 'twitter:description', content: config.ogDescription || desc });
     this.metaService.updateTag({ name: 'twitter:image', content: ogImg });
 
-    // Canonical Link
     this.updateCanonicalUrl(canonical);
   }
 
   private updateCanonicalUrl(url: string): void {
-    if (typeof document === 'undefined') return;
-    let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+    let link: HTMLLinkElement | null = this.document.querySelector('link[rel="canonical"]');
     if (!link) {
-      link = document.createElement('link');
+      link = this.document.createElement('link');
       link.setAttribute('rel', 'canonical');
-      document.head.appendChild(link);
+      this.document.head.appendChild(link);
     }
     link.setAttribute('href', url);
   }

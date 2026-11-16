@@ -13,6 +13,6 @@ export const environment = {
   trialDurationDays: 14,
   analytics: {
     enabled: false, // Development ortamında varsayılan olarak kapalı
-    measurementId: 'G-ODIVONGYM1-DEV',
+    measurementId: '',
   },
 };

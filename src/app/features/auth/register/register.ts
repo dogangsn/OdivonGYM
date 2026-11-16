@@ -6,7 +6,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -19,6 +19,7 @@ import { toAuthErrorMessage } from '../../../core/auth/auth-error.util';
 import { LanguageService, LANGUAGE_NAMES } from '../../../core/i18n/language.service';
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, SupportedLanguage, findCountry } from '../../../core/data/countries';
 import { LogoMark } from '../../../shared/components/logo-mark/logo-mark';
+import { AnalyticsService } from '../../../core/services/analytics.service';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -51,6 +52,8 @@ export class Register {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transloco = inject(TranslocoService);
+  private readonly analytics = inject(AnalyticsService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly language = inject(LanguageService);
 
   protected readonly countries = COUNTRIES;
@@ -107,6 +110,11 @@ export class Register {
         language: this.language.current(),
       });
       this.registeredSuccess.set({ email: result.email, displayName: result.displayName });
+      // Ana dönüşüm: demo (14 gün deneme) hesabı açıldı. Tanıtım sayfasındaki paket düğmesi ?plan= taşır.
+      this.analytics.trackEvent('sign_up', {
+        method: 'email',
+        plan: this.route.snapshot.queryParamMap.get('plan') || 'none',
+      });
     } catch (error) {
       this.errorMessage.set(toAuthErrorMessage(error, (key) => this.transloco.translate(key)));
     } finally {

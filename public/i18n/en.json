@@ -26,7 +26,7 @@
   "cookieConsent": {
     "badge": "Privacy & Cookie Security",
     "bannerTitle": "Cookie Policy & Privacy Consent",
-    "bannerDesc": "OdivonGYM uses cookies and local storage to provide secure sign-in, remember your credentials with 'Remember Me', and optimize overall performance.",
+    "bannerDesc": "OdivonGYM uses essential and functional cookies for secure sign-in and 'Remember Me'. If you allow it, Google Analytics measures visit statistics; otherwise it is never loaded.",
     "readPolicyInline": "Read Cookie Policy",
     "customize": "Customize Preferences",
     "essentialOnly": "Essential Only",
@@ -41,7 +41,7 @@
     "functionalDesc": "Remembers your email address with 'Remember Me', retains session duration, and saves your preferred language and theme.",
     "recommended": "Recommended",
     "analyticsTitle": "Analytics & Performance Cookies",
-    "analyticsDesc": "Helps us assess response times and platform reliability using anonymized telemetry.",
+    "analyticsDesc": "If you allow it, Google Analytics measures which pages are visited and steps such as creating a demo account, as statistics. No name, email or phone is sent and ad personalization is off. Data may be processed on Google servers outside Turkey.",
     "optional": "Optional",
     "readFullPolicy": "Read Full Cookie & Privacy Disclosure",
     "savePreferences": "Save Preferences",

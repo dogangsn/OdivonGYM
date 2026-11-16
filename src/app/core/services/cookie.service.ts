@@ -11,11 +11,16 @@ import { ConsentText } from '../models/consent.model';
 const STORAGE_KEY_CONSENT = 'odivongym_cookie_consent_v1';
 const STORAGE_KEY_REMEMBERED_EMAIL = 'odivongym_remembered_email';
 const STORAGE_KEY_REMEMBER_ME_PREF = 'odivongym_remember_me_pref';
+/**
+ * Çerez metninin sürümü. Metin değişince (1.1: Google Analytics eklendi) eski onaylar
+ * geçersiz sayılır ve bildirim bir kez daha gösterilir.
+ */
+const CONSENT_VERSION = '1.1';
 
 export const DEFAULT_COOKIE_POLICY_TEXT: ConsentText = {
   type: 'cookie_policy',
   title: 'Çerez Politikası ve KVKK Aydınlatma Metni',
-  version: '1.0',
+  version: CONSENT_VERSION,
   isRequired: false,
   isActive: true,
   contentHtml: `
@@ -47,7 +52,7 @@ export const DEFAULT_COOKIE_POLICY_TEXT: ConsentText = {
           3. Analitik ve Performans Çerezleri
         </h4>
         <p class="text-xs text-slate-600 dark:text-slate-300 m-0 leading-relaxed">
-          Platform yanıt hızları, sayfa yüklenme süreleri ve hata kayıtlarını anonimleştirilmiş olarak değerlendirerek sistem performansını optimize etmemizi sağlar.
+          Yalnızca izin verirseniz Google Analytics 4 (Google LLC) çalışır. Hangi sayfaların ziyaret edildiğini, ziyaretin hangi kaynaktan geldiğini ve demo hesap oluşturma gibi adımları istatistik olarak ölçeriz; ad, e-posta, telefon gibi bilgiler gönderilmez, adreslerdeki kimlik ve kodlar gizlenir, reklam kişiselleştirmesi kapalıdır. Bu veriler Google'ın yurt dışındaki sunucularında işlenebilir. İzni dilediğiniz an geri alabilirsiniz.
         </p>
       </div>
 
@@ -86,7 +91,12 @@ export class CookieService {
       const raw = localStorage.getItem(STORAGE_KEY_CONSENT);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as CookieConsentRecord;
-      if (parsed && typeof parsed.accepted === 'boolean' && parsed.preferences) {
+      if (
+        parsed &&
+        typeof parsed.accepted === 'boolean' &&
+        parsed.preferences &&
+        parsed.version === CONSENT_VERSION
+      ) {
         return parsed;
       }
     } catch {
@@ -99,7 +109,7 @@ export class CookieService {
     if (typeof window === 'undefined' || !window.localStorage) {
       return false;
     }
-    return localStorage.getItem(STORAGE_KEY_CONSENT) === null;
+    return this.loadConsentFromStorage() === null;
   }
 
   /** Tüm çerezleri (Zorunlu + İşlevsel + Analitik) kabul et */
@@ -108,7 +118,7 @@ export class CookieService {
       accepted: true,
       preferences: { ...DEFAULT_COOKIE_PREFERENCES },
       consentedAt: new Date().toISOString(),
-      version: '1.0',
+      version: CONSENT_VERSION,
     };
     this.saveConsentRecord(record);
   }
@@ -119,7 +129,7 @@ export class CookieService {
       accepted: true,
       preferences: { ...ESSENTIAL_ONLY_COOKIE_PREFERENCES },
       consentedAt: new Date().toISOString(),
-      version: '1.0',
+      version: CONSENT_VERSION,
     };
     this.saveConsentRecord(record);
     // İşlevsel çerezler reddedildiyse kayıtlı e-postayı temizle
@@ -136,7 +146,7 @@ export class CookieService {
         analytics: !!preferences.analytics,
       },
       consentedAt: new Date().toISOString(),
-      version: '1.0',
+      version: CONSENT_VERSION,
     };
     this.saveConsentRecord(record);
     if (!record.preferences.functional) {
@@ -197,9 +207,10 @@ export class CookieService {
       localStorage.setItem(STORAGE_KEY_REMEMBERED_EMAIL, clean);
       localStorage.setItem(STORAGE_KEY_REMEMBER_ME_PREF, 'true');
 
-      // Eğer henüz çerez onayı verilmemişse, Beni Hatırla tıklamasıyla işlevsel çerez onayı da otomatik verilir
+      // Henüz çerez onayı yoksa "Beni Hatırla" yalnızca işlevsel çereze izin sayılır;
+      // analitik (Google Analytics) için ayrıca açık onay gerekir.
       if (!this.hasConsented()) {
-        this.acceptAll();
+        this.saveCustomPreferences({ essential: true, functional: true, analytics: false });
       } else {
         // Önceden sadece zorunlu seçilmişse, işlevsel çerezi aktif et
         const current = this.consent();
