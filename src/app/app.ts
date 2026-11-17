@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { ThemeService } from './core/services/theme.service';
 import { LanguageService } from './core/i18n/language.service';
 import { HttpLoadingService } from './core/services/http-loading.service';
-import { GymLoader } from './shared/components/gym-loader/gym-loader';
+import { LoadingStage } from './shared/components/loading-stage/loading-stage';
 import { UpdateBanner } from './shared/components/update-banner/update-banner';
 import { CookieConsentBanner } from './shared/components/cookie-consent-banner/cookie-consent-banner';
 import { VersionService } from './core/version/version.service';
@@ -17,7 +17,7 @@ import { AppLockSetupModal } from './shared/components/app-lock-setup-modal/app-
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GymLoader, UpdateBanner, CookieConsentBanner, AppLockScreen, AppLockSetupModal],
+  imports: [RouterOutlet, LoadingStage, UpdateBanner, CookieConsentBanner, AppLockScreen, AppLockSetupModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -35,7 +35,13 @@ export class App {
   // Çerez onayına duyarlı GA4 Analitik servisi
   private readonly analytics = inject(AnalyticsService);
 
+  /** Uygulama bir kez hazır olduktan sonra açılış yerine "Oturum açılıyor" metni gösterilir. */
+  protected readonly booted = signal(false);
+
   constructor() {
+    effect(() => {
+      if (this.auth.ready()) this.booted.set(true);
+    });
     this.version.start();
     this.seo.init();
   }

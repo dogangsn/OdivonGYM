@@ -23,7 +23,7 @@ export class HttpLoadingService {
   readonly isLoading = signal(false);
 
   /** Kullanıcıya gösterilen dinamik antrenman ipucu / mesajı */
-  readonly message = signal('Veriler Yükleniyor…');
+  readonly message = signal('Veriler yükleniyor…');
 
   /** Bir HTTP isteği veya asenkron işlem başladığında çağrılır */
   onRequestStarted(customMsg?: string): void {
@@ -78,7 +78,7 @@ export class HttpLoadingService {
 
   private stopLoading(): void {
     this.isLoading.set(false);
-    this.message.set('Veriler Yükleniyor…');
+    this.message.set('Veriler yükleniyor…');
     if (this.quoteInterval) {
       clearInterval(this.quoteInterval);
       this.quoteInterval = null;

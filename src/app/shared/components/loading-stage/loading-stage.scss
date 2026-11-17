@@ -1,0 +1,448 @@
+// Tam ekran yükleme sahnesi. Renkler: --brand-* (marka) ve --odivon-* (tema).
+:host {
+  --st-c1: var(--brand-300);
+  --st-c2: var(--brand-500);
+  --st-c3: var(--brand-800);
+  --st-bg: var(--odivon-bg-default);
+  --st-text: var(--odivon-text-default);
+  --st-text-2: var(--odivon-text-secondary);
+  --st-blob-opacity: 0.32;
+  --st-emblem: 148px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--st-bg) 93%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  user-select: none;
+  animation: st-in 260ms ease-out both;
+}
+
+:host-context(html.dark) {
+  --st-blob-opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  :host {
+    --st-emblem: 120px;
+  }
+}
+
+/* --- Akan aurora arka plan --- */
+.stage__aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  opacity: var(--st-blob-opacity);
+  will-change: transform;
+}
+
+.blob--a {
+  top: -25vmax;
+  left: -15vmax;
+  background: radial-gradient(circle, var(--st-c1), transparent 70%);
+  animation: st-drift-a 14s ease-in-out infinite alternate;
+}
+
+.blob--b {
+  right: -20vmax;
+  top: 0;
+  background: radial-gradient(circle, var(--st-c2), transparent 70%);
+  animation: st-drift-b 17s ease-in-out infinite alternate;
+}
+
+.blob--c {
+  bottom: -30vmax;
+  left: 15vmax;
+  background: radial-gradient(circle, var(--st-c3), transparent 70%);
+  animation: st-drift-c 19s ease-in-out infinite alternate;
+}
+
+.stage__grid {
+  position: absolute;
+  inset: -50%;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--st-c2) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-c2) 14%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 32%);
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 32%);
+  transform: perspective(700px) rotateX(58deg) translateY(12%);
+  animation: st-grid 3.2s linear infinite;
+  pointer-events: none;
+}
+
+/* --- Orta blok --- */
+.stage__center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.emblem {
+  position: relative;
+  width: var(--st-emblem);
+  height: var(--st-emblem);
+  display: grid;
+  place-items: center;
+}
+
+.emblem__glow {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--brand-glow), transparent 70%);
+  filter: blur(18px);
+  animation: st-glow 2.4s ease-in-out infinite;
+}
+
+.emblem__ripple {
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--st-c2) 55%, transparent);
+  animation: st-ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+
+  &--2 {
+    animation-delay: 0.8s;
+  }
+
+  &--3 {
+    animation-delay: 1.6s;
+  }
+}
+
+.emblem__orbit {
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--st-c2) 22%, transparent);
+  animation: st-spin 4.5s linear infinite;
+
+  i {
+    position: absolute;
+    top: -4px;
+    left: calc(50% - 4px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--st-c1);
+    box-shadow:
+      0 0 10px 2px var(--st-c1),
+      0 0 26px var(--brand-glow);
+  }
+
+  &--2 {
+    inset: -20%;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--st-c2) 10%, transparent);
+    animation-duration: 7s;
+    animation-direction: reverse;
+
+    i {
+      width: 6px;
+      height: 6px;
+      top: -3px;
+      left: calc(50% - 3px);
+      background: var(--st-c2);
+      box-shadow: 0 0 10px 2px var(--st-c2);
+    }
+  }
+
+  &--3 {
+    inset: 6%;
+    border: none;
+    animation-duration: 2.6s;
+
+    i {
+      width: 5px;
+      height: 5px;
+      top: -2px;
+      left: calc(50% - 2px);
+      background: #fff;
+      box-shadow: 0 0 8px 2px var(--st-c2);
+    }
+  }
+}
+
+.emblem__mark {
+  position: relative;
+  width: 64%;
+  height: 64%;
+  overflow: visible;
+  filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--st-c2) 45%, transparent));
+  animation: st-tilt 4.8s ease-in-out infinite;
+}
+
+.stop-a {
+  stop-color: var(--st-c1);
+}
+
+.stop-b {
+  stop-color: var(--st-c2);
+}
+
+.stop-c {
+  stop-color: var(--st-c3);
+}
+
+.mark__track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--st-c2) 14%, transparent);
+  stroke-width: 8;
+}
+
+.mark__draw {
+  fill: none;
+  stroke: url(#loading-stage-grad);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: st-draw 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* --- ODIVON yazısı --- */
+.wordmark {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+
+  &__name {
+    display: flex;
+    gap: 0.14em;
+    font-family: 'Archivo', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 34px;
+    font-weight: 800;
+    font-stretch: 112%;
+    line-height: 1;
+    letter-spacing: 0.06em;
+  }
+
+  &__ch {
+    display: inline-block;
+    background: linear-gradient(110deg, var(--st-text) 0%, var(--st-text) 38%, var(--st-c1) 48%, var(--st-c2) 54%, var(--st-text) 64%, var(--st-text) 100%);
+    background-size: 300% 100%;
+    background-attachment: fixed;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation:
+      st-letter 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+      st-shine 2.8s ease-in-out 600ms infinite;
+  }
+
+  &__tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6em;
+    padding-left: 0.6em;
+    color: var(--st-c2);
+    animation: st-letter 600ms 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+.stage__message {
+  margin-top: 22px;
+  min-height: 40px;
+}
+
+.stage__text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--st-text);
+  animation: st-msg 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stage__sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--st-text-2);
+}
+
+.stage__bar {
+  position: relative;
+  width: 200px;
+  height: 3px;
+  margin-top: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--st-c2) 15%, transparent);
+
+  span {
+    position: absolute;
+    inset-block: 0;
+    width: 45%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, var(--st-c1), var(--st-c2), var(--st-c3));
+    box-shadow: 0 0 12px var(--brand-glow);
+    animation: st-bar 1.3s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+}
+
+/* --- Animasyonlar --- */
+@keyframes st-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes st-drift-a {
+  to {
+    transform: translate(18vmax, 12vmax) scale(1.15);
+  }
+}
+
+@keyframes st-drift-b {
+  to {
+    transform: translate(-16vmax, 18vmax) scale(0.9);
+  }
+}
+
+@keyframes st-drift-c {
+  to {
+    transform: translate(10vmax, -16vmax) scale(1.2);
+  }
+}
+
+@keyframes st-grid {
+  to {
+    background-position: 0 56px, 0 0;
+  }
+}
+
+@keyframes st-glow {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes st-ripple {
+  from {
+    transform: scale(0.75);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes st-tilt {
+  0%,
+  100% {
+    transform: perspective(400px) rotateY(-18deg) rotateX(6deg);
+  }
+  50% {
+    transform: perspective(400px) rotateY(18deg) rotateX(-6deg);
+  }
+}
+
+// Amblem kendini çizer, kısa bekler, öbür ucundan silinir.
+@keyframes st-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  62% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+@keyframes st-letter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes st-shine {
+  0% {
+    background-position: 100% 0;
+  }
+  60%,
+  100% {
+    background-position: -50% 0;
+  }
+}
+
+@keyframes st-msg {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes st-bar {
+  from {
+    left: -45%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  .blob,
+  .stage__grid,
+  .emblem__glow,
+  .emblem__ripple,
+  .emblem__orbit,
+  .emblem__mark,
+  .mark__draw,
+  .wordmark__ch,
+  .wordmark__tag,
+  .stage__text,
+  .stage__bar span {
+    animation: none;
+  }
+
+  .emblem__ripple {
+    opacity: 0;
+  }
+
+  .mark__draw {
+    stroke-dashoffset: 0;
+  }
+
+  .stage__bar span {
+    left: 0;
+    width: 100%;
+    opacity: 0.6;
+  }
+}

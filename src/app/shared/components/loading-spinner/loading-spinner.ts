@@ -8,7 +8,7 @@ import { GymLoader } from '../gym-loader/gym-loader';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col items-center justify-center py-4 text-center w-full">
-      <app-gym-loader [inline]="true" [message]="label() || 'Veriler Yükleniyor…'" size="sm" />
+      <app-gym-loader [inline]="true" [message]="label() || 'Veriler yükleniyor…'" size="sm" />
     </div>
   `,
 })

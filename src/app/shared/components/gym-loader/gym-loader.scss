@@ -1,203 +1,248 @@
+// Odivon yükleyici: renkler marka ve tema değişkenlerinden gelir (bkz. styles.scss
+// --brand-* ve --odivon-*), açık ve koyu temada kendiliğinden doğru görünür.
 :host {
+  --gl-c1: var(--brand-300);
+  --gl-c2: var(--brand-500);
+  --gl-c3: var(--brand-800);
+  --gl-track: color-mix(in srgb, var(--odivon-primary) 12%, transparent);
+  --gl-text: var(--odivon-text-default);
+  --gl-text-2: var(--odivon-text-muted);
+
+  --gl-size: 64px;
+
   display: block;
 }
 
-// 1. Barbell (Halter) Bench / Overhead Press Animasyonu
-.animated-barbell {
-  transform-origin: 160px 80px;
-  animation: barbellPress 1.9s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
-  will-change: transform;
+:host(.gym-loader--sm) {
+  --gl-size: 36px;
 }
 
-@keyframes barbellPress {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  24% {
-    transform: translateY(-24px) rotate(-1deg);
-  }
-  42% {
-    transform: translateY(-27px) rotate(1deg); // Zirvede kas kasılması ve titreme
-  }
-  48% {
-    transform: translateY(-26px) rotate(0deg);
-  }
-  72% {
-    transform: translateY(-2px) rotate(0deg);
-  }
-  80% {
-    transform: translateY(2px) rotate(0deg); // Hafif esneme ve darbe
-  }
-  100% {
-    transform: translateY(0) rotate(0deg);
+:host(.gym-loader--lg) {
+  --gl-size: 84px;
+}
+
+.gl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 2rem 1.375rem;
+  user-select: none;
+
+  &--inline {
+    padding: 0.5rem;
   }
 }
 
-// Halter Taban Gölgesi
-.barbell-shadow {
-  transform-origin: 160px 154px;
-  animation: barbellShadow 1.9s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+.gl__message {
+  margin: 1.125rem 0 0;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--gl-text);
 }
 
-@keyframes barbellShadow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  42% {
-    transform: scale(0.68);
-    opacity: 0.25;
-  }
-  80% {
-    transform: scale(1.08);
-    opacity: 0.9;
-  }
+:host(.gym-loader--sm) .gl__message {
+  margin-top: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gl-text-2);
 }
 
-// 2. Sol Dambıl (Biceps Curl Hareketi)
-.animated-dumbbell {
-  transform-origin: 56px 99px;
-  animation: dumbbellCurl 1.9s infinite ease-in-out;
-  animation-delay: 0.2s; // Senkron kırıcı doğal gecikme
-  will-change: transform;
+.gl__sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gl-text-2);
 }
 
-@keyframes dumbbellCurl {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  45% {
-    transform: translateY(-16px) rotate(-18deg);
-  }
-  55% {
-    transform: translateY(-15px) rotate(-16deg);
-  }
+.stop-cyan {
+  stop-color: var(--gl-c1);
 }
 
-.dumbbell-shadow {
-  transform-origin: 56px 148px;
-  animation: dumbbellShadow 1.9s infinite ease-in-out;
-  animation-delay: 0.2s;
+.stop-violet {
+  stop-color: var(--gl-c2);
 }
 
-@keyframes dumbbellShadow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  45% {
-    transform: scale(0.75);
-    opacity: 0.3;
-  }
+.stop-deep {
+  stop-color: var(--gl-c3);
 }
 
-// 3. Sağ Girya (Kettlebell Swing Hareketi)
-.animated-kettlebell {
-  transform-origin: 264px 80px;
-  animation: kettlebellSwing 1.9s infinite ease-in-out;
-  will-change: transform;
+/* ---------------------------------------------------------------------------
+   1. Aura: Odivon amblemi üzerinde dolaşan ışık
+   --------------------------------------------------------------------------- */
+.aura {
+  position: relative;
+  width: var(--gl-size);
+  height: var(--gl-size);
 }
 
-@keyframes kettlebellSwing {
-  0% {
-    transform: rotate(-18deg) translateY(0);
+.aura__glow {
+  position: absolute;
+  inset: -35%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--brand-glow), transparent 65%);
+  filter: blur(calc(var(--gl-size) * 0.12));
+  opacity: 0.55;
+  animation: gl-breathe 2.4s ease-in-out infinite;
+}
+
+.aura__svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.aura__track {
+  fill: none;
+  stroke: var(--gl-track);
+  stroke-width: 7;
+}
+
+.aura__runner {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 34 66;
+  animation: gl-run 1.4s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
+}
+
+@keyframes gl-run {
+  from {
+    stroke-dashoffset: 100;
+    stroke-dasharray: 18 82;
   }
   50% {
-    transform: rotate(18deg) translateY(-8px);
+    stroke-dasharray: 46 54;
   }
-  100% {
-    transform: rotate(-18deg) translateY(0);
-  }
-}
-
-.kettlebell-shadow {
-  transform-origin: 264px 148px;
-  animation: kettlebellShadow 1.9s infinite ease-in-out;
-}
-
-@keyframes kettlebellShadow {
-  0% {
-    transform: translateX(-10px) scale(0.85);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translateX(10px) scale(0.85);
-    opacity: 0.45;
-  }
-  100% {
-    transform: translateX(-10px) scale(0.85);
-    opacity: 0.45;
-  }
-}
-
-// 4. Halter Zirve Kıvılcımları (Enerji Patlaması)
-.spark {
-  opacity: 0;
-  animation: sparkBurst 1.9s infinite ease-out;
-}
-
-.spark-1 {
-  animation-delay: 0.4s;
-}
-
-.spark-2 {
-  animation-delay: 0.45s;
-}
-
-.spark-3 {
-  animation-delay: 0.42s;
-}
-
-@keyframes sparkBurst {
-  0%, 35% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  42% {
-    opacity: 1;
-    transform: scale(1.6);
-  }
-  55%, 100% {
-    opacity: 0;
-    transform: scale(0.2);
-  }
-}
-
-// 5. EKG Nabız Çizgisi
-.ekg-line {
-  stroke-dasharray: 260;
-  stroke-dashoffset: 260;
-  animation: ekgPulse 3.8s linear infinite;
-}
-
-@keyframes ekgPulse {
-  0% {
-    stroke-dashoffset: 260;
-  }
-  50% {
+  to {
     stroke-dashoffset: 0;
+    stroke-dasharray: 18 82;
   }
+}
+
+@keyframes gl-breathe {
+  0%,
   100% {
-    stroke-dashoffset: -260;
-  }
-}
-
-// 6. Akıcı İlerleme Çubuğu (Shimmer)
-.animate-gym-progress {
-  animation: gymProgress 1.6s infinite cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-@keyframes gymProgress {
-  0% {
-    left: -35%;
-    width: 30%;
+    transform: scale(0.85);
+    opacity: 0.4;
   }
   50% {
-    left: 25%;
-    width: 60%;
+    transform: scale(1.05);
+    opacity: 0.75;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Orbit: ışık halkası
+   --------------------------------------------------------------------------- */
+.orbit {
+  position: relative;
+  width: var(--gl-size);
+  height: var(--gl-size);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 calc(var(--gl-size) * 0.06) var(--gl-track);
+  animation: gl-spin 0.9s linear infinite;
+}
+
+.orbit__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 70deg,
+    color-mix(in srgb, var(--gl-c3) 40%, transparent) 150deg,
+    var(--gl-c2) 280deg,
+    var(--gl-c1) 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--gl-size) * 0.06 - 0.5px), #000 calc(100% - var(--gl-size) * 0.06));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--gl-size) * 0.06 - 0.5px), #000 calc(100% - var(--gl-size) * 0.06));
+}
+
+// Halkanın ucundaki parlayan nokta (halka ile birlikte döner).
+.orbit::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(var(--gl-size) * 0.06);
+  height: calc(var(--gl-size) * 0.06);
+  margin-left: calc(var(--gl-size) * -0.03);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 calc(var(--gl-size) * 0.08) calc(var(--gl-size) * 0.02) var(--gl-c1),
+    0 0 calc(var(--gl-size) * 0.3) var(--brand-glow);
+}
+
+@keyframes gl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3. Pulse: ritim çubukları
+   --------------------------------------------------------------------------- */
+.pulse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--gl-size) * 0.08);
+  height: var(--gl-size);
+
+  span {
+    width: calc(var(--gl-size) * 0.11);
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(to top, var(--gl-c3), var(--gl-c2) 55%, var(--gl-c1));
+    box-shadow: 0 0 calc(var(--gl-size) * 0.18) color-mix(in srgb, var(--gl-c2) 35%, transparent);
+    transform-origin: center;
+    animation: gl-beat 1.05s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  span:nth-child(1) {
+    animation-delay: -0.84s;
+  }
+  span:nth-child(2) {
+    animation-delay: -0.63s;
+  }
+  span:nth-child(3) {
+    animation-delay: -0.42s;
+  }
+  span:nth-child(4) {
+    animation-delay: -0.21s;
+  }
+}
+
+@keyframes gl-beat {
+  0%,
   100% {
-    left: 100%;
-    width: 30%;
+    transform: scaleY(0.28);
+    opacity: 0.55;
+  }
+  45% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Hareket azaltma tercihi: animasyon yok, yine de "meşgul" olduğu anlaşılır.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .aura__glow,
+  .aura__runner,
+  .orbit,
+  .pulse span {
+    animation: none;
+  }
+
+  .pulse span:nth-child(odd) {
+    transform: scaleY(0.55);
   }
 }
