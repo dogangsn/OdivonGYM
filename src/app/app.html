@@ -1,17 +1,18 @@
 <router-outlet />
 
-<!-- 1. Uygulama açılışı / giriş: tam ekran yükleme sahnesi -->
+<!-- 1. Giriş / oturum açılışı (kullanıcı oturum açmışken): tam ekran yükleme sahnesi.
+     Oturum yoksa (ör. giriş sayfası açılırken) küçük yükleyici yeterli. -->
 @if (!auth.ready()) {
-  @if (booted()) {
+  @if (auth.user() || booted()) {
     <app-loading-stage message="Oturum açılıyor…" submessage="Salon verilerin hazırlanıyor" />
   } @else {
-    <app-loading-stage message="Sistem hazırlanıyor…" submessage="Güvenli oturum açılıyor" />
+    <app-gym-busy message="Hazırlanıyor…" />
   }
 }
 
-<!-- 2. Global API istekleri / veri yüklenirken -->
+<!-- 2. Sayfalar arası veri yüklemeleri: spor ikonlu küçük modal -->
 @if (httpLoading.isLoading() && auth.ready()) {
-  <app-loading-stage [message]="httpLoading.message()" />
+  <app-gym-busy [message]="httpLoading.message()" />
 }
 
 <!-- 3. Yeni sürüm bildirimi -->

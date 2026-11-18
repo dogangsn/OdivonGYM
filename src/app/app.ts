@@ -5,6 +5,7 @@ import { ThemeService } from './core/services/theme.service';
 import { LanguageService } from './core/i18n/language.service';
 import { HttpLoadingService } from './core/services/http-loading.service';
 import { LoadingStage } from './shared/components/loading-stage/loading-stage';
+import { GymBusy } from './shared/components/gym-busy/gym-busy';
 import { UpdateBanner } from './shared/components/update-banner/update-banner';
 import { CookieConsentBanner } from './shared/components/cookie-consent-banner/cookie-consent-banner';
 import { VersionService } from './core/version/version.service';
@@ -17,7 +18,7 @@ import { AppLockSetupModal } from './shared/components/app-lock-setup-modal/app-
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoadingStage, UpdateBanner, CookieConsentBanner, AppLockScreen, AppLockSetupModal],
+  imports: [RouterOutlet, LoadingStage, GymBusy, UpdateBanner, CookieConsentBanner, AppLockScreen, AppLockSetupModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -35,7 +36,7 @@ export class App {
   // Çerez onayına duyarlı GA4 Analitik servisi
   private readonly analytics = inject(AnalyticsService);
 
-  /** Uygulama bir kez hazır olduktan sonra açılış yerine "Oturum açılıyor" metni gösterilir. */
+  /** Uygulama bir kez hazır olduktan sonra auth tekrar beklenirse (giriş yapılırken) tam ekran sahne gösterilir. */
   protected readonly booted = signal(false);
 
   constructor() {
