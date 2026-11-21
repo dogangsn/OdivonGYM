@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Observable, of } from 'rxjs';
+import { Observable, firstValueFrom, of } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -23,6 +23,7 @@ import { AccessLog } from '../../../core/models/access-log.model';
 import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../core/models/gym-equipment.model';
 import { DashboardSummary, GymReportsApi } from '../../../core/api/gym-reports.api';
+import { SmsApi } from '../../../core/api/sms.api';
 import { MeasurementsService } from '../../measurements/measurements.service';
 import { BarDatum, DonutSlice, LineSeries, OdvBarChart, OdvDonutChart, OdvLineChart } from '../../../shared/charts/odv-charts';
 
@@ -107,6 +108,9 @@ export class Dashboard {
   private readonly alertService = inject(AlertService);
   private readonly account = inject(MemberAccountService);
   private readonly permissions = inject(PermissionService);
+  private readonly smsApi = inject(SmsApi);
+
+  protected readonly remindingMemberUid = signal<string | null>(null);
 
   protected readonly accentClasses = ACCENT_CLASSES;
   protected readonly money = formatMoney;
@@ -484,8 +488,38 @@ export class Dashboard {
     this.memberQrService.open();
   }
 
-  notifyRenewal(member: UserProfile): void {
-    this.alertService.toastSuccess(`${member.displayName || member.email} için yenileme hatırlatması hazırlandı.`);
+  async notifyRenewal(member: UserProfile): Promise<void> {
+    if (this.remindingMemberUid() === member.uid) return;
+    const name = member.displayName || member.email || 'Üye';
+    const phone = member.phone?.trim();
+    if (!phone) {
+      this.alertService.toastError(`${name} için kayıtlı telefon numarası bulunamadı.`);
+      return;
+    }
+
+    this.remindingMemberUid.set(member.uid);
+    try {
+      const endLabel = this.formatDate(member.membershipEndsAt);
+      const res = await firstValueFrom(
+        this.smsApi.send({
+          recipients: [phone],
+          title: 'Üyelik Yenileme Hatırlatması',
+          message: `Sayın ${name}, spor salonu üyeliğinizin süresi ${endLabel} tarihinde sona ermektedir. Kesintisiz devam etmek için üyeliğinizi yenileyebilirsiniz.`,
+        }),
+      );
+      if (res?.success && (res.sentCount ?? 0) > 0) {
+        this.alertService.toastSuccess(`${name} için yenileme hatırlatma SMS'i gönderildi.`);
+      } else {
+        this.alertService.toastError(res?.message || 'SMS gönderilemedi. SMS ayarlarınızı kontrol edin.');
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { error?: { message?: string }; message?: string })?.error?.message ||
+        'Hatırlatma SMS gönderilemedi. SMS sağlayıcı ayarlarını kontrol edin.';
+      this.alertService.toastError(msg);
+    } finally {
+      this.remindingMemberUid.set(null);
+    }
   }
 
   notifyComingSoon(title: string): void {

@@ -337,7 +337,7 @@
       "wallet": "E-Cüzdan",
       "packages": "Paketler",
       "profile": "Profil & Ayarlar",
-      "adminExitPayments": "Çıkışta Ödemeler",
+      "adminExitPayments": "Açık Hesap / Adisyon",
       "support": "Müşteri Talepleri & Destek",
       "adminNotifications": "Bildirim Merkezi"
     },
@@ -919,7 +919,7 @@
     "verificationSent": "Doğrulama e-postası tekrar gönderildi. Lütfen gelen kutunuzu ve spam klasörünüzü kontrol edin."
   },
   "exitPayments": {
-    "title": "Çıkışta Ödemeler",
+    "title": "Açık Hesap / Adisyon",
     "desc": "Üye adı o an bilinmese de not yazılarak açılan fişler ve çıkışta bekleyen tahsilatların yönetimi.",
     "goToPos": "Hızlı POS / Kasa",
     "newTabBtn": "Hızlı Fiş Aç",

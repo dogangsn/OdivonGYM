@@ -73,7 +73,7 @@ export const adminRoutes: Routes = [
     path: 'exit-payments',
     loadComponent: () =>
       import('./exit-payments/admin-exit-payments').then((m) => m.AdminExitPayments),
-    title: 'Çıkışta Ödemeler · OdivonGYM',
+    title: 'Açık Hesap & Adisyon · OdivonGYM',
   },
   {
     path: 'pos',
