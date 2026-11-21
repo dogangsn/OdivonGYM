@@ -249,9 +249,17 @@ export class MemberDetailDrawer {
     return false;
   });
 
+  private isSafePreviewUrl(url: string): boolean {
+    const trimmed = url.trim();
+    if (trimmed.startsWith('https://') || trimmed.startsWith('blob:')) return true;
+    if (trimmed.startsWith('http://localhost') || trimmed.startsWith('http://127.0.0.1')) return true;
+    if (/^data:(application\/pdf|image\/(png|jpeg|jpg|webp|gif));base64,/i.test(trimmed)) return true;
+    return false;
+  }
+
   protected readonly safeDocUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.previewDocUrl();
-    if (!url) return null;
+    if (!url || !this.isSafePreviewUrl(url)) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
@@ -261,8 +269,9 @@ export class MemberDetailDrawer {
   protected readonly cardPaid = signal(true);
   protected readonly savingCard = signal(false);
 
-  // Subscription transfer state
-  protected readonly allMembers = toSignal(this.membersService.watchMembers(), { initialValue: [] });
+  // Subscription transfer state (lazy-loaded when transfer modal opens)
+  protected readonly allMembers = signal<UserProfile[]>([]);
+  protected readonly loadingTransferMembers = signal(false);
   protected readonly transferTargetUid = signal('');
   protected readonly transferReason = signal('');
   protected readonly savingTransfer = signal(false);
@@ -1302,6 +1311,13 @@ export class MemberDetailDrawer {
     this.transferTargetUid.set('');
     this.transferReason.set('');
     this.showTransferModal.set(true);
+    if (this.allMembers().length === 0 && !this.loadingTransferMembers()) {
+      this.loadingTransferMembers.set(true);
+      firstValueFrom(this.membersService.watchMembers())
+        .then((list) => this.allMembers.set(list))
+        .catch(() => this.allMembers.set([]))
+        .finally(() => this.loadingTransferMembers.set(false));
+    }
   }
 
   async saveTransfer(): Promise<void> {
