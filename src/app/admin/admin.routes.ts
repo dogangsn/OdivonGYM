@@ -65,6 +65,16 @@ export const adminRoutes: Routes = [
     title: 'Stok & Ürün Kategorileri · OdivonGYM',
   },
   {
+    path: 'banks',
+    loadComponent: () => import('./disciplines/admin-disciplines').then((m) => m.AdminDisciplines),
+    title: 'Banka Hesapları (IBAN) · OdivonGYM',
+  },
+  {
+    path: 'mail-template',
+    loadComponent: () => import('./disciplines/admin-disciplines').then((m) => m.AdminDisciplines),
+    title: 'E-Posta Şablonları · OdivonGYM',
+  },
+  {
     path: 'sales',
     loadComponent: () => import('./sales/admin-sales').then((m) => m.AdminSales),
     title: 'Paket & Market Satışı · OdivonGYM',

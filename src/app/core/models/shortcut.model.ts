@@ -98,8 +98,8 @@ export const DEFAULT_USER_SHORTCUTS: UserShortcut[] = [
   {
     id: 'sc_pos',
     title: 'Kasa / POS',
-    link: '/admin/shop',
-    icon: 'shopping_cart_checkout',
+    link: '/admin/pos',
+    icon: 'point_of_sale',
     color: 'emerald',
     hotkey: 'Alt+2',
     order: 1,

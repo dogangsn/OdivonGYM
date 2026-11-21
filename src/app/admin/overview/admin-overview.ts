@@ -567,9 +567,9 @@ export class AdminOverview {
     {
       icon: 'shopping-bag',
       accent: 'primary',
-      title: 'Market Satışı',
+      title: 'Hızlı Kasa & POS',
       desc: 'Otomat/market ürünleri, stok ve hızlı POS satışı.',
-      link: '/admin/shop',
+      link: '/admin/pos',
     },
     {
       icon: 'banknotes',

@@ -45,8 +45,8 @@ export const DEVICE_PROTOCOLS: { value: DeviceProtocol; label: string; hint: str
   },
   {
     value: 'vendor-sdk',
-    label: 'Üretici SDK',
-    hint: 'Tanımlı, adapter henüz eklenmedi.',
+    label: 'Üretici SDK (Beta · Desteklenmiyor)',
+    hint: 'Özel üretici SDK entegrasyonu henüz canlı kullanımda aktif değildir; canlı salonlarda ZK TCP veya YT HTTP kullanın.',
     defaultPort: 0,
   },
 ];

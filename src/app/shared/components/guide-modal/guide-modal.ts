@@ -266,7 +266,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         tip: 'Satış yapıldığında ürün stoğu otomatik düşer; kritik seviyenin altına indiğinde yöneticiye bildirim gider.',
       },
     ],
-    actionLink: { label: 'Kantin POS Ekranını Aç →', route: '/admin/shop', icon: 'point_of_sale' },
+    actionLink: { label: 'Kantin POS Ekranını Aç →', route: '/admin/pos', icon: 'point_of_sale' },
   },
 
   // ── PRODUCTS & STOCK ──

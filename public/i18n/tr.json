@@ -338,6 +338,8 @@
       "packages": "Paketler",
       "profile": "Profil & Ayarlar",
       "adminExitPayments": "Açık Hesap / Adisyon",
+      "adminBanks": "Banka Hesapları (IBAN)",
+      "adminMailTemplate": "E-Posta Şablonları",
       "support": "Müşteri Talepleri & Destek",
       "adminNotifications": "Bildirim Merkezi"
     },
