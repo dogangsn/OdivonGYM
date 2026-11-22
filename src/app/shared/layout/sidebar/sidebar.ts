@@ -35,35 +35,34 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
     items: [
       { icon: 'dashboard', labelKey: 'sidebar.items.dashboard', link: '/dashboard' },
       { icon: 'space_dashboard', labelKey: 'sidebar.items.adminOverview', link: '/admin/overview' },
-    ],
-  },
-  {
-    titleKey: 'sidebar.groups.club',
-    items: [
-      { icon: 'groups', labelKey: 'sidebar.items.adminMembers', link: '/admin/members' },
-      { icon: 'fitness_center', labelKey: 'sidebar.items.adminProgramRequests', link: '/admin/program-requests' },
-      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscriptions', link: '/admin/subscriptions', badgeKey: 'sidebar.badges.renewal', badgeClass: 'badge-emerald' },
-      { icon: 'person_search', labelKey: 'sidebar.items.adminGuestMembers', link: '/admin/guest-members' },
-      { icon: 'calendar_month', labelKey: 'sidebar.items.classSchedule', link: '/classes' },
-      { icon: 'event_available', labelKey: 'sidebar.items.ptAppointments', link: '/appointments' },
-      { icon: 'auto_awesome', labelKey: 'sidebar.items.adminWizard', link: '/admin/wizard' },
-    ],
-  },
-  {
-    titleKey: 'sidebar.groups.pos',
-    items: [
       {
         icon: 'point_of_sale',
         labelKey: 'sidebar.items.adminPos',
         link: '/admin/pos',
         requiresActiveSaas: true,
       },
+      {
+        icon: 'nfc',
+        labelKey: 'sidebar.items.adminAccessControl',
+        link: '/admin/access-control',
+        requiresActiveSaas: true,
+      },
+    ],
+  },
+  {
+    titleKey: 'sidebar.groups.club',
+    items: [
+      { icon: 'groups', labelKey: 'sidebar.items.adminMembers', link: '/admin/members' },
+      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscriptions', link: '/admin/subscriptions' },
+      { icon: 'person_search', labelKey: 'sidebar.items.adminGuestMembers', link: '/admin/guest-members' },
+      { icon: 'fitness_center', labelKey: 'sidebar.items.adminProgramRequests', link: '/admin/program-requests' },
+      { icon: 'calendar_month', labelKey: 'sidebar.items.classSchedule', link: '/classes' },
+      { icon: 'event_available', labelKey: 'sidebar.items.ptAppointments', link: '/appointments' },
     ],
   },
   {
     titleKey: 'sidebar.groups.sales',
     items: [
-      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages' },
       { icon: 'shopping_bag', labelKey: 'sidebar.items.adminSales', link: '/admin/sales', requiresActiveSaas: true },
       {
         icon: 'hourglass_top',
@@ -71,6 +70,7 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
         link: '/admin/exit-payments',
         requiresActiveSaas: true,
       },
+      { icon: 'sell', labelKey: 'sidebar.items.adminPackages', link: '/admin/packages' },
       { icon: 'campaign', labelKey: 'sidebar.items.adminCampaigns', link: '/admin/campaigns', requiresActiveSaas: true },
     ],
   },
@@ -80,45 +80,20 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
       { icon: 'inventory_2', labelKey: 'sidebar.items.adminProducts', link: '/admin/products' },
       { icon: 'fact_check', labelKey: 'sidebar.items.adminStock', link: '/admin/stock' },
       { icon: 'local_shipping', labelKey: 'sidebar.items.adminSuppliers', link: '/admin/suppliers' },
+      { icon: 'category', labelKey: 'sidebar.items.adminStockCategories', link: '/admin/stock-categories' },
     ],
   },
   {
     titleKey: 'sidebar.groups.finance',
     items: [
-      { icon: 'event_repeat', labelKey: 'sidebar.items.adminReceivables', link: '/admin/receivables' },
-      { icon: 'notifications_active', labelKey: 'sidebar.items.adminReminders', link: '/admin/reminders' },
-      { icon: 'credit_card', labelKey: 'sidebar.items.adminPaymentSettings', link: '/admin/payment-settings' },
       { icon: 'account_balance', labelKey: 'sidebar.items.adminAccounting', link: '/admin/accounting' },
-      { icon: 'account_balance_wallet', labelKey: 'sidebar.items.adminBanks', link: '/admin/banks' },
+      { icon: 'event_repeat', labelKey: 'sidebar.items.adminReceivables', link: '/admin/receivables' },
       { icon: 'receipt_long', labelKey: 'sidebar.items.adminEInvoice', link: '/admin/e-invoice', requiresActiveSaas: true },
-    ],
-  },
-  {
-    titleKey: 'sidebar.groups.reports',
-    items: [
       { icon: 'analytics', labelKey: 'sidebar.items.adminReports', link: '/admin/reports' },
+      { icon: 'account_balance_wallet', labelKey: 'sidebar.items.adminBanks', link: '/admin/banks' },
+      { icon: 'credit_card', labelKey: 'sidebar.items.adminPaymentSettings', link: '/admin/payment-settings' },
+      { icon: 'notifications_active', labelKey: 'sidebar.items.adminReminders', link: '/admin/reminders' },
       { icon: 'history', labelKey: 'sidebar.items.adminAuditLog', link: '/admin/audit-log' },
-    ],
-  },
-  {
-    titleKey: 'sidebar.groups.access',
-    items: [
-      {
-        icon: 'nfc',
-        labelKey: 'sidebar.items.adminAccessControl',
-        link: '/admin/access-control',
-        badgeKey: 'sidebar.badges.iot',
-        badgeClass: 'badge-purple',
-        requiresActiveSaas: true,
-      },
-    ],
-  },
-  {
-    titleKey: 'sidebar.groups.definitions',
-    items: [
-      { icon: 'sports_martial_arts', labelKey: 'sidebar.items.adminDisciplines', link: '/admin/disciplines' },
-      { icon: 'accessibility_new', labelKey: 'sidebar.items.adminDefinitions', link: '/admin/definitions' },
-      { icon: 'inventory_2', labelKey: 'sidebar.items.adminStockCategories', link: '/admin/stock-categories' },
     ],
   },
   {
@@ -127,13 +102,15 @@ const ADMIN_OPERATIONAL_GROUPS: NavGroup[] = [
       { icon: 'badge', labelKey: 'sidebar.items.adminStaff', link: '/admin/staff' },
       { icon: 'store', labelKey: 'sidebar.items.adminBranches', link: '/admin/branches' },
       { icon: 'business', labelKey: 'sidebar.items.adminGymInfo', link: '/admin/gym-info' },
-      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription', badgeKey: 'sidebar.badges.plan', badgeClass: 'badge-purple' },
+      { icon: 'sports_martial_arts', labelKey: 'sidebar.items.adminDisciplines', link: '/admin/disciplines' },
+      { icon: 'accessibility_new', labelKey: 'sidebar.items.adminDefinitions', link: '/admin/definitions' },
       { icon: 'sms', labelKey: 'sidebar.items.adminSmsSettings', link: '/admin/sms-settings' },
       { icon: 'mail', labelKey: 'sidebar.items.adminMailTemplate', link: '/admin/mail-template' },
       { icon: 'notifications', labelKey: 'sidebar.items.adminNotifications', link: '/admin/notifications' },
+      { icon: 'auto_awesome', labelKey: 'sidebar.items.adminWizard', link: '/admin/wizard' },
+      { icon: 'card_membership', labelKey: 'sidebar.items.adminSubscription', link: '/admin/subscription' },
       { icon: 'support_agent', labelKey: 'sidebar.items.support', link: '/support' },
     ],
-
   },
 ];
 
