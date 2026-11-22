@@ -1,4 +1,7 @@
 <aside class="sidebar" [class.collapsed]="isEffectiveCollapsed()" [class.mobile-open]="mobileOpen()">
+  <!-- Ambient Top Radial Glow (Linear Style) -->
+  <div class="sidebar__glow" aria-hidden="true"></div>
+
   <!-- 1. Header (Minimal Brand & Controls) -->
   <div class="sidebar__brand">
     @if (!isEffectiveCollapsed()) {
@@ -42,7 +45,27 @@
     }
   </div>
 
-  <!-- 2. SaaS Süresi Doldu Uyarısı -->
+  <!-- 2. Executive Quick Actions (Hızlı POS & Yeni Üye) -->
+  @if (!isEffectiveCollapsed() && showQuickActions()) {
+  <div class="sidebar__quick-actions">
+    @if (canQuickPos()) {
+    <a routerLink="/admin/pos" routerLinkActive="is-active" (click)="closeMobile.emit()"
+      class="quick-pill quick-pill--primary">
+      <mat-icon>point_of_sale</mat-icon>
+      <span>Hızlı POS</span>
+    </a>
+    }
+    @if (canQuickMember()) {
+    <a routerLink="/admin/members" routerLinkActive="is-active" (click)="closeMobile.emit()"
+      class="quick-pill quick-pill--glass">
+      <mat-icon>person_add</mat-icon>
+      <span>Yeni Üye</span>
+    </a>
+    }
+  </div>
+  }
+
+  <!-- 3. SaaS Süresi Doldu Uyarısı -->
   @if (isExpired()) {
   @if (!isEffectiveCollapsed()) {
   <div class="sidebar__saas-alert">
@@ -67,7 +90,7 @@
   }
   }
 
-  <!-- 3. Navigation Groups -->
+  <!-- 4. Navigation Groups -->
   <nav class="sidebar__nav custom-scroll">
     @for (group of groups(); track group.titleKey) {
     @if (!isEffectiveCollapsed()) {
@@ -76,7 +99,12 @@
         <span class="group-title">
           {{ group.titleKey.includes('.') ? (group.titleKey | transloco) : group.titleKey }}
         </span>
-        <mat-icon class="group-chevron" [class.rotated]="isGroupOpen(group)">expand_more</mat-icon>
+        <span class="group-meta">
+          @if (!isGroupOpen(group)) {
+          <span class="group-count">{{ group.items.length }}</span>
+          }
+          <mat-icon class="group-chevron" [class.rotated]="isGroupOpen(group)">expand_more</mat-icon>
+        </span>
       </button>
 
       @if (isGroupOpen(group)) {
@@ -127,13 +155,13 @@
     }
   </nav>
 
-  <!-- 4. Footer: Durum, Sürüm, Kılavuz & Çıkış -->
+  <!-- 5. Footer: Durum, Sürüm Pill, Kılavuz & Çıkış -->
   <div class="sidebar__footer">
-    <button type="button" class="system-status" (click)="version.openModal()"
+    <button type="button" class="version-pill" (click)="version.openModal()"
       [matTooltip]="'Sürüm Bilgisi: v' + version.current.version + ' (Detaylar için tıklayın)'" matTooltipPosition="right">
       <span class="status-indicator" [class.bg-rose-500]="isExpired()"></span>
       @if (!isEffectiveCollapsed()) {
-      <span class="status-text">v{{ version.current.version }}</span>
+      <span class="version-text">v{{ version.current.version }}</span>
       }
     </button>
     <div class="footer-actions">

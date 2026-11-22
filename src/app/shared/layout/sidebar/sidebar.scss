@@ -15,7 +15,7 @@
 }
 
 .sidebar {
-  --sidebar-w: 260px;
+  --sidebar-w: 262px;
   --sidebar-w-collapsed: 70px;
 
   display: flex;
@@ -53,14 +53,26 @@
   }
 }
 
+// Linear-style ambient indigo glow at top
+.sidebar__glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 220px;
+  background: radial-gradient(ellipse 115% 180px at 50% -30px, rgba(99, 102, 241, 0.22) 0%, rgba(139, 92, 246, 0.06) 45%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 // Brand Header
 .sidebar__brand {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 14px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: 8px;
+  padding: 16px 14px 12px;
   flex-shrink: 0;
 }
 
@@ -93,9 +105,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%);
-  border: 1px solid rgba(129, 140, 248, 0.35);
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(15, 23, 42, 0.92) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.42);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   flex-shrink: 0;
 }
 
@@ -125,7 +137,7 @@
 
   &:hover {
     color: #F8FAFC;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.07);
   }
 
   mat-icon {
@@ -139,18 +151,105 @@
   }
 }
 
+// Executive Quick Action Pills (Hızlı POS & Yeni Üye)
+.sidebar__quick-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 2px 12px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.quick-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  &--primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.26) 0%, rgba(124, 58, 237, 0.22) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.38);
+    color: #E0E7FF;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.16);
+
+    mat-icon {
+      color: #A5B4FC;
+    }
+
+    &:hover,
+    &.is-active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(124, 58, 237, 0.34) 100%);
+      border-color: rgba(165, 180, 252, 0.6);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--glass {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #CBD5E1;
+
+    mat-icon {
+      color: #94A3B8;
+    }
+
+    &:hover,
+    &.is-active {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+
+      mat-icon {
+        color: #E2E8F0;
+      }
+    }
+  }
+}
+
 // Navigation Groups
 .sidebar__nav {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
   padding: 4px 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .group-container {
-  margin-bottom: 2px;
+  position: relative;
+  padding-bottom: 6px;
+
+  & + .group-container::before {
+    content: '';
+    display: block;
+    height: 1px;
+    margin: 0 8px 6px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  }
 }
 
 .group-summary {
@@ -176,12 +275,27 @@
 }
 
 .group-title {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: #64748B;
   transition: color 0.15s ease;
+}
+
+.group-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-count {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 5px;
+  border-radius: 5px;
 }
 
 .group-chevron {
@@ -211,12 +325,12 @@
   gap: 10px;
   padding: 8px 11px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.75px;
   font-weight: 500;
   color: #94A3B8;
   text-decoration: none;
   white-space: nowrap;
-  transition: all 0.14s ease;
+  transition: all 0.15s ease;
   border: 1px solid transparent;
 
   .nav-icon {
@@ -225,7 +339,7 @@
     height: 18px;
     color: #64748B;
     flex-shrink: 0;
-    transition: color 0.14s ease;
+    transition: transform 0.15s ease, color 0.15s ease;
   }
 
   .nav-label {
@@ -240,29 +354,32 @@
 
     .nav-icon {
       color: #CBD5E1;
+      transform: translateX(1px);
     }
   }
 
-  // Modern Linear / Stripe style active indicator
+  // Linear-style active glass pill + 3px glowing left bar
   &.active {
-    background: rgba(99, 102, 241, 0.14);
-    border-color: rgba(129, 140, 248, 0.24);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border-color: rgba(129, 140, 248, 0.28);
     color: #FFFFFF;
     font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
     &::before {
       content: '';
       position: absolute;
       left: 0;
-      top: 7px;
-      bottom: 7px;
+      top: 6px;
+      bottom: 6px;
       width: 3px;
       border-radius: 0 3px 3px 0;
       background: #818CF8;
+      box-shadow: 0 0 10px rgba(129, 140, 248, 0.75);
     }
 
     .nav-icon {
-      color: #818CF8;
+      color: #A5B4FC;
     }
   }
 }
@@ -300,7 +417,7 @@
   }
 }
 
-// Subtle Modern Pill Badges
+// Subtle Translucent Pill Badges
 .nav-badge {
   font-size: 9.5px;
   font-weight: 700;
@@ -343,6 +460,8 @@
 
 // SaaS Expired Alert Card
 .sidebar__saas-alert {
+  position: relative;
+  z-index: 1;
   margin: 0 10px 10px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -392,6 +511,8 @@
 }
 
 .collapsed-alert-wrapper {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
   margin-bottom: 8px;
@@ -443,41 +564,44 @@
   background: rgba(225, 29, 72, 0.12) !important;
 }
 
-// Footer
+// Footer with Translucent Version Pill
 .sidebar__footer {
+  position: relative;
+  z-index: 1;
   margin-top: auto;
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #080C14;
+  background: rgba(8, 12, 20, 0.88);
   flex-shrink: 0;
 }
 
-.system-status {
-  display: flex;
+.version-pill {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  padding: 4px 6px;
-  border-radius: 8px;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 9px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.085);
+    border-color: rgba(255, 255, 255, 0.15);
 
-    .status-text {
-      color: #CBD5E1;
+    .version-text {
+      color: #E2E8F0;
     }
   }
 }
 
 .status-indicator {
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
   background: #10B981;
   box-shadow: 0 0 8px #10B981;
@@ -496,10 +620,11 @@
   }
 }
 
-.status-text {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748B;
+.version-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #94A3B8;
   white-space: nowrap;
   transition: color 0.15s ease;
 }

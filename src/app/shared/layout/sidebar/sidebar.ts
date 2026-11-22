@@ -264,6 +264,13 @@ export class Sidebar {
   readonly logOutRequested = output<void>();
 
   protected readonly isExpired = computed(() => this.saasSub.isExpired());
+  protected readonly canQuickPos = computed(
+    () => this.permissions.isStaff() && !this.isExpired() && this.permissions.canAccessRoute('/admin/pos'),
+  );
+  protected readonly canQuickMember = computed(
+    () => this.permissions.isStaff() && !this.isExpired() && this.permissions.canAccessRoute('/admin/members'),
+  );
+  protected readonly showQuickActions = computed(() => this.canQuickPos() || this.canQuickMember());
 
   protected readonly userInitials = computed(() => {
     const name = this.auth.profile()?.displayName || 'AD';
