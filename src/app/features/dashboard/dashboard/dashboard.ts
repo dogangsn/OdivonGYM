@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Observable, firstValueFrom, of } from 'rxjs';
+import { Observable, catchError, firstValueFrom, of } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -22,7 +22,7 @@ import { ShopSale } from '../../../core/models/shop-product.model';
 import { AccessLog } from '../../../core/models/access-log.model';
 import { BodyMeasurement } from '../../../core/models/body-measurement.model';
 import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../core/models/gym-equipment.model';
-import { DashboardSummary, GymReportsApi } from '../../../core/api/gym-reports.api';
+import { DashboardSummary, GymReportsApi, OccupancyNow } from '../../../core/api/gym-reports.api';
 import { SmsApi } from '../../../core/api/sms.api';
 import { MeasurementsService } from '../../measurements/measurements.service';
 import { BarDatum, DonutSlice, LineSeries, OdvBarChart, OdvDonutChart, OdvLineChart } from '../../../shared/charts/odv-charts';
@@ -144,9 +144,33 @@ export class Dashboard {
   });
   /** Personel grafikleri tek istekte; her bölüm yalnız izin varsa dolu gelir (yoksa null, istek 403 vermez). */
   protected readonly summary = toSignal<DashboardSummary | null>(
-    this.isStaff ? this.reportsApi.dashboard() : of(null),
+    this.isStaff ? this.reportsApi.dashboard().pipe(catchError(() => of(null))) : of(null),
     { initialValue: null },
   );
+
+  /** Anlık içerideki üye sayısı ve salon kapasite yoğunluğu. */
+  protected readonly occupancy = toSignal<OccupancyNow | null>(
+    this.isStaff && this.canSeeAccess()
+      ? this.reportsApi.occupancyNow().pipe(catchError(() => of(null)))
+      : of(null),
+    { initialValue: null },
+  );
+
+  protected readonly occupancyPercent = computed<number | null>(() => {
+    const o = this.occupancy();
+    if (!o || !o.capacity || o.capacity <= 0) return null;
+    return Math.min(100, Math.round((o.inside / o.capacity) * 100));
+  });
+
+  /** Bugünkü satışların düne göre yüzdesel değişimi. */
+  protected readonly salesTrendPct = computed<number | null>(() => {
+    const list = this.summary()?.sales;
+    if (!list || list.length < 2) return null;
+    const today = list[list.length - 1]?.amount ?? 0;
+    const yesterday = list[list.length - 2]?.amount ?? 0;
+    if (yesterday <= 0) return today > 0 ? 100 : null;
+    return Math.round(((today - yesterday) / yesterday) * 100);
+  });
 
   protected readonly money0 = (value: number) =>
     value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });

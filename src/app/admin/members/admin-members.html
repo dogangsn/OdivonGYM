@@ -235,7 +235,17 @@
             <td class="py-3 px-6 whitespace-nowrap">
               @if (member.packageLabel) {
               <p class="font-semibold text-slate-700 dark:text-slate-200 m-0">{{ member.packageLabel }}</p>
-              @if (member.membershipEndsAt) {
+              @if (membershipProgress(member); as prog) {
+              <div class="mt-1 space-y-1 min-w-[118px]">
+                <div class="flex items-center justify-between gap-2 text-[10px] font-bold">
+                  <span [class]="prog.labelClass">{{ prog.label }}</span>
+                  <span class="text-slate-400 font-medium tabular-nums">{{ formatDate(member.membershipEndsAt ?? undefined) }}</span>
+                </div>
+                <div class="w-full h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full rounded-full transition-all" [style.width.%]="prog.pct" [class]="prog.barClass"></div>
+                </div>
+              </div>
+              } @else if (member.membershipEndsAt) {
               <p class="text-[11px] text-slate-400 m-0">{{ 'members.untilDate' | transloco: { date: formatDate(member.membershipEndsAt) } }}</p>
               }
               } @else {
@@ -246,6 +256,12 @@
               {{ formatDate(member.createdAt) }}
             </td>
             <td class="py-3 px-6 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+              @if (member.phone) {
+              <button type="button" (click)="openWhatsApp(member)" matTooltip="WhatsApp ile Mesaj Gönder"
+                class="odv-icon-btn text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 mr-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <mat-icon class="icon-size-4">chat</mat-icon>
+              </button>
+              }
               <button type="button" (click)="openWallet(member)" [matTooltip]="'members.wallet.title' | transloco"
                 class="odv-icon-btn mr-1">
                 <mat-icon class="icon-size-4">account_balance_wallet</mat-icon>

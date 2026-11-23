@@ -76,6 +76,13 @@
                 [class]="statusBadgeClass[member()!.membershipStatus]">
                 {{ statusLabel[member()!.membershipStatus] }}
               </span>
+              <span
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-bold tabular-nums border"
+                [class]="(member()?.walletBalance ?? 0) < 0
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-slate-50 text-slate-700 border-slate-200'">
+                Bakiye: {{ money(member()?.walletBalance ?? 0) }}
+              </span>
             </div>
 
             <p class="text-xs font-semibold text-slate-500 mt-1 mb-0 flex flex-wrap items-center gap-2 select-text cursor-default" (pointerdown)="$event.stopPropagation()">

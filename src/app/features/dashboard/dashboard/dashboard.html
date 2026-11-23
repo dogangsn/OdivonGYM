@@ -33,7 +33,7 @@
   @if (isStaff) {
   <section class="flex flex-col gap-4">
     <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200/80 dark:border-slate-800">
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80 dark:border-slate-800">
       <div class="flex items-center gap-2.5">
         <span class="flex h-3 w-3 relative">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -43,7 +43,31 @@
           Günlük Salon Operasyon Özeti
         </h2>
       </div>
-      <span class="text-xs text-slate-500 dark:text-slate-400">Canlı salon verileri ve günlük akış</span>
+      <div class="flex items-center gap-3 flex-wrap">
+        @if (occupancy(); as occ) {
+        <div
+          class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs text-xs">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span class="font-semibold text-slate-500 dark:text-slate-400">Canlı Yoğunluk:</span>
+          <span class="font-black text-slate-900 dark:text-white tabular-nums">
+            {{ occ.inside }}{{ occ.capacity ? ' / ' + occ.capacity : '' }} kişi
+          </span>
+          @if (occupancyPercent(); as pct) {
+          <div class="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-300"
+              [style.width.%]="pct"
+              [class]="pct >= 85 ? 'bg-rose-500' : pct >= 60 ? 'bg-amber-500' : 'bg-emerald-500'"></div>
+          </div>
+          <span class="text-[10px] font-bold tabular-nums"
+            [class]="pct >= 85 ? 'text-rose-600' : pct >= 60 ? 'text-amber-600' : 'text-emerald-600'">
+            %{{ pct }}
+          </span>
+          }
+        </div>
+        } @else {
+        <span class="text-xs text-slate-500 dark:text-slate-400">Canlı salon verileri ve günlük akış</span>
+        }
+      </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -62,13 +86,22 @@
             </div>
           </div>
 
-          <div class="flex items-baseline gap-2 mb-2">
-            <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{
+          <div class="flex items-baseline gap-2 flex-wrap mb-2">
+            <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">{{
               money(todaySalesTotalAmount()) }}</span>
             <span
-              class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+              class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 tabular-nums">
               {{ todaySales().length }} Satış
             </span>
+            @if (salesTrendPct() !== null) {
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-md tabular-nums inline-flex items-center gap-0.5"
+              [class]="salesTrendPct()! >= 0
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'"
+              title="Düne göre değişim">
+              {{ salesTrendPct()! >= 0 ? '↑ +' : '↓ ' }}{{ salesTrendPct() }}%
+            </span>
+            }
           </div>
 
           <!-- Mini List of Today's Sales -->

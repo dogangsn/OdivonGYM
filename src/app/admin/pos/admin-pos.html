@@ -1,17 +1,27 @@
-<div class="font-sans space-y-6">
+<div [class]="isFocusMode() ? 'fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 overflow-y-auto font-sans space-y-5' : 'font-sans space-y-6'">
   <!-- 1. POS Header -->
   <app-page-header
     title="pos.title"
     icon="point_of_sale"
     description="pos.desc"
   >
-    <div actions class="flex items-center gap-2">
+    <div actions class="flex items-center gap-2 flex-wrap">
       <div class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
           {{ 'pos.todayCash' | transloco: { amount: money(todaySalesTotal()), count: todaySalesCount() } }}
         </span>
       </div>
+      <button
+        type="button"
+        (click)="toggleFocusMode()"
+        class="odv-btn-soft text-xs flex items-center gap-1.5 cursor-pointer"
+        [class.bg-indigo-600]="isFocusMode()"
+        [class.text-white]="isFocusMode()"
+      >
+        <mat-icon class="icon-size-4">{{ isFocusMode() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        <span>{{ isFocusMode() ? 'Normal Görünüm' : 'Tam Ekran Kasa' }}</span>
+      </button>
       <a routerLink="/admin/sales" class="odv-btn-soft text-xs flex items-center gap-1.5 no-underline">
         <mat-icon class="icon-size-4">shopping_bag</mat-icon>
         <span>{{ 'pos.packageShopSales' | transloco }}</span>
@@ -86,7 +96,12 @@
           <button
             type="button"
             (click)="addToCart(prod)"
-            class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all cursor-pointer flex flex-col justify-between text-left active:scale-[0.98] group"
+            class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition-all cursor-pointer flex flex-col justify-between text-left active:scale-[0.97] group"
+            [class.border-l-4]="prod.stock <= 5"
+            [class.border-l-amber-400]="prod.stock <= 5"
+            [class.ring-2]="lastAddedProductId() === prod.id"
+            [class.ring-emerald-500]="lastAddedProductId() === prod.id"
+            [class.bg-emerald-50/40]="lastAddedProductId() === prod.id"
           >
             <span class="block w-full">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
@@ -98,8 +113,14 @@
             </span>
 
             <span class="flex items-baseline justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 w-full">
-              <span class="text-sm font-black text-slate-900 dark:text-white">{{ money(prod.price) }}</span>
-              <span class="text-[10px] font-semibold text-slate-400">Stok: {{ prod.stock }}</span>
+              <span class="text-sm font-black text-slate-900 dark:text-white tabular-nums">{{ money(prod.price) }}</span>
+              @if (prod.stock <= 5) {
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 tabular-nums">
+                  Az Stok: {{ prod.stock }}
+                </span>
+              } @else {
+                <span class="text-[10px] font-semibold text-slate-400 tabular-nums">Stok: {{ prod.stock }}</span>
+              }
             </span>
           </button>
         } @empty {

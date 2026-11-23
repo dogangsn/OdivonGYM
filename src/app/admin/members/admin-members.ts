@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SlideOver } from '../../shared/ui/slide-over';
 import { Field } from '../../shared/ui/field';
-import { firstError, formatMoney } from '../../shared/ui/ui-utils';
+import { firstError, formatMoney, toJsDate } from '../../shared/ui/ui-utils';
 import { AuthService } from '../../core/auth/auth.service';
 import { BranchContextService } from '../../core/services/branch-context.service';
 import { AdminMembersService, NewMemberInput } from './admin-members.service';
@@ -166,6 +166,62 @@ export class AdminMembers {
   onPageSizeChange(size: number | string): void {
     this.pageSize.set(Number(size));
     this.currentPage.set(1);
+  }
+
+  /** Kalan üyelik süresi için 4px ilerleme çubuğu verisi. */
+  membershipProgress(member: UserProfile): {
+    daysLeft: number;
+    pct: number;
+    barClass: string;
+    label: string;
+    labelClass: string;
+  } | null {
+    const end = toJsDate(member.membershipEndsAt);
+    if (!end) return null;
+    const now = Date.now();
+    const daysLeft = Math.ceil((end.getTime() - now) / 86_400_000);
+    const start = toJsDate(member.membershipStartsAt);
+    const totalDays = start
+      ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000))
+      : 30;
+    const pct = daysLeft <= 0 ? 100 : Math.max(6, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
+
+    if (daysLeft <= 0) {
+      return {
+        daysLeft: 0,
+        pct: 100,
+        barClass: 'bg-rose-500',
+        label: 'Süresi doldu',
+        labelClass: 'text-rose-600 dark:text-rose-400',
+      };
+    }
+    if (daysLeft <= 7) {
+      return {
+        daysLeft,
+        pct,
+        barClass: 'bg-amber-500',
+        label: `${daysLeft} gün kaldı`,
+        labelClass: 'text-amber-600 dark:text-amber-400',
+      };
+    }
+    return {
+      daysLeft,
+      pct,
+      barClass: 'bg-emerald-500',
+      label: `${daysLeft} gün kaldı`,
+      labelClass: 'text-emerald-600 dark:text-emerald-400',
+    };
+  }
+
+  /** Üyenin telefon numarasıyla tek tık WhatsApp sohbeti açar. */
+  openWhatsApp(member: UserProfile): void {
+    const digits = (member.phone ?? '').replace(/\D/g, '');
+    if (!digits) {
+      this.snackBar.open('Üyenin kayıtlı telefon numarası bulunmuyor.', 'Tamam', { duration: 2200 });
+      return;
+    }
+    const normalized = digits.startsWith('0') ? `90${digits.slice(1)}` : digits.length === 10 ? `90${digits}` : digits;
+    window.open(`https://wa.me/${normalized}`, '_blank', 'noopener,noreferrer');
   }
 
   goToPage(page: number): void {

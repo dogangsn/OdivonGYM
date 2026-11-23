@@ -48,6 +48,13 @@ export class AdminPos {
   // Search & Filters
   protected readonly search = signal<string>('');
   protected readonly selectedCategory = signal<string>('all');
+  protected readonly isFocusMode = signal<boolean>(false);
+  protected readonly lastAddedProductId = signal<string | null>(null);
+  private flashTimer: ReturnType<typeof setTimeout> | null = null;
+
+  toggleFocusMode(): void {
+    this.isFocusMode.update((v) => !v);
+  }
 
   // Real-time Streams
   private readonly productData = toSignal(this.shopService.watchProducts(), { initialValue: null });
@@ -297,6 +304,12 @@ export class AdminPos {
       }
       return [...current, { product, quantity: 1 }];
     });
+
+    if (product.id) {
+      this.lastAddedProductId.set(product.id);
+      if (this.flashTimer) clearTimeout(this.flashTimer);
+      this.flashTimer = setTimeout(() => this.lastAddedProductId.set(null), 450);
+    }
   }
 
   increaseQty(productId: string): void {
