@@ -64,11 +64,11 @@ switch ($Action) {
     netsh advfirewall firewall add rule name="Odivon Edge Agent - ZK kopru" dir=in action=allow program="$bridge" protocol=UDP profile=any | Out-Null
     netsh advfirewall firewall add rule name="Odivon Edge Agent - Node" dir=in action=allow program="$node" protocol=UDP profile=any | Out-Null
 
-    $action = New-ScheduledTaskAction -Execute $node -Argument '--disable-warning=ExperimentalWarning agent.js' -WorkingDirectory $app
+    $taskAction = New-ScheduledTaskAction -Execute $node -Argument '--disable-warning=ExperimentalWarning agent.js' -WorkingDirectory $app
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $settings = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) `
       -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew
-    Register-ScheduledTask -TaskName $task -Action $action -Trigger $trigger -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+    Register-ScheduledTask -TaskName $task -Action $taskAction -Trigger $trigger -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
 
     # Prizdeyken uyku / hazırda bekleme kapalı: agent çalışmaya devam etsin.
     $ErrorActionPreference = 'Continue'
