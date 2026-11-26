@@ -11,7 +11,11 @@ $app = Join-Path $AppDir 'app'
 $bridge = Join-Path $app 'vendor\zkemkeeper\zkemkeeper-bridge.exe'
 
 function Stop-Agent {
-  schtasks /End /TN $task 2>$null | Out-Null
+  # Görev yoksa (ilk kurulum) schtasks hata yazar; $ErrorActionPreference = 'Stop' bunu
+  # durdurucu hataya çevirmesin diye Windows PowerShell'in yerel komut hatası burada yutulur.
+  if (Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue) {
+    Stop-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue
+  }
   # Eski kurulumlar (ör. Downloads klasöründen çalışan agent) ve köprüleri: aynı cihaza iki bağlantı olmasın.
   Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
     Where-Object { $_.CommandLine -like '*agent.js*' } |
@@ -39,15 +43,17 @@ function Import-OldInstall {
 }
 
 function Remove-FirewallRules {
-  netsh advfirewall firewall delete rule name="Odivon Edge Agent - ZK kopru" 2>$null | Out-Null
-  netsh advfirewall firewall delete rule name="Odivon Edge Agent - Node" 2>$null | Out-Null
+  # Kural yoksa netsh de hata yazar; yerel komutların hatası kurulumu durdurmasın.
+  $ErrorActionPreference = 'Continue'
+  netsh advfirewall firewall delete rule name="Odivon Edge Agent - ZK kopru" 2>&1 | Out-Null
+  netsh advfirewall firewall delete rule name="Odivon Edge Agent - Node" 2>&1 | Out-Null
 }
 
 switch ($Action) {
   'durdur' { Stop-Agent }
   'kaldir' {
     Stop-Agent
-    schtasks /Delete /TN $task /F 2>$null | Out-Null
+    Unregister-ScheduledTask -TaskName $task -Confirm:$false -ErrorAction SilentlyContinue
     Remove-FirewallRules
   }
   'kur' {
@@ -65,8 +71,10 @@ switch ($Action) {
     Register-ScheduledTask -TaskName $task -Action $action -Trigger $trigger -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
 
     # Prizdeyken uyku / hazırda bekleme kapalı: agent çalışmaya devam etsin.
-    powercfg /change standby-timeout-ac 0 2>$null | Out-Null
-    powercfg /change hibernate-timeout-ac 0 2>$null | Out-Null
+    $ErrorActionPreference = 'Continue'
+    powercfg /change standby-timeout-ac 0 2>&1 | Out-Null
+    powercfg /change hibernate-timeout-ac 0 2>&1 | Out-Null
+    $ErrorActionPreference = 'Stop'
 
     Start-ScheduledTask -TaskName $task
   }
