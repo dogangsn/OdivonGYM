@@ -19,7 +19,8 @@ const { createAdapter } = require('./adapters');
 const { istanbulDay } = require('./time');
 const { asDeviceError } = require('./adapters/errors');
 
-const EVENT_BATCH_SIZE = 500;
+/** MainApi her olayı ayrı yazar; büyük paket 15 sn zaman aşımına düşüp kuyruğu kilitliyordu. */
+const EVENT_BATCH_SIZE = 25;
 /** Arayüzde gösterilen son geçiş sayısı. */
 const RECENT_PASSES = 200;
 /** Sunucu önerisinin sınırları; öneri yoksa (eski MainApi) her turda sorulur. */
